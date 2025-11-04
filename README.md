@@ -91,6 +91,35 @@ Detailed documentation available in `docs/`:
 - `Complete_Database_Schema_Document.md` - Database structure
 - `Complete_API_Specification.md` - API contracts
 
+## Using the MCP Server in Windsurf
+
+The QNWIS MCP (Model Context Protocol) server provides secure, controlled access to project resources for AI assistants.
+
+### Setup
+
+The MCP server is configured in `.mcp/servers.json` and will be automatically detected by Windsurf IDE.
+
+### Available Tools
+
+- **fs_read_text**: Safely read text files within allowlist (src/, docs/, references/)
+- **git_status**: Get current git status of the repository
+- **git_diff**: View changed files against a target reference
+- **secrets_scan**: Scan for potential secrets/tokens (>=32 chars, redacted)
+- **env_list**: List environment variable names (values never exposed)
+
+### Security Features
+
+- **Allowlist gate**: Only paths in `tools/mcp/allowlist.json` can be read
+- **Secret redaction**: Secret scan shows first 4 chars + "…" only
+- **Env protection**: Environment tool returns names only, never values
+- **No execution**: Server provides read-only introspection tools
+
+### Running Tests
+
+```bash
+pytest tests/unit/test_mcp_tools.py -v
+```
+
 ## License
 
 Proprietary - Qatar Ministry of Labour

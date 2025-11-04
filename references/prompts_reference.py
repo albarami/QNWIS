@@ -5,6 +5,13 @@ Adaptive Expert Prompts - Drop-in Replacement
 These prompts replace the existing expert prompts with adaptive versions
 """
 
+if __name__ != "__main__":
+    # These are reference examples; not for import.
+    raise ImportError(
+        "references.prompts_reference is a reference script and must not be imported."
+    )
+
+
 DR_OMAR_ADAPTIVE_PROMPT = """
 ═══════════════════════════════════════════════════════════
 DR. OMAR AL-RASHID

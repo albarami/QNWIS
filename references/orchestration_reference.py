@@ -8,6 +8,12 @@ Uses Latest Models (Nov 2025):
 - Claude Haiku 4.5 for fast classification
 """
 
+if __name__ != "__main__":
+    # These are reference examples; not for import.
+    raise ImportError(
+        "references.orchestration_reference is a reference script and must not be imported."
+    )
+
 import asyncio
 import os
 from pathlib import Path

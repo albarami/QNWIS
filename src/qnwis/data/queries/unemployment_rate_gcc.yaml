@@ -1,0 +1,8 @@
+id: q_unemployment_rate_gcc_latest
+title: Unemployment rate GCC comparison
+description: Compare Qatar vs GCC unemployment rate (World Bank)
+source: world_bank
+expected_unit: percent
+params:
+  indicator: "SL.UEM.TOTL.ZS"
+  countries: ["QAT","SAU","ARE","KWT","BHR","OMN"]

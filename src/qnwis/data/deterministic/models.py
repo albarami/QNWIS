@@ -1,0 +1,44 @@
+from __future__ import annotations
+
+from typing import Any, Literal
+
+from pydantic import BaseModel, Field
+
+SourceType = Literal["csv", "world_bank"]
+UnitType = Literal["count", "percent", "qar", "usd", "index", "unknown"]
+
+
+class Provenance(BaseModel):
+    source: SourceType
+    dataset_id: str
+    locator: str  # file path or API endpoint
+    fields: list[str]
+    license: str | None = None
+
+
+class Freshness(BaseModel):
+    asof_date: str  # ISO date
+    updated_at: str | None = None
+
+
+class QuerySpec(BaseModel):
+    id: str
+    title: str
+    description: str
+    source: SourceType
+    params: dict[str, Any] = Field(default_factory=dict)
+    expected_unit: UnitType = "unknown"
+    constraints: dict[str, Any] = Field(default_factory=dict)  # e.g. {"sum_to_one": True}
+
+
+class Row(BaseModel):
+    data: dict[str, Any]
+
+
+class QueryResult(BaseModel):
+    query_id: str
+    rows: list[Row]
+    unit: UnitType
+    provenance: Provenance
+    freshness: Freshness
+    warnings: list[str] = Field(default_factory=list)

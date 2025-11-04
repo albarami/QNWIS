@@ -13,7 +13,19 @@
       "Bash(powershell -ExecutionPolicy Bypass .scriptssecret_scan.ps1)",
       "Bash(powershell -ExecutionPolicy Bypass \".\\scripts\\secret_scan.ps1\")",
       "Bash(git grep:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nStep 2a: Unignored and sanitized API clients\n- Track src/data/apis/*.py (no secrets)\n- Env-based credentials, timeouts, retries\n- Unit tests + secret scan\nEOF\n)\")",
+      "Bash(git config:*)",
+      "Bash(git remote add:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(git rm:*)",
+      "Bash(git commit:*)",
+      "Bash(\".\\.venv\\Scripts\\ruff.exe\" check . --fix)",
+      "Bash(\".\\.venv\\Scripts\\pytest.exe\" -v --cov=src --cov-report=term-missing)",
+      "Bash(\".\\.venv\\Scripts\\pytest.exe\" -v --asyncio-mode=auto --cov=src --cov-report=term-missing --timeout=10)",
+      "Bash(\".\\.venv\\Scripts\\pytest.exe\" -v --asyncio-mode=auto --cov=src --cov-report=term-missing --ignore=tests/unit/test_mcp_error_paths.py)",
+      "Bash(\".\\.venv\\Scripts\\pytest.exe\" -v --maxfail=1)"
     ],
     "deny": [],
     "ask": []

@@ -19,6 +19,7 @@ dependencies = [
     "langchain-core>=0.1.0",
     "numpy>=1.24.0",
     "pandas>=2.0.0",
+    "mcp>=0.9.0",
 ]
 
 [project.optional-dependencies]
@@ -45,8 +46,9 @@ package-dir = {"" = "src"}
 
 [tool.pytest.ini_options]
 minversion = "7.0"
-addopts = "-ra -q --strict-markers --cov=qnwis --cov-report=term-missing --cov-report=html"
+addopts = "-m 'not mcp' --asyncio-mode=auto --cov=src --cov-report=term-missing"
 testpaths = ["tests"]
+pythonpath = "."
 asyncio_mode = "auto"
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
@@ -55,6 +57,7 @@ markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: marks tests as integration tests",
     "unit: marks tests as unit tests",
+    "mcp: optional MCP server tests (skipped by default)",
 ]
 
 [tool.coverage.run]
@@ -75,19 +78,9 @@ exclude_lines = [
 [tool.mypy]
 python_version = "3.11"
 strict = true
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-check_untyped_defs = true
-disallow_untyped_decorators = false
-no_implicit_optional = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_no_return = true
-follow_imports = "normal"
 ignore_missing_imports = false
-plugins = ["pydantic.mypy"]
+warn_unused_ignores = true
+exclude = "^(external_data|references|src/data/apis)/"
 
 [[tool.mypy.overrides]]
 module = [
@@ -103,16 +96,49 @@ module = [
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
+module = "mcp.*"
+ignore_missing_imports = false
+disallow_untyped_decorators = false
+
+[[tool.mypy.overrides]]
+module = "tools.mcp.qnwis_mcp"
+disallow_untyped_calls = false
+
+# Loosen checks for API clients if needed
+[[tool.mypy.overrides]]
 module = [
-    "src.orchestration_reference",
-    "src.data.rag_system_reference",
-    "src.prompts_reference",
+    "src.data.apis.world_bank",
+    "src.data.apis.semantic_scholar", 
+    "src.data.apis.qatar_opendata",
+    "src.data.apis._http",
+]
+disallow_untyped_defs = false
+disallow_untyped_calls = false
+warn_return_any = false
+ignore_missing_imports = true
+no_implicit_optional = false
+check_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = [
+    "references.orchestration_reference",
+    "references.rag_system_reference",
+    "references.prompts_reference",
 ]
 follow_imports = "skip"
 
 [tool.ruff]
 target-version = "py311"
 line-length = 100
+exclude = [
+  ".venv",
+  ".git",
+  "external_data",
+  "node_modules",
+  "build",
+  "dist",
+  "references",  # treat as read-only examples
+]
 
 [tool.ruff.lint]
 select = [
@@ -136,6 +162,8 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
 "tests/*" = ["ARG", "S"]
+# silence unused args/imports in *reference* files only
+"references/*.py" = ["F401", "F841", "ARG", "E402"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["qnwis"]

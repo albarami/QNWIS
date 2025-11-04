@@ -41,6 +41,8 @@ def _client(timeout: float = DEFAULT_TIMEOUT) -> httpx.Client:
     Returns:
         Configured httpx.Client
     """
+    if timeout <= 0:
+        raise ValueError("timeout must be a positive number of seconds")
     return httpx.Client(
         timeout=timeout,
         headers={
@@ -74,6 +76,9 @@ class UDCGlobalDataIntegrator:
         year: int | None = None,
         start_year: int | None = None,
         end_year: int | None = None,
+        *,
+        timeout_s: float | None = None,
+        max_rows: int | None = None,
     ) -> pd.DataFrame:
         """Get World Bank indicator data for specified countries.
 
@@ -83,6 +88,8 @@ class UDCGlobalDataIntegrator:
             year: Specific year to retrieve. Mutually exclusive with start_year/end_year
             start_year: Start of year range
             end_year: End of year range
+            timeout_s: Optional per-request timeout override in seconds.
+            max_rows: Optional cap on returned records.
 
         Returns:
             DataFrame with columns: country, year, value, indicator_name
@@ -96,6 +103,19 @@ class UDCGlobalDataIntegrator:
 
         indicator_code = indicator.strip()
         current_year = datetime.now().year
+        if timeout_s is not None:
+            if isinstance(timeout_s, bool) or not isinstance(timeout_s, (int, float)):
+                raise ValueError("timeout_s must be a positive number of seconds")
+            if timeout_s <= 0:
+                raise ValueError("timeout_s must be a positive number of seconds")
+            client_timeout = float(timeout_s)
+        else:
+            client_timeout = DEFAULT_TIMEOUT
+
+        if max_rows is not None and (
+            isinstance(max_rows, bool) or not isinstance(max_rows, int) or max_rows <= 0
+        ):
+            raise ValueError("max_rows must be a positive integer")
 
         if year is not None:
             if start_year is not None or end_year is not None:
@@ -141,8 +161,14 @@ class UDCGlobalDataIntegrator:
             url = f"{self.base_url}/country/{country}/indicator/{indicator_code}"
             params = {"format": "json", "date": date_param, "per_page": 100}
 
-            with _client() as client:
-                response, metadata = send_with_retry(client, "GET", url, params=params)
+            with _client(timeout=client_timeout) as client:
+                response, metadata = send_with_retry(
+                    client,
+                    "GET",
+                    url,
+                    params=params,
+                    timeout=client_timeout,
+                )
                 rate_limited = rate_limited or metadata.rate_limited
                 max_retries_used = max(max_retries_used, metadata.retries)
                 data = response.json()
@@ -171,6 +197,8 @@ class UDCGlobalDataIntegrator:
             "max_retries_used": max_retries_used,
             "endpoint": "world_bank_indicator",
         }
+        if max_rows is not None:
+            frame = frame.head(max_rows)
         if rate_limited:
             frame.attrs[
                 "rate_limit_warning"

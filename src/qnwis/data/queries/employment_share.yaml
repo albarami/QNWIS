@@ -1,0 +1,11 @@
+id: q_employment_share_by_gender_2023
+title: Employment share by gender (latest Qatar CSV)
+description: Share split expected to sum to 100%
+source: csv
+expected_unit: percent
+params:
+  pattern: "employed-persons-15-years-and-above*.csv"
+  select: ["year","male_percent","female_percent","total_percent"]
+  year: 2023
+constraints:
+  sum_to_one: true

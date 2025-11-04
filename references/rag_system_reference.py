@@ -14,6 +14,12 @@ Components:
 6. Testing with sample queries
 """
 
+if __name__ != "__main__":
+    # These are reference examples; not for import.
+    raise ImportError(
+        "references.rag_system_reference is a reference script and must not be imported."
+    )
+
 import os
 from pathlib import Path
 from typing import Any

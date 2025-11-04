@@ -1,0 +1,12 @@
+{
+  "servers": [
+    {
+      "name": "qnwis-mcp",
+      "command": [
+        ".venv/Scripts/python.exe",
+        "tools/mcp/qnwis_mcp.py"
+      ],
+      "transport": "stdio"
+    }
+  ]
+}
