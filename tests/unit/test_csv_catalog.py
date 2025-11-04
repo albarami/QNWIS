@@ -61,7 +61,7 @@ def test_csv_reader_to_percent_and_max_rows(tmp_path: Path, monkeypatch: pytest.
         encoding="utf-8",
     )
     _override_base(monkeypatch, tmp_path)
-    spec = build_spec(csv_path.name, {"max_rows": 1, "to_percent": True})
+    spec = build_spec(csv_path.name, {"max_rows": 1, "to_percent": ["value"]})
 
     result = csv_catalog.run_csv_query(spec)
 
@@ -95,4 +95,25 @@ def test_csv_reader_no_rows(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
     spec = build_spec(csv_path.name, {"year": 2022})
 
     with pytest.raises(ValueError, match="No rows matched CSV query"):
+        csv_catalog.run_csv_query(spec)
+
+
+def test_csv_reader_casts_thousands_separator(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    csv_path = tmp_path / "thousands.csv"
+    csv_path.write_text("year,value\n2023,\"1,234\"\n", encoding="utf-8")
+    _override_base(monkeypatch, tmp_path)
+    spec = build_spec(csv_path.name, {"select": ["value"]})
+
+    result = csv_catalog.run_csv_query(spec)
+
+    assert result.rows[0].data["value"] == pytest.approx(1234.0)
+
+
+def test_csv_reader_invalid_max_rows(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    csv_path = tmp_path / "data.csv"
+    csv_path.write_text("year,value\n2023,1\n", encoding="utf-8")
+    _override_base(monkeypatch, tmp_path)
+    spec = build_spec(csv_path.name, {"max_rows": 0})
+
+    with pytest.raises(ValueError, match="max_rows"):
         csv_catalog.run_csv_query(spec)

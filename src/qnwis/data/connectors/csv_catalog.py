@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import math
 import re
 import time
 from collections.abc import Iterable, Sequence
@@ -23,7 +24,7 @@ class CsvQueryParams:
     year_filter: Any
     max_rows: int | None
     timeout_s: float | None
-    to_percent: bool
+    to_percent: list[str]
 
 
 def _sniff_delimiter(path: Path) -> str:
@@ -49,6 +50,14 @@ def _maybe_cast(value: Any) -> Any:
                 return stripped
         return stripped
     return value
+
+
+def _apply_to_percent(row: dict[str, Any], keys: list[str]) -> None:
+    """Multiply specified numeric fields by 100 for percent conversion."""
+    for k in keys:
+        v = row.get(k)
+        if isinstance(v, (int, float)) and not math.isnan(v):
+            row[k] = v * 100.0
 
 
 def _ensure_sequence(value: Any, name: str) -> Sequence[str]:
@@ -95,7 +104,8 @@ def _parse_params(spec: QuerySpec) -> CsvQueryParams:
     year_filter = params.get("year")
     max_rows = _validate_max_rows(params.get("max_rows"))
     timeout_s = _validate_timeout(params.get("timeout_s"))
-    to_percent = bool(params.get("to_percent", False))
+    to_percent_param = params.get("to_percent", [])
+    to_percent = list(_ensure_sequence(to_percent_param, "to_percent")) if to_percent_param else []
     return CsvQueryParams(pattern.strip(), select_fields, year_filter, max_rows, timeout_s, to_percent)
 
 
@@ -114,13 +124,11 @@ def _row_matches_year(row: dict[str, Any], year_filter: Any) -> bool:
     return str(row.get("year", "")).strip() == str(year_filter)
 
 
-def _transform_row(raw_row: dict[str, Any], select_fields: Sequence[str], to_percent: bool) -> dict[str, Any]:
+def _transform_row(raw_row: dict[str, Any], select_fields: Sequence[str]) -> dict[str, Any]:
     selected = raw_row if not select_fields else {field: raw_row.get(field) for field in select_fields}
     transformed: dict[str, Any] = {}
     for key, value in selected.items():
         cast_value = _maybe_cast(value)
-        if to_percent and isinstance(cast_value, (int, float)):
-            cast_value = cast_value * 100.0
         transformed[key] = cast_value
     return transformed
 
@@ -142,7 +150,7 @@ def run_csv_query(spec: QuerySpec) -> QueryResult:
         select (list[str], optional): Project row to the provided columns.
         max_rows (int, optional): Maximum number of rows to return (default unlimited).
         timeout_s (float, optional): Maximum seconds to spend reading rows.
-        to_percent (bool, optional): Multiply numeric values by 100 for percent-friendly reporting.
+        to_percent (list[str], optional): List of field names to multiply by 100.
     """
     parsed = _parse_params(spec)
     file_path = _resolve_latest_csv(parsed.pattern)
@@ -156,7 +164,7 @@ def run_csv_query(spec: QuerySpec) -> QueryResult:
             _enforce_timeout(start, parsed.timeout_s, parsed.pattern)
             if not _row_matches_year(raw_row, parsed.year_filter):
                 continue
-            transformed = _transform_row(raw_row, parsed.select_fields, parsed.to_percent)
+            transformed = _transform_row(raw_row, parsed.select_fields)
             rows.append(Row(data=transformed))
             if parsed.max_rows is not None and len(rows) >= parsed.max_rows:
                 break
@@ -167,6 +175,20 @@ def run_csv_query(spec: QuerySpec) -> QueryResult:
             f"No rows matched CSV query pattern '{parsed.pattern}' with filters {year_desc}."
         )
 
+    # Compute max year if present for as-of date
+    max_year = None
+    if rows:
+        for r in rows:
+            y = r.data.get("year")
+            if isinstance(y, (int, float, str)) and str(y).isdigit():
+                y = int(float(y))
+                max_year = y if (max_year is None or y > max_year) else max_year
+        # Apply to_percent conversion if specified
+        if parsed.to_percent:
+            for r in rows:
+                _apply_to_percent(r.data, parsed.to_percent)
+
+    asof = f"{max_year}-12-31" if max_year else "auto"
     fields = parsed.select_fields or list(rows[0].data.keys())
     return QueryResult(
         query_id=spec.id,
@@ -179,5 +201,5 @@ def run_csv_query(spec: QuerySpec) -> QueryResult:
             fields=list(fields),
             license=QATAR_OPEN_DATA_LICENSE,
         ),
-        freshness=Freshness(asof_date="auto", updated_at=None),
+        freshness=Freshness(asof_date=asof, updated_at=None),
     )

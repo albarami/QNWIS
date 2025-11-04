@@ -1,0 +1,7 @@
+datasets:
+  - pattern: "*employed-persons-15-years-and-above*.csv"
+    license: "Qatar Open Data (see portal terms)"
+    notes: "Employment CSV; year and *_percent columns expected"
+  - pattern: "indicator=SL.UEM.TOTL.ZS*"
+    license: "World Bank CC BY 4.0"
+    notes: "Total unemployment rate (% of total labor force)"

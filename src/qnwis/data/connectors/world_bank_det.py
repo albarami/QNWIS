@@ -57,8 +57,8 @@ def run_world_bank_query(spec: QuerySpec) -> QueryResult:
     Optional params:
         countries (Iterable[str]): ISO-3 country codes (default GCC set).
         year / start_year / end_year: Passed through to the API client.
-        timeout_s (float): Maximum seconds per API request.
-        max_rows (int): Maximum rows to include in the result set.
+        timeout_s (float): Maximum seconds per API request (default 30).
+        max_rows (int): Maximum rows to include in the result set (default 10000).
     """
     params = spec.params or {}
     indicator = params.get("indicator")
@@ -67,11 +67,14 @@ def run_world_bank_query(spec: QuerySpec) -> QueryResult:
     indicator_code = indicator.strip()
 
     countries = _validate_countries(params.get("countries"))
-    timeout_s = None
+
+    # Default timeout_s to 30 if not provided
+    timeout_s = 30.0
     if "timeout_s" in params:
         timeout_s = _validate_positive_number(params["timeout_s"], "timeout_s")
 
-    max_rows = None
+    # Default max_rows to 10000 if not provided
+    max_rows = 10000
     if "max_rows" in params:
         max_rows = _validate_positive_int(params["max_rows"], "max_rows")
 
