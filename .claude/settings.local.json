@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(d:\\lmis_int\\.venv\\Scripts\\pytest.exe:*)",
+      "Bash(\".\\.venv\\Scripts\\pytest.exe\" -v --asyncio-mode=auto --cov=src --cov-report=term-missing)",
+      "Bash(ruff check:*)",
+      "Bash(\".\\.venv\\Scripts\\ruff.exe\" check .)",
+      "Bash(\".\\.venv\\Scripts\\ruff.exe\" check . --fix --unsafe-fixes)",
+      "Bash(\".\\.venv\\Scripts\\flake8.exe\" .)",
+      "Bash(\".\\.venv\\Scripts\\mypy.exe\" src --strict)",
+      "Bash(\".\\.venv\\Scripts\\mypy.exe\" src --strict --exclude \"src/(orchestration_reference|prompts_reference|data/rag_system_reference)\\.py\")",
+      "Bash(\".\\.venv\\Scripts\\mypy.exe\" src/qnwis --strict)",
+      "Bash(powershell -ExecutionPolicy Bypass .scriptssecret_scan.ps1)",
+      "Bash(powershell -ExecutionPolicy Bypass \".\\scripts\\secret_scan.ps1\")",
+      "Bash(git grep:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
