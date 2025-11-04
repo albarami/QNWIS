@@ -80,3 +80,11 @@ def test_catalog_invalid_yaml_safe(tmp_path):
     p.write_text("datasets: [\n", encoding="utf-8")
     cat = DatasetCatalog(str(p))
     assert cat.match("any.csv") is None
+
+
+def test_catalog_directory_path_safe(tmp_path):
+    """Directory in place of catalog file should be ignored."""
+    cat_dir = tmp_path / "datasets.yaml"
+    cat_dir.mkdir()
+    cat = DatasetCatalog(cat_dir)
+    assert cat.match("any.csv") is None

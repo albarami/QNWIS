@@ -257,3 +257,41 @@ Redis client is only imported when `QNWIS_CACHE_BACKEND=redis` is set.
 - No sensitive data should be cached (queries are deterministic)
 - Redis should be secured with authentication in production
 - TTL ensures stale data is eventually refreshed
+
+## Quality Gates
+
+The QNWIS data layer maintains strict quality standards:
+
+### Test Coverage
+- **Target**: ≥90% branch coverage for `src/qnwis/data`
+- **Command**: `python -m pytest tests/unit/ -v --cov=src/qnwis/data --cov-branch --cov-report=term-missing`
+- **Exclusions**: MCP tests remain quarantined with `-m 'not mcp'`
+
+### Secret Scanning
+- **Tool**: `.\scripts\secret_scan.ps1`
+- **Allowlist**: `scripts/secret_scan_allowlist.txt` for known safe patterns
+- **Status**: Must pass clean (exit code 0)
+- **Excludes**: Binary files, external data, reference code
+
+### Linting
+- **Tools**: ruff, flake8, mypy (dev dependencies)
+- **Standard**: PEP8 with type hints throughout
+- **References**: `references/` folder excluded (read-only examples)
+
+### Test Execution
+```bash
+# Run all non-MCP tests with coverage
+python -m pytest tests/unit/ -m 'not mcp' --cov=src/qnwis/data --cov-branch
+
+# Secret scan
+.\scripts\secret_scan.ps1
+
+# All gates must pass before merging to main
+```
+
+### Cache-Specific Coverage
+- TTL expiration and enforcement
+- Hit/miss counter accuracy
+- Compression for payloads ≥8KB
+- Invalidation and zero-TTL bypass
+- Decoding error recovery

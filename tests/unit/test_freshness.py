@@ -273,3 +273,51 @@ def test_freshness_parse_error_warning():
     )
     warnings = verify_freshness(spec, res)
     assert warnings == ["freshness_parse_error"]
+
+
+def test_freshness_year_column_string(monkeypatch=None):
+    """String year values in rows derive year-end date."""
+    spec = QuerySpec(
+        id="q",
+        title="t",
+        description="d",
+        source="csv",
+        params={},
+        constraints={"freshness_sla_days": 90},
+    )
+    res = QueryResult(
+        query_id="q",
+        rows=[Row(data={"year": "2024"})],
+        unit="count",
+        provenance=Provenance(
+            source="csv", dataset_id="x", locator="x.csv", fields=["year"]
+        ),
+        freshness=Freshness(asof_date="auto"),
+    )
+    now = datetime(2024, 3, 31)
+    warnings = verify_freshness(spec, res, now=now)
+    assert warnings == []
+
+
+def test_freshness_iso_asof_string():
+    """Explicit ISO strings are honoured without warnings."""
+    spec = QuerySpec(
+        id="q",
+        title="t",
+        description="d",
+        source="csv",
+        params={},
+        constraints={"freshness_sla_days": 10},
+    )
+    res = QueryResult(
+        query_id="q",
+        rows=[Row(data={"value": 123})],
+        unit="count",
+        provenance=Provenance(
+            source="csv", dataset_id="x", locator="x.csv", fields=["value"]
+        ),
+        freshness=Freshness(asof_date="2024-04-20"),
+    )
+    now = datetime(2024, 4, 25)
+    warnings = verify_freshness(spec, res, now=now)
+    assert warnings == []

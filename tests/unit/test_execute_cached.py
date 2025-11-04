@@ -27,6 +27,7 @@ from src.qnwis.data.deterministic.models import (
 def reset_counters() -> None:
     COUNTERS["hits"] = 0
     COUNTERS["misses"] = 0
+    COUNTERS["invalidations"] = 0
 
 
 def test_key_for_deterministic():
@@ -167,6 +168,7 @@ def test_execute_cached_invalidate_forces_refetch(monkeypatch):
     assert called["n"] == 2
     assert COUNTERS["misses"] == 2
     assert COUNTERS["hits"] == 0
+    assert COUNTERS["invalidations"] == 1
 
 
 def test_execute_cached_ttl_zero_disables_cache(monkeypatch):
@@ -215,6 +217,7 @@ def test_execute_cached_ttl_zero_disables_cache(monkeypatch):
     assert cache_backend.get(_key_for(spec)) is None
     assert COUNTERS["misses"] == 2
     assert COUNTERS["hits"] == 0
+    assert COUNTERS["invalidations"] == 0
 
 
 def test_execute_cached_rejects_ttl_above_24h(monkeypatch):
@@ -331,3 +334,4 @@ def test_invalidate_query_helper(monkeypatch):
 
     invalidate_query("q", reg)
     assert cache_backend.get(_key_for(spec)) is None
+    assert COUNTERS["invalidations"] == 1

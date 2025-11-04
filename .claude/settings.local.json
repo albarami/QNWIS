@@ -27,7 +27,9 @@
       "Bash(\".\\.venv\\Scripts\\pytest.exe\" -v --asyncio-mode=auto --cov=src --cov-report=term-missing --ignore=tests/unit/test_mcp_error_paths.py)",
       "Bash(\".\\.venv\\Scripts\\pytest.exe\" -v --maxfail=1)",
       "Bash(\".\\.venv\\Scripts\\pytest.exe\" -v -m \"not mcp\" --cov=srcqnwisdata --cov-branch --cov-report=term-missing)",
-      "Bash(powershell -Command:*)"
+      "Bash(powershell -Command:*)",
+      "Bash(\".\\.venv\\Scripts\\pytest.exe\" -v -m \"not mcp\")",
+      "Bash(\".\\.venv\\Scripts\\pytest.exe\":*)"
     ],
     "deny": [],
     "ask": []

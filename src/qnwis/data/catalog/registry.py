@@ -16,10 +16,14 @@ class DatasetCatalog:
         """Load catalog from YAML file if present."""
         self._items: list[dict[str, Any]] = []
         catalog_path = Path(path)
-        if not catalog_path.exists():
+        if not catalog_path.exists() or not catalog_path.is_file():
             return
         try:
-            data = yaml.safe_load(catalog_path.read_text(encoding="utf-8")) or []
+            raw_text = catalog_path.read_text(encoding="utf-8")
+        except OSError:
+            return
+        try:
+            data = yaml.safe_load(raw_text) or []
         except yaml.YAMLError:
             return
         if isinstance(data, dict):

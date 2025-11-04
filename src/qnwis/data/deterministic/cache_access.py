@@ -20,7 +20,7 @@ from .registry import QueryRegistry
 MAX_CACHE_TTL_S = 24 * 60 * 60  # 24 hours
 COMPRESS_THRESHOLD_BYTES = 8 * 1024  # 8KB
 
-COUNTERS: MutableMapping[str, int] = {"hits": 0, "misses": 0}
+COUNTERS: MutableMapping[str, int] = {"hits": 0, "misses": 0, "invalidations": 0}
 
 
 class CacheDecodingError(RuntimeError):
@@ -181,6 +181,7 @@ def execute_cached(
 
     if invalidate:
         cache.delete(key)
+        COUNTERS["invalidations"] = COUNTERS.get("invalidations", 0) + 1
 
     cached = cache.get(key)
     if cached is not None:
@@ -214,3 +215,4 @@ def invalidate_query(query_id: str, registry: QueryRegistry) -> None:
     key = _key_for(spec)
     cache: CacheBackend = get_cache_backend()
     cache.delete(key)
+    COUNTERS["invalidations"] = COUNTERS.get("invalidations", 0) + 1
