@@ -105,6 +105,18 @@ class Settings(BaseSettings):
         le=1.0,
     )
 
+    # Deterministic Data Layer
+    queries_dir: str | None = Field(
+        default=None,
+        description="Directory containing query YAML definitions",
+    )
+    default_cache_ttl_s: int = Field(
+        default=300,
+        description="Default cache TTL in seconds",
+        ge=60,
+        le=86400,
+    )
+
     @field_validator("skill_inference_ratio", "skill_explicit_ratio")
     @classmethod
     def validate_skill_ratios(cls, v: float) -> float:

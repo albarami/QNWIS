@@ -25,14 +25,14 @@ def test_imports() -> None:
     import uvicorn  # noqa: F401
 
     # Verify qnwis package can be imported
-    import qnwis  # noqa: F401
+    import src.qnwis  # noqa: F401
 
     assert True, "All imports successful"
 
 
 def test_config_settings() -> None:
     """Verify settings can be loaded."""
-    from qnwis.config.settings import settings
+    from src.qnwis.config.settings import settings
 
     assert settings is not None
     assert settings.environment == "development"
