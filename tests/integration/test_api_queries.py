@@ -125,6 +125,22 @@ def test_run_query_with_param_overrides(test_env):
     assert js["query_id"] == "q_demo"
 
 
+def test_run_query_overrides_do_not_mutate_registry(test_env):
+    """Per-request overrides should not persist in the registry."""
+    c = TestClient(app)
+    r = c.post(
+        "/v1/queries/q_demo/run",
+        json={"override_params": {"max_rows": 1}},
+    )
+    assert r.status_code == 200
+
+    spec_resp = c.get("/v1/queries/q_demo")
+    assert spec_resp.status_code == 200
+    params = spec_resp.json()["query"]["params"]
+    assert "max_rows" not in params
+    assert params.get("year") == 2023
+
+
 def test_run_query_ttl_bounds(test_env, monkeypatch):
     """Test that TTL is bounded to 60-86400 seconds."""
     c = TestClient(app)
@@ -132,9 +148,15 @@ def test_run_query_ttl_bounds(test_env, monkeypatch):
 
     original_execute = queries_router.execute_cached
 
-    def wrapped_execute(query_id, registry, ttl_s=None, invalidate=False):
+    def wrapped_execute(query_id, registry, ttl_s=None, invalidate=False, spec_override=None):
         captured.append(ttl_s)
-        return original_execute(query_id, registry, ttl_s=ttl_s, invalidate=invalidate)
+        return original_execute(
+            query_id,
+            registry,
+            ttl_s=ttl_s,
+            invalidate=invalidate,
+            spec_override=spec_override,
+        )
 
     monkeypatch.setattr(queries_router, "execute_cached", wrapped_execute)
 

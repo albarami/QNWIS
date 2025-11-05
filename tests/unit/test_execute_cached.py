@@ -78,7 +78,7 @@ def test_execute_cached_uses_cache(monkeypatch):
     reg = MockRegistry()
     called = {"n": 0}
 
-    def fake_execute(query_id, registry):
+    def fake_execute(query_id, registry, spec_override=None):
         called["n"] += 1
         return QueryResult(
             query_id="q",
@@ -137,7 +137,7 @@ def test_execute_cached_invalidate_forces_refetch(monkeypatch):
     reg = MockRegistry()
     called = {"n": 0}
 
-    def fake_execute(query_id, registry):
+    def fake_execute(query_id, registry, spec_override=None):
         called["n"] += 1
         return QueryResult(
             query_id="q",
@@ -189,7 +189,7 @@ def test_execute_cached_ttl_zero_disables_cache(monkeypatch):
     reg = MockRegistry()
     calls = {"n": 0}
 
-    def fake_execute(query_id, registry):
+    def fake_execute(query_id, registry, spec_override=None):
         calls["n"] += 1
         return QueryResult(
             query_id="q",
@@ -261,7 +261,7 @@ def test_execute_cached_compresses_large_payload(monkeypatch):
     calls = {"n": 0}
     payload = "x" * (cache_module.COMPRESS_THRESHOLD_BYTES + 1024)
 
-    def fake_execute(query_id, registry):
+    def fake_execute(query_id, registry, spec_override=None):
         calls["n"] += 1
         return QueryResult(
             query_id="q",
@@ -311,7 +311,7 @@ def test_invalidate_query_helper(monkeypatch):
 
     reg = MockRegistry()
 
-    def fake_execute(query_id, registry):
+    def fake_execute(query_id, registry, spec_override=None):
         return QueryResult(
             query_id="q",
             rows=[Row(data={"value": 1})],

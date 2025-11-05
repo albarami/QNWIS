@@ -160,7 +160,7 @@ def run_query(
     """
     reg = _registry_from_env()
     try:
-        spec = reg.get(query_id)
+        base_spec = reg.get(query_id)
     except KeyError:
         raise HTTPException(status_code=404, detail="Unknown query_id") from None
     # Apply whitelist overrides if provided
@@ -179,12 +179,18 @@ def run_query(
     ttl_for_execution = coerced_ttl if coerced_ttl is not None else DEFAULT_TTL_S
 
     # Merge params deterministically
-    merged_params = dict(spec.params or {})
+    merged_params = dict(base_spec.params or {})
     merged_params.update(overrides)
-    spec.params = merged_params  # Update registry instance for this request
+    spec_for_execution = base_spec.model_copy(deep=True)
+    spec_for_execution.params = merged_params
 
     try:
-        res = execute_cached(query_id, reg, ttl_s=ttl_for_execution)
+        res = execute_cached(
+            query_id,
+            reg,
+            ttl_s=ttl_for_execution,
+            spec_override=spec_for_execution,
+        )
     except TimeoutError as exc:
         log.warning("Query %s timed out: %s", query_id, exc)
         raise HTTPException(status_code=504, detail="Query execution timed out.") from None

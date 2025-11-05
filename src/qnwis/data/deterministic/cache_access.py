@@ -160,6 +160,7 @@ def execute_cached(
     registry: QueryRegistry,
     ttl_s: int | None = 300,
     invalidate: bool = False,
+    spec_override: QuerySpec | None = None,
 ) -> QueryResult:
     """
     Execute a deterministic query with caching and freshness verification.
@@ -170,11 +171,17 @@ def execute_cached(
         ttl_s: Cache TTL in seconds (default 300). Values <= 0 disable caching.
             Maximum supported TTL is 24 hours. None stores without expiration.
         invalidate: Force cache invalidation before execution
+        spec_override: Optional QuerySpec to use for execution and cache key
+            generation. Allows per-request parameter overrides without
+            mutating the global registry state.
 
     Returns:
         QueryResult with enriched provenance and freshness warnings
     """
-    spec = registry.get(query_id)
+    spec = spec_override or registry.get(query_id)
+    if spec.id != query_id:
+        raise ValueError(f"Spec ID mismatch: expected {query_id}, got {spec.id}")
+
     key = _key_for(spec)
     cache: CacheBackend = get_cache_backend()
     normalized_ttl = _normalize_ttl(ttl_s)
@@ -197,7 +204,7 @@ def execute_cached(
 
     COUNTERS["misses"] = COUNTERS.get("misses", 0) + 1
 
-    res = execute_uncached(query_id, registry)
+    res = execute_uncached(query_id, registry, spec_override=spec)
     _enrich_provenance(res)
     res.warnings.extend(verify_freshness(spec, res))
 

@@ -113,7 +113,7 @@ def test_execute_cached_drops_corrupt_entry(monkeypatch):
     backend = CorruptBackend()
     backend.value = "{"  # corrupt JSON
 
-    def fake_execute(*_):
+    def fake_execute(*_, **__):
         return _sample_result()
 
     monkeypatch.setattr(cache_module, "execute_uncached", fake_execute)

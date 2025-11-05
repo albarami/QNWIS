@@ -53,7 +53,7 @@ def test_cache_hit_miss_and_invalidate(monkeypatch):
     store = MemoryCacheBackend()
     calls = {"n": 0}
 
-    def fake_uncached(qid, r):
+    def fake_uncached(qid, r, spec_override=None):
         calls["n"] += 1
         return _fake_result(rows=5)
 
@@ -98,7 +98,7 @@ def test_cache_compression_large_payload(monkeypatch):
     reg = type("R", (object,), {"get": lambda self, _: spec})()
     store = MemoryCacheBackend()
 
-    def fake_uncached(qid, r):
+    def fake_uncached(qid, r, spec_override=None):
         # many rows to exceed compression threshold
         return _fake_result(rows=500, year=2020)
 
@@ -134,7 +134,7 @@ def test_ttl_zero_disables_caching(monkeypatch):
     store = MemoryCacheBackend()
     calls = {"n": 0}
 
-    def fake_uncached(qid, r):
+    def fake_uncached(qid, r, spec_override=None):
         calls["n"] += 1
         return _fake_result()
 
@@ -188,7 +188,7 @@ def test_ttl_none_stores_without_expiration(monkeypatch):
     reg = type("R", (object,), {"get": lambda self, _: spec})()
     store = MemoryCacheBackend()
 
-    def fake_uncached(qid, r):
+    def fake_uncached(qid, r, spec_override=None):
         return _fake_result(rows=3)
 
     monkeypatch.setattr(cache_module, "execute_uncached", fake_uncached)

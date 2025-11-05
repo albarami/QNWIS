@@ -35,7 +35,8 @@
       "Bash(\".\\.venv\\Scripts\\pytest.exe\" -v tests/integration/test_api_queries.py)",
       "Bash(\".\\.venv\\Scripts\\pytest.exe\" -v -m \"not mcp\" --cov=srcqnwisdata --cov=srcqnwisapi --cov-branch --cov-report=term-missing)",
       "Bash(timeout 30 powershell:*)",
-      "Bash(\".\\.venv\\Scripts\\flake8.exe\" . --jobs 1)"
+      "Bash(\".\\.venv\\Scripts\\flake8.exe\" . --jobs 1)",
+      "Bash($true)"
     ],
     "deny": [],
     "ask": []
