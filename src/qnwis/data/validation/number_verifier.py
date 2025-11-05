@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from ..deterministic.models import QueryResult, QuerySpec
 
+SUM_PERCENT_TOLERANCE = 0.5
+
 
 def verify_result(spec: QuerySpec, res: QueryResult) -> list[str]:
     """Derive deterministic data quality warnings for a query result."""
@@ -17,7 +19,7 @@ def verify_result(spec: QuerySpec, res: QueryResult) -> list[str]:
                     ("%", "percent", "pct")
                 ):
                     total += float(value)
-        if abs(total - 100.0) > 0.5:
+        if abs(total - 100.0) > SUM_PERCENT_TOLERANCE:
             warnings.append(f"sum_to_one_violation:{total}")
 
     return warnings

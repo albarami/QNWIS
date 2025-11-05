@@ -62,8 +62,12 @@ def _enrich_provenance(res: QueryResult) -> None:
         try:
             cat = DatasetCatalog(cat_path)
             item = cat.match(res.provenance.locator)
-            if item and not res.provenance.license:
-                res.provenance.license = item.get("license")
+            if not item:
+                item = cat.match(res.provenance.dataset_id)
+            if item:
+                license_value = item.get("license")
+                if license_value:
+                    res.provenance.license = license_value
         except Exception:
             pass
 

@@ -7,17 +7,83 @@ Implements security via allowlist, secret redaction, and env filtering.
 
 from __future__ import annotations
 
+import importlib
 import json
 import os
 import re
 import subprocess
+from dataclasses import dataclass
 from pathlib import Path
 from subprocess import TimeoutExpired
 from typing import Any
 
-from mcp.server import Server
-from mcp.server.stdio import stdio_server
-from mcp.types import TextContent, Tool
+_MCP_AVAILABLE = False
+
+try:
+    _server_module = importlib.import_module("mcp.server")
+    _stdio_module = importlib.import_module("mcp.server.stdio")
+    _types_module = importlib.import_module("mcp.types")
+except ImportError:
+
+    @dataclass
+    class _Tool:
+        name: str
+        description: str
+        inputSchema: dict[str, Any]
+
+    @dataclass
+    class _TextContent:
+        type: str
+        text: str
+
+    class _Server:
+        """Fallback server when 'mcp' package is unavailable."""
+
+        def __init__(self, name: str) -> None:
+            self.name = name
+
+        def call_tool(self):
+            """No-op decorator when MCP is unavailable."""
+
+            def decorator(func):
+                return func
+
+            return decorator
+
+        def list_tools(self):
+            """No-op decorator for tool listing."""
+
+            def decorator(func):
+                return func
+
+            return decorator
+
+        def create_initialization_options(self) -> dict[str, Any]:
+            return {}
+
+        async def run(self, *_args: Any, **_kwargs: Any) -> None:
+            raise RuntimeError("mcp package is required to run the MCP server.")
+
+    class _MissingStdioServer:
+        async def __aenter__(self):
+            raise RuntimeError("mcp package is required to run the MCP server.")
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+    def _stdio_server() -> _MissingStdioServer:
+        return _MissingStdioServer()
+
+    Server = _Server
+    stdio_server = _stdio_server
+    TextContent = _TextContent
+    Tool = _Tool
+else:
+    _MCP_AVAILABLE = True
+    Server = _server_module.Server
+    stdio_server = _stdio_module.stdio_server
+    TextContent = _types_module.TextContent
+    Tool = _types_module.Tool
 
 ROOT = Path(__file__).resolve().parents[2]  # D:\lmis_int
 ALLOWLIST_PATH = ROOT / "tools" / "mcp" / "allowlist.json"
@@ -515,6 +581,8 @@ async def handle_call_tool(name: str, arguments: dict[str, Any]) -> list[TextCon
 
 async def main() -> None:
     """Run the MCP server."""
+    if not _MCP_AVAILABLE:
+        raise RuntimeError("mcp package is required to run the MCP server.")
     async with stdio_server() as (read_stream, write_stream):
         await server.run(read_stream, write_stream, server.create_initialization_options())
 

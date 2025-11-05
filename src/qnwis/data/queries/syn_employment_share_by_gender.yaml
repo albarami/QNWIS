@@ -1,0 +1,12 @@
+id: syn_employment_share_by_gender_2017_2024
+title: Employment share by gender (synthetic)
+description: Deterministic synthetic employment shares for 2017-2024.
+source: csv
+expected_unit: percent
+params:
+  pattern: "aggregates/employment_share_by_gender.csv"
+  select: ["year", "male_percent", "female_percent", "total_percent"]
+  year: 2023
+constraints:
+  sum_to_one: true
+  freshness_sla_days: 3650

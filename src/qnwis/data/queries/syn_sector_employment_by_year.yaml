@@ -1,0 +1,11 @@
+id: syn_sector_employment_by_year
+title: Sector employment count by year (synthetic)
+description: Employees per sector by year.
+source: csv
+expected_unit: count
+params:
+  pattern: "aggregates/sector_employment_by_year.csv"
+  select: ["year", "sector", "employees"]
+  year: 2023
+constraints:
+  freshness_sla_days: 3650

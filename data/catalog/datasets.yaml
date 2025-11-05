@@ -5,3 +5,6 @@ datasets:
   - pattern: "indicator=SL.UEM.TOTL.ZS*"
     license: "World Bank CC BY 4.0"
     notes: "Total unemployment rate (% of total labor force)"
+  - pattern: "aggregates/*.csv"
+    license: "MIT-SYNTHETIC"
+    notes: "Synthetic LMIS aggregates generated offline"

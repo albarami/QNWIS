@@ -1,0 +1,11 @@
+id: syn_company_size_distribution
+title: Company size distribution (synthetic)
+description: Number of companies per size band by year.
+source: csv
+expected_unit: count
+params:
+  pattern: "aggregates/company_size_distribution.csv"
+  select: ["year", "size_band", "companies"]
+  year: 2023
+constraints:
+  freshness_sla_days: 3650

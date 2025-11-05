@@ -36,7 +36,10 @@
       "Bash(\".\\.venv\\Scripts\\pytest.exe\" -v -m \"not mcp\" --cov=srcqnwisdata --cov=srcqnwisapi --cov-branch --cov-report=term-missing)",
       "Bash(timeout 30 powershell:*)",
       "Bash(\".\\.venv\\Scripts\\flake8.exe\" . --jobs 1)",
-      "Bash($true)"
+      "Bash($true)",
+      "Bash(\".\\.venv\\Scripts\\pytest.exe\" -v --maxfail=1 tests/unit/test_agent_*.py tests/unit/test_agents_base.py)",
+      "Bash(\".\\.venv\\Scripts\\pytest.exe\" -v --maxfail=1 tests/integration/test_agents_graphs.py)",
+      "Bash(timeout 60 powershell:*)"
     ],
     "deny": [],
     "ask": []

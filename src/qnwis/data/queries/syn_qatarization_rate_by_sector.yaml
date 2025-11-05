@@ -1,0 +1,11 @@
+id: syn_qatarization_rate_by_sector
+title: Qatarization percent by sector (synthetic)
+description: Share of Qatari employees by sector, by year.
+source: csv
+expected_unit: percent
+params:
+  pattern: "aggregates/qatarization_by_sector.csv"
+  select: ["year", "sector", "qatarization_percent"]
+  year: 2023
+constraints:
+  freshness_sla_days: 3650

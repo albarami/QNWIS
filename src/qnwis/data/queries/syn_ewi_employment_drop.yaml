@@ -1,0 +1,11 @@
+id: syn_ewi_employment_drop
+title: Early warning indicator - employment drops (synthetic)
+description: Sectoral drop percentages by year.
+source: csv
+expected_unit: percent
+params:
+  pattern: "aggregates/ewi_employment_drop.csv"
+  select: ["year", "sector", "drop_percent"]
+  year: 2023
+constraints:
+  freshness_sla_days: 3650
