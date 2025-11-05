@@ -13,6 +13,13 @@ from dataclasses import dataclass
 from typing import Any, Protocol, TypedDict
 
 from ..agents.base import AgentReport, DataClient
+from ..agents.labour_economist import LabourEconomistAgent
+from ..agents.national_strategy import NationalStrategyAgent
+from ..agents.nationalization import NationalizationAgent
+from ..agents.pattern_detective import PatternDetectiveAgent
+from ..agents.skills import SkillsAgent
+from .synthesis import CouncilReport, synthesize
+from .verification import VerificationIssue, verify_report
 
 
 class Agent(Protocol):
@@ -21,15 +28,6 @@ class Agent(Protocol):
     def run(self) -> AgentReport:
         """Execute agent and return report."""
         ...
-
-
-from ..agents.labour_economist import LabourEconomistAgent
-from ..agents.national_strategy import NationalStrategyAgent
-from ..agents.nationalization import NationalizationAgent
-from ..agents.pattern_detective import PatternDetectiveAgent
-from ..agents.skills import SkillsAgent
-from .synthesis import CouncilReport, synthesize
-from .verification import VerificationIssue, verify_report
 
 
 @dataclass

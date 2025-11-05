@@ -132,7 +132,7 @@ def build_simple_graph(
         return _LinearGraph(steps)
 
     sg = StateGraph(AgentState)
-    sg.add_node("plan", step_plan)  # type: ignore[call-overload]
+    sg.add_node("plan", step_plan)  # type: ignore[arg-type]
     sg.add_node("fetch", step_fetch)
     sg.add_node("analyze", step_analyze)
     sg.add_node("report", step_report)

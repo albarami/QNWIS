@@ -1,0 +1,11 @@
+id: syn_employment_latest_total
+title: Employment total percent (synthetic)
+description: Totals used to cross-check sum-to-one.
+source: csv
+expected_unit: percent
+params:
+  pattern: "aggregates/employment_share_by_gender.csv"
+  select: ["year","total_percent"]
+  year: 2023
+constraints:
+  freshness_sla_days: 3650

@@ -39,7 +39,11 @@
       "Bash($true)",
       "Bash(\".\\.venv\\Scripts\\pytest.exe\" -v --maxfail=1 tests/unit/test_agent_*.py tests/unit/test_agents_base.py)",
       "Bash(\".\\.venv\\Scripts\\pytest.exe\" -v --maxfail=1 tests/integration/test_agents_graphs.py)",
-      "Bash(timeout 60 powershell:*)"
+      "Bash(timeout 60 powershell:*)",
+      "Bash(.\\.venv\\Scripts\\pytest.exe:*)",
+      "Bash(Select-String -Pattern \"orchestration|TOTAL\")",
+      "Bash(\".\\.venv\\Scripts\\flake8.exe\" . --jobs 1 --select=E,W,F)",
+      "Bash(\".\\.venv\\Scripts\\flake8.exe\" tests/unit/test_triangulation_rules.py tests/unit/test_triangulation_bundle.py tests/unit/test_briefing_builder.py tests/integration/test_api_briefing.py src/qnwis/verification src/qnwis/briefing)"
     ],
     "deny": [],
     "ask": []
