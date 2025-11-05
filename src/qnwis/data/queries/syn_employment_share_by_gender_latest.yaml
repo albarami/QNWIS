@@ -1,0 +1,12 @@
+id: syn_employment_share_by_gender_latest
+title: Employment share by gender (latest, synthetic)
+description: Latest employment shares.
+source: csv
+expected_unit: percent
+params:
+  pattern: "aggregates/employment_share_by_gender.csv"
+  select: ["year", "male_percent", "female_percent", "total_percent"]
+  year: 2024
+constraints:
+  sum_to_one: true
+  freshness_sla_days: 3650

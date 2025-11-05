@@ -1,0 +1,11 @@
+id: syn_company_size_distribution_latest
+title: Company size distribution (synthetic, latest)
+description: Number of companies per size band (latest).
+source: csv
+expected_unit: count
+params:
+  pattern: "aggregates/company_size_distribution.csv"
+  select: ["year", "size_band", "companies"]
+  year: 2024
+constraints:
+  freshness_sla_days: 3650

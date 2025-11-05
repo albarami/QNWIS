@@ -1,0 +1,11 @@
+id: syn_attrition_by_sector_latest
+title: Annual attrition by sector (synthetic, latest)
+description: Synthetic attrition percentages by sector for the latest year.
+source: csv
+expected_unit: percent
+params:
+  pattern: "aggregates/attrition_by_sector.csv"
+  select: ["year", "sector", "attrition_percent"]
+  year: 2024
+constraints:
+  freshness_sla_days: 3650

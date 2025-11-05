@@ -1,0 +1,11 @@
+id: syn_sector_employment_2019
+title: Sector employment (2019, synthetic)
+description: Employees per sector in 2019 (for YoY baselines).
+source: csv
+expected_unit: count
+params:
+  pattern: "aggregates/sector_employment_by_year.csv"
+  select: ["year", "sector", "employees"]
+  year: 2019
+constraints:
+  freshness_sla_days: 3650

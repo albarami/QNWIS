@@ -1,0 +1,11 @@
+id: syn_ewi_employment_drop_latest
+title: Early warning — employment drops (synthetic, latest)
+description: Sectoral drop percentages (latest).
+source: csv
+expected_unit: percent
+params:
+  pattern: "aggregates/ewi_employment_drop.csv"
+  select: ["year", "sector", "drop_percent"]
+  year: 2024
+constraints:
+  freshness_sla_days: 3650

@@ -1,0 +1,11 @@
+id: syn_avg_salary_by_sector_2019
+title: Average salary by sector (2019, synthetic)
+description: Salary levels in 2019 (for YoY baselines).
+source: csv
+expected_unit: qar
+params:
+  pattern: "aggregates/avg_salary_by_sector.csv"
+  select: ["year", "sector", "avg_salary_qr"]
+  year: 2019
+constraints:
+  freshness_sla_days: 3650

@@ -1,0 +1,11 @@
+id: syn_avg_salary_by_sector_latest
+title: Average monthly salary by sector (synthetic, latest)
+description: Deterministic salary by sector for the latest year.
+source: csv
+expected_unit: qar
+params:
+  pattern: "aggregates/avg_salary_by_sector.csv"
+  select: ["year", "sector", "avg_salary_qr"]
+  year: 2024
+constraints:
+  freshness_sla_days: 3650

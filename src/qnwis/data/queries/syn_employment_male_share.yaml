@@ -1,0 +1,11 @@
+id: syn_employment_male_share
+title: Employment male share (synthetic)
+description: Male share only (total assumed 100%).
+source: csv
+expected_unit: percent
+params:
+  pattern: "aggregates/employment_share_by_gender.csv"
+  select: ["year", "male_percent"]
+  year: 2024
+constraints:
+  freshness_sla_days: 3650

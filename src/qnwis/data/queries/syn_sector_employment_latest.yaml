@@ -1,0 +1,11 @@
+id: syn_sector_employment_latest
+title: Sector employment count (synthetic, latest)
+description: Employees per sector (latest year).
+source: csv
+expected_unit: count
+params:
+  pattern: "aggregates/sector_employment_by_year.csv"
+  select: ["year", "sector", "employees"]
+  year: 2024
+constraints:
+  freshness_sla_days: 3650

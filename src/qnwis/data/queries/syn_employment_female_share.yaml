@@ -1,0 +1,11 @@
+id: syn_employment_female_share
+title: Employment female share (synthetic)
+description: Female share only (total assumed 100%).
+source: csv
+expected_unit: percent
+params:
+  pattern: "aggregates/employment_share_by_gender.csv"
+  select: ["year", "female_percent"]
+  year: 2024
+constraints:
+  freshness_sla_days: 3650

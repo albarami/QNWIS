@@ -11,20 +11,34 @@ def test_yaml_queries_load_successfully() -> None:
     """
     Verify all synthetic YAML queries load into registry.
 
-    Checks that QueryRegistry can parse and load all 8 synthetic queries.
+    Checks that QueryRegistry can parse and load the synthetic queries
+    required by the DataAPI facade.
     """
     reg = QueryRegistry("src/qnwis/data/queries")
     reg.load_all()
 
     needed = {
         "syn_employment_share_by_gender_2017_2024",
+        "syn_employment_share_by_gender_latest",
+        "syn_employment_male_share",
+        "syn_employment_female_share",
+        "syn_employment_latest_total",
         "syn_unemployment_rate_gcc_latest",
+        "syn_unemployment_gcc_latest",
         "syn_qatarization_rate_by_sector",
+        "syn_qatarization_by_sector_latest",
+        "syn_qatarization_components",
         "syn_avg_salary_by_sector",
+        "syn_avg_salary_by_sector_latest",
         "syn_attrition_rate_by_sector",
+        "syn_attrition_by_sector_latest",
         "syn_company_size_distribution",
+        "syn_company_size_distribution_latest",
         "syn_sector_employment_by_year",
+        "syn_sector_employment_latest",
+        "syn_sector_employment_2019",
         "syn_ewi_employment_drop",
+        "syn_ewi_employment_drop_latest",
     }
 
     ids = set(reg.all_ids())
@@ -78,13 +92,26 @@ def test_query_params_have_valid_patterns() -> None:
 
     expected_patterns = {
         "syn_employment_share_by_gender_2017_2024": "aggregates/employment_share_by_gender.csv",
+        "syn_employment_share_by_gender_latest": "aggregates/employment_share_by_gender.csv",
+        "syn_employment_male_share": "aggregates/employment_share_by_gender.csv",
+        "syn_employment_female_share": "aggregates/employment_share_by_gender.csv",
+        "syn_employment_latest_total": "aggregates/employment_share_by_gender.csv",
         "syn_unemployment_rate_gcc_latest": "aggregates/unemployment_gcc_latest.csv",
+        "syn_unemployment_gcc_latest": "aggregates/unemployment_gcc_latest.csv",
         "syn_qatarization_rate_by_sector": "aggregates/qatarization_by_sector.csv",
+        "syn_qatarization_by_sector_latest": "aggregates/qatarization_by_sector.csv",
+        "syn_qatarization_components": "aggregates/qatarization_by_sector.csv",
         "syn_avg_salary_by_sector": "aggregates/avg_salary_by_sector.csv",
+        "syn_avg_salary_by_sector_latest": "aggregates/avg_salary_by_sector.csv",
         "syn_attrition_rate_by_sector": "aggregates/attrition_by_sector.csv",
+        "syn_attrition_by_sector_latest": "aggregates/attrition_by_sector.csv",
         "syn_company_size_distribution": "aggregates/company_size_distribution.csv",
+        "syn_company_size_distribution_latest": "aggregates/company_size_distribution.csv",
         "syn_sector_employment_by_year": "aggregates/sector_employment_by_year.csv",
+        "syn_sector_employment_latest": "aggregates/sector_employment_by_year.csv",
+        "syn_sector_employment_2019": "aggregates/sector_employment_by_year.csv",
         "syn_ewi_employment_drop": "aggregates/ewi_employment_drop.csv",
+        "syn_ewi_employment_drop_latest": "aggregates/ewi_employment_drop.csv",
     }
 
     for qid, expected_pattern in expected_patterns.items():
