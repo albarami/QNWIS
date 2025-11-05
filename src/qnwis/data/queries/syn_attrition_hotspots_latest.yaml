@@ -1,0 +1,17 @@
+id: syn_attrition_hotspots_latest
+title: Attrition hotspots (latest year)
+description: Top 5 sectors by attrition rate (synthetic).
+source: csv
+expected_unit: percent
+params:
+  pattern: "aggregates/attrition_by_sector.csv"
+  select: ["year", "sector", "attrition_percent"]
+  year: 2024
+constraints:
+  freshness_sla_days: 3650
+postprocess:
+  - name: top_n
+    params:
+      sort_key: "attrition_percent"
+      n: 5
+      descending: true

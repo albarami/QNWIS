@@ -21,6 +21,12 @@ class Freshness(BaseModel):
     updated_at: str | None = None
 
 
+class TransformStep(BaseModel):
+    """Single transform step in postprocess pipeline."""
+    name: str  # must exist in transforms catalog
+    params: dict[str, Any] = Field(default_factory=dict)
+
+
 class QuerySpec(BaseModel):
     id: str
     title: str
@@ -29,6 +35,7 @@ class QuerySpec(BaseModel):
     params: dict[str, Any] = Field(default_factory=dict)
     expected_unit: UnitType = "unknown"
     constraints: dict[str, Any] = Field(default_factory=dict)  # e.g. {"sum_to_one": True}
+    postprocess: list[TransformStep] = Field(default_factory=list)  # optional transform pipeline
 
 
 class Row(BaseModel):

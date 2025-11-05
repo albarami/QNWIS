@@ -1,0 +1,21 @@
+id: syn_attrition_rolling3_healthcare
+title: Attrition (Healthcare) — 3-year rolling average
+description: Rolling 3-year average of attrition in Healthcare sector.
+source: csv
+expected_unit: percent
+params:
+  pattern: "aggregates/attrition_by_sector.csv"
+  select: ["year", "sector", "attrition_percent"]
+constraints:
+  freshness_sla_days: 3650
+postprocess:
+  - name: filter_equals
+    params:
+      where:
+        sector: "Healthcare"
+  - name: rolling_avg
+    params:
+      key: "attrition_percent"
+      sort_keys: ["year"]
+      window: 3
+      out_key: "rolling_avg"

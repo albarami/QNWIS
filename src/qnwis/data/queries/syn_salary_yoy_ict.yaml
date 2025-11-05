@@ -1,0 +1,20 @@
+id: syn_salary_yoy_ict
+title: Average salary (ICT) — YoY
+description: YoY growth of average salary in ICT sector.
+source: csv
+expected_unit: qar
+params:
+  pattern: "aggregates/avg_salary_by_sector.csv"
+  select: ["year", "sector", "avg_salary_qr"]
+constraints:
+  freshness_sla_days: 3650
+postprocess:
+  - name: filter_equals
+    params:
+      where:
+        sector: "ICT"
+  - name: yoy
+    params:
+      key: "avg_salary_qr"
+      sort_keys: ["year"]
+      out_key: "yoy_percent"

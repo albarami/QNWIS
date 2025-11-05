@@ -99,16 +99,62 @@ def test_execute_world_bank_branch(monkeypatch):
 
 
 def test_execute_unknown_source_raises(monkeypatch):
-    spec = type(
-        "Spec",
-        (object,),
-        {
-            "id": "q4",
-            "source": "unknown",
-            "constraints": {},
-            "expected_unit": "percent",
-        },
-    )()
+    class DummySpec:
+        id = "q4"
+        source = "unknown"
+        postprocess: list[models_mod.TransformStep] = []
+
+        def model_copy(self, deep: bool = False):
+            return self
+
+    spec = DummySpec()
     registry = type("R", (object,), {"get": lambda self, _: spec})()
     with pytest.raises(ValueError):
         accessmod.execute("q4", registry)
+
+
+def test_execute_traces_transforms_when_enabled(monkeypatch):
+    spec = models_mod.QuerySpec(
+        id="q5",
+        title="trace test",
+        description="trace transforms",
+        source="csv",
+        params={"pattern": "z.csv"},
+        postprocess=[
+            models_mod.TransformStep(name="select", params={"columns": ["value"]}),
+            models_mod.TransformStep(name="top_n", params={"sort_key": "value", "n": 1}),
+        ],
+    )
+
+    class Registry:
+        def get(self, _):
+            return spec
+
+    registry = Registry()
+
+    monkeypatch.setenv("QNWIS_TRANSFORM_TRACE", "1")
+
+    def fake_run_csv_query(s):
+        return models_mod.QueryResult(
+            query_id=s.id,
+            rows=[
+                models_mod.Row(data={"value": 2}),
+                models_mod.Row(data={"value": 1}),
+            ],
+            unit="count",
+            provenance=models_mod.Provenance(
+                source="csv",
+                dataset_id="z",
+                locator="z.csv",
+                fields=["value"],
+            ),
+            freshness=models_mod.Freshness(asof_date="2024-01-01"),
+        )
+
+    monkeypatch.setattr(accessmod, "run_csv_query", fake_run_csv_query)
+    monkeypatch.setattr(accessmod, "verify_result", lambda *_: [])
+
+    result = accessmod.execute("q5", registry)
+    assert [row.data["value"] for row in result.rows] == [2]
+    assert "transform:select" in result.warnings
+    assert "transform:top_n" in result.warnings

@@ -1,0 +1,21 @@
+id: syn_sector_employment_rolling3_finance
+title: Sector employment (Finance) — 3-year rolling average
+description: Rolling 3-year average of employees in Finance sector.
+source: csv
+expected_unit: count
+params:
+  pattern: "aggregates/sector_employment_by_year.csv"
+  select: ["year", "sector", "employees"]
+constraints:
+  freshness_sla_days: 3650
+postprocess:
+  - name: filter_equals
+    params:
+      where:
+        sector: "Finance"
+  - name: rolling_avg
+    params:
+      key: "employees"
+      sort_keys: ["year"]
+      window: 3
+      out_key: "rolling_avg"

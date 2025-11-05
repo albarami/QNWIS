@@ -1,0 +1,17 @@
+id: syn_ewi_hotlist_latest
+title: Establishment with Issues (EWI) hotlist
+description: Top 5 sectors by EWI count (synthetic).
+source: csv
+expected_unit: count
+params:
+  pattern: "aggregates/ewi_employment_drop.csv"
+  select: ["year", "sector", "drop_percent"]
+  year: 2024
+constraints:
+  freshness_sla_days: 3650
+postprocess:
+  - name: top_n
+    params:
+      sort_key: "drop_percent"
+      n: 5
+      descending: true

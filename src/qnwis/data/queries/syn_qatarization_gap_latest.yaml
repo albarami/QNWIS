@@ -1,0 +1,17 @@
+id: syn_qatarization_gap_latest
+title: Qatarization gap (latest year)
+description: Sectors furthest from Qatarization target (synthetic).
+source: csv
+expected_unit: percent
+params:
+  pattern: "aggregates/qatarization_by_sector.csv"
+  select: ["year", "sector", "qatarization_percent"]
+  year: 2024
+constraints:
+  freshness_sla_days: 3650
+postprocess:
+  - name: top_n
+    params:
+      sort_key: "qatarization_percent"
+      n: 5
+      descending: false

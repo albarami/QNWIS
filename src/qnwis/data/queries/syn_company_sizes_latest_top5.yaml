@@ -1,0 +1,17 @@
+id: syn_company_sizes_latest_top5
+title: Company sizes (latest) — top 5
+description: Top 5 company size categories by count (synthetic).
+source: csv
+expected_unit: count
+params:
+  pattern: "aggregates/company_size_distribution.csv"
+  select: ["year", "size_band", "companies"]
+  year: 2024
+constraints:
+  freshness_sla_days: 3650
+postprocess:
+  - name: top_n
+    params:
+      sort_key: "companies"
+      n: 5
+      descending: true

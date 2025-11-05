@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import os
+
 from ..connectors.csv_catalog import run_csv_query
 from ..connectors.world_bank_det import run_world_bank_query
 from ..validation.number_verifier import verify_result
 from .models import QueryResult, QuerySpec
+from .postprocess import apply_postprocess
 from .registry import QueryRegistry
 
 
@@ -27,7 +30,8 @@ def execute(
     Raises:
         ValueError: If the query source type is not supported.
     """
-    spec = spec_override or registry.get(query_id)
+    source_spec = spec_override or registry.get(query_id)
+    spec = source_spec.model_copy(deep=True)
     if spec.id != query_id:
         raise ValueError(f"Spec ID mismatch: expected {query_id}, got {spec.id}")
 
@@ -37,6 +41,13 @@ def execute(
         result = run_world_bank_query(spec)
     else:
         raise ValueError(f"Unsupported source: {spec.source}")
+
+    # Apply postprocess transforms if defined
+    if spec.postprocess:
+        processed_rows, trace = apply_postprocess(result.rows, spec.postprocess)
+        result.rows = processed_rows
+        if os.getenv("QNWIS_TRANSFORM_TRACE") == "1":
+            result.warnings.extend(f"transform:{name}" for name in trace)
 
     result.warnings.extend(verify_result(spec, result))
     return result

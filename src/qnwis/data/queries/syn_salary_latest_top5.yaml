@@ -1,0 +1,17 @@
+id: syn_salary_latest_top5
+title: Average salary by sector (latest) — top 5
+description: Top 5 sectors by average salary (synthetic).
+source: csv
+expected_unit: qar
+params:
+  pattern: "aggregates/avg_salary_by_sector.csv"
+  select: ["year", "sector", "avg_salary_qr"]
+  year: 2024
+constraints:
+  freshness_sla_days: 3650
+postprocess:
+  - name: top_n
+    params:
+      sort_key: "avg_salary_qr"
+      n: 5
+      descending: true

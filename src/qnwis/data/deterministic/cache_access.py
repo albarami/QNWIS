@@ -44,8 +44,18 @@ def _canonicalize_params(value: Any) -> Any:
 def _key_for(spec: QuerySpec) -> str:
     """Generate deterministic cache key from query spec."""
     normalized_params = _canonicalize_params(spec.params or {})
+    # Include postprocess in cache key to differentiate transform pipelines
+    postprocess_data = [
+        {"name": step.name, "params": _canonicalize_params(step.params)}
+        for step in (spec.postprocess or [])
+    ]
     payload = json.dumps(
-        {"id": spec.id, "source": spec.source, "params": normalized_params},
+        {
+            "id": spec.id,
+            "source": spec.source,
+            "params": normalized_params,
+            "postprocess": postprocess_data,
+        },
         sort_keys=True,
         separators=(",", ":"),
         default=str,
@@ -182,7 +192,8 @@ def execute_cached(
     Returns:
         QueryResult with enriched provenance and freshness warnings
     """
-    spec = spec_override or registry.get(query_id)
+    source_spec = spec_override or registry.get(query_id)
+    spec = source_spec.model_copy(deep=True)
     if spec.id != query_id:
         raise ValueError(f"Spec ID mismatch: expected {query_id}, got {spec.id}")
 
@@ -222,7 +233,7 @@ def execute_cached(
 
 def invalidate_query(query_id: str, registry: QueryRegistry) -> None:
     """Convenience helper to invalidate a cached deterministic query."""
-    spec = registry.get(query_id)
+    spec = registry.get(query_id).model_copy(deep=True)
     key = _key_for(spec)
     cache: CacheBackend = get_cache_backend()
     cache.delete(key)

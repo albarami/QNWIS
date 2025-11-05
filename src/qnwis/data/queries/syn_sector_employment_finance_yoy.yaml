@@ -1,0 +1,20 @@
+id: syn_sector_employment_finance_yoy
+title: Sector employment (Finance) — YoY
+description: YoY growth of employees in Finance sector.
+source: csv
+expected_unit: count
+params:
+  pattern: "aggregates/sector_employment_by_year.csv"
+  select: ["year", "sector", "employees"]
+constraints:
+  freshness_sla_days: 3650
+postprocess:
+  - name: filter_equals
+    params:
+      where:
+        sector: "Finance"
+  - name: yoy
+    params:
+      key: "employees"
+      sort_keys: ["year"]
+      out_key: "yoy_percent"

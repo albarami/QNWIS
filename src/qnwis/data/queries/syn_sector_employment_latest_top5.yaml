@@ -1,0 +1,17 @@
+id: syn_sector_employment_latest_top5
+title: Sector employment (latest) — top 5
+description: Deterministic top-5 sectors by employees (synthetic).
+source: csv
+expected_unit: count
+params:
+  pattern: "aggregates/sector_employment_by_year.csv"
+  select: ["year", "sector", "employees"]
+  year: 2024
+constraints:
+  freshness_sla_days: 3650
+postprocess:
+  - name: top_n
+    params:
+      sort_key: "employees"
+      n: 5
+      descending: true

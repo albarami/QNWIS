@@ -46,7 +46,8 @@
       "Bash(\".\\.venv\\Scripts\\flake8.exe\" tests/unit/test_triangulation_rules.py tests/unit/test_triangulation_bundle.py tests/unit/test_briefing_builder.py tests/integration/test_api_briefing.py src/qnwis/verification src/qnwis/briefing)",
       "Bash(..venvScriptsruff.exe check .)",
       "Bash(..venvScriptsflake8.exe .)",
-      "Bash(.\\.venv\\Scripts\\mypy.exe:*)"
+      "Bash(.\\.venv\\Scripts\\mypy.exe:*)",
+      "Bash(..venvScriptspytest.exe -v -m \"not mcp\" tests/unit/test_transforms_base.py tests/unit/test_postprocess_pipeline.py)"
     ],
     "deny": [],
     "ask": []

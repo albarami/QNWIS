@@ -1,0 +1,20 @@
+id: syn_sector_employment_2019_vs_2024
+title: Sector employment comparison 2019 vs 2024
+description: Top 5 sectors comparing 2019 and 2024 employment levels.
+source: csv
+expected_unit: count
+params:
+  pattern: "aggregates/sector_employment_by_year.csv"
+  select: ["year", "sector", "employees"]
+constraints:
+  freshness_sla_days: 3650
+postprocess:
+  - name: filter_equals
+    params:
+      where:
+        year: 2024
+  - name: top_n
+    params:
+      sort_key: "employees"
+      n: 5
+      descending: true

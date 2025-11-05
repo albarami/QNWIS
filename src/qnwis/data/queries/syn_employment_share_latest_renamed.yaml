@@ -1,0 +1,22 @@
+id: syn_employment_share_latest_renamed
+title: Employment share by sector (latest) — renamed columns
+description: Employment share with user-friendly column names.
+source: csv
+expected_unit: percent
+params:
+  pattern: "aggregates/sector_employment_by_year.csv"
+  select: ["year", "sector", "employees"]
+  year: 2024
+constraints:
+  freshness_sla_days: 3650
+postprocess:
+  - name: share_of_total
+    params:
+      group_keys: ["year"]
+      value_key: "employees"
+      out_key: "share_percent"
+  - name: rename_columns
+    params:
+      mapping:
+        employees: "total_employees"
+        share_percent: "employment_share_pct"

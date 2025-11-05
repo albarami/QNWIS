@@ -1,0 +1,20 @@
+id: syn_sector_employment_energy_yoy
+title: Sector employment (Energy) — YoY
+description: YoY growth of employees in Energy sector.
+source: csv
+expected_unit: count
+params:
+  pattern: "aggregates/sector_employment_by_year.csv"
+  select: ["year", "sector", "employees"]
+constraints:
+  freshness_sla_days: 3650
+postprocess:
+  - name: filter_equals
+    params:
+      where:
+        sector: "Energy"
+  - name: yoy
+    params:
+      key: "employees"
+      sort_keys: ["year"]
+      out_key: "yoy_percent"

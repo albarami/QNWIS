@@ -564,6 +564,226 @@ class EnhancedLabourEconomist(LabourEconomistAgent):
 
 ---
 
+## Using `spec_override.postprocess`
+
+The DDL supports **runtime transform pipelines** via the `spec_override` parameter. This allows you to apply post-processing transforms to query results without modifying YAML query definitions.
+
+### Basic Usage
+
+```python
+from src.qnwis.data.deterministic.cache_access import execute_cached
+from src.qnwis.data.deterministic.models import QuerySpec, TransformStep
+from src.qnwis.data.deterministic.registry import QueryRegistry
+
+# Load registry
+registry = QueryRegistry("src/qnwis/data/queries")
+registry.load_all()
+
+# Get base query spec
+base_spec = registry.get("syn_sector_employment_by_year")
+
+# Create override with custom transforms
+spec_override = base_spec.model_copy(deep=True)
+spec_override.postprocess = [
+    TransformStep(name="filter_equals", params={"where": {"year": 2024}}),
+    TransformStep(name="top_n", params={"sort_key": "employees", "n": 5}),
+]
+
+# Execute with override
+result = execute_cached("syn_sector_employment_by_year", registry, spec_override=spec_override)
+```
+
+### Available Transforms
+
+All transforms from `src/qnwis/data/transforms/` are available. See [transforms_catalog.md](./transforms_catalog.md) for complete reference.
+
+**Core transforms:**
+- `select` — Pick columns
+- `filter_equals` — Filter by exact match
+- `rename_columns` — Rename columns
+- `to_percent` — Scale to percentages
+- `top_n` — Sort and limit
+- `share_of_total` — Compute percentages within groups
+- `yoy` — Year-over-year growth
+- `rolling_avg` — Rolling averages
+
+### Pipeline Composition
+
+Transforms execute **in order**, with each receiving the output of the previous:
+
+```python
+spec_override.postprocess = [
+    # Step 1: Filter to Energy sector
+    TransformStep(name="filter_equals", params={"where": {"sector": "Energy"}}),
+    
+    # Step 2: Compute YoY growth
+    TransformStep(name="yoy", params={
+        "key": "employees",
+        "sort_keys": ["year"],
+        "out_key": "yoy_percent"
+    }),
+    
+    # Step 3: Select relevant columns
+    TransformStep(name="select", params={"columns": ["year", "employees", "yoy_percent"]}),
+    
+    # Step 4: Get last 5 years
+    TransformStep(name="top_n", params={"sort_key": "year", "n": 5}),
+]
+```
+
+### Cache Behavior
+
+**Important:** Different `postprocess` pipelines generate **different cache keys**. This ensures correct caching behavior:
+
+```python
+# These create separate cache entries
+result1 = execute_cached(qid, registry, spec_override=override_with_filter)
+result2 = execute_cached(qid, registry, spec_override=override_with_yoy)
+```
+
+Each unique combination of:
+- Query ID
+- Source type
+- Parameters
+- **Postprocess steps** (name + params)
+
+...produces a distinct cache key.
+
+### Immutability Guarantee
+
+`spec_override` **never mutates** the registry. Original query definitions remain unchanged:
+
+```python
+base_spec = registry.get("my_query")
+spec_override = base_spec.model_copy(deep=True)  # Deep copy!
+spec_override.postprocess = [...]
+
+# Registry spec is unchanged
+assert registry.get("my_query").postprocess == base_spec.postprocess
+```
+
+### Example: Dynamic Year-over-Year
+
+```python
+def get_sector_yoy(sector: str, registry: QueryRegistry):
+    """Get YoY growth for a specific sector."""
+    base_spec = registry.get("syn_sector_employment_by_year")
+    
+    spec_override = base_spec.model_copy(deep=True)
+    spec_override.postprocess = [
+        TransformStep(name="filter_equals", params={"where": {"sector": sector}}),
+        TransformStep(name="yoy", params={
+            "key": "employees",
+            "sort_keys": ["year"],
+            "out_key": "yoy_percent"
+        }),
+    ]
+    
+    return execute_cached("syn_sector_employment_by_year", registry, spec_override=spec_override)
+
+# Usage
+energy_yoy = get_sector_yoy("Energy", registry)
+for row in energy_yoy.rows:
+    print(f"{row.data['year']}: {row.data.get('yoy_percent', 'N/A')}%")
+```
+
+### Example: Top-N with Shares
+
+```python
+def get_top_sectors_with_share(year: int, n: int, registry: QueryRegistry):
+    """Get top N sectors with employment share percentages."""
+    base_spec = registry.get("syn_sector_employment_by_year")
+    
+    spec_override = base_spec.model_copy(deep=True)
+    spec_override.postprocess = [
+        # Filter to target year
+        TransformStep(name="filter_equals", params={"where": {"year": year}}),
+        
+        # Compute share of total
+        TransformStep(name="share_of_total", params={
+            "group_keys": ["year"],
+            "value_key": "employees",
+            "out_key": "share_percent"
+        }),
+        
+        # Get top N by employees
+        TransformStep(name="top_n", params={"sort_key": "employees", "n": n}),
+        
+        # Clean up output
+        TransformStep(name="select", params={"columns": ["sector", "employees", "share_percent"]}),
+    ]
+    
+    return execute_cached("syn_sector_employment_by_year", registry, spec_override=spec_override)
+
+# Usage
+top5 = get_top_sectors_with_share(2024, 5, registry)
+```
+
+### Example: Rolling Averages
+
+```python
+def get_rolling_avg_salary(sector: str, window: int, registry: QueryRegistry):
+    """Get rolling average salary for a sector."""
+    base_spec = registry.get("syn_avg_salary_by_sector")
+    
+    spec_override = base_spec.model_copy(deep=True)
+    spec_override.postprocess = [
+        TransformStep(name="filter_equals", params={"where": {"sector": sector}}),
+        TransformStep(name="rolling_avg", params={
+            "key": "avg_salary",
+            "sort_keys": ["year"],
+            "window": window,
+            "out_key": "rolling_avg"
+        }),
+    ]
+    
+    return execute_cached("syn_avg_salary_by_sector", registry, spec_override=spec_override)
+```
+
+### Best Practices
+
+1. **Deep copy first:** Always use `model_copy(deep=True)` to avoid registry mutation
+2. **Filter early:** Apply `filter_equals` before expensive transforms
+3. **Select late:** Use `select` near end to keep columns during intermediate steps
+4. **Test transforms:** Use `tests/unit/test_transforms_base.py` patterns
+5. **Document pipelines:** Complex pipelines should have inline comments
+
+### Performance Notes
+
+- **Memory:** Transforms operate on full result set in memory
+- **Order matters:** Later transforms can't undo earlier ones
+- **Caching:** Each unique pipeline cached separately
+- **Determinism:** Same inputs always produce same outputs (no randomness)
+
+### Validation
+
+All transform parameters validated by Pydantic:
+
+```python
+# This will raise ValidationError
+TransformStep(name="top_n", params={"sort_key": "value", "n": "five"})  # ❌ n must be int
+
+# This will raise KeyError
+TransformStep(name="unknown_transform", params={})  # ❌ transform doesn't exist
+```
+
+### Integration with Data API
+
+The typed Data API uses `spec_override` internally for convenience methods:
+
+```python
+# Inside DataAPI.top_sectors_by_employment()
+spec_override = base_spec.model_copy(deep=True)
+spec_override.postprocess = [
+    TransformStep(name="filter_equals", params={"where": {"year": year}}),
+    TransformStep(name="top_n", params={"sort_key": "employees", "n": top_n}),
+]
+```
+
+This pattern allows API methods to provide convenience wrappers without YAML query proliferation.
+
+---
+
 ## Troubleshooting
 
 ### `KeyError: No query ID found for key=...`

@@ -1,0 +1,21 @@
+id: syn_employment_share_bounds_check
+title: Employment share bounds check (latest)
+description: Verify employment shares sum to 100% (synthetic).
+source: csv
+expected_unit: percent
+params:
+  pattern: "aggregates/sector_employment_by_year.csv"
+  select: ["year", "sector", "employees"]
+  year: 2024
+constraints:
+  freshness_sla_days: 3650
+  sum_to_one: true
+postprocess:
+  - name: share_of_total
+    params:
+      group_keys: ["year"]
+      value_key: "employees"
+      out_key: "share_percent"
+  - name: select
+    params:
+      columns: ["sector", "share_percent"]

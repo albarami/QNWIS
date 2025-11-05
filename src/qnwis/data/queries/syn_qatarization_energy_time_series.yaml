@@ -1,0 +1,15 @@
+id: syn_qatarization_energy_time_series
+title: Qatarization (Energy) — time series
+description: Qatarization rate trend in Energy sector.
+source: csv
+expected_unit: percent
+params:
+  pattern: "aggregates/qatarization_by_sector.csv"
+  select: ["year", "sector", "qatarization_percent"]
+constraints:
+  freshness_sla_days: 3650
+postprocess:
+  - name: filter_equals
+    params:
+      where:
+        sector: "Energy"

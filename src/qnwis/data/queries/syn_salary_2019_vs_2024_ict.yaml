@@ -1,0 +1,20 @@
+id: syn_salary_2019_vs_2024_ict
+title: ICT salary comparison 2019 vs 2024
+description: ICT sector salary growth over 5 years.
+source: csv
+expected_unit: qar
+params:
+  pattern: "aggregates/avg_salary_by_sector.csv"
+  select: ["year", "sector", "avg_salary_qr"]
+constraints:
+  freshness_sla_days: 3650
+postprocess:
+  - name: filter_equals
+    params:
+      where:
+        sector: "ICT"
+  - name: yoy
+    params:
+      key: "avg_salary_qr"
+      sort_keys: ["year"]
+      out_key: "yoy_percent"

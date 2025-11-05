@@ -1,0 +1,21 @@
+id: syn_qatarization_energy_share_of_total
+title: Qatarization (Energy) share of total Qatari employees
+description: Energy sector share of all Qatari employees (synthetic).
+source: csv
+expected_unit: percent
+params:
+  pattern: "aggregates/qatarization_by_sector.csv"
+  select: ["year", "sector", "qataris"]
+  year: 2024
+constraints:
+  freshness_sla_days: 3650
+postprocess:
+  - name: share_of_total
+    params:
+      group_keys: ["year"]
+      value_key: "qataris"
+      out_key: "share_percent"
+  - name: filter_equals
+    params:
+      where:
+        sector: "Energy"
