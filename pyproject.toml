@@ -1,7 +1,7 @@
 [project]
 name = "qnwis"
 version = "0.1.0"
-description = "Qatar National Workforce Intelligence System - Multi-Agent Matching Engine"
+description = "Qatar National Workforce Intelligence System - Data Integration & Multi-Agent Analysis Platform"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -46,7 +46,7 @@ package-dir = {"" = "src"}
 
 [tool.pytest.ini_options]
 minversion = "7.0"
-addopts = "-m 'not mcp' --asyncio-mode=auto --cov=src/qnwis/data --cov-branch --cov-report=term-missing"
+addopts = "-m 'not mcp' --asyncio-mode=auto --cov=src/qnwis/data --cov=src/qnwis/agents --cov-branch --cov-report=term-missing"
 testpaths = ["tests"]
 pythonpath = "."
 asyncio_mode = "auto"

@@ -1,32 +1,58 @@
 # QNWIS - Qatar National Workforce Intelligence System
 
-Production Multi-Agent Matching Engine for Qatar's Ministry of Labour.
+Production-grade workforce data intelligence and analysis platform for Qatar's Ministry of Labour.
 
 ## System Overview
 
-A high-performance, bias-mitigated job matching system implementing:
-- **6 specialized agents** with LangGraph DAG orchestration
-- **Stage-based processing**: Stage A (<50ms), Stage B (<60ms), Stage C (<40ms)
-- **Intelligent skill inference**: 80% inferred, 20% explicit
-- **Bias mitigation**: AraWEAT/SEAT scores <0.15
-- **Performance targets**: NDCG@10 0.70-0.80, MRR >0.75
+A deterministic data integration and multi-agent analysis system providing:
+- **5 specialized analytical agents** for labour market intelligence
+- **Deterministic data layer** with caching, freshness tracking, and provenance
+- **FastAPI-based query execution** with TTL-bounded caching and override controls
+- **LangGraph orchestration** for multi-step analytical workflows
+- **High coverage & type safety**: 90%+ test coverage, strict mypy typing
+
+## Core Components
+
+### Data Layer
+- **Deterministic Query API**: Pre-defined queries with caching, normalization, and derived metrics
+- **Connectors**: World Bank, Qatar Open Data, CSV catalog integration
+- **Cache Backends**: Memory and Redis with TTL management
+- **Freshness Tracking**: Data staleness detection and SLA warnings
+- **Dataset Catalog**: License enrichment and metadata registry
+
+### Agents Layer
+- **LabourEconomistAgent**: Employment trends and YoY growth analysis
+- **NationalizationAgent**: GCC unemployment comparisons and rankings
+- **SkillsAgent**: Gender distribution and skills proxy analysis
+- **PatternDetectiveAgent**: Data quality validation and consistency checks
+- **NationalStrategyAgent**: Strategic overview combining multiple sources
+
+### API Layer
+- **FastAPI Application**: Async endpoints with request ID tracking
+- **Query Endpoints**: List, run, and invalidate cached queries
+- **Health Checks**: System status and dependency monitoring
+- **Rate Limiting**: Optional RPS throttling
 
 ## Project Structure
 
 ```
 lmis_int/
-├── src/
-│   └── qnwis/              # Main application package
-│       ├── agents/         # 6 specialized agents
-│       ├── models/         # Pydantic data models
-│       ├── services/       # Business logic services
-│       ├── api/            # FastAPI endpoints
-│       ├── db/             # Database models and migrations
-│       └── config/         # Configuration management
-├── tests/                  # Pytest test suite
-├── docs/                   # Technical documentation
-├── external_data/          # External datasets
-└── metadata/               # System metadata
+├── src/qnwis/
+│   ├── agents/             # 5 analytical agents + LangGraph workflows
+│   ├── data/
+│   │   ├── deterministic/  # Query registry, cache, normalization
+│   │   ├── derived/        # Metrics computation (share, YoY, CAGR)
+│   │   ├── connectors/     # External data source integrations
+│   │   ├── catalog/        # Dataset metadata and licensing
+│   │   └── validation/     # Data quality verification
+│   ├── api/                # FastAPI routers and models
+│   ├── utils/              # Request ID, rate limiting, logging
+│   └── config/             # Settings management
+├── tests/
+│   ├── unit/               # 90%+ coverage unit tests
+│   └── integration/        # End-to-end API and agent tests
+├── docs/                   # Implementation reviews and guides
+└── tools/mcp/              # Model Context Protocol server
 
 ```
 
@@ -67,29 +93,30 @@ lmis_int/
 ## Technology Stack
 
 - **Framework**: FastAPI with async/await
-- **Database**: PostgreSQL with SQLAlchemy ORM
-- **Cache**: Redis for performance optimization
-- **Orchestration**: LangGraph for agent DAG
-- **Testing**: pytest with async support
+- **Data Integration**: World Bank API, Qatar Open Data Portal, CSV catalogs
+- **Cache**: Redis + in-memory backends with TTL management
+- **Orchestration**: LangGraph for multi-agent workflows
+- **Testing**: pytest with 90%+ coverage (pytest-asyncio, pytest-cov)
 - **Type Checking**: mypy strict mode
 - **Linting**: ruff + flake8
-- **Code Formatting**: black + isort
+- **Quality Gates**: Secret scanning, coverage enforcement, Windows compatibility
 
-## Performance Requirements
+## Key Features
 
-- Stage A latency: <50ms
-- Stage B latency: <60ms
-- Stage C latency: <40ms
-- NDCG@10: 0.70-0.80
-- MRR: >0.75
+- **Deterministic Execution**: All agents use pre-defined cached queries (no SQL/RAG in agent code)
+- **Provenance Tracking**: Every insight includes evidence chain (dataset, locator, fields)
+- **Normalization & Metrics**: Safe parameter/row normalization, derived metrics (share, YoY, CAGR)
+- **Request Lifecycle**: Request ID propagation, TTL bounds (60-86400s), override whitelisting
+- **Security**: Secret redaction, allowlist-based file access, no execution in MCP tools
 
 ## Documentation
 
-Detailed documentation available in `docs/`:
-- `Enhanced_Cutting_Edge_Multi_Agent_Matching_1.md` - Core specifications
-- `Complete_Implementation_Plan_And_Development_Roadmap.md` - Technical details
-- `Complete_Database_Schema_Document.md` - Database structure
-- `Complete_API_Specification.md` - API contracts
+Key documentation available in `docs/`:
+- `agents_v1.md` - Agent architecture, usage examples, API reference
+- `reviews/step4_review.md` - Deterministic data layer v2 validation
+- Implementation completion reports: `AGENTS_V1_IMPLEMENTATION_COMPLETE.md`
+
+Additional technical specifications in legacy `docs/` folder (historical reference).
 
 ## Using the MCP Server in Windsurf
 
