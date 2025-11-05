@@ -69,7 +69,8 @@ class RedisCacheBackend(CacheBackend):
 
     def get(self, key: str) -> str | None:
         """Retrieve value from Redis."""
-        return self._r.get(key)
+        result = self._r.get(key)
+        return result if result is None else str(result)
 
     def set(self, key: str, value: str, ttl_s: int | None = None) -> None:
         """Store value in Redis with optional TTL."""
