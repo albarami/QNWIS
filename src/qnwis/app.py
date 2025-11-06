@@ -10,9 +10,11 @@ from __future__ import annotations
 import os
 
 from fastapi import FastAPI
+from starlette.staticfiles import StaticFiles
 
 from .api.routers import briefing as briefing_router
 from .api.routers import council as council_router
+from .api.routers import export as export_router
 from .api.routers import queries as queries_router
 from .api.routers import ui as ui_router
 from .utils.health import healthcheck, readiness
@@ -43,6 +45,7 @@ app.include_router(queries_router.router)
 app.include_router(council_router.router)
 app.include_router(briefing_router.router)
 app.include_router(ui_router.router)
+app.include_router(export_router.router)
 
 
 @app.get("/health")
@@ -55,3 +58,11 @@ async def health() -> dict[str, str]:
 async def ready() -> dict[str, str]:
     """Readiness check endpoint."""
     return await readiness()
+
+
+# Mount static dashboard (serves index.html at /dash)
+app.mount(
+    "/dash",
+    StaticFiles(directory="apps/dashboard/static", html=True),
+    name="dashboard",
+)

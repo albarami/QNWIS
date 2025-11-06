@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>QNWIS Synthetic Dashboard</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+  <h1>QNWIS — Synthetic Dashboard</h1>
+  <section id="cards"></section>
+  <section>
+    <h2>Sector Employment (Latest)</h2>
+    <div id="sector-employment"></div>
+    <a id="dl-csv" href="/v1/ui/export/csv?resource=sector-employment" download>Download CSV</a>
+    <a id="dl-svg" href="/v1/ui/export/svg?chart=sector-employment" download>Download SVG</a>
+  </section>
+  <section>
+    <h2>Salary YoY — Energy</h2>
+    <div id="salary"></div>
+  </section>
+  <script src="app.js"></script>
+</body>
+</html>
