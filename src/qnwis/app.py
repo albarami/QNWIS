@@ -14,6 +14,7 @@ from fastapi import FastAPI
 from .api.routers import briefing as briefing_router
 from .api.routers import council as council_router
 from .api.routers import queries as queries_router
+from .api.routers import ui as ui_router
 from .utils.health import healthcheck, readiness
 from .utils.logger import get_logger
 from .utils.rate_limit import RateLimitMiddleware
@@ -41,6 +42,7 @@ app.add_middleware(RequestIDMiddleware)
 app.include_router(queries_router.router)
 app.include_router(council_router.router)
 app.include_router(briefing_router.router)
+app.include_router(ui_router.router)
 
 
 @app.get("/health")

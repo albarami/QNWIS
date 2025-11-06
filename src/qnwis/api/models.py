@@ -34,3 +34,50 @@ class QueryRunResponse(BaseModel):
     freshness: dict[str, Any]
     warnings: list[str] = Field(default_factory=list)
     request_id: str | None = None
+
+
+class UICard(BaseModel):
+    """Single KPI card used by UI demos."""
+
+    title: str
+    subtitle: str
+    kpi: int | float
+    unit: str
+    meta: dict[str, Any] = Field(default_factory=dict)
+
+
+class UICardsResponse(BaseModel):
+    """Envelope for KPI cards responses."""
+
+    cards: list[UICard] = Field(default_factory=list)
+
+
+class ChartPoint(BaseModel):
+    """Generic chart data point."""
+
+    x: int | float
+    y: int | float | None
+
+
+class SalaryYoYChartResponse(BaseModel):
+    """Time-series chart showing salary year-over-year growth."""
+
+    title: str
+    series: list[ChartPoint] = Field(default_factory=list)
+
+
+class SectorEmploymentChartResponse(BaseModel):
+    """Bar chart of sector employment distribution."""
+
+    title: str
+    categories: list[str] = Field(default_factory=list)
+    values: list[int] = Field(default_factory=list)
+
+
+class EmploymentShareGaugeResponse(BaseModel):
+    """Gauge output for employment share by gender."""
+
+    year: int
+    male: float | None
+    female: float | None
+    total: float | None
