@@ -61,10 +61,17 @@ def error_handler(
         timestamp=datetime.utcnow().isoformat(),
     )
 
+    # Determine intent (handle None case when using query_text)
+    intent_value = "unknown"
+    if task and task.intent:
+        intent_value = task.intent
+    elif workflow_state.route:
+        intent_value = workflow_state.route
+
     # Create error result
     result = OrchestrationResult(
         ok=False,
-        intent=task.intent if task else "unknown",
+        intent=intent_value,
         sections=sections,
         citations=[],
         freshness={},

@@ -86,12 +86,14 @@ class RoutingDecision(BaseModel):
         mode: Execution mode (single, parallel, sequential)
         prefetch: List of data prefetch specifications (declarative)
         notes: Additional routing notes or warnings
+        execution_hints: Execution hints for coordination (complexity, priority, etc.)
     """
 
     agents: List[str]
     mode: Literal["single", "parallel", "sequential"]
     prefetch: List[Dict[str, Any]] = Field(default_factory=list)
     notes: List[str] = Field(default_factory=list)
+    execution_hints: Dict[str, Any] = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def _validate_mode_agents(self) -> "RoutingDecision":
@@ -199,13 +201,17 @@ class Freshness(BaseModel):
 
     Attributes:
         source: Source identifier
-        last_updated: ISO timestamp of last update
-        age_days: Age in days
+        last_updated: ISO timestamp of latest update observed
+        age_days: Age in days for the latest update (if available)
+        min_timestamp: Oldest timestamp observed across partial results
+        max_timestamp: Latest timestamp observed across partial results
     """
 
     source: str
     last_updated: str
     age_days: Optional[float] = None
+    min_timestamp: Optional[str] = None
+    max_timestamp: Optional[str] = None
 
 
 class Reproducibility(BaseModel):
@@ -229,7 +235,7 @@ class OrchestrationResult(BaseModel):
 
     Attributes:
         ok: Whether the workflow completed successfully
-        intent: The executed intent
+        intent: The executed intent (string for coordination flexibility)
         sections: Structured report sections
         citations: List of data citations
         freshness: Per-source freshness metadata
@@ -237,10 +243,11 @@ class OrchestrationResult(BaseModel):
         warnings: Any warnings generated during execution
         request_id: Request tracking identifier
         timestamp: When the result was generated
+        agent_traces: Execution traces from coordinated agents
     """
 
     ok: bool
-    intent: Intent
+    intent: str  # Changed from Intent Literal to str for coordination flexibility
     sections: List[ReportSection]
     citations: List[Citation]
     freshness: Dict[str, Freshness]
@@ -248,6 +255,7 @@ class OrchestrationResult(BaseModel):
     warnings: List[str] = Field(default_factory=list)
     request_id: Optional[str] = None
     timestamp: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    agent_traces: List[Dict[str, Any]] = Field(default_factory=list)
 
 
 class WorkflowState(BaseModel):
@@ -265,6 +273,7 @@ class WorkflowState(BaseModel):
         error: Error message if any
         logs: Execution logs
         metadata: Additional metadata collected during execution
+        prefetch_cache: Cache of prefetched QueryResult objects
     """
 
     task: Optional[OrchestrationTask] = None
@@ -274,6 +283,7 @@ class WorkflowState(BaseModel):
     error: Optional[str] = None
     logs: List[str] = Field(default_factory=list)
     metadata: Dict[str, Any] = Field(default_factory=dict)
+    prefetch_cache: Dict[str, Any] = Field(default_factory=dict)
 
     class Config:
         """Pydantic config."""
