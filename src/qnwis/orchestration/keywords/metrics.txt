@@ -1,0 +1,144 @@
+retention
+retention rate
+employee retention
+turnover
+turnover rate
+attrition
+attrition rate
+churn
+salary
+wage
+compensation
+pay
+remuneration
+earnings
+income
+wages
+salaries
+qatarization
+qatarization rate
+nationalization
+nationalization rate
+localization
+emiratization
+saudization
+flows
+labour flows
+worker flows
+migration
+mobility
+job mobility
+labour mobility
+employment
+employment rate
+employment growth
+hiring
+recruitment
+headcount
+workforce
+staff
+employees
+productivity
+output
+efficiency
+performance
+satisfaction
+employee satisfaction
+job satisfaction
+morale
+engagement
+employee engagement
+tenure
+seniority
+experience
+skills
+skill level
+training
+development
+absenteeism
+absence rate
+sick leave
+leave
+overtime
+working hours
+hours worked
+contracts
+contract type
+full-time
+part-time
+temporary
+permanent
+casual
+seasonal
+outsourcing
+subcontracting
+workforce composition
+demographics
+age
+gender
+nationality
+education
+qualification
+degree
+certification
+occupation
+job title
+position
+role
+sector
+industry
+company size
+firm size
+establishment size
+revenue
+profit
+profitability
+growth
+expansion
+layoffs
+redundancy
+termination
+dismissal
+resignation
+voluntary turnover
+involuntary turnover
+new hires
+separations
+net change
+vacancy
+job opening
+demand
+supply
+labour supply
+labour demand
+unemployment
+unemployment rate
+underemployment
+wage gap
+pay gap
+salary range
+benefits
+perks
+allowance
+bonus
+incentive
+commission
+stock options
+pension
+insurance
+health insurance
+social security
+safety
+workplace safety
+accidents
+injuries
+violations
+compliance
+regulations
+policy
+collective bargaining
+union
+unionization
+strike
+dispute
+grievance

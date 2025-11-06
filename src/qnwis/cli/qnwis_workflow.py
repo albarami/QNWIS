@@ -61,10 +61,10 @@ def parse_args() -> argparse.Namespace:
         epilog=__doc__,
     )
 
-    # Required arguments
-    parser.add_argument(
+    # Primary input (mutually exclusive with query)
+    input_group = parser.add_mutually_exclusive_group(required=True)
+    input_group.add_argument(
         "--intent",
-        required=True,
         choices=[
             "pattern.anomalies",
             "pattern.correlation",
@@ -74,7 +74,12 @@ def parse_args() -> argparse.Namespace:
             "strategy.talent_competition",
             "strategy.vision2030",
         ],
-        help="Intent to execute",
+        help="Explicit intent to execute",
+    )
+    input_group.add_argument(
+        "--query",
+        type=str,
+        help="Natural language query (will be classified to intent)",
     )
 
     # Optional workflow arguments
@@ -270,19 +275,23 @@ def main() -> int:
     setup_logging(args.log_level)
 
     logger.info("QNWIS Workflow CLI starting")
-    logger.info("Intent: %s", args.intent)
+    if args.intent:
+        logger.info("Intent: %s", args.intent)
+    else:
+        logger.info("Query: %s", args.query[:80])
 
     try:
         # Load configuration
         config = load_config(args.config)
         logger.debug("Configuration loaded: %s", config.keys())
 
-        # Check if intent is enabled
-        enabled_intents = config.get("enabled_intents", [])
-        if args.intent not in enabled_intents:
-            logger.error("Intent not enabled: %s", args.intent)
-            logger.info("Enabled intents: %s", ", ".join(enabled_intents))
-            return 1
+        # Check if intent is enabled (only for explicit intent)
+        if args.intent:
+            enabled_intents = config.get("enabled_intents", [])
+            if args.intent not in enabled_intents:
+                logger.error("Intent not enabled: %s", args.intent)
+                logger.info("Enabled intents: %s", ", ".join(enabled_intents))
+                return 1
 
         # Create data client
         queries_dir = str(args.queries_dir) if args.queries_dir else None
@@ -299,14 +308,25 @@ def main() -> int:
 
         # Build task
         params = build_params(args)
-        task = OrchestrationTask(
-            intent=args.intent,
-            params=params,
-            user_id=args.user_id,
-            request_id=args.request_id,
-        )
 
-        logger.info("Executing workflow: intent=%s params=%s", task.intent, list(params.keys()))
+        # Create task with either intent or query_text
+        if args.intent:
+            task = OrchestrationTask(
+                intent=args.intent,
+                params=params,
+                user_id=args.user_id,
+                request_id=args.request_id,
+            )
+            logger.info("Executing workflow: intent=%s params=%s", task.intent, list(params.keys()))
+        else:
+            task = OrchestrationTask(
+                query_text=args.query,
+                params=params,
+                user_id=args.user_id,
+                request_id=args.request_id,
+            )
+            logger.info("Executing workflow: query='%s...' params=%s",
+                       args.query[:50], list(params.keys()))
 
         # Run workflow
         result = graph.run(task)

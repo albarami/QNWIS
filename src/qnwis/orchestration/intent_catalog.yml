@@ -1,0 +1,330 @@
+# QNWIS Intent Catalog
+# Defines patterns, keywords, and examples for deterministic query classification
+# Version: 1.0
+# Last updated: 2025-11-06
+
+# Pattern Detection Intents
+pattern.anomalies:
+  description: "Detect statistical outliers and anomalies in labour market metrics"
+  keywords:
+    - "outlier"
+    - "spike"
+    - "sudden"
+    - "unusual"
+    - "deviation"
+    - "z-score"
+    - "anomaly"
+    - "anomalies"
+    - "abnormal"
+    - "atypical"
+    - "irregular"
+    - "drop"
+    - "surge"
+  sectors_hint: true
+  metrics_hint:
+    - "retention"
+    - "salary"
+    - "turnover"
+    - "attrition"
+    - "wage"
+    - "employment"
+  examples:
+    - "Which companies show unusual retention in Construction last 24 months?"
+    - "Detect salary spikes in Healthcare sector"
+    - "Find anomalies in turnover rates"
+    - "Identify outliers in employee attrition"
+  prefetch:
+    - fn: get_retention_by_company
+      description: "Retention series for anomaly detection"
+      when_metrics_any:
+        - "retention"
+        - "retention rate"
+      require_sectors: true
+      params:
+        sectors: "@sectors"
+        months: "@months"
+    - fn: get_turnover_stats
+      description: "Turnover statistics for anomaly comparison"
+      when_metrics_any:
+        - "turnover"
+        - "turnover rate"
+        - "attrition"
+      require_sectors: true
+      params:
+        sectors: "@sectors"
+
+pattern.correlation:
+  description: "Find correlations and relationships between labour market variables"
+  keywords:
+    - "correlate"
+    - "correlation"
+    - "relationship"
+    - "predict"
+    - "linked to"
+    - "association"
+    - "connect"
+    - "related"
+    - "influence"
+    - "impact"
+    - "affect"
+    - "driver"
+    - "factor"
+  metrics_hint:
+    - "retention"
+    - "salary"
+    - "qatarization"
+    - "productivity"
+    - "turnover"
+  examples:
+    - "Is there a correlation between salary and retention?"
+    - "What factors are linked to high turnover?"
+    - "Relationship between qatarization and productivity"
+    - "Predict retention based on wage levels"
+  prefetch:
+    - fn: get_multi_metric_data
+      description: "Correlation-ready multi-metric dataset"
+      require_metrics: true
+      params:
+        metrics: "@metrics"
+        sectors: "@sectors"
+        horizon_months: "@months"
+
+pattern.root_causes:
+  description: "Identify root causes and underlying drivers of labour trends"
+  keywords:
+    - "root cause"
+    - "why"
+    - "reason"
+    - "cause"
+    - "driver"
+    - "explain"
+    - "underlying"
+    - "behind"
+    - "due to"
+    - "because"
+    - "factor"
+    - "contributing"
+  sectors_hint: true
+  metrics_hint:
+    - "retention"
+    - "turnover"
+    - "attrition"
+    - "qatarization"
+  examples:
+    - "Why is Construction retention declining?"
+    - "Root causes of high turnover in Hospitality"
+    - "What explains low qatarization rates?"
+    - "Underlying drivers of wage growth"
+  prefetch:
+    - fn: get_multi_metric_data
+      description: "Driver analysis dataset"
+      require_metrics: true
+      params:
+        metrics: "@metrics"
+        sectors: "@sectors"
+        horizon_months: "@months"
+
+pattern.best_practices:
+  description: "Identify best practices and high-performing companies"
+  keywords:
+    - "best practice"
+    - "benchmark"
+    - "top performer"
+    - "leading"
+    - "excellence"
+    - "successful"
+    - "high performing"
+    - "leader"
+    - "outperform"
+    - "exemplar"
+    - "model"
+  sectors_hint: true
+  metrics_hint:
+    - "retention"
+    - "qatarization"
+    - "productivity"
+    - "satisfaction"
+  examples:
+    - "Which companies have best practices for retention?"
+    - "Top performers in qatarization"
+    - "Identify leading companies in employee satisfaction"
+    - "Benchmark against successful organizations"
+  prefetch:
+    - fn: get_multi_metric_data
+      description: "Benchmark dataset for best practices"
+      require_sectors: true
+      params:
+        sectors: "@sectors"
+        metrics: "@metrics"
+        horizon_months: "@months"
+
+# Strategy Intents
+strategy.gcc_benchmark:
+  description: "Benchmark Qatar against other GCC countries"
+  keywords:
+    - "qatar vs"
+    - "uae"
+    - "saudi"
+    - "gcc"
+    - "benchmark"
+    - "regional"
+    - "compare"
+    - "comparison"
+    - "kuwait"
+    - "bahrain"
+    - "oman"
+    - "gulf"
+    - "peer countries"
+  metrics_hint:
+    - "wage"
+    - "employment growth"
+    - "net flows"
+    - "gdp"
+    - "productivity"
+    - "nationalization"
+  examples:
+    - "How does Qatar wage growth compare to UAE?"
+    - "GCC benchmark for employment trends"
+    - "Qatar vs Saudi Arabia productivity"
+    - "Regional comparison of nationalization rates"
+  prefetch:
+    - fn: get_gcc_comparison
+      description: "Regional comparison dataset"
+      params:
+        metrics: "@metrics"
+        min_countries: 4
+
+strategy.talent_competition:
+  description: "Analyze talent competition and labour market dynamics"
+  keywords:
+    - "poaching"
+    - "competition"
+    - "premium"
+    - "talent flow"
+    - "attract"
+    - "recruit"
+    - "retention battle"
+    - "war for talent"
+    - "competitive"
+    - "steal"
+    - "lure"
+    - "headhunt"
+  sectors_hint: true
+  metrics_hint:
+    - "retention"
+    - "salary"
+    - "wage premium"
+    - "turnover"
+    - "mobility"
+  examples:
+    - "Which sectors compete most for talent?"
+    - "Analyze poaching patterns in Finance"
+    - "Talent flow between Construction companies"
+    - "Salary premiums in competitive industries"
+  prefetch:
+    - fn: get_multi_metric_data
+      description: "Talent competition indicators"
+      require_metrics: true
+      params:
+        metrics: "@metrics"
+        sectors: "@sectors"
+        horizon_months: "@months"
+
+strategy.vision2030:
+  description: "Assess alignment with Qatar National Vision 2030 objectives"
+  keywords:
+    - "vision 2030"
+    - "national vision"
+    - "qatarization target"
+    - "alignment"
+    - "kpi"
+    - "strategic goal"
+    - "national objective"
+    - "policy compliance"
+    - "target"
+    - "nationalization goal"
+  metrics_hint:
+    - "qatarization"
+    - "nationalization"
+    - "skill development"
+    - "employment rate"
+  examples:
+    - "Qatarization progress toward Vision 2030 targets"
+    - "Assess alignment with national employment goals"
+    - "Track Vision 2030 KPIs"
+    - "Compliance with nationalization objectives"
+  prefetch:
+    - fn: get_qatarization_progress
+      description: "Vision 2030 progress dataset"
+      params:
+        sectors: "@sectors"
+        horizon_months: "@months"
+
+# Urgency Lexicon (for crisis detection)
+urgency_keywords:
+  - "urgent"
+  - "crisis"
+  - "emergency"
+  - "immediate"
+  - "critical"
+  - "alert"
+  - "now"
+  - "asap"
+  - "priority"
+  - "escalate"
+  - "rapid"
+  - "sudden surge"
+
+# Time Horizon Patterns (regex-friendly)
+time_patterns:
+  relative:
+    - pattern: "last (\\d+) (day|week|month|year)s?"
+      unit_group: 2
+      value_group: 1
+    - pattern: "past (\\d+) (day|week|month|year)s?"
+      unit_group: 2
+      value_group: 1
+    - pattern: "recent (\\d+) (month|year)s?"
+      unit_group: 2
+      value_group: 1
+    - pattern: "(\\d+) (month|year)s? ago"
+      unit_group: 2
+      value_group: 1
+  absolute:
+    - pattern: "(\\d{4})-(\\d{4})"
+      type: "year_range"
+    - pattern: "since (\\d{4})"
+      type: "year_start"
+    - pattern: "in (\\d{4})"
+      type: "year_single"
+    - pattern: "Q([1-4])\\s*(\\d{4})"
+      type: "quarter"
+      quarter_length_months: 3
+    - pattern: "\\b(\\d{4})\\b"
+      type: "year_single_plain"
+      months: 12
+
+# Complexity Scoring Weights
+complexity_weights:
+  intent_count:
+    single: 10
+    multiple: 20
+  sector_count:
+    single: 5
+    multiple: 15
+  time_horizon:
+    narrow: 5   # <= 24 months
+    medium: 10  # 25-48 months
+    wide: 15    # > 48 months
+  urgency_present: 30
+  metric_count:
+    few: 5      # 1-2 metrics
+    several: 10 # 3-4 metrics
+    many: 15    # 5+ metrics
+
+# Complexity Thresholds (total score)
+complexity_thresholds:
+  simple: 0-20
+  medium: 21-40
+  complex: 41-60
+  crisis: 61+  # or urgency_present=true + fresh_horizon<=3_months

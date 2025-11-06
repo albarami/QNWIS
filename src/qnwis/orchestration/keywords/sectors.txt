@@ -1,0 +1,102 @@
+Construction
+Manufacturing
+Hospitality
+Healthcare
+Finance
+Education
+Retail
+Transportation
+Logistics
+Energy
+Oil and Gas
+Petrochemicals
+Real Estate
+Technology
+IT
+Information Technology
+Telecommunications
+Banking
+Insurance
+Tourism
+Food Services
+Hotel
+Restaurant
+Engineering
+Consulting
+Legal
+Accounting
+Architecture
+Mining
+Agriculture
+Utilities
+Public Administration
+Government
+Defense
+Security
+Media
+Entertainment
+Arts
+Culture
+Aviation
+Maritime
+Ports
+Shipbuilding
+Automotive
+Pharmaceuticals
+Biotechnology
+Research
+Development
+Professional Services
+Business Services
+Administrative Services
+Cleaning
+Facilities Management
+Human Resources
+Recruitment
+Training
+Education Services
+Health Services
+Medical
+Nursing
+Dental
+Veterinary
+Social Services
+NGO
+Non-Profit
+Sports
+Fitness
+Recreation
+Broadcasting
+Publishing
+Printing
+Packaging
+Textiles
+Apparel
+Fashion
+Furniture
+Chemicals
+Plastics
+Rubber
+Glass
+Ceramics
+Metals
+Steel
+Aluminum
+Electronics
+Electrical Equipment
+Machinery
+Equipment Manufacturing
+Instruments
+Precision Engineering
+Aerospace
+Space
+Satellite
+Telecommunications Infrastructure
+Water
+Waste Management
+Environmental Services
+Renewable Energy
+Solar
+Wind
+Nuclear
+Hydroelectric
