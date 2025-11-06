@@ -100,6 +100,8 @@ def test_ui_chart_sector_employment(tmp_path, monkeypatch):
         assert "categories" in data, "Response should have 'categories' key"
         assert "values" in data, "Response should have 'values' key"
         assert "title" in data, "Response should have 'title' key"
+        assert "year" in data, "Response should include resolved data year"
+        assert isinstance(data["year"], int), "Year should be integer"
         assert isinstance(data["categories"], list), "Categories should be a list"
         assert isinstance(data["values"], list), "Values should be a list"
         assert len(data["categories"]) == len(
@@ -116,6 +118,9 @@ def test_ui_chart_sector_employment(tmp_path, monkeypatch):
             assert (
                 f"{latest_year}" in default_data["title"]
             ), "Default title should include latest year"
+            assert (
+                default_data["year"] == latest_year
+            ), "Default response should surface resolved year"
 
         # Test year out of range (too low)
         response = client.get("/v1/ui/charts/sector-employment?year=1999")
@@ -193,24 +198,28 @@ def test_ui_charts_ttl_clamping(tmp_path, monkeypatch):
         client = TestClient(app)
 
         # Test with very low TTL (should be clamped to 60)
+        # TTL below minimum should be rejected
         response = client.get(
             "/v1/ui/charts/salary-yoy?sector=Energy&ttl_s=10"
         )
-        assert response.status_code == 200, "Should accept low TTL and clamp it"
+        assert response.status_code == 422, "Should reject TTL below 60 seconds"
 
-        # Test with very high TTL (should be clamped to 86400)
+        # TTL above maximum should be rejected
         response = client.get(
             "/v1/ui/charts/salary-yoy?sector=Energy&ttl_s=999999"
         )
-        assert (
-            response.status_code == 200
-        ), "Should accept high TTL and clamp it"
+        assert response.status_code == 422, "Should reject TTL above 86400 seconds"
 
-        # Test with normal TTL
+        # Valid TTL boundaries should succeed
         response = client.get(
-            "/v1/ui/charts/salary-yoy?sector=Energy&ttl_s=300"
+            "/v1/ui/charts/salary-yoy?sector=Energy&ttl_s=60"
         )
-        assert response.status_code == 200, "Should accept normal TTL"
+        assert response.status_code == 200, "Should accept TTL at lower bound"
+
+        response = client.get(
+            "/v1/ui/charts/salary-yoy?sector=Energy&ttl_s=86400"
+        )
+        assert response.status_code == 200, "Should accept TTL at upper bound"
 
     finally:
         csvcat.BASE = old

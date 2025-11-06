@@ -3,10 +3,16 @@
 <head>
   <meta charset="utf-8"/>
   <title>QNWIS Synthetic Dashboard</title>
-  <link rel="stylesheet" href="styles.css"/>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 24px; }
+    h1 { margin-bottom: 16px; }
+    #cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); gap: 12px; margin-bottom: 18px; }
+    .card { border: 1px solid #ddd; padding: 12px; border-radius: 8px; background: #fff; }
+    .card .kpi { font-size: 20px; font-weight: 600; }
+  </style>
 </head>
 <body>
-  <h1>QNWIS — Synthetic Dashboard</h1>
+  <h1>QNWIS - Synthetic Dashboard</h1>
   <section id="cards"></section>
   <section>
     <h2>Sector Employment (Latest)</h2>
@@ -15,7 +21,7 @@
     <a id="dl-svg" href="/v1/ui/export/svg?chart=sector-employment" download>Download SVG</a>
   </section>
   <section>
-    <h2>Salary YoY — Energy</h2>
+    <h2>Salary YoY - Energy</h2>
     <div id="salary"></div>
   </section>
   <script src="app.js"></script>

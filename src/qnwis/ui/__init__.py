@@ -7,4 +7,4 @@ All functions work entirely on synthetic CSV data without network/SQL/LLM calls.
 
 from __future__ import annotations
 
-__all__ = ["cards", "charts"]
+__all__ = ["cards", "charts", "svg"]

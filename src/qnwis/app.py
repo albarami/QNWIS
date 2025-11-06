@@ -17,6 +17,7 @@ from .api.routers import council as council_router
 from .api.routers import export as export_router
 from .api.routers import queries as queries_router
 from .api.routers import ui as ui_router
+from .api.routers import ui_dashboard as ui_dash_router
 from .utils.health import healthcheck, readiness
 from .utils.logger import get_logger
 from .utils.rate_limit import RateLimitMiddleware
@@ -46,6 +47,7 @@ app.include_router(council_router.router)
 app.include_router(briefing_router.router)
 app.include_router(ui_router.router)
 app.include_router(export_router.router)
+app.include_router(ui_dash_router.router)
 
 
 @app.get("/health")

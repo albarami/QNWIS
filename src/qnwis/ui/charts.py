@@ -69,8 +69,10 @@ def sector_employment_bar(api: DataAPI, year: int) -> dict[str, Any]:
     for row in rows:
         categories.append(str(row.sector))
         values.append(int(row.employees))
+    resolved_year = int(year)
     return {
-        "title": f"Sector Employment - {year}",
+        "title": f"Sector Employment - {resolved_year}",
         "categories": categories,
         "values": values,
+        "year": resolved_year,
     }

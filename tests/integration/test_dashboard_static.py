@@ -26,7 +26,7 @@ def test_dashboard_has_expected_structure() -> None:
     assert response.status_code == 200
     html = response.text
     # Check for main sections
-    assert "<h1>QNWIS — Synthetic Dashboard</h1>" in html
+    assert "<h1>QNWIS - Synthetic Dashboard</h1>" in html
     assert 'id="cards"' in html
     assert 'id="sector-employment"' in html
     assert 'id="salary"' in html
@@ -43,12 +43,15 @@ def test_dashboard_has_export_links() -> None:
     assert "/v1/ui/export/svg?chart=sector-employment" in html
 
 
-def test_dashboard_has_css() -> None:
-    """Test that dashboard links to CSS file."""
+def test_dashboard_has_inline_css() -> None:
+    """Test that dashboard embeds CSS inline and has no external stylesheet."""
     client = TestClient(app)
     response = client.get("/dash")
     assert response.status_code == 200
-    assert 'href="styles.css"' in response.text
+    html = response.text
+    assert "<style>" in html
+    assert "body {" in html
+    assert 'href="styles.css"' not in html
 
 
 def test_dashboard_has_js() -> None:
@@ -59,13 +62,11 @@ def test_dashboard_has_js() -> None:
     assert 'src="app.js"' in response.text
 
 
-def test_static_css_served() -> None:
-    """Test that CSS file is served correctly."""
+def test_static_css_missing() -> None:
+    """Test that no standalone CSS file is served."""
     client = TestClient(app)
     response = client.get("/dash/styles.css")
-    assert response.status_code == 200
-    assert "font-family" in response.text
-    assert ".card" in response.text
+    assert response.status_code == 404
 
 
 def test_static_js_served() -> None:

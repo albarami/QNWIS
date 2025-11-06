@@ -47,7 +47,9 @@
       "Bash(..venvScriptsruff.exe check .)",
       "Bash(..venvScriptsflake8.exe .)",
       "Bash(.\\.venv\\Scripts\\mypy.exe:*)",
-      "Bash(..venvScriptspytest.exe -v -m \"not mcp\" tests/unit/test_transforms_base.py tests/unit/test_postprocess_pipeline.py)"
+      "Bash(..venvScriptspytest.exe -v -m \"not mcp\" tests/unit/test_transforms_base.py tests/unit/test_postprocess_pipeline.py)",
+      "Bash(\".\\.venv\\Scripts\\python.exe\" -c \"import matplotlib; print(matplotlib.__version__)\")",
+      "Bash(\".\\.venv\\Scripts\\pip.exe\" install \"matplotlib>=3.8,<3.9\")"
     ],
     "deny": [],
     "ask": []

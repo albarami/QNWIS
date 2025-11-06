@@ -72,6 +72,7 @@ class SectorEmploymentChartResponse(BaseModel):
     title: str
     categories: list[str] = Field(default_factory=list)
     values: list[int] = Field(default_factory=list)
+    year: int
 
 
 class EmploymentShareGaugeResponse(BaseModel):
@@ -81,3 +82,49 @@ class EmploymentShareGaugeResponse(BaseModel):
     male: float | None
     female: float | None
     total: float | None
+
+
+class ExportCSVMeta(BaseModel):
+    """
+    Metadata description for CSV exports (OpenAPI documentation helper).
+    """
+
+    filename: str = Field(
+        default="sector-employment.csv",
+        description="Suggested filename for the CSV download.",
+    )
+    content_type: str = Field(
+        default="text/csv",
+        description="MIME type served by the export endpoint.",
+    )
+    cache_control: str = Field(
+        default="public, max-age=60",
+        description="Cache-Control header applied to the export response.",
+    )
+    etag: str = Field(
+        default='"<sha256>"',
+        description="Strong validator representing the file contents.",
+    )
+
+
+class ExportSVGMeta(BaseModel):
+    """
+    Metadata description for SVG exports (OpenAPI documentation helper).
+    """
+
+    filename: str = Field(
+        default="sector-employment.svg",
+        description="Suggested filename for the SVG download.",
+    )
+    content_type: str = Field(
+        default="image/svg+xml",
+        description="MIME type served by the export endpoint.",
+    )
+    cache_control: str = Field(
+        default="public, max-age=60",
+        description="Cache-Control header applied to the export response.",
+    )
+    etag: str = Field(
+        default='"<sha256>"',
+        description="Strong validator representing the SVG markup.",
+    )
