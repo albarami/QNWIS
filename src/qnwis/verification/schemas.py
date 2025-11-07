@@ -6,11 +6,12 @@ Defines Pydantic models for verification rules, issues, and summaries.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional, Tuple
 
 from pydantic import BaseModel, Field
 
 Severity = Literal["info", "warning", "error"]
+Unit = Literal["count", "percent", "currency"]
 
 
 class Issue(BaseModel):
@@ -219,6 +220,7 @@ class VerificationSummary(BaseModel):
         summary_md: Markdown summary describing Layer 2-4 outcomes
         redaction_reason_codes: Codes describing why redactions were applied
         citation_report: Citation enforcement report (if run)
+        result_verification_report: Result verification report (if run)
     """
 
     ok: bool
@@ -229,3 +231,113 @@ class VerificationSummary(BaseModel):
     summary_md: Optional[str] = None
     redaction_reason_codes: List[str] = Field(default_factory=list)
     citation_report: Optional[CitationReport] = None
+    result_verification_report: Optional["ResultVerificationReport"] = None
+
+
+class NumericClaim(BaseModel):
+    """
+    A numeric claim extracted from narrative text.
+
+    Attributes:
+        value_text: Raw text of the numeric value (e.g., "1,234.5")
+        value: Normalized numeric value as float
+        unit: Unit classification (count, percent, currency)
+        span: Character position tuple (start, end)
+        sentence: Containing sentence for context
+        citation_prefix: Detected citation source prefix (if any)
+        query_id: Extracted query ID from citation (if any)
+        source_family: Mapped source family (LMIS, GCC-STAT, WorldBank)
+    """
+
+    value_text: str
+    value: float
+    unit: Unit
+    span: Tuple[int, int]
+    sentence: str
+    citation_prefix: Optional[str] = None
+    query_id: Optional[str] = None
+    source_family: Optional[str] = None
+
+
+class ClaimBinding(BaseModel):
+    """
+    Result of binding a numeric claim to a QueryResult.
+
+    Attributes:
+        claim: The original numeric claim
+        matched: Whether claim value was found in a QueryResult
+        matched_source_qid: Query ID of the matching source
+        matched_location: Path/description of where value was found
+        candidate_qids: All source QIDs considered for the binding
+        ambiguous: True when multiple sources matched equally (requires agent fix)
+        nearest_source_qid: Closest matching QID even if outside tolerances
+        nearest_location: Location of the closest value
+        nearest_value: Suggested numeric value from data (in display units)
+        nearest_diff: Difference between claim and suggested value (display units)
+        failure_reason: Optional machine-readable reason for failure (e.g., UNIT_MISMATCH)
+        derived_consistent: Result of derived recomputation (True/False/None when not applicable)
+        derived_recomputed_value: Value produced by derived recomputation (if available)
+    """
+
+    claim: NumericClaim
+    matched: bool
+    matched_source_qid: Optional[str] = None
+    matched_location: Optional[str] = None
+    candidate_qids: List[str] = Field(default_factory=list)
+    ambiguous: bool = False
+    nearest_source_qid: Optional[str] = None
+    nearest_location: Optional[str] = None
+    nearest_value: Optional[float] = None
+    nearest_diff: Optional[float] = None
+    failure_reason: Optional[str] = None
+    derived_consistent: Optional[bool] = None
+    derived_recomputed_value: Optional[float] = None
+
+
+class VerificationIssue(BaseModel):
+    """
+    Issue detected during result verification.
+
+    Attributes:
+        code: Issue type code
+        message: Human-readable description
+        severity: Issue severity level
+        details: Additional structured context
+    """
+
+    code: Literal[
+        "CLAIM_UNCITED",
+        "CLAIM_NOT_FOUND",
+        "ROUNDING_MISMATCH",
+        "UNIT_MISMATCH",
+        "MATH_INCONSISTENT",
+        "AMBIGUOUS_SOURCE",
+    ]
+    message: str
+    severity: Severity
+    details: Dict[str, str] = Field(default_factory=dict)
+
+
+class ResultVerificationReport(BaseModel):
+    """
+    Complete result verification report.
+
+    Attributes:
+        ok: Whether all verification checks passed (no errors)
+        claims_total: Total numeric claims found
+        claims_matched: Number of claims successfully matched to data
+        issues: List of verification issues detected
+        bindings: List of claim-to-source bindings
+        math_checks: Results of math consistency checks
+        math_check_details: Metadata describing each math check evaluation
+        runtime_ms: Execution time for verification (milliseconds)
+    """
+
+    ok: bool
+    claims_total: int
+    claims_matched: int
+    issues: List[VerificationIssue] = Field(default_factory=list)
+    bindings: List[ClaimBinding] = Field(default_factory=list)
+    math_checks: Dict[str, bool] = Field(default_factory=dict)
+    math_check_details: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
+    runtime_ms: Optional[float] = None

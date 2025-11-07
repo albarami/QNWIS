@@ -341,6 +341,85 @@ def _format_citations_summary(citation_report: Dict[str, Any]) -> ReportSection:
     return ReportSection(title="Citations Summary", body_md=body.strip())
 
 
+def _format_result_verification_summary(
+    result_report: Dict[str, Any]
+) -> ReportSection:
+    """Create result verification summary section from result verification report."""
+    claims_total = result_report.get("claims_total", 0)
+    claims_matched = result_report.get("claims_matched", 0)
+    ok = result_report.get("ok", False)
+    issues = result_report.get("issues", []) or []
+    math_checks = result_report.get("math_checks", {}) or {}
+
+    status = "PASS" if ok else "ATTENTION REQUIRED"
+    match_pct = (
+        (claims_matched / claims_total * 100) if claims_total > 0 else 0
+    )
+
+    lines: list[str] = [
+        f"**Status**: {status}",
+        "",
+        f"**Claims Checked**: {claims_total}",
+        f"**Claims Matched**: {claims_matched} ({match_pct:.1f}%)",
+    ]
+
+    # Math consistency checks
+    if math_checks:
+        passed = sum(1 for v in math_checks.values() if v)
+        failed = len(math_checks) - passed
+        lines.append(f"**Math Checks**: {passed} passed, {failed} failed")
+    lines.append("")
+
+    # Issue breakdown
+    if issues:
+        error_issues = [i for i in issues if i.get("severity") == "error"]
+        warning_issues = [i for i in issues if i.get("severity") == "warning"]
+
+        if error_issues:
+            lines.append(f"**Errors** ({len(error_issues)}):")
+            for idx, issue in enumerate(error_issues[:3], 1):
+                code = issue.get("code", "UNKNOWN")
+                message = issue.get("message", "No message")
+                lines.append(f"{idx}. `{code}` - {message[:80]}")
+            if len(error_issues) > 3:
+                lines.append(f"*({len(error_issues) - 3} more errors)*")
+            lines.append("")
+
+        if warning_issues:
+            lines.append(f"**Warnings** ({len(warning_issues)}):")
+            for idx, issue in enumerate(warning_issues[:2], 1):
+                code = issue.get("code", "UNKNOWN")
+                message = issue.get("message", "No message")
+                lines.append(f"{idx}. `{code}` - {message[:80]}")
+            if len(warning_issues) > 2:
+                lines.append(f"*({len(warning_issues) - 2} more warnings)*")
+            lines.append("")
+
+    # Remediation tips
+    tips: list[str] = []
+    issue_codes = {i.get("code") for i in issues}
+    if "CLAIM_NOT_FOUND" in issue_codes:
+        tips.append(
+            "Verify claimed values match actual data. Check for rounding differences."
+        )
+    if "CLAIM_UNCITED" in issue_codes:
+        tips.append(
+            "Add citation prefixes (Per LMIS:, According to GCC-STAT:) for all numeric claims."
+        )
+    if "MATH_INCONSISTENT" in issue_codes:
+        tips.append(
+            "Ensure percentage groups sum to ~100% and table totals match row sums."
+        )
+    if not tips:
+        tips.append("All numeric claims verified successfully against source data.")
+
+    lines.append("**Remediation Tips:**")
+    for tip in tips:
+        lines.append(f"- {tip}")
+
+    body = "\n".join(lines)
+    return ReportSection(title="Result Verification Summary", body_md=body.strip())
+
 
 def format_report(
     state: Dict[str, Any],
@@ -481,6 +560,13 @@ def format_report(
         citation_report = workflow_state.metadata.get("citation_report")
         if citation_report:
             sections.append(_format_citations_summary(citation_report))
+
+        # Add result verification summary if available
+        result_verification_report = workflow_state.metadata.get(
+            "result_verification_report"
+        )
+        if result_verification_report:
+            sections.append(_format_result_verification_summary(result_verification_report))
 
         # Create result
         result = OrchestrationResult(

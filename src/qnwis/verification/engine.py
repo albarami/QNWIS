@@ -3,12 +3,20 @@
 from __future__ import annotations
 
 from collections import Counter
+from typing import Any
 
 from .citation_enforcer import enforce_citations
 from .layer2_crosschecks import cross_check
 from .layer3_policy_privacy import redact
 from .layer4_sanity import sanity_checks
-from .schemas import CitationRules, Issue, VerificationConfig, VerificationSummary
+from .result_verifier import verify_numbers
+from .schemas import (
+    CitationRules,
+    Issue,
+    ResultVerificationReport,
+    VerificationConfig,
+    VerificationSummary,
+)
 from ..data.deterministic.models import QueryResult
 
 
@@ -57,6 +65,7 @@ class VerificationEngine:
         cfg: VerificationConfig,
         user_roles: list[str] | None = None,
         citation_rules: CitationRules | None = None,
+        result_tolerances: dict[str, Any] | None = None,
     ) -> None:
         """
         Initialize verification engine.
@@ -65,10 +74,12 @@ class VerificationEngine:
             cfg: Verification configuration
             user_roles: List of user roles for RBAC decisions
             citation_rules: Citation enforcement rules (optional)
+            result_tolerances: Result verification tolerances (optional)
         """
         self.cfg = cfg
         self.user_roles = list(user_roles or [])
         self.citation_rules = citation_rules
+        self.result_tolerances = result_tolerances or {}
 
     def run(
         self,
@@ -89,6 +100,7 @@ class VerificationEngine:
         """
         issues: list[Issue] = []
         citation_report = None
+        result_verification_report: ResultVerificationReport | None = None
 
         # Citation enforcement (runs before other layers)
         if self.citation_rules is not None:
@@ -112,6 +124,24 @@ class VerificationEngine:
                             "value_text": cit_issue.value_text,
                             "span": cit_issue.span,
                         },
+                    )
+                )
+
+        # Result verification (Layer 3 - validates claims against QueryResult data)
+        if self.result_tolerances:
+            all_results = [primary] + list(references)
+            result_verification_report = verify_numbers(
+                narrative_md, all_results, self.result_tolerances
+            )
+            # Convert result verification issues to verification issues
+            for result_issue in result_verification_report.issues:
+                issues.append(
+                    Issue(
+                        layer="L3",  # Result verification is L3 (claim validation)
+                        code=result_issue.code,
+                        message=result_issue.message,
+                        severity=result_issue.severity,
+                        details=result_issue.details,
                     )
                 )
 
@@ -159,6 +189,7 @@ class VerificationEngine:
             summary_md=summary_md,
             redaction_reason_codes=redaction_codes,
             citation_report=citation_report,
+            result_verification_report=result_verification_report,
         )
 
     def run_with_agent_report(

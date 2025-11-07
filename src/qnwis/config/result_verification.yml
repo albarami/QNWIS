@@ -1,0 +1,58 @@
+# Result Verification Configuration (Step-20)
+# Tolerances and rules for numeric claim verification
+
+# Rounding tolerances
+rounding:
+  # Absolute epsilon for integer counts
+  abs_epsilon: 0.5
+  # Relative epsilon for larger values (1% tolerance)
+  rel_epsilon: 0.01
+
+# Percentage-specific rules
+percent:
+  # Epsilon for percentage rounding (0.5% tolerance)
+  epsilon_pct: 0.5
+  # Check that percentage groups sum to ~100
+  sum_to_100: true
+
+# Currency rules
+currency:
+  # Supported currency codes
+  currencies:
+    - QAR
+    - USD
+  # Absolute epsilon for currency amounts (±50 allowed if rounded)
+  epsilon_amount: 50
+
+# Claim binding strategy
+binding:
+  # Prefer exact query_id match over source_family
+  prefer_query_id: true
+  # Require citation prefix before attempting verification
+  require_citation_first: true
+  # Ignore numbers below this threshold
+  ignore_numbers_below: 1.0
+  # Segment-aware binding (restrict to matching rows when sentence mentions label)
+  segment_fields:
+    - sector
+    - industry
+    - company
+    - employer
+    - segment
+    - country
+
+# Allowed citation prefixes (reused from Step-19)
+allowed_prefixes:
+  - "Per LMIS:"
+  - "According to GCC-STAT:"
+  - "According to World Bank:"
+
+# Derived claim consistency checks
+derived:
+  derived_share_check_enabled: true
+  derived_share_min_components: 2
+
+# Performance limits
+performance:
+  # Maximum runtime for verification (seconds)
+  max_runtime_sec: 5
