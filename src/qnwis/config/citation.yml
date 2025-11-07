@@ -1,0 +1,68 @@
+# Citation enforcement configuration
+# Defines allowed citation sources, required formats, and ignore lists
+
+# Allowed citation source prefixes
+# These are the only valid ways to cite sources in agent narratives
+allowed_prefixes:
+  - "Per LMIS:"
+  - "According to GCC-STAT:"
+  - "According to World Bank:"
+
+# Whether query IDs are required in citations
+require_query_id: true
+
+# Severity when QIDs are missing but required (warning|error)
+missing_qid_severity: error
+
+# Metrics/keywords that must always include QIDs (stricter enforcement)
+strict_qid_keywords:
+  - "attrition spike"
+  - "attrition hotspot"
+
+# Severity to use when strict metrics miss a QID
+strict_qid_severity: error
+
+# Query ID patterns (regex)
+query_id_patterns:
+  - '\bQID[:=]\s*[A-Za-z0-9_-]{8,}\b'
+  - '\bquery_id\s*=\s*[A-Za-z0-9_-]{8,}\b'
+
+# Ignore years in citation checks
+# Years like "2023" are not considered numeric claims
+ignore_years: true
+
+# Ignore numbers below this threshold
+# Small integers (< 1.0) are often not substantive claims
+ignore_numbers_below: 1.0
+
+# Tokens to ignore (not considered numeric claims)
+# These are typically codes, identifiers, or non-claim numbers
+ignore_tokens:
+  - "ISO-3166"
+  - "NOC"
+  - "PO Box"
+  - "RFC"
+  - "ID"
+
+# Source synonyms normalize to canonical prefixes
+source_synonyms:
+  "According to GCC-STAT:":
+    - "According to GCCSTAT:"
+    - "According to GCC STAT:"
+
+# Source mapping for validation
+# Maps citation prefixes to expected data source patterns
+source_mapping:
+  "Per LMIS:":
+    - "LMIS"
+    - "lmis"
+  "According to GCC-STAT:":
+    - "GCC-STAT"
+    - "gcc_stat"
+  "According to World Bank:":
+    - "WorldBank"
+    - "world_bank"
+    - "WB"
+
+# Allow citation prefix on adjacent bullet lines (number of neighbors to scan)
+adjacent_bullet_window: 1

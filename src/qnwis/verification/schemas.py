@@ -107,6 +107,105 @@ class VerificationConfig(BaseModel):
     freshness_max_hours: int = 72
 
 
+class CitationRules(BaseModel):
+    """
+    Citation enforcement rules configuration.
+
+    Attributes:
+        allowed_prefixes: List of valid citation source prefixes
+        require_query_id: Whether query IDs are required in citations
+        query_id_patterns: Regex patterns for matching query IDs
+        ignore_years: Skip year patterns (e.g., 2023) in citation checks
+        ignore_numbers_below: Ignore numbers below this threshold
+        ignore_tokens: List of tokens to ignore (codes, identifiers)
+        source_mapping: Maps citation prefixes to data source patterns
+        missing_qid_severity: Severity to use when QID is required but missing
+        strict_qid_keywords: Keywords that always require QIDs, even if optional globally
+        strict_qid_severity: Severity to use when strict keywords trigger
+        source_synonyms: Synonyms that normalize to canonical prefixes
+        adjacent_bullet_window: Number of adjacent bullet lines to consider for citations
+    """
+
+    allowed_prefixes: List[str] = Field(
+        default_factory=lambda: [
+            "Per LMIS:",
+            "According to GCC-STAT:",
+            "According to World Bank:",
+        ]
+    )
+    require_query_id: bool = True
+    query_id_patterns: List[str] = Field(
+        default_factory=lambda: [
+            r"\bQID[:=]\s*[A-Za-z0-9_-]{8,}\b",
+            r"\bquery_id\s*=\s*[A-Za-z0-9_-]{8,}\b",
+        ]
+    )
+    ignore_years: bool = True
+    ignore_numbers_below: float = 1.0
+    ignore_tokens: List[str] = Field(
+        default_factory=lambda: ["ISO-3166", "NOC", "PO Box", "RFC", "ID"]
+    )
+    source_mapping: Dict[str, List[str]] = Field(default_factory=dict)
+    missing_qid_severity: Severity = "error"
+    strict_qid_keywords: List[str] = Field(default_factory=list)
+    strict_qid_severity: Severity = "error"
+    source_synonyms: Dict[str, List[str]] = Field(
+        default_factory=lambda: {
+            "According to GCC-STAT:": ["According to GCCSTAT:", "According to GCC STAT:"]
+        }
+    )
+    adjacent_bullet_window: int = 1
+
+
+class CitationIssue(BaseModel):
+    """
+    A single citation issue detected during enforcement.
+
+    Attributes:
+        code: Issue type code
+        message: Human-readable issue description
+        severity: Issue severity level
+        value_text: The numeric or text value with the issue
+        span: Character span [start, end] in the source text
+    """
+
+    code: Literal[
+        "UNCITED_NUMBER",
+        "MALFORMED_CITATION",
+        "UNKNOWN_SOURCE",
+        "MISSING_QID",
+    ]
+    message: str
+    severity: Severity = "error"
+    value_text: str
+    span: List[int] = Field(default_factory=list)
+
+
+class CitationReport(BaseModel):
+    """
+    Citation enforcement report summarizing all checks.
+
+    Attributes:
+        ok: Whether all citation checks passed (no errors)
+        total_numbers: Total numeric claims found
+        cited_numbers: Number of properly cited claims
+        uncited: List of uncited number issues
+        malformed: List of malformed citation issues
+        missing_qid: List of missing query ID issues
+        sources_used: Count of citations by source prefix
+        runtime_ms: Execution time in milliseconds for enforcement
+    """
+
+    ok: bool
+    total_numbers: int
+    cited_numbers: int
+    uncited: List[CitationIssue] = Field(default_factory=list)
+    malformed: List[CitationIssue] = Field(default_factory=list)
+    missing_qid: List[CitationIssue] = Field(default_factory=list)
+    sources_used: Dict[str, int] = Field(default_factory=dict)
+    runtime_ms: float | None = None
+
+
 class VerificationSummary(BaseModel):
     """
     Summary of verification results from all layers.
@@ -119,6 +218,7 @@ class VerificationSummary(BaseModel):
         stats: Issue counts by layer and severity
         summary_md: Markdown summary describing Layer 2-4 outcomes
         redaction_reason_codes: Codes describing why redactions were applied
+        citation_report: Citation enforcement report (if run)
     """
 
     ok: bool
@@ -128,3 +228,4 @@ class VerificationSummary(BaseModel):
     stats: Dict[str, int] = Field(default_factory=dict)
     summary_md: Optional[str] = None
     redaction_reason_codes: List[str] = Field(default_factory=list)
+    citation_report: Optional[CitationReport] = None

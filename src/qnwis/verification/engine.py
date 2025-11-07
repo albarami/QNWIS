@@ -1,13 +1,14 @@
-"""Verification engine orchestrating Layers 2-4."""
+"""Verification engine orchestrating Layers 2-4 plus citation enforcement."""
 
 from __future__ import annotations
 
 from collections import Counter
 
+from .citation_enforcer import enforce_citations
 from .layer2_crosschecks import cross_check
 from .layer3_policy_privacy import redact
 from .layer4_sanity import sanity_checks
-from .schemas import Issue, VerificationConfig, VerificationSummary
+from .schemas import CitationRules, Issue, VerificationConfig, VerificationSummary
 from ..data.deterministic.models import QueryResult
 
 
@@ -55,6 +56,7 @@ class VerificationEngine:
         self,
         cfg: VerificationConfig,
         user_roles: list[str] | None = None,
+        citation_rules: CitationRules | None = None,
     ) -> None:
         """
         Initialize verification engine.
@@ -62,9 +64,11 @@ class VerificationEngine:
         Args:
             cfg: Verification configuration
             user_roles: List of user roles for RBAC decisions
+            citation_rules: Citation enforcement rules (optional)
         """
         self.cfg = cfg
         self.user_roles = list(user_roles or [])
+        self.citation_rules = citation_rules
 
     def run(
         self,
@@ -84,6 +88,32 @@ class VerificationEngine:
             VerificationSummary with all detected issues and redactions
         """
         issues: list[Issue] = []
+        citation_report = None
+
+        # Citation enforcement (runs before other layers)
+        if self.citation_rules is not None:
+            all_results = [primary] + list(references)
+            citation_report = enforce_citations(
+                narrative_md, all_results, self.citation_rules
+            )
+            # Convert citation issues to verification issues
+            for cit_issue in (
+                citation_report.uncited
+                + citation_report.malformed
+                + citation_report.missing_qid
+            ):
+                issues.append(
+                    Issue(
+                        layer="L2",  # Citations treated as L2 (data quality)
+                        code=cit_issue.code,
+                        message=cit_issue.message,
+                        severity=cit_issue.severity,
+                        details={
+                            "value_text": cit_issue.value_text,
+                            "span": cit_issue.span,
+                        },
+                    )
+                )
 
         # Layer 2: Cross-checks between primary and references
         if self.cfg.crosschecks:
@@ -128,6 +158,7 @@ class VerificationEngine:
             stats=stats,
             summary_md=summary_md,
             redaction_reason_codes=redaction_codes,
+            citation_report=citation_report,
         )
 
     def run_with_agent_report(

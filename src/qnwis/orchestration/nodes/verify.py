@@ -21,13 +21,14 @@ from ..metrics import MetricsObserver, ensure_observer
 from ...agents.base import AgentReport, Evidence
 from ...data.deterministic.models import QueryResult
 from ...verification.engine import VerificationEngine
-from ...verification.schemas import VerificationConfig
+from ...verification.schemas import CitationRules, VerificationConfig
 from ..schemas import WorkflowState
 
 logger = logging.getLogger(__name__)
 
 # Cache for verification config
 _VERIFICATION_CONFIG: VerificationConfig | None = None
+_CITATION_RULES: CitationRules | None = None
 
 
 def _load_verification_config() -> VerificationConfig | None:
@@ -55,6 +56,34 @@ def _load_verification_config() -> VerificationConfig | None:
         return _VERIFICATION_CONFIG
     except Exception as exc:
         logger.error("Failed to load verification config: %s", exc)
+        return None
+
+
+def _load_citation_rules() -> CitationRules | None:
+    """
+    Load citation rules from YAML file (cached).
+
+    Returns:
+        CitationRules if file exists, None otherwise
+    """
+    global _CITATION_RULES
+
+    if _CITATION_RULES is not None:
+        return _CITATION_RULES
+
+    config_path = Path("src/qnwis/config/citation.yml")
+    if not config_path.exists():
+        logger.info("Citation config not found at %s, using defaults", config_path)
+        return None
+
+    try:
+        with open(config_path, "r", encoding="utf-8") as f:
+            config_data = yaml.safe_load(f)
+        _CITATION_RULES = CitationRules.model_validate(config_data)
+        logger.info("Loaded citation rules from %s", config_path)
+        return _CITATION_RULES
+    except Exception as exc:
+        logger.error("Failed to load citation rules: %s", exc)
         return None
 
 
@@ -269,7 +298,12 @@ def verify_structure(
             if workflow_state.task and workflow_state.task.params:
                 user_roles = workflow_state.task.params.get("user_roles", [])
 
-            engine = VerificationEngine(config, user_roles=user_roles)
+            # Load citation rules
+            citation_rules = _load_citation_rules()
+
+            engine = VerificationEngine(
+                config, user_roles=user_roles, citation_rules=citation_rules
+            )
 
             if query_results:
                 verification_summary = engine.run_with_agent_report(
@@ -286,6 +320,11 @@ def verify_structure(
                     "verification_narrative_redacted": verification_summary.redacted_text,
                     "verification_available": True,
                 }
+                # Add citation report if available
+                if verification_summary.citation_report:
+                    verification_metadata["citation_report"] = (
+                        verification_summary.citation_report.model_dump()
+                    )
                 if verification_summary.summary_md:
                     verification_metadata["verification_summary_md"] = verification_summary.summary_md
                 if verification_summary.redaction_reason_codes:

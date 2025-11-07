@@ -204,17 +204,27 @@ def _format_citations(report: AgentReport, max_items: int) -> List[Citation]:
     """
     Extract citations from agent report.
 
+    Deduplicates by query_id to avoid listing the same source multiple times.
+
     Args:
         report: Agent report
+        max_items: Maximum number of citations to return
 
     Returns:
-        List of citations
+        List of deduplicated citations
     """
     citations = []
+    seen_queries: set[str] = set()
+
     for finding in report.findings:
         for ev in finding.evidence:
             if not getattr(ev, "query_id", None):
                 continue
+            # Deduplicate by query_id
+            if ev.query_id in seen_queries:
+                continue
+            seen_queries.add(ev.query_id)
+
             citations.append(
                 Citation(
                     query_id=ev.query_id,
@@ -261,9 +271,75 @@ def _format_freshness(report: AgentReport) -> Dict[str, Freshness]:
                 source=dataset_id,
                 last_updated=last_updated,
                 age_days=age_days,
+                min_timestamp=last_updated,
+                max_timestamp=last_updated,
             )
 
     return freshness
+
+
+def _format_citations_summary(citation_report: Dict[str, Any]) -> ReportSection:
+    """Create citations summary section from citation report."""
+    total = citation_report.get("total_numbers", 0)
+    cited = citation_report.get("cited_numbers", 0)
+    ok = citation_report.get("ok", False)
+    runtime_ms = citation_report.get("runtime_ms")
+
+    sources_used = citation_report.get("sources_used", {}) or {}
+    uncited = citation_report.get("uncited", []) or []
+    malformed = citation_report.get("malformed", []) or []
+    missing_qid = citation_report.get("missing_qid", []) or []
+
+    status = "PASS" if ok else "ATTENTION REQUIRED"
+    lines: list[str] = [
+        f"**Status**: {status}",
+        "",
+        f"**Coverage**: {cited}/{total} numeric claims properly cited",
+    ]
+    if runtime_ms is not None:
+        lines.append(f"**Runtime**: {runtime_ms:.1f} ms")
+    lines.append("")
+
+    if sources_used:
+        lines.append("**Sources Used:**")
+        for source, count in sorted(sources_used.items()):
+            suffix = "s" if count != 1 else ""
+            lines.append(f"- {source} ({count} citation{suffix})")
+        lines.append("")
+
+    def _add_issue_examples(title: str, issues: list[Dict[str, Any]], fallback: str) -> None:
+        if not issues:
+            return
+        lines.append(f"**{title}** ({len(issues)}):")
+        for idx, issue in enumerate(issues[:3], 1):
+            value = issue.get("value_text", "N/A")
+            message = issue.get("message", fallback)
+            lines.append(f"{idx}. `{value}` - {message}")
+        if len(issues) > 3:
+            lines.append(f"*({len(issues) - 3} more {title.lower()})*")
+        lines.append("")
+
+    _add_issue_examples("Uncited Claims", uncited, "Missing citation")
+    _add_issue_examples("Missing Query IDs", missing_qid, "QID required")
+    _add_issue_examples("Unknown Sources", malformed, "Invalid source")
+
+    tips: list[str] = []
+    if uncited:
+        tips.append("Add a canonical prefix (Per LMIS, According to GCC-STAT, World Bank) before each statistic.")
+    if missing_qid:
+        tips.append("Append `QID:` or `query_id=` with the originating query id immediately after the cited sentence.")
+    if malformed:
+        tips.append("Ensure cited datasets map to LMIS, GCC-STAT, or World Bank QueryResults provided to the workflow.")
+    if not tips:
+        tips.append("All numeric claims are fully cited and mapped to trusted data sources.")
+
+    lines.append("**Remediation Tips:**")
+    for tip in tips:
+        lines.append(f"- {tip}")
+
+    body = "\n".join(lines)
+    return ReportSection(title="Citations Summary", body_md=body.strip())
+
 
 
 def format_report(
@@ -343,6 +419,69 @@ def format_report(
         if "verification_warnings" in workflow_state.metadata:
             all_warnings.extend(workflow_state.metadata["verification_warnings"])
 
+        # Extract verification results if available
+        verification_dict = {}
+        redactions_count = 0
+        issues_summary = {}
+
+        verification_summary_md = workflow_state.metadata.get(
+            "verification_summary_md"
+        )
+        redaction_reason_codes = workflow_state.metadata.get(
+            "verification_redaction_codes", []
+        )
+
+        if "verification_ok" in workflow_state.metadata:
+            verification_dict = {
+                "ok": workflow_state.metadata.get("verification_ok", True),
+                "issues_count": workflow_state.metadata.get(
+                    "verification_issues_count", 0
+                ),
+                "stats": workflow_state.metadata.get("verification_stats", {}),
+            }
+            redactions_count = workflow_state.metadata.get(
+                "verification_redactions", 0
+            )
+            issues_summary = workflow_state.metadata.get("verification_stats", {})
+
+            # Apply redactions to sections if available
+            redacted_narrative = workflow_state.metadata.get(
+                "verification_narrative_redacted"
+            )
+            if redacted_narrative and redactions_count > 0:
+                # Add a note about redactions to the executive summary
+                if sections:
+                    sections[0].body_md += (
+                        f"\n\n*Note: {redactions_count} PII "
+                        f"redaction{'s' if redactions_count > 1 else ''} applied.*"
+                    )
+
+        if verification_summary_md:
+            sections.append(
+                ReportSection(
+                    title="Verification Summary",
+                    body_md=verification_summary_md,
+                )
+            )
+
+        if redactions_count > 0:
+            codes = sorted({code for code in redaction_reason_codes if isinstance(code, str)})
+            if not codes and redactions_count:
+                codes = ["PII_DETECTED"]
+            if codes:
+                reasons_body = "\n".join(f"- `{code}`" for code in codes)
+                sections.append(
+                    ReportSection(
+                        title="Redaction Reasons",
+                        body_md=reasons_body,
+                    )
+                )
+
+        # Add citations summary if available
+        citation_report = workflow_state.metadata.get("citation_report")
+        if citation_report:
+            sections.append(_format_citations_summary(citation_report))
+
         # Create result
         result = OrchestrationResult(
             ok=True,
@@ -353,6 +492,9 @@ def format_report(
             reproducibility=reproducibility,
             warnings=all_warnings,
             request_id=task.request_id,
+            verification=verification_dict,
+            redactions_applied=redactions_count,
+            issues_summary=issues_summary,
         )
 
         log_entry = (
