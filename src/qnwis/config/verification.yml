@@ -1,0 +1,36 @@
+# Verification configuration for Layers 2-4
+# Controls cross-checks, privacy policies, and sanity constraints
+
+# Layer 2: Cross-check rules
+crosschecks:
+  - metric: "retention_rate"
+    tolerance_pct: 2.0
+    prefer: "LMIS"
+  - metric: "qatarization_rate"
+    tolerance_pct: 3.0
+    prefer: "LMIS"
+
+# Layer 3: Privacy and policy rules
+privacy:
+  k_anonymity: 15
+  redact_email: true
+  redact_ids_min_digits: 10
+  allow_names_when_role:
+    - "allow_names"
+
+# Layer 4: Sanity check rules
+sanity:
+  - metric: "retention_rate"
+    rate_0_1: true
+  - metric: "qatarization_rate"
+    rate_0_1: true
+  - metric: "headcount"
+    must_be_non_negative: true
+  - metric: "employees"
+    must_be_non_negative: true
+  - metric: "salary"
+    must_be_non_negative: true
+    min_value: 0
+
+# Freshness constraint (applies to all sources)
+freshness_max_hours: 72
