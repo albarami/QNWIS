@@ -256,6 +256,7 @@ class OrchestrationResult(BaseModel):
     request_id: Optional[str] = None
     timestamp: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
     agent_traces: List[Dict[str, Any]] = Field(default_factory=list)
+    cache_stats: Dict[str, int] = Field(default_factory=dict)
 
 
 class WorkflowState(BaseModel):

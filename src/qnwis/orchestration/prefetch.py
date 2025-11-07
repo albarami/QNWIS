@@ -11,10 +11,11 @@ import hashlib
 import json
 import logging
 import time
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from ..agents.base import DataClient
 from ..data.deterministic.models import QueryResult
+from ..data.deterministic.registry import REGISTRY_VERSION
 from .types import PrefetchSpec
 
 logger = logging.getLogger(__name__)
@@ -32,16 +33,26 @@ class Prefetcher:
     No HTTP or SQL access outside DataClient.
     """
 
-    def __init__(self, client: DataClient, timeout_ms: int = 25000) -> None:
+    def __init__(
+        self,
+        client: DataClient,
+        timeout_ms: int = 25000,
+        cache: Optional[Any] = None,
+        cache_version: Optional[str] = None,
+    ) -> None:
         """
         Initialize the prefetcher.
 
         Args:
             client: DataClient instance for deterministic queries
             timeout_ms: Timeout for entire prefetch operation in milliseconds
+            cache: Optional DeterministicRedisCache for write-through caching
+            cache_version: Override cache version string (defaults to registry checksum)
         """
         self.client = client
         self.timeout_ms = timeout_ms
+        self.cache = cache
+        self.cache_version = cache_version or REGISTRY_VERSION
 
     def run(self, specs: List[PrefetchSpec]) -> Dict[str, QueryResult]:
         """
@@ -116,6 +127,25 @@ class Prefetcher:
 
                 cache[cache_key] = result
                 logger.debug("Cached result for key: %s (rows=%d)", cache_key, len(result.rows))
+
+                # Write to Redis cache if available
+                if self.cache:
+                    try:
+                        from ..cache.keys import make_cache_key
+
+                        qid = getattr(result, "query_id", None)
+                        if not isinstance(qid, str) or not qid:
+                            raise ValueError(
+                                f"Prefetch result from {fn_name} missing query_id."
+                            )
+                        cache_k, ttl = make_cache_key(
+                            fn_name, qid, params, self.cache_version
+                        )
+                        self.cache.set(cache_k, result, ttl)
+                    except Exception as cache_exc:
+                        logger.warning(
+                            "Failed to write to cache: %s", cache_exc
+                        )
 
             except Exception as exc:
                 msg = f"Prefetch failed for {fn_name}({params}): {exc}"

@@ -8,7 +8,7 @@ The graph routes tasks to agents, validates outputs, and formats results consist
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Iterable, Literal
+from typing import Any, Dict, Iterable, Literal, List, cast
 
 from langgraph.graph import END, StateGraph
 
@@ -16,6 +16,11 @@ from .nodes import error_handler, format_report, invoke_agent, route_intent, ver
 from .registry import AgentRegistry
 from .schemas import OrchestrationResult, OrchestrationTask, WorkflowState
 from .metrics import MetricsObserver, ensure_observer
+from .prefetch import Prefetcher
+from .coordination import Coordinator
+from .policies import get_policy_for_complexity, DEFAULT_POLICY
+from .types import PrefetchSpec
+from ..agents.base import DataClient
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +45,8 @@ class QNWISGraph:
         registry: AgentRegistry,
         config: Dict[str, Any] | None = None,
         observer: MetricsObserver | None = None,
+        data_client: DataClient | None = None,
+        cache: Any | None = None,
     ) -> None:
         """
         Initialize the QNWIS orchestration graph.
@@ -48,10 +55,14 @@ class QNWISGraph:
             registry: Agent registry with intent mappings
             config: Configuration dict with timeouts, retries, validation settings
             observer: Metrics observer for counters/timers
+            data_client: DataClient for prefetch operations (optional)
+            cache: Optional DeterministicRedisCache for caching (optional)
         """
         self.registry = registry
         self.config = config or self._default_config()
         self.observer = ensure_observer(observer)
+        self.data_client = data_client
+        self.cache = cache
         self._graph: StateGraph | None = None
 
         logger.info(
@@ -68,7 +79,10 @@ class QNWISGraph:
             Default config dict
         """
         return {
-            "timeouts": {"agent_call_ms": 30000},
+            "timeouts": {
+                "agent_call_ms": 30000,
+                "prefetch_ms": 25000,
+            },
             "retries": {
                 "agent_call": 1,
                 "transient": ["TimeoutError", "ConnectionError"],
@@ -84,6 +98,9 @@ class QNWISGraph:
                 "top_evidence": 5,
             },
             "logging": {"level": "INFO"},
+            "coordination": {
+                "enabled": False,  # Enable for multi-agent flows
+            },
         }
 
     def build(self) -> StateGraph:
@@ -100,6 +117,7 @@ class QNWISGraph:
 
         # Add nodes
         workflow.add_node("router", self._router_node)
+        workflow.add_node("prefetch", self._prefetch_node)
         workflow.add_node("invoke", self._invoke_node)
         workflow.add_node("verify", self._verify_node)
         workflow.add_node("format", self._format_node)
@@ -111,6 +129,16 @@ class QNWISGraph:
         # Add edges with conditional routing
         workflow.add_conditional_edges(
             "router",
+            self._should_proceed,
+            {
+                "prefetch": "prefetch",
+                "invoke": "invoke",
+                "error": "error",
+            },
+        )
+
+        workflow.add_conditional_edges(
+            "prefetch",
             self._should_proceed,
             {
                 "invoke": "invoke",
@@ -150,6 +178,55 @@ class QNWISGraph:
         """Router node wrapper."""
         return route_intent(state, self.registry)
 
+    def _prefetch_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
+        """Prefetch node wrapper - executes declarative prefetch specs."""
+        workflow_state = WorkflowState(**state)
+
+        # Skip prefetch if no routing decision or no prefetch specs
+        if not workflow_state.routing_decision:
+            logger.debug("No routing decision, skipping prefetch")
+            return state
+
+        prefetch_specs = workflow_state.routing_decision.prefetch
+        if not prefetch_specs:
+            logger.debug("No prefetch specs, skipping prefetch")
+            return state
+
+        # Skip if data_client not available
+        if not self.data_client:
+            logger.warning("DataClient not available, skipping prefetch")
+            return {
+                **state,
+                "logs": workflow_state.logs + ["WARNING: Prefetch skipped (no DataClient)"],
+            }
+
+        try:
+            timeout_ms = int(self.config.get("timeouts", {}).get("prefetch_ms", 25000))
+            prefetcher = Prefetcher(
+                self.data_client, timeout_ms=timeout_ms, cache=self.cache
+            )
+
+            logger.info("Running prefetch with %d specs", len(prefetch_specs))
+            # Cast to satisfy type checker - validated by Pydantic
+            typed_specs = cast(List[PrefetchSpec], prefetch_specs)
+            prefetch_cache = prefetcher.run(typed_specs)
+
+            return {
+                **state,
+                "prefetch_cache": prefetch_cache,
+                "logs": workflow_state.logs
+                + [f"Prefetch completed: {len(prefetch_cache)} entries"],
+            }
+
+        except Exception as exc:
+            logger.exception("Prefetch failed")
+            # Continue without prefetch - agents will fetch on demand
+            return {
+                **state,
+                "logs": workflow_state.logs
+                + [f"WARNING: Prefetch failed: {exc}", "Continuing without prefetch"],
+            }
+
     def _invoke_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """Invoke node wrapper."""
         timeout_ms = int(self.config.get("timeouts", {}).get("agent_call_ms", 30000))
@@ -188,7 +265,9 @@ class QNWISGraph:
         """Error handler node wrapper."""
         return error_handler(state, observer=self.observer)
 
-    def _should_proceed(self, state: Dict[str, Any]) -> Literal["invoke", "verify", "format", "error"]:
+    def _should_proceed(
+        self, state: Dict[str, Any]
+    ) -> Literal["prefetch", "invoke", "verify", "format", "error"]:
         """
         Conditional edge function to determine next node.
 
@@ -209,6 +288,15 @@ class QNWISGraph:
             # Router hasn't run yet, this shouldn't happen
             logger.error("Routing decision with no route or error")
             return "error"
+
+        # Check if we need prefetch
+        if workflow_state.routing_decision:
+            has_prefetch_specs = bool(workflow_state.routing_decision.prefetch)
+            prefetch_executed = "prefetch_cache" in state or bool(workflow_state.prefetch_cache)
+
+            if has_prefetch_specs and not prefetch_executed:
+                # Need to run prefetch
+                return "prefetch"
 
         if workflow_state.agent_output is None:
             # Agent hasn't been invoked yet
@@ -259,10 +347,12 @@ class QNWISGraph:
         initial_state: Dict[str, Any] = {
             "task": task,
             "route": None,
+            "routing_decision": None,
             "agent_output": None,
             "error": None,
             "logs": [f"Started workflow for intent: {task.intent}"],
             "metadata": {},
+            "prefetch_cache": {},
         }
 
         try:
@@ -332,6 +422,8 @@ def create_graph(
     registry: AgentRegistry,
     config: Dict[str, Any] | None = None,
     observer: MetricsObserver | None = None,
+    data_client: DataClient | None = None,
+    cache: Any | None = None,
 ) -> QNWISGraph:
     """
     Factory function to create and build a QNWIS graph.
@@ -339,10 +431,15 @@ def create_graph(
     Args:
         registry: Agent registry
         config: Optional configuration
+        observer: Optional metrics observer
+        data_client: Optional DataClient for prefetch operations
+        cache: Optional DeterministicRedisCache for caching
 
     Returns:
         Built QNWISGraph instance
     """
-    graph = QNWISGraph(registry, config, observer=observer)
+    graph = QNWISGraph(
+        registry, config, observer=observer, data_client=data_client, cache=cache
+    )
     graph.build()
     return graph
