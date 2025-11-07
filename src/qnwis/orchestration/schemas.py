@@ -244,6 +244,11 @@ class OrchestrationResult(BaseModel):
         request_id: Request tracking identifier
         timestamp: When the result was generated
         agent_traces: Execution traces from coordinated agents
+        verification: Verification results from Layers 2-4 (if available)
+        redactions_applied: Count of PII redactions applied
+        issues_summary: Count of issues by severity
+        audit_manifest: Audit manifest metadata (Layer 4)
+        audit_id: Audit pack identifier for tamper-evident trail
     """
 
     ok: bool
@@ -257,6 +262,11 @@ class OrchestrationResult(BaseModel):
     timestamp: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
     agent_traces: List[Dict[str, Any]] = Field(default_factory=list)
     cache_stats: Dict[str, int] = Field(default_factory=dict)
+    verification: Dict[str, Any] = Field(default_factory=dict)
+    redactions_applied: int = 0
+    issues_summary: Dict[str, int] = Field(default_factory=dict)
+    audit_manifest: Optional[Dict[str, Any]] = None
+    audit_id: Optional[str] = None
 
 
 class WorkflowState(BaseModel):

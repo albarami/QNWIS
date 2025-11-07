@@ -421,6 +421,92 @@ def _format_result_verification_summary(
     return ReportSection(title="Result Verification Summary", body_md=body.strip())
 
 
+def _format_audit_summary(audit_manifest: Dict[str, Any]) -> ReportSection:
+    """Create audit summary section from audit manifest."""
+    audit_id = audit_manifest.get("audit_id", "unknown")
+    created_at = audit_manifest.get("created_at", "unknown")
+    data_sources = audit_manifest.get("data_sources", [])
+    freshness = audit_manifest.get("freshness", {})
+    pack_paths = audit_manifest.get("pack_paths", {})
+    digest = audit_manifest.get("digest_sha256", "")
+    hmac_present = bool(audit_manifest.get("hmac_sha256"))
+
+    top_sources = data_sources[:3]
+    source_lines = []
+    for source in top_sources:
+        source_freshness = freshness.get(source, "unknown") or "unknown"
+        source_lines.append(f"- {source} (as of {source_freshness[:10]})")
+    if len(data_sources) > len(top_sources):
+        remaining = len(data_sources) - len(top_sources)
+        source_lines.append(f"*+{remaining} additional source(s)*")
+
+    evidence_count = sum(1 for key in pack_paths if key.startswith("evidence/"))
+    source_count = sum(1 for key in pack_paths if key.startswith("sources/"))
+    replay_status = "present" if "replay" in pack_paths else "missing"
+
+    lines: list[str] = [
+        f"**Audit ID**: `{audit_id}`",
+        f"**Created**: {created_at[:19]}",
+        "",
+        "**Top Sources:**",
+        *(source_lines or ["- none recorded"]),
+        "",
+        "**Integrity:**",
+        f"- SHA-256: `{digest[:32]}...`" if digest else "- SHA-256: unavailable",
+        f"- HMAC: {'enabled' if hmac_present else 'not configured'}",
+        "",
+        "**Artifacts:**",
+        f"- Evidence files: {evidence_count}",
+        f"- Source descriptors: {source_count}",
+        f"- Total files: {len(pack_paths)}",
+        f"- Replay stub: {replay_status}",
+        "",
+        "**Reproducibility:**",
+        "Run `reproducibility.py` inside the audit pack to refetch QueryResults.",
+    ]
+
+    body = "\n".join(line for line in lines if line is not None)
+    return ReportSection(title="Audit Summary", body_md=body.strip())
+    # Extract pack root from manifest path
+    pack_root = ""
+    if "manifest" in pack_paths:
+        from pathlib import Path
+        pack_root = str(Path(pack_paths["manifest"]).parent)
+
+    lines: list[str] = [
+        f"**Audit ID**: `{audit_id}`",
+        f"**Created**: {created_at[:19]}",
+        "",
+        f"**Data Sources** ({len(data_sources)}):",
+    ]
+
+    for source in data_sources[:5]:
+        source_freshness = freshness.get(source, "unknown")
+        lines.append(f"- {source} (as of {source_freshness[:10]})")
+
+    if len(data_sources) > 5:
+        lines.append(f"*({len(data_sources) - 5} more sources)*")
+
+    lines.append("")
+    lines.append("**Integrity:**")
+    lines.append(f"- SHA-256: `{digest[:32]}...`")
+    if hmac_present:
+        lines.append("- HMAC-SHA256: ✓ signed")
+
+    lines.append("")
+    lines.append("**Audit Pack:**")
+    if pack_root:
+        lines.append(f"- Location: `{pack_root}`")
+    lines.append(f"- Files: {len(pack_paths)}")
+
+    lines.append("")
+    lines.append("**Reproducibility:**")
+    lines.append(f"To reproduce this analysis, see `{pack_root}/reproducibility.py`")
+
+    body = "\n".join(lines)
+    return ReportSection(title="Audit Summary", body_md=body.strip())
+
+
 def format_report(
     state: Dict[str, Any],
     formatting_config: Dict[str, Any] | None = None,
@@ -568,6 +654,12 @@ def format_report(
         if result_verification_report:
             sections.append(_format_result_verification_summary(result_verification_report))
 
+        # Add audit summary if available
+        audit_manifest = workflow_state.metadata.get("audit_manifest")
+        audit_id = workflow_state.metadata.get("audit_id")
+        if audit_manifest:
+            sections.append(_format_audit_summary(audit_manifest))
+
         # Create result
         result = OrchestrationResult(
             ok=True,
@@ -581,6 +673,8 @@ def format_report(
             verification=verification_dict,
             redactions_applied=redactions_count,
             issues_summary=issues_summary,
+            audit_manifest=audit_manifest,
+            audit_id=audit_id,
         )
 
         log_entry = (

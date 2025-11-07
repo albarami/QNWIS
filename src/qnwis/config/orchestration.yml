@@ -1,0 +1,64 @@
+# QNWIS Orchestration Configuration
+# Sensible defaults for production deployment
+
+# Timeout settings (milliseconds)
+timeouts:
+  agent_call_ms: 30000  # 30 seconds for agent execution
+  graph_total_ms: 60000  # 60 seconds total graph execution
+
+# Retry settings
+retries:
+  agent_call: 1  # Retry once on failure
+  transient:
+    - TimeoutError
+    - ConnectionError
+
+# Validation settings
+validation:
+  strict: false  # Non-blocking structural validation
+  require_evidence: true  # Findings must have evidence
+  require_metrics: false  # Metrics optional
+
+# Enabled intents (disable to prevent execution)
+enabled_intents:
+  - pattern.anomalies
+  - pattern.correlation
+  - pattern.root_causes
+  - pattern.best_practices
+  - strategy.gcc_benchmark
+  - strategy.talent_competition
+  - strategy.vision2030
+
+# Logging configuration
+logging:
+  level: INFO  # DEBUG, INFO, WARNING, ERROR
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  log_params: true  # Log parameter keys (not values)
+  log_elapsed: true  # Log execution time
+
+# Report formatting
+formatting:
+  max_findings: 10  # Maximum findings to include in report
+  max_citations: 20  # Maximum citations to include
+  redact_pii: true  # Enable PII redaction
+  include_metadata: true  # Include reproducibility metadata
+
+# Performance tuning
+performance:
+  cache_ttl_seconds: 300  # 5 minutes
+  max_concurrent_queries: 5  # Limit concurrent data queries
+  enable_query_batching: true  # Batch related queries
+
+# Security settings
+security:
+  allow_dynamic_methods: false  # Disable reflective access
+  sanitize_errors: true  # Remove sensitive info from errors
+  audit_log: true  # Enable audit trail
+
+# Audit trail configuration (Layer 4)
+audit:
+  persist: true  # Enable audit pack generation
+  pack_dir: "./audit_packs"  # Directory for audit packs
+  sqlite_path: "./audit/audit.db"  # SQLite index database
+  hmac_env: "QNWIS_AUDIT_HMAC_KEY"  # Environment variable for HMAC key (optional)
+  retention_days: 90  # Default retention window for qnwis_audit prune

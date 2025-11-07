@@ -10,7 +10,9 @@ Now includes Layers 2-4 verification via VerificationEngine.
 from __future__ import annotations
 
 import logging
+import os
 from collections.abc import Mapping
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -21,8 +23,11 @@ from ..metrics import MetricsObserver, ensure_observer
 from ...agents.base import AgentReport, Evidence
 from ...data.deterministic.models import QueryResult
 from ...verification.engine import VerificationEngine
-from ...verification.schemas import CitationRules, VerificationConfig
+from ...verification.schemas import CitationRules, CitationReport, VerificationConfig
+from ...verification.audit_trail import AuditTrail
+from ...verification.audit_utils import redact_text
 from ..schemas import WorkflowState
+from ..utils import filter_sensitive_params
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +35,7 @@ logger = logging.getLogger(__name__)
 _VERIFICATION_CONFIG: VerificationConfig | None = None
 _CITATION_RULES: CitationRules | None = None
 _RESULT_VERIFICATION_TOLERANCES: dict[str, Any] | None = None
+_AUDIT_CONFIG: dict[str, Any] | None = None
 
 
 def _load_verification_config() -> VerificationConfig | None:
@@ -121,6 +127,115 @@ def _load_result_verification_tolerances() -> dict[str, Any] | None:
     except Exception as exc:
         logger.error("Failed to load result verification tolerances: %s", exc)
         return None
+
+
+def _load_audit_config() -> dict[str, Any]:
+    """
+    Load audit configuration from orchestration.yml (cached).
+
+    Returns:
+        Dictionary with audit configuration
+    """
+    global _AUDIT_CONFIG
+
+    if _AUDIT_CONFIG is not None:
+        return _AUDIT_CONFIG
+
+    config_path = Path("src/qnwis/config/orchestration.yml")
+    defaults = {
+        "persist": True,
+        "pack_dir": "./audit_packs",
+        "sqlite_path": "./audit/audit.db",
+        "hmac_env": "QNWIS_AUDIT_HMAC_KEY",
+    }
+
+    if not config_path.exists():
+        logger.info("Orchestration config not found, using audit defaults")
+        _AUDIT_CONFIG = defaults
+        return _AUDIT_CONFIG
+
+    try:
+        with open(config_path, "r", encoding="utf-8") as f:
+            config_data = yaml.safe_load(f)
+        audit_config = config_data.get("audit", {})
+        # Merge with defaults
+        _AUDIT_CONFIG = {**defaults, **audit_config}
+        logger.info("Loaded audit config from %s", config_path)
+        return _AUDIT_CONFIG
+    except Exception as exc:
+        logger.error("Failed to load audit config: %s", exc)
+        _AUDIT_CONFIG = defaults
+        return _AUDIT_CONFIG
+
+
+def _build_replay_stub(
+    workflow_state: WorkflowState,
+    orchestration_meta: dict[str, Any],
+    query_results: list[QueryResult],
+) -> dict[str, Any]:
+    """
+    Build replay metadata for offline dry-runs.
+
+    Captures sanitized task parameters, routing decisions, agent call specs,
+    and the ordered list of query IDs used in the run.
+    """
+    task_payload: dict[str, Any] = {}
+    if workflow_state.task:
+        task = workflow_state.task
+        task_payload = {
+            "intent": task.intent,
+            "query_text": redact_text(task.query_text or "") if task.query_text else None,
+            "params": filter_sensitive_params(task.params),
+            "request_id": task.request_id,
+            "user_id": getattr(task, "user_id", None),
+        }
+
+    routing_decision = None
+    if workflow_state.routing_decision is not None:
+        decision = workflow_state.routing_decision
+        if hasattr(decision, "model_dump"):
+            routing_decision = decision.model_dump()
+        else:
+            routing_decision = decision  # type: ignore[assignment]
+
+    agent_calls: list[dict[str, Any]] = []
+    agent_output = workflow_state.agent_output
+    if isinstance(agent_output, AgentReport):
+        evidence_map: list[dict[str, Any]] = []
+        for finding in agent_output.findings:
+            evidence_qids = sorted(
+                {
+                    ev.query_id
+                    for ev in finding.evidence
+                    if isinstance(ev, Evidence) and ev.query_id
+                }
+            )
+            evidence_map.append(
+                {
+                    "title": redact_text(finding.title),
+                    "summary": redact_text(finding.summary),
+                    "evidence_query_ids": evidence_qids,
+                }
+            )
+
+        agent_calls.append(
+            {
+                "agent": agent_output.agent,
+                "findings": evidence_map,
+                "warnings": [redact_text(w) for w in agent_output.warnings],
+            }
+        )
+
+    return {
+        "task": task_payload,
+        "routing": orchestration_meta.get("routing", {}),
+        "routing_decision": routing_decision,
+        "agents": orchestration_meta.get("agents", []),
+        "agent_calls": agent_calls,
+        "cache_stats": orchestration_meta.get("cache_stats", {}),
+        "query_ids": [qr.query_id for qr in query_results],
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+    }
 
 
 def _extract_query_results_from_evidence(
@@ -310,24 +425,23 @@ def verify_structure(
     )
     log_messages = [log_entry]
 
+    narrative_parts_raw = [
+        f"## {finding.title}\n\n{finding.summary}" for finding in output.findings
+    ]
+    narrative_md_raw = "\n\n".join(part for part in narrative_parts_raw if part)
+
     # Run Layers 2-4 verification if config is available
     verification_summary = None
     verification_metadata = {}
     verification_error = None
 
+    query_results = _extract_query_results_from_evidence(
+        output, workflow_state.prefetch_cache
+    )
+
     config = _load_verification_config()
     if config is not None:
         try:
-            # Extract narrative text from findings
-            narrative_parts = []
-            for finding in output.findings:
-                narrative_parts.append(f"## {finding.title}\n\n{finding.summary}")
-            narrative_md = "\n\n".join(narrative_parts)
-
-            query_results = _extract_query_results_from_evidence(
-                output, workflow_state.prefetch_cache
-            )
-
             # Run verification engine
             # Get user roles from task params if available
             user_roles = []
@@ -347,7 +461,7 @@ def verify_structure(
 
             if query_results:
                 verification_summary = engine.run_with_agent_report(
-                    narrative_md, query_results
+                    narrative_md_raw, query_results
                 )
                 verification_metadata = {
                     "verification_ok": verification_summary.ok,
@@ -417,7 +531,91 @@ def verify_structure(
             verification_error = f"Verification engine exception: {type(exc).__name__}: {exc}"
             warnings.append(verification_error)
 
-    # If verification found errors, fail the workflow
+    # Generate audit trail (Layer 4) even on WARNING/ERROR to capture provenance
+    audit_manifest_dict: dict[str, Any] | None = None
+    audit_id: str | None = None
+
+    audit_config = _load_audit_config()
+    if audit_config.get("persist") and verification_summary is not None:
+        try:
+            orchestration_meta = {
+                "routing": workflow_state.metadata.get("routing", {}),
+                "agents": workflow_state.metadata.get("agents", []),
+                "timings": workflow_state.metadata.get("timings", {}),
+                "cache_stats": workflow_state.metadata.get("cache_stats", {}),
+                "params": filter_sensitive_params(
+                    workflow_state.task.params if workflow_state.task else {}
+                ),
+            }
+
+            code_version = os.environ.get("GIT_COMMIT", "unknown")
+            registry_version = os.environ.get("DATA_REGISTRY_VERSION", "v1.0")
+            request_id = (
+                workflow_state.task.request_id
+                if workflow_state.task and workflow_state.task.request_id
+                else workflow_state.metadata.get("request_id", "unknown")
+            )
+
+            hmac_key = None
+            hmac_env = audit_config.get("hmac_env")
+            if hmac_env:
+                secret = os.environ.get(hmac_env)
+                if secret:
+                    hmac_key = secret.encode("utf-8")
+
+            audit_trail = AuditTrail(
+                pack_dir=audit_config.get("pack_dir", "./audit_packs"),
+                sqlite_path=audit_config.get("sqlite_path"),
+                hmac_key=hmac_key,
+            )
+
+            citation_report = (
+                verification_summary.citation_report
+                if verification_summary.citation_report
+                else CitationReport(ok=True, total_numbers=0, cited_numbers=0)
+            )
+
+            manifest = audit_trail.generate_trail(
+                response_md=narrative_md_raw,
+                qresults=query_results,
+                verification=verification_summary,
+                citations=citation_report,
+                orchestration_meta=orchestration_meta,
+                code_version=code_version,
+                registry_version=registry_version,
+                request_id=request_id,
+            )
+
+            replay_stub = _build_replay_stub(
+                workflow_state,
+                orchestration_meta,
+                query_results,
+            )
+
+            final_manifest = audit_trail.write_pack(
+                manifest=manifest,
+                response_md=narrative_md_raw,
+                qresults=query_results,
+                citations=citation_report,
+                result_report=verification_summary.result_verification_report,
+                replay_stub=replay_stub,
+            )
+
+            audit_manifest_dict = final_manifest.to_dict()
+            audit_id = final_manifest.audit_id
+            verification_metadata["audit_manifest"] = audit_manifest_dict
+            verification_metadata["audit_id"] = audit_id
+
+            logger.info("Generated audit trail: audit_id=%s", audit_id)
+            log_messages.append(f"Audit trail generated: {audit_id}")
+
+        except Exception as exc:
+            logger.exception("Failed to generate audit trail")
+            warnings.append(
+                f"Audit trail generation failed: {type(exc).__name__}: {exc}"
+            )
+
+    # If verification found errors, fail the workflow but still attach audit metadata
     if verification_error:
         metrics.increment("agent.verify.failure", tags={"reason": "verification_errors"})
         return {
