@@ -260,6 +260,219 @@ strategy.vision2030:
         sectors: "@sectors"
         horizon_months: "@months"
 
+# Pattern Mining Intents
+pattern.stable_relations:
+  description: "Discover stable driver-outcome relationships over historical windows"
+  keywords:
+    - "stable"
+    - "consistent"
+    - "relationship"
+    - "driver"
+    - "factor"
+    - "predictor"
+    - "effect"
+    - "influence"
+    - "impact"
+    - "determine"
+    - "affect"
+    - "correlation over time"
+    - "persistent"
+  metrics_hint:
+    - "retention"
+    - "qatarization"
+    - "salary"
+    - "turnover"
+    - "wage"
+  examples:
+    - "What drivers show stable relationships with retention?"
+    - "Identify consistent factors affecting qatarization"
+    - "Which variables persistently influence salary growth?"
+    - "Find stable predictors of turnover"
+  prefetch:
+    - fn: get_multi_metric_timeseries
+      description: "Multi-variable time series for pattern mining"
+      require_metrics: true
+      params:
+        metrics: "@metrics"
+        sectors: "@sectors"
+        horizon_months: "@months"
+
+pattern.seasonal_effects:
+  description: "Detect seasonal lift patterns by month or quarter"
+  keywords:
+    - "seasonal"
+    - "monthly"
+    - "quarter"
+    - "cyclical"
+    - "month-of-year"
+    - "seasonality"
+    - "peak month"
+    - "trough"
+    - "calendar effect"
+    - "recurring pattern"
+    - "annual cycle"
+  metrics_hint:
+    - "retention"
+    - "qatarization"
+    - "hiring"
+    - "turnover"
+    - "employment"
+  examples:
+    - "Are there seasonal patterns in retention?"
+    - "Which months show peak hiring?"
+    - "Detect monthly cycles in turnover"
+    - "Identify quarterly seasonality in qatarization"
+  prefetch:
+    - fn: get_monthly_timeseries
+      description: "Monthly time series for seasonal analysis"
+      require_metrics: true
+      params:
+        metrics: "@metrics"
+        sectors: "@sectors"
+        horizon_months: 36  # Need multi-year for seasonality
+
+pattern.driver_screen:
+  description: "Screen a driver variable across cohorts and windows"
+  keywords:
+    - "screen"
+    - "compare cohorts"
+    - "across sectors"
+    - "which sector"
+    - "which cohort"
+    - "where does"
+    - "segment analysis"
+    - "cross-cohort"
+    - "differential effect"
+    - "varies by"
+  sectors_hint: true
+  metrics_hint:
+    - "retention"
+    - "qatarization"
+    - "salary"
+    - "turnover"
+  examples:
+    - "Screen salary as a driver of retention across sectors"
+    - "Compare wage effects on qatarization by cohort"
+    - "Which sectors show strongest salary-retention link?"
+    - "Where does promotion rate affect turnover most?"
+  prefetch:
+    - fn: get_cohort_timeseries
+      description: "Cohort-stratified time series"
+      require_metrics: true
+      require_sectors: true
+      params:
+        metrics: "@metrics"
+        sectors: "@sectors"
+        horizon_months: "@months"
+
+# Time Machine Intents
+time.baseline:
+  description: "Compute seasonal baseline and index-100 for historical time-series"
+  keywords:
+    - "baseline"
+    - "seasonal"
+    - "average"
+    - "normal"
+    - "expected"
+    - "typical"
+    - "index"
+    - "normalize"
+    - "band"
+    - "deviation from baseline"
+    - "seasonal pattern"
+    - "historical baseline"
+  metrics_hint:
+    - "retention"
+    - "qatarization"
+    - "salary"
+    - "employment"
+    - "attrition"
+  examples:
+    - "What is the seasonal baseline for retention?"
+    - "Show me the normal pattern for qatarization"
+    - "Compute index-100 for salary trends"
+    - "Historical baseline for employment in Construction"
+  prefetch:
+    - fn: get_time_series
+      description: "Monthly time-series for baseline computation"
+      require_metrics: true
+      params:
+        metrics: "@metrics"
+        sectors: "@sectors"
+        horizon_months: "@months"
+
+time.trend:
+  description: "Analyze trends with YoY/QtQ growth rates and momentum"
+  keywords:
+    - "trend"
+    - "trending"
+    - "direction"
+    - "momentum"
+    - "acceleration"
+    - "yoy"
+    - "year over year"
+    - "quarter over quarter"
+    - "qtq"
+    - "growth rate"
+    - "slope"
+    - "velocity"
+    - "smoothed"
+    - "moving average"
+  metrics_hint:
+    - "retention"
+    - "qatarization"
+    - "salary"
+    - "employment"
+    - "attrition"
+  examples:
+    - "What is the trend for retention?"
+    - "Show YoY growth for qatarization"
+    - "Analyze salary momentum in Finance"
+    - "Is employment accelerating or slowing?"
+  prefetch:
+    - fn: get_time_series
+      description: "Monthly time-series for trend analysis"
+      require_metrics: true
+      params:
+        metrics: "@metrics"
+        sectors: "@sectors"
+        horizon_months: "@months"
+
+time.breaks:
+  description: "Detect structural breaks and change points in time-series"
+  keywords:
+    - "break"
+    - "structural break"
+    - "change point"
+    - "regime change"
+    - "shift"
+    - "discontinuity"
+    - "jump"
+    - "cusum"
+    - "disruption"
+    - "sudden change"
+    - "turning point"
+    - "inflection"
+  metrics_hint:
+    - "retention"
+    - "qatarization"
+    - "salary"
+    - "employment"
+    - "attrition"
+  examples:
+    - "Detect structural breaks in retention"
+    - "When did qatarization rates shift?"
+    - "Find change points in salary trends"
+    - "Identify disruptions in employment patterns"
+  prefetch:
+    - fn: get_time_series
+      description: "Monthly time-series for break detection"
+      require_metrics: true
+      params:
+        metrics: "@metrics"
+        sectors: "@sectors"
+        horizon_months: "@months"
+
 # Urgency Lexicon (for crisis detection)
 urgency_keywords:
   - "urgent"
