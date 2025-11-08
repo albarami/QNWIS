@@ -1,0 +1,330 @@
+<pre># Readiness Report: Steps 1-25
+
+**Generated:** 2025-11-08T16:18:23.400655
+**Overall Status:** FAIL
+**Execution Time:** 9 ms
+
+## Summary
+
+- **Total Gates:** 1
+- **Passed:** 0
+- **Failed:** 1
+
+## Gate Results
+
+### step_completeness [FAIL]
+- **Duration:** 8 ms
+- **Severity:** ERROR
+```json
+{
+  &quot;steps&quot;: {
+    &quot;step_01&quot;: {
+      &quot;name&quot;: &quot;Project structure &amp; configuration&quot;,
+      &quot;code_ok&quot;: true,
+      &quot;tests_ok&quot;: true,
+      &quot;smoke_ok&quot;: true,
+      &quot;missing&quot;: {
+        &quot;code&quot;: [],
+        &quot;tests&quot;: [],
+        &quot;smoke&quot;: []
+      }
+    },
+    &quot;step_02&quot;: {
+      &quot;name&quot;: &quot;MCP tooling + API hygiene&quot;,
+      &quot;code_ok&quot;: true,
+      &quot;tests_ok&quot;: false,
+      &quot;smoke_ok&quot;: true,
+      &quot;missing&quot;: {
+        &quot;code&quot;: [],
+        &quot;tests&quot;: [
+          &quot;tests/unit/test_mcp_tools.py&quot;
+        ],
+        &quot;smoke&quot;: []
+      }
+    },
+    &quot;step_03&quot;: {
+      &quot;name&quot;: &quot;Deterministic data layer&quot;,
+      &quot;code_ok&quot;: true,
+      &quot;tests_ok&quot;: true,
+      &quot;smoke_ok&quot;: true,
+      &quot;missing&quot;: {
+        &quot;code&quot;: [],
+        &quot;tests&quot;: [],
+        &quot;smoke&quot;: []
+      }
+    },
+    &quot;step_04&quot;: {
+      &quot;name&quot;: &quot;LangGraph workflows&quot;,
+      &quot;code_ok&quot;: true,
+      &quot;tests_ok&quot;: true,
+      &quot;smoke_ok&quot;: true,
+      &quot;missing&quot;: {
+        &quot;code&quot;: [],
+        &quot;tests&quot;: [],
+        &quot;smoke&quot;: []
+      }
+    },
+    &quot;step_05&quot;: {
+      &quot;name&quot;: &quot;Agents v1 hardening&quot;,
+      &quot;code_ok&quot;: true,
+      &quot;tests_ok&quot;: true,
+      &quot;smoke_ok&quot;: true,
+      &quot;missing&quot;: {
+        &quot;code&quot;: [],
+        &quot;tests&quot;: [],
+        &quot;smoke&quot;: []
+      }
+    },
+    &quot;step_06&quot;: {
+      &quot;name&quot;: &quot;Synthetic LMIS pack&quot;,
+      &quot;code_ok&quot;: true,
+      &quot;tests_ok&quot;: true,
+      &quot;smoke_ok&quot;: true,
+      &quot;missing&quot;: {
+        &quot;code&quot;: [],
+        &quot;tests&quot;: [],
+        &quot;smoke&quot;: []
+      }
+    },
+    &quot;step_07&quot;: {
+      &quot;name&quot;: &quot;Routing orchestration&quot;,
+      &quot;code_ok&quot;: true,
+      &quot;tests_ok&quot;: true,
+      &quot;smoke_ok&quot;: true,
+      &quot;missing&quot;: {
+        &quot;code&quot;: [],
+        &quot;tests&quot;: [],
+        &quot;smoke&quot;: []
+      }
+    },
+    &quot;step_08&quot;: {
+      &quot;name&quot;: &quot;Verification + briefing&quot;,
+      &quot;code_ok&quot;: true,
+      &quot;tests_ok&quot;: true,
+      &quot;smoke_ok&quot;: true,
+      &quot;missing&quot;: {
+        &quot;code&quot;: [],
+        &quot;tests&quot;: [],
+        &quot;smoke&quot;: []
+      }
+    },
+    &quot;step_09&quot;: {
+      &quot;name&quot;: &quot;Data API v2&quot;,
+      &quot;code_ok&quot;: true,
+      &quot;tests_ok&quot;: true,
+      &quot;smoke_ok&quot;: true,
+      &quot;missing&quot;: {
+        &quot;code&quot;: [],
+        &quot;tests&quot;: [],
+        &quot;smoke&quot;: []
+      }
+    },
+    &quot;step_10&quot;: {
+      &quot;name&quot;: &quot;Transforms catalog&quot;,
+      &quot;code_ok&quot;: true,
+      &quot;tests_ok&quot;: true,
+      &quot;smoke_ok&quot;: true,
+      &quot;missing&quot;: {
+        &quot;code&quot;: [],
+        &quot;tests&quot;: [],
+        &quot;smoke&quot;: []
+      }
+    },
+    &quot;step_11&quot;: {
+      &quot;name&quot;: &quot;UI demos&quot;,
+      &quot;code_ok&quot;: true,
+      &quot;tests_ok&quot;: true,
+      &quot;smoke_ok&quot;: true,
+      &quot;missing&quot;: {
+        &quot;code&quot;: [],
+        &quot;tests&quot;: [],
+        &quot;smoke&quot;: []
+      }
+    },
+    &quot;step_12&quot;: {
+      &quot;name&quot;: &quot;Dashboards bundle&quot;,
+      &quot;code_ok&quot;: true,
+      &quot;tests_ok&quot;: true,
+      &quot;smoke_ok&quot;: true,
+      &quot;missing&quot;: {
+        &quot;code&quot;: [],
+        &quot;tests&quot;: [],
+        &quot;smoke&quot;: []
+      }
+    },
+    &quot;step_13&quot;: {
+      &quot;name&quot;: &quot;Agents step13&quot;,
+      &quot;code_ok&quot;: true,
+      &quot;tests_ok&quot;: true,
+      &quot;smoke_ok&quot;: true,
+      &quot;missing&quot;: {
+        &quot;code&quot;: [],
+        &quot;tests&quot;: [],
+        &quot;smoke&quot;: []
+      }
+    },
+    &quot;step_14&quot;: {
+      &quot;name&quot;: &quot;Workflow foundation&quot;,
+      &quot;code_ok&quot;: true,
+      &quot;tests_ok&quot;: true,
+      &quot;smoke_ok&quot;: true,
+      &quot;missing&quot;: {
+        &quot;code&quot;: [],
+        &quot;tests&quot;: [],
+        &quot;smoke&quot;: []
+      }
+    },
+    &quot;step_15&quot;: {
+      &quot;name&quot;: &quot;Routing + classifier&quot;,
+      &quot;code_ok&quot;: false,
+      &quot;tests_ok&quot;: true,
+      &quot;smoke_ok&quot;: true,
+      &quot;missing&quot;: {
+        &quot;code&quot;: [
+          &quot;src/qnwis/orchestration/router.py&quot;
+        ],
+        &quot;tests&quot;: [],
+        &quot;smoke&quot;: []
+      }
+    },
+    &quot;step_16&quot;: {
+      &quot;name&quot;: &quot;Coordination&quot;,
+      &quot;code_ok&quot;: true,
+      &quot;tests_ok&quot;: true,
+      &quot;smoke_ok&quot;: false,
+      &quot;missing&quot;: {
+        &quot;code&quot;: [],
+        &quot;tests&quot;: [],
+        &quot;smoke&quot;: [
+          &quot;docs/COORDINATION_LAYER_IMPLEMENTATION.md&quot;
+        ]
+      }
+    },
+    &quot;step_17&quot;: {
+      &quot;name&quot;: &quot;Cache &amp; materialization&quot;,
+      &quot;code_ok&quot;: true,
+      &quot;tests_ok&quot;: true,
+      &quot;smoke_ok&quot;: true,
+      &quot;missing&quot;: {
+        &quot;code&quot;: [],
+        &quot;tests&quot;: [],
+        &quot;smoke&quot;: []
+      }
+    },
+    &quot;step_18&quot;: {
+      &quot;name&quot;: &quot;Verification synthesis&quot;,
+      &quot;code_ok&quot;: true,
+      &quot;tests_ok&quot;: true,
+      &quot;smoke_ok&quot;: true,
+      &quot;missing&quot;: {
+        &quot;code&quot;: [],
+        &quot;tests&quot;: [],
+        &quot;smoke&quot;: []
+      }
+    },
+    &quot;step_19&quot;: {
+      &quot;name&quot;: &quot;Citation enforcement&quot;,
+      &quot;code_ok&quot;: true,
+      &quot;tests_ok&quot;: true,
+      &quot;smoke_ok&quot;: true,
+      &quot;missing&quot;: {
+        &quot;code&quot;: [],
+        &quot;tests&quot;: [],
+        &quot;smoke&quot;: []
+      }
+    },
+    &quot;step_20&quot;: {
+      &quot;name&quot;: &quot;Result verification&quot;,
+      &quot;code_ok&quot;: true,
+      &quot;tests_ok&quot;: true,
+      &quot;smoke_ok&quot;: true,
+      &quot;missing&quot;: {
+        &quot;code&quot;: [],
+        &quot;tests&quot;: [],
+        &quot;smoke&quot;: []
+      }
+    },
+    &quot;step_21&quot;: {
+      &quot;name&quot;: &quot;Audit trail&quot;,
+      &quot;code_ok&quot;: true,
+      &quot;tests_ok&quot;: true,
+      &quot;smoke_ok&quot;: true,
+      &quot;missing&quot;: {
+        &quot;code&quot;: [],
+        &quot;tests&quot;: [],
+        &quot;smoke&quot;: []
+      }
+    },
+    &quot;step_22&quot;: {
+      &quot;name&quot;: &quot;Confidence scoring&quot;,
+      &quot;code_ok&quot;: true,
+      &quot;tests_ok&quot;: true,
+      &quot;smoke_ok&quot;: true,
+      &quot;missing&quot;: {
+        &quot;code&quot;: [],
+        &quot;tests&quot;: [],
+        &quot;smoke&quot;: []
+      }
+    },
+    &quot;step_23&quot;: {
+      &quot;name&quot;: &quot;Time Machine agent&quot;,
+      &quot;code_ok&quot;: true,
+      &quot;tests_ok&quot;: true,
+      &quot;smoke_ok&quot;: true,
+      &quot;missing&quot;: {
+        &quot;code&quot;: [],
+        &quot;tests&quot;: [],
+        &quot;smoke&quot;: []
+      }
+    },
+    &quot;step_24&quot;: {
+      &quot;name&quot;: &quot;Pattern Miner agent&quot;,
+      &quot;code_ok&quot;: true,
+      &quot;tests_ok&quot;: true,
+      &quot;smoke_ok&quot;: true,
+      &quot;missing&quot;: {
+        &quot;code&quot;: [],
+        &quot;tests&quot;: [],
+        &quot;smoke&quot;: []
+      }
+    },
+    &quot;step_25&quot;: {
+      &quot;name&quot;: &quot;Predictor agent&quot;,
+      &quot;code_ok&quot;: true,
+      &quot;tests_ok&quot;: true,
+      &quot;smoke_ok&quot;: true,
+      &quot;missing&quot;: {
+        &quot;code&quot;: [],
+        &quot;tests&quot;: [],
+        &quot;smoke&quot;: []
+      }
+    }
+  },
+  &quot;missing&quot;: {
+    &quot;step_02&quot;: {
+      &quot;code&quot;: [],
+      &quot;tests&quot;: [
+        &quot;tests/unit/test_mcp_tools.py&quot;
+      ],
+      &quot;smoke&quot;: []
+    },
+    &quot;step_15&quot;: {
+      &quot;code&quot;: [
+        &quot;src/qnwis/orchestration/router.py&quot;
+      ],
+      &quot;tests&quot;: [],
+      &quot;smoke&quot;: []
+    },
+    &quot;step_16&quot;: {
+      &quot;code&quot;: [],
+      &quot;tests&quot;: [],
+      &quot;smoke&quot;: [
+        &quot;docs/COORDINATION_LAYER_IMPLEMENTATION.md&quot;
+      ]
+    }
+  }
+}
+```
+**Evidence:**
+- `docs/IMPLEMENTATION_ROADMAP.md`
+</pre>

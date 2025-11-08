@@ -6,6 +6,7 @@ import re
 import time
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -188,7 +189,7 @@ def run_csv_query(spec: QuerySpec) -> QueryResult:
             for r in rows:
                 _apply_to_percent(r.data, parsed.to_percent)
 
-    asof = f"{max_year}-12-31" if max_year else "auto"
+    asof = f"{max_year}-12-31" if max_year else datetime.now().strftime("%Y-%m-%d")
     fields = parsed.select_fields or list(rows[0].data.keys())
     return QueryResult(
         query_id=spec.id,

@@ -9,6 +9,7 @@ Tests end-to-end workflows:
 """
 
 from datetime import date, datetime
+from pathlib import Path
 
 import pytest
 
@@ -19,7 +20,18 @@ from src.qnwis.data.deterministic.models import (
     QueryResult,
     Row,
 )
-from src.qnwis.orchestration.classifier import IntentClassifier
+from src.qnwis.orchestration.classifier import QueryClassifier
+
+
+def _get_classifier():
+    """Helper to create a QueryClassifier with proper paths."""
+    orchestration_dir = Path(__file__).resolve().parents[3] / "src" / "qnwis" / "orchestration"
+    return QueryClassifier(
+        catalog_path=str(orchestration_dir / "intent_catalog.yml"),
+        sector_lex=str(orchestration_dir / "keywords" / "sectors.txt"),
+        metric_lex=str(orchestration_dir / "keywords" / "metrics.txt"),
+        min_confidence=0.55,
+    )
 
 
 class MockDataClient:
@@ -299,12 +311,12 @@ class TestRouterIntegration:
             "Historical baseline for employment",
         ]
 
-        classifier = IntentClassifier()
+        classifier = _get_classifier()
 
         for query in queries:
             result = classifier.classify_text(query)
-            assert result.intent == "time.baseline", \
-                f"Query '{query}' should map to time.baseline, got {result.intent}"
+            assert "time.baseline" in result.intents, \
+                f"Query '{query}' should map to time.baseline, got {result.intents}"
 
     def test_router_maps_trend_intent(self):
         """Test router identifies trend queries."""
@@ -316,12 +328,12 @@ class TestRouterIntegration:
             "Quarter over quarter growth in Construction",
         ]
 
-        classifier = IntentClassifier()
+        classifier = _get_classifier()
 
         for query in queries:
             result = classifier.classify_text(query)
-            assert result.intent == "time.trend", \
-                f"Query '{query}' should map to time.trend, got {result.intent}"
+            assert "time.trend" in result.intents, \
+                f"Query '{query}' should map to time.trend, got {result.intents}"
 
     def test_router_maps_breaks_intent(self):
         """Test router identifies structural break queries."""
@@ -333,12 +345,12 @@ class TestRouterIntegration:
             "CUSUM analysis for attrition",
         ]
 
-        classifier = IntentClassifier()
+        classifier = _get_classifier()
 
         for query in queries:
             result = classifier.classify_text(query)
-            assert result.intent == "time.breaks", \
-                f"Query '{query}' should map to time.breaks, got {result.intent}"
+            assert "time.breaks" in result.intents, \
+                f"Query '{query}' should map to time.breaks, got {result.intents}"
 
 
 class TestDataFreshnessAndCitations:
@@ -434,13 +446,13 @@ class TestEndToEndWorkflow:
 
         client = MockDataClient(series_data)
         agent = TimeMachineAgent(client)
-        classifier = IntentClassifier()
+        classifier = _get_classifier()
 
         # Step 1: Classifier classifies query
         query = "What is the baseline Construction retention since 2023?"
         classification = classifier.classify_text(query)
 
-        assert classification.intent == "time.baseline"
+        assert "time.baseline" in classification.intents
 
         # Step 2: Agent generates report
         report = agent.baseline_report(
@@ -469,13 +481,13 @@ class TestEndToEndWorkflow:
 
         client = MockDataClient(series_data)
         agent = TimeMachineAgent(client)
-        classifier = IntentClassifier()
+        classifier = _get_classifier()
 
         # Step 1: Classifier classifies query
         query = "Show me the YoY trend for Finance qatarization"
         classification = classifier.classify_text(query)
 
-        assert classification.intent == "time.trend"
+        assert "time.trend" in classification.intents
 
         # Step 2: Agent generates report
         report = agent.trend_report(
@@ -502,13 +514,13 @@ class TestEndToEndWorkflow:
 
         client = MockDataClient(series_data)
         agent = TimeMachineAgent(client)
-        classifier = IntentClassifier()
+        classifier = _get_classifier()
 
         # Step 1: Classifier classifies query
         query = "Detect structural breaks in IT salary trends"
         classification = classifier.classify_text(query)
 
-        assert classification.intent == "time.breaks"
+        assert "time.breaks" in classification.intents
 
         # Step 2: Agent generates report
         report = agent.breaks_report(

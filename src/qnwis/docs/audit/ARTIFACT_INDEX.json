@@ -1,0 +1,25 @@
+{
+  "generated_at": "2025-11-08T16:18:23.443601",
+  "artifacts": [
+    {
+      "path": "src/qnwis/docs/audit/readiness_report.json",
+      "sha256": "c2d5634813d84f0aba0833cb13734500ad354b366bb9d4ab4bd31e8bc0ac6196",
+      "size_bytes": 9128
+    },
+    {
+      "path": "src/qnwis/docs/audit/READINESS_REPORT_1_25.md",
+      "sha256": "e041e83e4fa693cd9abb63cd2c17bf647bfb87c2ca217b6abb951dce358b60f6",
+      "size_bytes": 6764
+    },
+    {
+      "path": "src/qnwis/docs/audit/READINESS_SUMMARY.html",
+      "sha256": "a9ae7e8e4237adbaf416f573b5d9667df018e8be8679fdae7cd7174e597b67f0",
+      "size_bytes": 9483
+    },
+    {
+      "path": "src/qnwis/docs/audit/badges/rg1_pass.svg",
+      "sha256": "9995f7f48c4cb371d7db73a0cb755b09a43f686d6f82bb85a81eb9d7b1b857d8",
+      "size_bytes": 600
+    }
+  ]
+}

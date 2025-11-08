@@ -13,7 +13,7 @@ Scenarios:
 
 import pytest
 
-from src.qnwis.agents.base import AgentReport, Evidence, Finding
+from src.qnwis.agents.base import AgentReport, Evidence, Insight
 from src.qnwis.data.deterministic.models import QueryResult
 from src.qnwis.orchestration.nodes.format import format_report
 from src.qnwis.orchestration.nodes.verify import verify_structure
@@ -54,7 +54,7 @@ def agent_report_perfect() -> AgentReport:
     return AgentReport(
         agent="test_agent",
         findings=[
-            Finding(
+            Insight(
                 title="Healthcare Retention Analysis",
                 summary=(
                     "The retention rate for Healthcare is 85% according to LMIS (QID:Q001). "
@@ -90,7 +90,7 @@ def agent_report_minor_issues() -> AgentReport:
     return AgentReport(
         agent="test_agent",
         findings=[
-            Finding(
+            Insight(
                 title="Sector Analysis",
                 summary=(
                     "Retention rates vary significantly. Healthcare shows 85% "
@@ -120,7 +120,7 @@ def agent_report_major_issues() -> AgentReport:
     return AgentReport(
         agent="test_agent",
         findings=[
-            Finding(
+            Insight(
                 title="Problematic Report",
                 summary=(
                     "The sector shows declining trends. Multiple metrics like 45%, 67%, "
