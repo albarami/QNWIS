@@ -17,6 +17,7 @@ from ...agents.base import AgentReport, Evidence
 from ..metrics import MetricsObserver, ensure_observer
 from ..schemas import (
     Citation,
+    ConfidenceBreakdown,
     Freshness,
     OrchestrationResult,
     ReportSection,
@@ -467,44 +468,76 @@ def _format_audit_summary(audit_manifest: Dict[str, Any]) -> ReportSection:
 
     body = "\n".join(line for line in lines if line is not None)
     return ReportSection(title="Audit Summary", body_md=body.strip())
-    # Extract pack root from manifest path
-    pack_root = ""
-    if "manifest" in pack_paths:
-        from pathlib import Path
-        pack_root = str(Path(pack_paths["manifest"]).parent)
+
+
+def _format_confidence_summary(confidence: ConfidenceBreakdown) -> ReportSection:
+    """
+    Create confidence summary section from confidence breakdown.
+
+    Args:
+        confidence: Confidence breakdown with score, band, components, reasons
+
+    Returns:
+        Formatted confidence section
+    """
+    score = confidence.score
+    band = confidence.band
+    components = confidence.components
+    reasons = confidence.reasons
+
+    band_badge = {"GREEN": "[G]", "AMBER": "[A]", "RED": "[R]"}
+    badge = band_badge.get(band, "[?]")
 
     lines: list[str] = [
-        f"**Audit ID**: `{audit_id}`",
-        f"**Created**: {created_at[:19]}",
+        f"**Overall Score**: {score}/100 - **{band}** {badge}",
         "",
-        f"**Data Sources** ({len(data_sources)}):",
+        f"- Citation coverage: {confidence.coverage:.0%}",
+        f"- Freshness health: {confidence.freshness:.0%}",
+        "",
+        "**Component Breakdown:**",
+        "",
+        "| Component | Score |",
+        "|-----------|-------|",
     ]
 
-    for source in data_sources[:5]:
-        source_freshness = freshness.get(source, "unknown")
-        lines.append(f"- {source} (as of {source_freshness[:10]})")
+    component_labels = {
+        "citation": "Citation Coverage",
+        "numbers": "Result Verification",
+        "cross": "Cross-Source Checks",
+        "privacy": "Privacy Compliance",
+        "freshness": "Data Freshness",
+    }
 
-    if len(data_sources) > 5:
-        lines.append(f"*({len(data_sources) - 5} more sources)*")
-
-    lines.append("")
-    lines.append("**Integrity:**")
-    lines.append(f"- SHA-256: `{digest[:32]}...`")
-    if hmac_present:
-        lines.append("- HMAC-SHA256: ✓ signed")
-
-    lines.append("")
-    lines.append("**Audit Pack:**")
-    if pack_root:
-        lines.append(f"- Location: `{pack_root}`")
-    lines.append(f"- Files: {len(pack_paths)}")
+    for key in ["citation", "numbers", "cross", "privacy", "freshness"]:
+        if key in components:
+            label = component_labels.get(key, key.title())
+            comp_score = components[key]
+            lines.append(f"| {label} | {comp_score:.1f} |")
 
     lines.append("")
-    lines.append("**Reproducibility:**")
-    lines.append(f"To reproduce this analysis, see `{pack_root}/reproducibility.py`")
+    lines.append("**Key Factors:**")
+    lines.append("")
+
+    for idx, reason in enumerate(reasons[:5], 1):
+        lines.append(f"{idx}. {reason}")
+
+    if len(reasons) > 5:
+        lines.append(f"*({len(reasons) - 5} additional factors omitted)*")
+
+    lines.append("")
+    lines.append("**Interpretation:**")
+    if band == "GREEN":
+        lines.append("- High confidence: All verification layers passed with minimal issues.")
+        lines.append("- Data quality is excellent and suitable for decision-making.")
+    elif band == "AMBER":
+        lines.append("- Medium confidence: Some verification issues detected.")
+        lines.append("- Review key factors above before making critical decisions.")
+    else:  # RED
+        lines.append("- Low confidence: Significant verification issues present.")
+        lines.append("- This report requires remediation before use in decision-making.")
 
     body = "\n".join(lines)
-    return ReportSection(title="Audit Summary", body_md=body.strip())
+    return ReportSection(title="Confidence Assessment", body_md=body.strip())
 
 
 def format_report(
@@ -660,6 +693,18 @@ def format_report(
         if audit_manifest:
             sections.append(_format_audit_summary(audit_manifest))
 
+        # Add confidence summary if available
+        confidence_breakdown_dict = workflow_state.metadata.get("confidence_breakdown")
+        confidence_breakdown = None
+        if confidence_breakdown_dict:
+            try:
+                confidence_breakdown = ConfidenceBreakdown.model_validate(
+                    confidence_breakdown_dict
+                )
+                sections.append(_format_confidence_summary(confidence_breakdown))
+            except Exception as exc:
+                logger.warning("Failed to parse confidence breakdown: %s", exc)
+
         # Create result
         result = OrchestrationResult(
             ok=True,
@@ -675,6 +720,7 @@ def format_report(
             issues_summary=issues_summary,
             audit_manifest=audit_manifest,
             audit_id=audit_id,
+            confidence=confidence_breakdown,
         )
 
         log_entry = (
