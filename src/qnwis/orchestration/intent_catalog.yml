@@ -473,6 +473,113 @@ time.breaks:
         sectors: "@sectors"
         horizon_months: "@months"
 
+# Prediction & Forecasting Intents
+predict.forecast:
+  description: "Generate baseline forecasts with prediction intervals"
+  keywords:
+    - "forecast"
+    - "predict"
+    - "project"
+    - "future"
+    - "outlook"
+    - "expected"
+    - "anticipate"
+    - "projection"
+    - "next quarter"
+    - "next year"
+    - "forward looking"
+    - "estimate"
+    - "foresee"
+  metrics_hint:
+    - "retention"
+    - "qatarization"
+    - "salary"
+    - "employment"
+    - "turnover"
+    - "attrition"
+  examples:
+    - "Forecast retention for next 6 months"
+    - "Predict qatarization rates in Construction"
+    - "What is the expected salary trend?"
+    - "Project employment growth for Healthcare"
+  prefetch:
+    - fn: get_time_series
+      description: "Historical time-series for forecast training"
+      require_metrics: true
+      params:
+        metrics: "@metrics"
+        sectors: "@sectors"
+        horizon_months: 36  # Need sufficient history for baseline
+
+predict.early_warning:
+  description: "Detect early-warning signals and compute risk scores"
+  keywords:
+    - "warning"
+    - "alert"
+    - "risk"
+    - "concern"
+    - "red flag"
+    - "watch"
+    - "caution"
+    - "danger"
+    - "threat"
+    - "problem"
+    - "issue"
+    - "deteriorat"
+    - "worrying"
+    - "alarm"
+  metrics_hint:
+    - "retention"
+    - "qatarization"
+    - "turnover"
+    - "attrition"
+    - "salary"
+  examples:
+    - "Are there warning signs in retention?"
+    - "Risk assessment for qatarization"
+    - "Detect alerts in Construction turnover"
+    - "What are the red flags for Healthcare?"
+  prefetch:
+    - fn: get_time_series
+      description: "Recent time-series for warning detection"
+      require_metrics: true
+      params:
+        metrics: "@metrics"
+        sectors: "@sectors"
+        horizon_months: 24  # Recent history for warning flags
+
+predict.scenario_compare:
+  description: "Compare multiple forecasting methods and scenarios"
+  keywords:
+    - "compare forecast"
+    - "forecast comparison"
+    - "method comparison"
+    - "scenario"
+    - "alternative"
+    - "contrast method"
+    - "which forecast"
+    - "best method"
+    - "forecast accuracy"
+    - "method performance"
+  metrics_hint:
+    - "retention"
+    - "qatarization"
+    - "salary"
+    - "employment"
+  examples:
+    - "Compare forecasting methods for retention"
+    - "Which forecast method is most accurate?"
+    - "Scenario comparison for qatarization"
+    - "Contrast seasonal vs trend forecasts"
+  prefetch:
+    - fn: get_time_series
+      description: "Historical time-series for method comparison"
+      require_metrics: true
+      params:
+        metrics: "@metrics"
+        sectors: "@sectors"
+        horizon_months: 36
+
 # Urgency Lexicon (for crisis detection)
 urgency_keywords:
   - "urgent"
