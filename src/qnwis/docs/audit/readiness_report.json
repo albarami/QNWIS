@@ -2,7 +2,7 @@
   "gates": [
     {
       "name": "step_completeness",
-      "ok": false,
+      "ok": true,
       "details": {
         "steps": {
           "step_01": {
@@ -19,13 +19,11 @@
           "step_02": {
             "name": "MCP tooling + API hygiene",
             "code_ok": true,
-            "tests_ok": false,
+            "tests_ok": true,
             "smoke_ok": true,
             "missing": {
               "code": [],
-              "tests": [
-                "tests/unit/test_mcp_tools.py"
-              ],
+              "tests": [],
               "smoke": []
             }
           },
@@ -163,13 +161,11 @@
           },
           "step_15": {
             "name": "Routing + classifier",
-            "code_ok": false,
+            "code_ok": true,
             "tests_ok": true,
             "smoke_ok": true,
             "missing": {
-              "code": [
-                "src/qnwis/orchestration/router.py"
-              ],
+              "code": [],
               "tests": [],
               "smoke": []
             }
@@ -178,13 +174,11 @@
             "name": "Coordination",
             "code_ok": true,
             "tests_ok": true,
-            "smoke_ok": false,
+            "smoke_ok": true,
             "missing": {
               "code": [],
               "tests": [],
-              "smoke": [
-                "docs/COORDINATION_LAYER_IMPLEMENTATION.md"
-              ]
+              "smoke": []
             }
           },
           "step_17": {
@@ -287,49 +281,105 @@
             }
           }
         },
-        "missing": {
-          "step_02": {
-            "code": [],
-            "tests": [
-              "tests/unit/test_mcp_tools.py"
-            ],
-            "smoke": []
-          },
-          "step_15": {
-            "code": [
-              "src/qnwis/orchestration/router.py"
-            ],
-            "tests": [],
-            "smoke": []
-          },
-          "step_16": {
-            "code": [],
-            "tests": [],
-            "smoke": [
-              "docs/COORDINATION_LAYER_IMPLEMENTATION.md"
-            ]
-          }
-        }
+        "missing": {}
       },
-      "duration_ms": 8.047342300415039,
+      "duration_ms": 8.604288101196289,
       "severity": "ERROR",
       "evidence_paths": [
         "docs/IMPLEMENTATION_ROADMAP.md"
       ],
-      "timestamp": "2025-11-08T16:18:23.399655"
+      "timestamp": "2025-11-08T16:35:14.729244"
+    },
+    {
+      "name": "no_placeholders",
+      "ok": false,
+      "details": {
+        "patterns": [
+          "\\bTODO\\b",
+          "\\bFIXME\\b",
+          "\\bHACK\\b",
+          "\\bXXX\\b",
+          "\\bpass\\b(?=\\s*$)",
+          "\\bNotImplemented\\b",
+          "raise\\s+NotImplementedError"
+        ],
+        "violations": [
+          {
+            "file": "src/qnwis/agents/utils/derived_results.py",
+            "line": 94,
+            "pattern": "\\bpass\\b(?=\\s*$)",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/agents/utils/derived_results.py",
+            "line": 99,
+            "pattern": "\\bpass\\b(?=\\s*$)",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/data/cache/backends.py",
+            "line": 23,
+            "pattern": "raise\\s+NotImplementedError",
+            "snippet": "raise NotImplementedError"
+          },
+          {
+            "file": "src/qnwis/data/cache/backends.py",
+            "line": 27,
+            "pattern": "raise\\s+NotImplementedError",
+            "snippet": "raise NotImplementedError"
+          },
+          {
+            "file": "src/qnwis/data/cache/backends.py",
+            "line": 31,
+            "pattern": "raise\\s+NotImplementedError",
+            "snippet": "raise NotImplementedError"
+          },
+          {
+            "file": "src/qnwis/data/deterministic/cache_access.py",
+            "line": 82,
+            "pattern": "\\bpass\\b(?=\\s*$)",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/scripts/qa/readiness_gate.py",
+            "line": 38,
+            "pattern": "\\bpass\\b(?=\\s*$)",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/scripts/qa/readiness_gate.py",
+            "line": 43,
+            "pattern": "\\bpass\\b(?=\\s*$)",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/verification/audit_trail.py",
+            "line": 477,
+            "pattern": "\\bpass\\b(?=\\s*$)",
+            "snippet": "- is_valid: True if all checks pass"
+          }
+        ]
+      },
+      "duration_ms": 1472.7210998535156,
+      "severity": "ERROR",
+      "evidence_paths": [
+        "src/qnwis/scripts/qa/grep_rules.yml"
+      ],
+      "timestamp": "2025-11-08T16:35:16.201965"
     }
   ],
   "overall_pass": false,
-  "execution_time_ms": 9.04703140258789,
-  "timestamp": "2025-11-08T16:18:23.400655",
+  "execution_time_ms": 1481.325387954712,
+  "timestamp": "2025-11-08T16:35:16.201965",
   "summary": {
-    "total_gates": 1,
-    "passed": 0,
+    "total_gates": 2,
+    "passed": 1,
     "failed": 1
   },
   "artifacts": {
-    "src/qnwis/docs/audit/READINESS_REPORT_1_25.md": "e041e83e4fa693cd9abb63cd2c17bf647bfb87c2ca217b6abb951dce358b60f6",
-    "src/qnwis/docs/audit/READINESS_SUMMARY.html": "a9ae7e8e4237adbaf416f573b5d9667df018e8be8679fdae7cd7174e597b67f0",
+    "junit.xml": "eaf59b6ed8cbc9997e784126f24d7227f0c2dfd3dab4cdd17018b219b9dd6e3c",
+    "src/qnwis/docs/audit/READINESS_REPORT_1_25.md": "438f1c307a8e89d10ef93312e1c3a20f3f4755af41a637312998b89579431523",
+    "src/qnwis/docs/audit/READINESS_SUMMARY.html": "15395891e179d74cd37119b28e0409a19894c0cf62233bf9499b4a888b29a8e8",
     "src/qnwis/docs/audit/badges/rg1_pass.svg": "9995f7f48c4cb371d7db73a0cb755b09a43f686d6f82bb85a81eb9d7b1b857d8"
   }
 }

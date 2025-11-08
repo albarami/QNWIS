@@ -1,0 +1,59 @@
+Step,Category,Deliverable,Required_Artifact,Status,Evidence_Path,Verified_By
+1,Foundation,Config Management,Config loader with env validation,PENDING,src/qnwis/config/,readiness_gate.py
+1,Foundation,Docker Setup,Docker compose with services,PENDING,.docker/,readiness_gate.py
+1,Foundation,Structured Logging,JSON logging configured,PENDING,src/qnwis/utils/logging.py,readiness_gate.py
+2,Data Access,Query Registry,Centralized query definitions,PENDING,src/qnwis/data/queries/registry.py,gate_deterministic_access
+2,Data Access,DataClient,Abstracted data access layer,PENDING,src/qnwis/data/client.py,gate_deterministic_access
+2,Data Access,Connectors,Safe HTTP/DB connectors,PENDING,src/qnwis/data/connectors/,gate_deterministic_access
+3,Security,No Hardcoded Secrets,Environment-based secrets,PENDING,**/*.py,gate_no_placeholders
+3,Security,Connection Pooling,Managed DB connections,PENDING,src/qnwis/data/,gate_deterministic_access
+4,Caching,Cache Middleware,Redis cache layer,PENDING,src/qnwis/cache/manager.py,gate_cache_and_materialization
+4,Caching,TTL Policies,Dataset-specific TTL,PENDING,src/qnwis/cache/policies.py,gate_cache_and_materialization
+5,Materialization,MV Registry,Materialized view definitions,PENDING,src/qnwis/data/mvs/,gate_cache_and_materialization
+5,Materialization,Refresh Jobs,MV refresh orchestration,PENDING,src/qnwis/jobs/,gate_cache_and_materialization
+6,Warmup,Warmup Packs,Pre-computed result packs,PENDING,src/qnwis/cache/warmup.py,gate_cache_and_materialization
+7,Query Catalog,Query Templates,Parameterized SQL templates,PENDING,src/qnwis/data/queries/,gate_deterministic_access
+8,Testing,Unit Tests,Module-level tests,PENDING,tests/unit/,gate_unit_and_integration_tests
+8,Testing,Integration Tests,Cross-module tests,PENDING,tests/integration/,gate_unit_and_integration_tests
+9,Agents,Pattern Detective,Pattern analysis agent,PENDING,src/qnwis/agents/pattern_detective.py,gate_agents_end_to_end
+9,Agents,Pattern Detective Narratives,Derived QueryResults with QIDs,PENDING,smoke_matrix.yml:pattern_detective,gate_agents_end_to_end
+10,Agents,National Strategy,GCC benchmark & policy agent,PENDING,src/qnwis/agents/national_strategy.py,gate_agents_end_to_end
+10,Agents,National Strategy Narratives,Derived QueryResults with QIDs,PENDING,smoke_matrix.yml:national_strategy,gate_agents_end_to_end
+11,Agents,Skills Analyzer,Skills inference agent,PENDING,src/qnwis/agents/skills.py,gate_agents_end_to_end
+12,Agents,Nationalization Agent,Qatarization analysis,PENDING,src/qnwis/agents/nationalization.py,gate_agents_end_to_end
+13,Agents,Labour Economist,Economic analysis agent,PENDING,src/qnwis/agents/labour_economist.py,gate_agents_end_to_end
+14,Orchestration,Intent Router,NL query classification,PENDING,src/qnwis/orchestration/classifier.py,gate_orchestration_flow
+14,Orchestration,Router Registry,Whitelisted intents,PENDING,src/qnwis/orchestration/intent_catalog.yml,gate_orchestration_flow
+15,Orchestration,LangGraph DAG,Workflow graph definition,PENDING,src/qnwis/orchestration/graph.py,gate_orchestration_flow
+15,Orchestration,Graph Nodes,invoke/verify/format/error nodes,PENDING,src/qnwis/orchestration/nodes/,gate_orchestration_flow
+16,Orchestration,Coordination Layer,Parallel/sequential execution,PENDING,src/qnwis/orchestration/coordination.py,gate_orchestration_flow
+16,Orchestration,Retry Policies,Error recovery logic,PENDING,src/qnwis/orchestration/policies.py,gate_orchestration_flow
+17,Cache,Cache Hit/Miss,Redis middleware behavior,PENDING,src/qnwis/cache/manager.py,gate_cache_and_materialization
+17,Cache,Negative Caching,404 result caching,PENDING,src/qnwis/cache/manager.py,gate_cache_and_materialization
+17,Cache,MV Refresh Dry-Run,MV job validation,PENDING,src/qnwis/jobs/,gate_cache_and_materialization
+18,Verification,Cross-Checks,Layer 2 validation,PENDING,src/qnwis/verification/layer2_crosschecks.py,gate_verification_layers
+19,Verification,Citation Enforcement,QID requirement checks,PENDING,src/qnwis/verification/citation_enforcer.py,gate_citation_enforcement
+19,Verification,Citation Patterns,Number extraction,PENDING,src/qnwis/verification/number_extractors.py,gate_citation_enforcement
+20,Verification,Result Verifier,Narrative validation,PENDING,src/qnwis/verification/result_verifier.py,gate_result_verification
+20,Verification,Verification Rules,Validation rule engine,PENDING,src/qnwis/verification/rules.py,gate_result_verification
+21,Verification,Audit Trail,Full execution audit,PENDING,src/qnwis/verification/audit_trail.py,gate_verification_layers
+21,Verification,Audit Store,Audit pack persistence,PENDING,src/qnwis/verification/audit_store.py,gate_verification_layers
+22,Verification,Confidence Scoring,Score attachment,PENDING,src/qnwis/verification/confidence.py,gate_verification_layers
+22,Verification,Confidence Calibration,Score calibration logic,PENDING,src/qnwis/verification/confidence.py,gate_verification_layers
+23,Agents,Time Machine,Temporal analysis agent,PENDING,src/qnwis/agents/time_machine.py,gate_agents_end_to_end
+23,Agents,Time Machine Performance,Window ops <50ms,PENDING,smoke_matrix.yml:time_machine,gate_performance_smoke
+23,Agents,Time Machine Narratives,Baseline/trend/break reports,PENDING,smoke_matrix.yml:time_machine,gate_agents_end_to_end
+24,Agents,Pattern Miner,Effect ranking agent,PENDING,src/qnwis/agents/pattern_miner.py,gate_agents_end_to_end
+24,Agents,Pattern Miner Performance,Scan <200ms,PENDING,smoke_matrix.yml:pattern_miner,gate_performance_smoke
+24,Agents,Pattern Miner Narratives,Effect/support/stability analysis,PENDING,smoke_matrix.yml:pattern_miner,gate_agents_end_to_end
+25,Agents,Predictor,Forecasting agent,PENDING,src/qnwis/agents/predictor.py,gate_agents_end_to_end
+25,Agents,Predictor Performance,Baseline+bands <100ms,PENDING,smoke_matrix.yml:predictor,gate_performance_smoke
+25,Agents,Predictor Narratives,Baseline/what-if/backtest reports,PENDING,smoke_matrix.yml:predictor,gate_agents_end_to_end
+OVERALL,Integration,End-to-End Smoke,All scenarios pass,PENDING,src/qnwis/scripts/qa/smoke_matrix.yml,gate_orchestration_flow
+OVERALL,Quality,Coverage Thresholds,New ≥90% Critical ≥95%,PENDING,coverage.xml,gate_unit_and_integration_tests
+OVERALL,Quality,No Placeholders,Zero TODO/FIXME/pass,PENDING,**/*.py,gate_no_placeholders
+OVERALL,Quality,Type Safety,mypy --strict passes,PENDING,**/*.py,gate_linters_and_types
+OVERALL,Quality,Linting,flake8/ruff clean,PENDING,**/*.py,gate_linters_and_types
+OVERALL,Performance,Time Machine Speed,<50ms window ops,PENDING,perf_results.json,gate_performance_smoke
+OVERALL,Performance,Pattern Miner Speed,<200ms scan,PENDING,perf_results.json,gate_performance_smoke
+OVERALL,Performance,Predictor Speed,<100ms forecast,PENDING,perf_results.json,gate_performance_smoke

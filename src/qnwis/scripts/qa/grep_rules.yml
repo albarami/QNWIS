@@ -1,0 +1,146 @@
+# Readiness Gate Grep Rules
+# Pattern enforcement for deterministic, non-placeholder, safe production code
+
+# DISALLOWED PATTERNS (fail-fast if found outside allowed contexts)
+disallow:
+  placeholders:
+    patterns:
+      - '\bTODO\b'
+      - '\bFIXME\b'
+      - '\bHACK\b'
+      - '\bXXX\b'
+      - '\bpass\b(?=\s*$)'  # pass as statement body
+      - '\bNotImplemented\b'
+      - 'raise\s+NotImplementedError'
+    message: "Placeholder code found - all TODOs/FIXMEs must be resolved"
+    severity: ERROR
+
+  direct_sql:
+    patterns:
+      - '\bSELECT\s+'
+      - '\bINSERT\s+INTO\b'
+      - '\bUPDATE\s+\w+\s+SET\b'
+      - '\bDELETE\s+FROM\b'
+      - '\bCREATE\s+TABLE\b'
+      - '\bDROP\s+TABLE\b'
+    exclude_paths:
+      - "src/qnwis/data/queries/**/*.py"
+      - "src/qnwis/data/queries/**/*.sql"
+      - "sql/**/*.sql"
+      - "tests/**/*.py"
+    message: "Direct SQL found outside query registry - use DataClient/QueryRegistry only"
+    severity: ERROR
+
+  direct_http:
+    patterns:
+      - 'requests\.(get|post|put|delete|patch)'
+      - 'httpx\.(get|post|put|delete|patch)'
+      - 'urllib\.request'
+      - 'http\.client'
+    exclude_paths:
+      - "src/qnwis/data/connectors/**/*.py"
+      - "src/data/apis/**/*.py"
+      - "tests/**/*.py"
+    message: "Direct HTTP calls outside connectors - use DataClient abstraction"
+    severity: ERROR
+
+  secrets_hardcoded:
+    patterns:
+      - 'password\s*=\s*["''][^"'']+["'']'
+      - 'api_key\s*=\s*["''][^"'']+["'']'
+      - 'secret\s*=\s*["''][^"'']+["'']'
+      - 'token\s*=\s*["''][^"'']+["'']'
+    exclude_paths:
+      - ".env.example"
+      - "tests/**/*.py"
+      - "docs/**/*.md"
+    message: "Hardcoded secret detected - use environment variables"
+    severity: ERROR
+
+  print_debugging:
+    patterns:
+      - '\bprint\('
+    exclude_paths:
+      - "src/qnwis/cli/**/*.py"
+      - "scripts/**/*.py"
+      - "tests/**/*.py"
+      - "demo_*.py"
+    message: "print() found - use structured logging instead"
+    severity: WARNING
+
+# REQUIRED PATTERNS (ensure these exist in appropriate places)
+require:
+  data_client_usage:
+    patterns:
+      - 'from qnwis\.data\.client import DataClient'
+      - 'DataClient\('
+    paths:
+      - "src/qnwis/agents/**/*.py"
+    message: "Agents must use DataClient for all data access"
+    severity: ERROR
+
+  citation_enforcement:
+    patterns:
+      - 'citation_enforcer'
+      - 'CitationEnforcer'
+    paths:
+      - "src/qnwis/orchestration/nodes/format_node.py"
+      - "src/qnwis/verification/**/*.py"
+    message: "Citation enforcement must be active in format nodes"
+    severity: ERROR
+
+  structured_logging:
+    patterns:
+      - 'import logging'
+      - 'logger\s*=\s*logging\.getLogger'
+    paths:
+      - "src/qnwis/**/*.py"
+    exclude_paths:
+      - "src/qnwis/**/__init__.py"
+      - "src/qnwis/cli/**/*.py"
+    message: "Use structured logging throughout application"
+    severity: WARNING
+
+  type_hints:
+    patterns:
+      - 'def \w+\([^)]*\)\s*->\s*\w+'
+      - 'from typing import'
+    paths:
+      - "src/qnwis/**/*.py"
+    exclude_paths:
+      - "tests/**/*.py"
+      - "scripts/**/*.py"
+    message: "Functions should have type hints"
+    severity: WARNING
+
+# FILE PATTERNS (ensure critical files exist)
+required_files:
+  - path: "src/qnwis/data/client.py"
+    message: "DataClient abstraction missing"
+  - path: "src/qnwis/data/queries/registry.py"
+    message: "Query registry missing"
+  - path: "src/qnwis/orchestration/classifier.py"
+    message: "Intent classifier missing"
+  - path: "src/qnwis/orchestration/graph.py"
+    message: "LangGraph orchestration missing"
+  - path: "src/qnwis/verification/citation_enforcer.py"
+    message: "Citation enforcement missing"
+  - path: "src/qnwis/verification/result_verifier.py"
+    message: "Result verification missing"
+  - path: "src/qnwis/verification/audit_trail.py"
+    message: "Audit trail missing"
+  - path: "src/qnwis/cache/manager.py"
+    message: "Cache manager missing"
+
+# EXCLUSIONS (paths to skip entirely)
+global_exclude:
+  - ".venv/**"
+  - ".git/**"
+  - "node_modules/**"
+  - "**/__pycache__/**"
+  - "*.pyc"
+  - ".pytest_cache/**"
+  - "references/**"  # read-only legacy code
+  - "external_data/**"
+  - "qatar_data/**"
+  - "*.egg-info/**"

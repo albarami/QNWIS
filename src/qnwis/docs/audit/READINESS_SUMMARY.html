@@ -1,19 +1,19 @@
 <pre># Readiness Report: Steps 1-25
 
-**Generated:** 2025-11-08T16:18:23.400655
+**Generated:** 2025-11-08T16:35:16.201965
 **Overall Status:** FAIL
-**Execution Time:** 9 ms
+**Execution Time:** 1481 ms
 
 ## Summary
 
-- **Total Gates:** 1
-- **Passed:** 0
+- **Total Gates:** 2
+- **Passed:** 1
 - **Failed:** 1
 
 ## Gate Results
 
-### step_completeness [FAIL]
-- **Duration:** 8 ms
+### step_completeness [PASS]
+- **Duration:** 9 ms
 - **Severity:** ERROR
 ```json
 {
@@ -32,13 +32,11 @@
     &quot;step_02&quot;: {
       &quot;name&quot;: &quot;MCP tooling + API hygiene&quot;,
       &quot;code_ok&quot;: true,
-      &quot;tests_ok&quot;: false,
+      &quot;tests_ok&quot;: true,
       &quot;smoke_ok&quot;: true,
       &quot;missing&quot;: {
         &quot;code&quot;: [],
-        &quot;tests&quot;: [
-          &quot;tests/unit/test_mcp_tools.py&quot;
-        ],
+        &quot;tests&quot;: [],
         &quot;smoke&quot;: []
       }
     },
@@ -176,13 +174,11 @@
     },
     &quot;step_15&quot;: {
       &quot;name&quot;: &quot;Routing + classifier&quot;,
-      &quot;code_ok&quot;: false,
+      &quot;code_ok&quot;: true,
       &quot;tests_ok&quot;: true,
       &quot;smoke_ok&quot;: true,
       &quot;missing&quot;: {
-        &quot;code&quot;: [
-          &quot;src/qnwis/orchestration/router.py&quot;
-        ],
+        &quot;code&quot;: [],
         &quot;tests&quot;: [],
         &quot;smoke&quot;: []
       }
@@ -191,13 +187,11 @@
       &quot;name&quot;: &quot;Coordination&quot;,
       &quot;code_ok&quot;: true,
       &quot;tests_ok&quot;: true,
-      &quot;smoke_ok&quot;: false,
+      &quot;smoke_ok&quot;: true,
       &quot;missing&quot;: {
         &quot;code&quot;: [],
         &quot;tests&quot;: [],
-        &quot;smoke&quot;: [
-          &quot;docs/COORDINATION_LAYER_IMPLEMENTATION.md&quot;
-        ]
+        &quot;smoke&quot;: []
       }
     },
     &quot;step_17&quot;: {
@@ -300,31 +294,84 @@
       }
     }
   },
-  &quot;missing&quot;: {
-    &quot;step_02&quot;: {
-      &quot;code&quot;: [],
-      &quot;tests&quot;: [
-        &quot;tests/unit/test_mcp_tools.py&quot;
-      ],
-      &quot;smoke&quot;: []
-    },
-    &quot;step_15&quot;: {
-      &quot;code&quot;: [
-        &quot;src/qnwis/orchestration/router.py&quot;
-      ],
-      &quot;tests&quot;: [],
-      &quot;smoke&quot;: []
-    },
-    &quot;step_16&quot;: {
-      &quot;code&quot;: [],
-      &quot;tests&quot;: [],
-      &quot;smoke&quot;: [
-        &quot;docs/COORDINATION_LAYER_IMPLEMENTATION.md&quot;
-      ]
-    }
-  }
+  &quot;missing&quot;: {}
 }
 ```
 **Evidence:**
 - `docs/IMPLEMENTATION_ROADMAP.md`
+
+### no_placeholders [FAIL]
+- **Duration:** 1473 ms
+- **Severity:** ERROR
+```json
+{
+  &quot;patterns&quot;: [
+    &quot;\\bTODO\\b&quot;,
+    &quot;\\bFIXME\\b&quot;,
+    &quot;\\bHACK\\b&quot;,
+    &quot;\\bXXX\\b&quot;,
+    &quot;\\bpass\\b(?=\\s*$)&quot;,
+    &quot;\\bNotImplemented\\b&quot;,
+    &quot;raise\\s+NotImplementedError&quot;
+  ],
+  &quot;violations&quot;: [
+    {
+      &quot;file&quot;: &quot;src/qnwis/agents/utils/derived_results.py&quot;,
+      &quot;line&quot;: 94,
+      &quot;pattern&quot;: &quot;\\bpass\\b(?=\\s*$)&quot;,
+      &quot;snippet&quot;: &quot;pass&quot;
+    },
+    {
+      &quot;file&quot;: &quot;src/qnwis/agents/utils/derived_results.py&quot;,
+      &quot;line&quot;: 99,
+      &quot;pattern&quot;: &quot;\\bpass\\b(?=\\s*$)&quot;,
+      &quot;snippet&quot;: &quot;pass&quot;
+    },
+    {
+      &quot;file&quot;: &quot;src/qnwis/data/cache/backends.py&quot;,
+      &quot;line&quot;: 23,
+      &quot;pattern&quot;: &quot;raise\\s+NotImplementedError&quot;,
+      &quot;snippet&quot;: &quot;raise NotImplementedError&quot;
+    },
+    {
+      &quot;file&quot;: &quot;src/qnwis/data/cache/backends.py&quot;,
+      &quot;line&quot;: 27,
+      &quot;pattern&quot;: &quot;raise\\s+NotImplementedError&quot;,
+      &quot;snippet&quot;: &quot;raise NotImplementedError&quot;
+    },
+    {
+      &quot;file&quot;: &quot;src/qnwis/data/cache/backends.py&quot;,
+      &quot;line&quot;: 31,
+      &quot;pattern&quot;: &quot;raise\\s+NotImplementedError&quot;,
+      &quot;snippet&quot;: &quot;raise NotImplementedError&quot;
+    },
+    {
+      &quot;file&quot;: &quot;src/qnwis/data/deterministic/cache_access.py&quot;,
+      &quot;line&quot;: 82,
+      &quot;pattern&quot;: &quot;\\bpass\\b(?=\\s*$)&quot;,
+      &quot;snippet&quot;: &quot;pass&quot;
+    },
+    {
+      &quot;file&quot;: &quot;src/qnwis/scripts/qa/readiness_gate.py&quot;,
+      &quot;line&quot;: 38,
+      &quot;pattern&quot;: &quot;\\bpass\\b(?=\\s*$)&quot;,
+      &quot;snippet&quot;: &quot;pass&quot;
+    },
+    {
+      &quot;file&quot;: &quot;src/qnwis/scripts/qa/readiness_gate.py&quot;,
+      &quot;line&quot;: 43,
+      &quot;pattern&quot;: &quot;\\bpass\\b(?=\\s*$)&quot;,
+      &quot;snippet&quot;: &quot;pass&quot;
+    },
+    {
+      &quot;file&quot;: &quot;src/qnwis/verification/audit_trail.py&quot;,
+      &quot;line&quot;: 477,
+      &quot;pattern&quot;: &quot;\\bpass\\b(?=\\s*$)&quot;,
+      &quot;snippet&quot;: &quot;- is_valid: True if all checks pass&quot;
+    }
+  ]
+}
+```
+**Evidence:**
+- `src/qnwis/scripts/qa/grep_rules.yml`
 </pre>

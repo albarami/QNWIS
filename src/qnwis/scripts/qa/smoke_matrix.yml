@@ -1,0 +1,329 @@
+# Smoke Matrix for Readiness Gate
+# Natural language → intent smoke scenarios for every agent/workflow (Steps 9-25)
+
+# STEP 9: Pattern Detective Agent
+pattern_detective:
+  - id: "pd_01_stable_relations"
+    description: "Test stable sector-outcome relationships"
+    query: "Show me the most stable relationship between sectors and qatarization rates"
+    params:
+      sector: "Construction"
+      window: 12
+    expected_intent: "pattern.stable_relations"
+    expected_output:
+      - "derived_qr_present"
+      - "citations_valid"
+      - "stability_score_present"
+
+  - id: "pd_02_seasonal_effects"
+    description: "Test seasonal pattern detection"
+    query: "Are there seasonal patterns in healthcare sector qatarization?"
+    params:
+      outcome: "qatarization_rate"
+      sector: "Healthcare"
+    expected_intent: "pattern.seasonal_effects"
+    expected_output:
+      - "derived_qr_present"
+      - "citations_valid"
+      - "seasonal_coefficients_present"
+
+  - id: "pd_03_change_detection"
+    description: "Test change point detection"
+    query: "When did the construction sector see major changes?"
+    params:
+      sector: "Construction"
+      window: 24
+    expected_intent: "pattern.change_detection"
+    expected_output:
+      - "derived_qr_present"
+      - "citations_valid"
+      - "changepoints_present"
+
+# STEP 10: National Strategy Agent
+national_strategy:
+  - id: "ns_01_gcc_benchmark"
+    description: "Test GCC benchmarking"
+    query: "How does Qatar compare to other GCC countries in qatarization from 2019-2024?"
+    params:
+      sector: null
+      years: "2019-2024"
+    expected_intent: "national_strategy.gcc_benchmark"
+    expected_output:
+      - "derived_qr_present"
+      - "citations_valid"
+      - "gcc_comparison_present"
+
+  - id: "ns_02_policy_impact"
+    description: "Test policy impact analysis"
+    query: "What was the impact of recent nationalization policies?"
+    params:
+      policy_period: "2022-2024"
+    expected_intent: "national_strategy.policy_impact"
+    expected_output:
+      - "derived_qr_present"
+      - "citations_valid"
+      - "policy_metrics_present"
+
+  - id: "ns_03_sector_strategy"
+    description: "Test sector-specific strategy"
+    query: "What are the strategic priorities for healthcare workforce?"
+    params:
+      sector: "Healthcare"
+    expected_intent: "national_strategy.sector_strategy"
+    expected_output:
+      - "derived_qr_present"
+      - "citations_valid"
+      - "recommendations_present"
+
+# STEP 23: Time Machine Agent
+time_machine:
+  - id: "tm_01_trend_analysis"
+    description: "Test trend calculation"
+    query: "Show me the headcount trend for all sectors"
+    params:
+      metric: "headcount"
+      sector: "All"
+      window: 96
+    expected_intent: "time.trend"
+    expected_output:
+      - "derived_qr_present"
+      - "citations_valid"
+      - "trend_stats_present"
+      - "performance_under_50ms"
+
+  - id: "tm_02_baseline_comparison"
+    description: "Test baseline comparison"
+    query: "Compare current hospitality retention rates to 2019 baseline"
+    params:
+      metric: "retention_rate"
+      sector: "Hospitality"
+      baseline_year: 2019
+    expected_intent: "time.baseline"
+    expected_output:
+      - "derived_qr_present"
+      - "citations_valid"
+      - "baseline_delta_present"
+
+  - id: "tm_03_break_detection"
+    description: "Test structural break detection"
+    query: "When did construction sector see structural changes?"
+    params:
+      metric: "headcount"
+      sector: "Construction"
+      min_segment: 12
+    expected_intent: "time.breaks"
+    expected_output:
+      - "derived_qr_present"
+      - "citations_valid"
+      - "breakpoints_present"
+      - "performance_under_50ms"
+
+# STEP 24: Pattern Miner Agent
+pattern_miner:
+  - id: "pm_01_effect_ranking"
+    description: "Test effect size ranking"
+    query: "What factors have the largest impact on qatarization rates?"
+    params:
+      outcome: "qatarization_rate"
+      top_k: 10
+    expected_intent: "pattern.effects"
+    expected_output:
+      - "derived_qr_present"
+      - "citations_valid"
+      - "effect_sizes_present"
+      - "performance_under_200ms"
+
+  - id: "pm_02_support_analysis"
+    description: "Test support level analysis"
+    query: "Which patterns have strong support across sectors?"
+    params:
+      min_support: 0.3
+      cohorts: 30
+    expected_intent: "pattern.support"
+    expected_output:
+      - "derived_qr_present"
+      - "citations_valid"
+      - "support_scores_present"
+
+  - id: "pm_03_stability_check"
+    description: "Test temporal stability"
+    query: "Which patterns are stable over time?"
+    params:
+      outcome: "retention_rate"
+      windows: 4
+    expected_intent: "pattern.stability"
+    expected_output:
+      - "derived_qr_present"
+      - "citations_valid"
+      - "stability_scores_present"
+      - "seasonal_adjustment_present"
+
+# STEP 25: Predictor Agent
+predictor:
+  - id: "pr_01_baseline_forecast"
+    description: "Test baseline forecasting"
+    query: "Forecast hospitality retention rates for next 6 months"
+    params:
+      metric: "retention_rate"
+      sector: "Hospitality"
+      horizon: 6
+    expected_intent: "predict.baseline"
+    expected_output:
+      - "derived_qr_present"
+      - "citations_valid"
+      - "forecast_present"
+      - "confidence_bands_present"
+      - "performance_under_100ms"
+
+  - id: "pr_02_what_if_scenario"
+    description: "Test what-if scenario analysis"
+    query: "What if we increase average salary by 5% in hospitality?"
+    params:
+      outcome: "retention_rate"
+      driver: "avg_salary"
+      change: "+5%"
+      sector: "Hospitality"
+    expected_intent: "predict.whatif"
+    expected_output:
+      - "derived_qr_present"
+      - "citations_valid"
+      - "counterfactual_present"
+      - "elasticity_present"
+
+  - id: "pr_03_backtest"
+    description: "Test forecast accuracy backtest"
+    query: "How accurate were our retention forecasts?"
+    params:
+      metric: "retention_rate"
+      horizon: 6
+      backtest_periods: 12
+    expected_intent: "predict.backtest"
+    expected_output:
+      - "derived_qr_present"
+      - "citations_valid"
+      - "accuracy_metrics_present"
+      - "performance_under_100ms"
+
+# ORCHESTRATION WORKFLOWS (Steps 14-16)
+orchestration:
+  - id: "or_01_classification"
+    description: "Test intent classification"
+    query: "Show me qatarization trends in construction"
+    expected_classification:
+      intent: "time.trend"
+      confidence: ">0.7"
+      agent: "time_machine"
+
+  - id: "or_02_parallel_coordination"
+    description: "Test parallel agent coordination"
+    query: "Compare trends and patterns in healthcare qatarization"
+    expected_coordination: "parallel"
+    expected_agents:
+      - "time_machine"
+      - "pattern_detective"
+
+  - id: "or_03_sequential_coordination"
+    description: "Test sequential workflow"
+    query: "Forecast retention rates based on current patterns"
+    expected_coordination: "sequential"
+    expected_agents:
+      - "pattern_miner"
+      - "predictor"
+
+  - id: "or_04_verification_flow"
+    description: "Test full verification pipeline"
+    query: "Analyze construction sector workforce dynamics"
+    expected_nodes:
+      - "invoke"
+      - "verify"
+      - "format"
+      - "audit"
+    expected_checks:
+      - "citation_enforcement"
+      - "result_verification"
+      - "confidence_scoring"
+
+# VERIFICATION SUITE (Steps 18-22)
+verification:
+  - id: "vr_01_citation_enforcement"
+    description: "Test citation requirement"
+    test_narrative: "Qatarization increased by 15.3%"
+    expected_outcome: "FAIL_MISSING_CITATION"
+
+  - id: "vr_02_privacy_redaction"
+    description: "Test PII redaction"
+    test_data:
+      include_pii: true
+      qid: "QID_12345"
+    expected_outcome: "PII_REDACTED"
+
+  - id: "vr_03_freshness_guard"
+    description: "Test data freshness check"
+    test_data:
+      timestamp: "2020-01-01"
+      max_age_days: 730
+    expected_outcome: "STALE_DATA_WARNING"
+
+  - id: "vr_04_confidence_scoring"
+    description: "Test confidence score attachment"
+    test_narrative: "Based on limited data"
+    expected_output:
+      - "confidence_score_present"
+      - "score_range_0_1"
+
+# CACHE & MATERIALIZATION (Step 17)
+cache:
+  - id: "ca_01_cache_hit"
+    description: "Test cache hit behavior"
+    query: "Show construction headcount"
+    test_sequence:
+      - "query_cold"
+      - "query_warm"
+    expected_outcome: "CACHE_HIT_ON_SECOND"
+
+  - id: "ca_02_negative_cache"
+    description: "Test negative caching"
+    query: "Show data for nonexistent sector"
+    expected_outcome: "NEGATIVE_CACHE_SET"
+
+  - id: "ca_03_mv_refresh"
+    description: "Test MV refresh job"
+    test_type: "dry_run"
+    expected_outcome: "REFRESH_PLAN_VALID"
+
+# PERFORMANCE BENCHMARKS
+performance:
+  - id: "pf_01_time_machine_speed"
+    description: "Time Machine window ops <50ms"
+    test_type: "micro_benchmark"
+    target_ms: 50
+    iterations: 100
+
+  - id: "pf_02_pattern_miner_speed"
+    description: "Pattern Miner scan <200ms"
+    test_type: "micro_benchmark"
+    target_ms: 200
+    iterations: 50
+
+  - id: "pf_03_predictor_speed"
+    description: "Predictor baseline+bands <100ms"
+    test_type: "micro_benchmark"
+    target_ms: 100
+    iterations: 100
+
+# AUDIT TRAIL (Step 21)
+audit:
+  - id: "au_01_trail_creation"
+    description: "Test audit pack generation"
+    query: "Analyze healthcare trends"
+    expected_output:
+      - "audit_pack_created"
+      - "checksums_valid"
+      - "lineage_traced"
+
+  - id: "au_02_trail_retrieval"
+    description: "Test audit retrieval"
+    test_type: "lookup_by_qid"
+    expected_output:
+      - "trail_found"
+      - "full_context_present"
