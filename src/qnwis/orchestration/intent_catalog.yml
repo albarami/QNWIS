@@ -648,3 +648,101 @@ complexity_thresholds:
   medium: 21-40
   complex: 41-60
   crisis: 61+  # or urgency_present=true + fresh_horizon<=3_months
+
+# Scenario Planning Intents
+scenario.apply:
+  description: "Apply a what-if scenario to baseline forecast"
+  keywords:
+    - "scenario"
+    - "what if"
+    - "adjust"
+    - "modify forecast"
+    - "scenario planning"
+    - "simulation"
+    - "alternative forecast"
+    - "adjusted forecast"
+    - "hypothetical"
+    - "assume"
+    - "suppose"
+    - "if we"
+  metrics_hint:
+    - "retention"
+    - "qatarization"
+    - "salary"
+    - "employment"
+    - "turnover"
+  examples:
+    - "What if retention improved by 10%?"
+    - "Scenario: 5% salary increase impact"
+    - "Adjust qatarization forecast assuming new policy"
+    - "Simulate employment growth with intervention"
+  prefetch:
+    - fn: get_baseline_forecast
+      description: "Baseline forecast for scenario adjustment"
+      require_metrics: true
+      params:
+        metrics: "@metrics"
+        sectors: "@sectors"
+        horizon_months: "@months"
+
+scenario.compare:
+  description: "Compare multiple scenarios side-by-side"
+  keywords:
+    - "compare scenarios"
+    - "scenario comparison"
+    - "multiple scenarios"
+    - "best case"
+    - "worst case"
+    - "optimistic"
+    - "pessimistic"
+    - "alternative scenarios"
+    - "which scenario"
+    - "scenario analysis"
+  metrics_hint:
+    - "retention"
+    - "qatarization"
+    - "employment"
+  examples:
+    - "Compare optimistic vs pessimistic retention scenarios"
+    - "Which scenario is better for qatarization?"
+    - "Analyze best/worst case employment forecasts"
+    - "Compare three salary adjustment scenarios"
+  prefetch:
+    - fn: get_baseline_forecast
+      description: "Baseline for scenario comparison"
+      require_metrics: true
+      params:
+        metrics: "@metrics"
+        sectors: "@sectors"
+        horizon_months: "@months"
+
+scenario.batch:
+  description: "Process multiple sector scenarios with national rollup"
+  keywords:
+    - "batch scenario"
+    - "all sectors"
+    - "national impact"
+    - "aggregate scenarios"
+    - "sector scenarios"
+    - "cross-sector"
+    - "national rollup"
+    - "combined effect"
+    - "total impact"
+  sectors_hint: true
+  metrics_hint:
+    - "retention"
+    - "qatarization"
+    - "employment"
+  examples:
+    - "Apply scenarios to all sectors and aggregate"
+    - "National impact of sector-level interventions"
+    - "Batch process retention scenarios by sector"
+    - "Combined effect of cross-sector policies"
+  prefetch:
+    - fn: get_sector_forecasts
+      description: "Sector baselines for batch processing"
+      require_sectors: true
+      params:
+        sectors: "@sectors"
+        metrics: "@metrics"
+        horizon_months: "@months"

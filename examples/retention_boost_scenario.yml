@@ -1,0 +1,13 @@
+name: "Retention Boost 2025"
+description: "10% retention improvement through training programs and better working conditions"
+metric: retention
+sector: Construction
+horizon_months: 12
+transforms:
+  - type: multiplicative
+    value: 0.10
+    start_month: 0
+    end_month: null
+aggregation: none
+clamp_min: 0.0
+clamp_max: 1.0

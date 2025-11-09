@@ -7,7 +7,8 @@ Maps intents to agent methods while preventing arbitrary attribute access.
 from __future__ import annotations
 
 import logging
-from typing import Any, Callable, Dict, Tuple
+from collections.abc import Callable
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,7 @@ class AgentRegistry:
 
     def __init__(self) -> None:
         """Initialize an empty registry."""
-        self._mappings: Dict[str, Tuple[Any, str]] = {}
+        self._mappings: dict[str, tuple[Any, str]] = {}
 
     def register(self, intent: str, agent: Any, method: str) -> None:
         """
@@ -73,7 +74,7 @@ class AgentRegistry:
             method,
         )
 
-    def resolve(self, intent: str) -> Tuple[Any, str]:
+    def resolve(self, intent: str) -> tuple[Any, str]:
         """
         Resolve an intent to its agent and method name.
 
@@ -152,16 +153,24 @@ def create_default_registry(
     from ..agents.national_strategy import NationalStrategyAgent
     from ..agents.nationalization import NationalizationAgent
     from ..agents.pattern_detective import PatternDetectiveAgent
+    from ..agents.pattern_miner import PatternMinerAgent
+    from ..agents.predictor import PredictorAgent
+    from ..agents.scenario_agent import ScenarioAgent
     from ..agents.skills import SkillsAgent
+    from ..agents.time_machine import TimeMachineAgent
 
     registry = AgentRegistry()
 
     # Instantiate agents
     pattern_agent = PatternDetectiveAgent(client, verifier)
+    pattern_miner_agent = PatternMinerAgent(client)
     strategy_agent = NationalStrategyAgent(client, verifier)
     labour_agent = LabourEconomistAgent(client)  # noqa: F841 - Reserved for future use
     nationalization_agent = NationalizationAgent(client)  # noqa: F841 - Reserved for future use
     skills_agent = SkillsAgent(client)  # noqa: F841 - Reserved for future use
+    time_machine_agent = TimeMachineAgent(client)
+    predictor_agent = PredictorAgent(client)
+    scenario_agent = ScenarioAgent(client)
 
     # Pattern Detective intents
     registry.register("pattern.anomalies", pattern_agent, "detect_anomalous_retention")
@@ -169,12 +178,32 @@ def create_default_registry(
     registry.register("pattern.root_causes", pattern_agent, "identify_root_causes")
     registry.register("pattern.best_practices", pattern_agent, "best_practices")
 
+    # Pattern Miner intents
+    registry.register("pattern.stable_relations", pattern_miner_agent, "stable_relations")
+    registry.register("pattern.seasonal_effects", pattern_miner_agent, "seasonal_effects")
+    registry.register("pattern.driver_screen", pattern_miner_agent, "driver_screen")
+
     # National Strategy intents
     registry.register("strategy.gcc_benchmark", strategy_agent, "gcc_benchmark")
     registry.register(
         "strategy.talent_competition", strategy_agent, "talent_competition_assessment"
     )
     registry.register("strategy.vision2030", strategy_agent, "vision2030_alignment")
+
+    # Time Machine intents
+    registry.register("time.baseline", time_machine_agent, "baseline_report")
+    registry.register("time.trend", time_machine_agent, "trend_report")
+    registry.register("time.breaks", time_machine_agent, "breaks_report")
+
+    # Predictor intents
+    registry.register("predict.forecast", predictor_agent, "forecast_baseline")
+    registry.register("predict.early_warning", predictor_agent, "early_warning")
+    registry.register("predict.scenario_compare", predictor_agent, "scenario_compare")
+
+    # Scenario Planner intents
+    registry.register("scenario.apply", scenario_agent, "apply")
+    registry.register("scenario.compare", scenario_agent, "compare")
+    registry.register("scenario.batch", scenario_agent, "batch")
 
     logger.info("Default registry created with %d intents", len(registry.intents()))
     return registry
