@@ -1,8 +1,8 @@
 # Readiness Report: Steps 1-25
 
-**Generated:** 2025-11-09T02:34:58.839027
+**Generated:** 2025-11-09T11:36:01.838329
 **Overall Status:** FAIL
-**Execution Time:** 905814 ms
+**Execution Time:** 902557 ms
 
 ## Summary
 
@@ -12,12 +12,12 @@
 
 ## Previously failing gates now PASS
 
-- no_placeholders
+- None
 
 ## Gate Results
 
 ### step_completeness [PASS]
-- **Duration:** 7 ms
+- **Duration:** 9 ms
 - **Severity:** ERROR
 ```json
 {
@@ -296,6 +296,17 @@
         "tests": [],
         "smoke": []
       }
+    },
+    "step_26": {
+      "name": "Scenario Planner",
+      "code_ok": true,
+      "tests_ok": true,
+      "smoke_ok": true,
+      "missing": {
+        "code": [],
+        "tests": [],
+        "smoke": []
+      }
     }
   },
   "missing": {}
@@ -305,7 +316,7 @@
 - `docs/IMPLEMENTATION_ROADMAP.md`
 
 ### no_placeholders [PASS]
-- **Duration:** 149 ms
+- **Duration:** 760 ms
 - **Severity:** ERROR
 ```json
 {
@@ -325,12 +336,12 @@
 - `src/qnwis/scripts/qa/grep_rules.yml`
 
 ### linters_and_types [FAIL]
-- **Duration:** 905655 ms
+- **Duration:** 901787 ms
 - **Severity:** ERROR
 ```json
 {
   "ruff_exit_code": 1,
-  "ruff_output": "rc\\qnwis\\verification\\audit_trail.py:141:9\n    |\n139 |     def generate_trail(\n140 |         self,\n141 |         response_md: str,\n    |         ^^^^^^^^^^^\n142 |         qresults: list[QueryResult],\n143 |         verification: VerificationSummary,\n    |\n\nSIM102 Use a single `if` statement instead of nested `if` statements\n   --> src\\qnwis\\verification\\number_extractors.py:102:9\n    |\n100 |       sent_end = len(text)\n101 |       for i in range(start, len(text)):\n102 | /         if text[i] in (\".\", \"!\", \"?\"):\n103 | |             # Check if followed by space or newline (real sentence boundary)\n104 | |             if i + 1 >= len(text) or text[i + 1] in (\" \", \"\\n\", \"\\t\"):\n    | |______________________________________________________________________^\n105 |                   sent_end = i + 1\n106 |                   break\n    |\nhelp: Combine `if` statements using `and`\n\nFound 125 errors.\n[*] 1 fixable with the `--fix` option (78 hidden fixes can be enabled with the `--unsafe-fixes` option).\n",
+  "ruff_output": "sponse_md`\n   --> src\\qnwis\\verification\\audit_trail.py:141:9\n    |\n139 |     def generate_trail(\n140 |         self,\n141 |         response_md: str,\n    |         ^^^^^^^^^^^\n142 |         qresults: list[QueryResult],\n143 |         verification: VerificationSummary,\n    |\n\nSIM102 Use a single `if` statement instead of nested `if` statements\n   --> src\\qnwis\\verification\\number_extractors.py:102:9\n    |\n100 |       sent_end = len(text)\n101 |       for i in range(start, len(text)):\n102 | /         if text[i] in (\".\", \"!\", \"?\"):\n103 | |             # Check if followed by space or newline (real sentence boundary)\n104 | |             if i + 1 >= len(text) or text[i + 1] in (\" \", \"\\n\", \"\\t\"):\n    | |______________________________________________________________________^\n105 |                   sent_end = i + 1\n106 |                   break\n    |\nhelp: Combine `if` statements using `and`\n\nFound 130 errors.\nNo fixes available (78 hidden fixes can be enabled with the `--unsafe-fixes` option).\n",
   "flake8_exit_code": -1,
   "flake8_output": "Command timed out after 900s",
   "mypy_exit_code": 2,
