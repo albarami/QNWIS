@@ -6,7 +6,7 @@ All functions handle edge cases and guard against zeros/NaNs.
 """
 
 
-from src.qnwis.analysis.trend_utils import safe_mad, safe_mean
+from .trend_utils import safe_mad, safe_mean
 
 
 def seasonal_baseline(
@@ -15,18 +15,18 @@ def seasonal_baseline(
 ) -> dict[str, list[float]]:
     """
     Compute seasonal baseline and anomaly bands.
-    
+
     Args:
         series: Time series values (must be >= season length)
         season: Seasonal period (default 12 for monthly data)
-        
+
     Returns:
         Dictionary with:
         - mean_per_phase: Average value for each phase (e.g., Jan, Feb, ...)
         - baseline: Seasonal mean repeated to match series length
         - upper_band: baseline + 1.5*MAD (robust upper bound)
         - lower_band: baseline - 1.5*MAD (robust lower bound)
-        
+
     Example:
         >>> result = seasonal_baseline([100, 110, 105, 100, 110, 105], season=3)
         >>> len(result['baseline'])
@@ -88,15 +88,15 @@ def anomaly_gaps(
 ) -> list[float | None]:
     """
     Compute percentage gaps between actual values and baseline.
-    
+
     Args:
         series: Actual time series values
         baseline: Baseline (expected) values
-        
+
     Returns:
         List of percentage differences: (series - baseline) / baseline * 100
         Returns None for positions where baseline is 0
-        
+
     Example:
         >>> anomaly_gaps([110, 90], [100, 100])
         [10.0, -10.0]
@@ -124,15 +124,15 @@ def detect_seasonal_anomalies(
 ) -> list[int]:
     """
     Detect points that deviate significantly from seasonal baseline.
-    
+
     Args:
         series: Time series values
         season: Seasonal period
         threshold_mad: Number of MADs beyond which a point is anomalous
-        
+
     Returns:
         List of indices that are seasonal anomalies
-        
+
     Example:
         >>> detect_seasonal_anomalies([100, 100, 200, 100], season=2, threshold_mad=1.5)
         [2]
@@ -166,14 +166,14 @@ def trend_adjusted_baseline(
 ) -> dict[str, list[float]]:
     """
     Compute seasonal baseline with linear trend adjustment.
-    
+
     Useful for series with strong underlying trend + seasonality.
-    
+
     Args:
         series: Time series values
         season: Seasonal period
         trend_window: Window for computing local trend
-        
+
     Returns:
         Dictionary with 'baseline' and 'trend_component'
     """
@@ -219,11 +219,11 @@ def summarize_baseline_fit(
 ) -> dict[str, float | None]:
     """
     Compute fit statistics for baseline vs actual series.
-    
+
     Args:
         series: Actual time series values
         baseline: Baseline values
-        
+
     Returns:
         Dictionary with:
         - mean_abs_error: Average absolute difference
@@ -261,10 +261,7 @@ def summarize_baseline_fit(
         ss_tot = sum((series[i] - series_mean) ** 2 for i in range(len(series)))
         ss_res = sum((series[i] - baseline[i]) ** 2 for i in range(len(series)))
 
-        if ss_tot == 0:
-            r_squared = None
-        else:
-            r_squared = max(0.0, 1.0 - (ss_res / ss_tot))
+        r_squared = None if ss_tot == 0 else max(0.0, 1.0 - ss_res / ss_tot)
 
     return {
         'mean_abs_error': mean_abs_error,

@@ -1,13 +1,13 @@
 <pre># Readiness Report: Steps 1-25
 
-**Generated:** 2025-11-09T11:36:01.838329
+**Generated:** 2025-11-09T18:27:32.568098
 **Overall Status:** FAIL
-**Execution Time:** 902557 ms
+**Execution Time:** 4928 ms
 
 ## Summary
 
-- **Total Gates:** 3
-- **Passed:** 2
+- **Total Gates:** 5
+- **Passed:** 4
 - **Failed:** 1
 
 ## Previously failing gates now PASS
@@ -17,7 +17,7 @@
 ## Gate Results
 
 ### step_completeness [PASS]
-- **Duration:** 9 ms
+- **Duration:** 8 ms
 - **Severity:** ERROR
 ```json
 {
@@ -316,7 +316,7 @@
 - `docs/IMPLEMENTATION_ROADMAP.md`
 
 ### no_placeholders [PASS]
-- **Duration:** 760 ms
+- **Duration:** 155 ms
 - **Severity:** ERROR
 ```json
 {
@@ -335,17 +335,118 @@
 **Evidence:**
 - `src/qnwis/scripts/qa/grep_rules.yml`
 
-### linters_and_types [FAIL]
-- **Duration:** 901787 ms
+### linters_and_types [PASS]
+- **Duration:** 4407 ms
 - **Severity:** ERROR
 ```json
 {
-  &quot;ruff_exit_code&quot;: 1,
-  &quot;ruff_output&quot;: &quot;sponse_md`\n   --&gt; src\\qnwis\\verification\\audit_trail.py:141:9\n    |\n139 |     def generate_trail(\n140 |         self,\n141 |         response_md: str,\n    |         ^^^^^^^^^^^\n142 |         qresults: list[QueryResult],\n143 |         verification: VerificationSummary,\n    |\n\nSIM102 Use a single `if` statement instead of nested `if` statements\n   --&gt; src\\qnwis\\verification\\number_extractors.py:102:9\n    |\n100 |       sent_end = len(text)\n101 |       for i in range(start, len(text)):\n102 | /         if text[i] in (\&quot;.\&quot;, \&quot;!\&quot;, \&quot;?\&quot;):\n103 | |             # Check if followed by space or newline (real sentence boundary)\n104 | |             if i + 1 &gt;= len(text) or text[i + 1] in (\&quot; \&quot;, \&quot;\\n\&quot;, \&quot;\\t\&quot;):\n    | |______________________________________________________________________^\n105 |                   sent_end = i + 1\n106 |                   break\n    |\nhelp: Combine `if` statements using `and`\n\nFound 130 errors.\nNo fixes available (78 hidden fixes can be enabled with the `--unsafe-fixes` option).\n&quot;,
-  &quot;flake8_exit_code&quot;: -1,
-  &quot;flake8_output&quot;: &quot;Command timed out after 900s&quot;,
-  &quot;mypy_exit_code&quot;: 2,
-  &quot;mypy_output&quot;: &quot;src\\qnwis\\analysis\\trend_utils.py: error: Source file found twice under different module names: \&quot;qnwis.analysis.trend_utils\&quot; and \&quot;src.qnwis.analysis.trend_utils\&quot;\nsrc\\qnwis\\analysis\\trend_utils.py: note: See https://mypy.readthedocs.io/en/stable/running_mypy.html#mapping-file-paths-to-modules for more info\nsrc\\qnwis\\analysis\\trend_utils.py: note: Common resolutions include: a) adding `__init__.py` somewhere, b) using `--explicit-package-bases` or adjusting MYPYPATH\nFound 1 error in 1 file (errors prevented further checking)\n&quot;
+  &quot;ruff&quot;: {
+    &quot;issues&quot;: 0,
+    &quot;fixable&quot;: 0,
+    &quot;rules&quot;: {},
+    &quot;files&quot;: [],
+    &quot;stdout_tail&quot;: &quot;[]&quot;,
+    &quot;stderr_tail&quot;: &quot;&quot;,
+    &quot;exit_code&quot;: 0
+  },
+  &quot;flake8&quot;: {
+    &quot;issues&quot;: 0,
+    &quot;fixable&quot;: 0,
+    &quot;rules&quot;: {},
+    &quot;files&quot;: [],
+    &quot;stdout_tail&quot;: &quot;&quot;,
+    &quot;stderr_tail&quot;: &quot;&quot;,
+    &quot;exit_code&quot;: 0
+  },
+  &quot;mypy&quot;: {
+    &quot;issues&quot;: 0,
+    &quot;fixable&quot;: 0,
+    &quot;rules&quot;: {},
+    &quot;files&quot;: [],
+    &quot;stdout_tail&quot;: &quot;Success: no issues found in 10 source files\n&quot;,
+    &quot;stderr_tail&quot;: &quot;&quot;,
+    &quot;exit_code&quot;: 0
+  }
 }
 ```
+
+### deterministic_access [PASS]
+- **Duration:** 68 ms
+- **Severity:** ERROR
+```json
+{
+  &quot;violations&quot;: []
+}
+```
+
+### security_and_privacy [FAIL]
+- **Duration:** 287 ms
+- **Severity:** ERROR
+```json
+{
+  &quot;secret_hits&quot;: [
+    {
+      &quot;file&quot;: &quot;src/qnwis/docs/audit/readiness_report.json&quot;,
+      &quot;pattern&quot;: &quot;aws_secret&quot;,
+      &quot;snippet&quot;: &quot;aws_secret&quot;
+    },
+    {
+      &quot;file&quot;: &quot;src/qnwis/docs/audit/READINESS_REPORT_1_25.md&quot;,
+      &quot;pattern&quot;: &quot;aws_secret&quot;,
+      &quot;snippet&quot;: &quot;aws_secret&quot;
+    },
+    {
+      &quot;file&quot;: &quot;src/qnwis/scripts/qa/readiness_gate.py&quot;,
+      &quot;pattern&quot;: &quot;aws_secret&quot;,
+      &quot;snippet&quot;: &quot;aws_secret&quot;
+    },
+    {
+      &quot;file&quot;: &quot;src/qnwis/docs/audit/readiness_report.json&quot;,
+      &quot;pattern&quot;: &quot;aws_secret&quot;,
+      &quot;snippet&quot;: &quot;aws_secret&quot;
+    },
+    {
+      &quot;file&quot;: &quot;src/qnwis/docs/audit/READINESS_REPORT_1_25.md&quot;,
+      &quot;pattern&quot;: &quot;aws_secret&quot;,
+      &quot;snippet&quot;: &quot;aws_secret&quot;
+    }
+  ],
+  &quot;pii_hits&quot;: [
+    {
+      &quot;file&quot;: &quot;src/qnwis/docs/audit/readiness_report.json&quot;,
+      &quot;pattern&quot;: &quot;email&quot;,
+      &quot;snippet&quot;: &quot;analyst@mol.gov.qa&quot;
+    },
+    {
+      &quot;file&quot;: &quot;src/qnwis/docs/audit/READINESS_REPORT_1_25.md&quot;,
+      &quot;pattern&quot;: &quot;email&quot;,
+      &quot;snippet&quot;: &quot;analyst@mol.gov.qa&quot;
+    },
+    {
+      &quot;file&quot;: &quot;src/qnwis/docs/orchestration/step15_routing.md&quot;,
+      &quot;pattern&quot;: &quot;email&quot;,
+      &quot;snippet&quot;: &quot;analyst@mol.gov.qa&quot;
+    },
+    {
+      &quot;file&quot;: &quot;docs/orchestration/step14_workflow.md&quot;,
+      &quot;pattern&quot;: &quot;email&quot;,
+      &quot;snippet&quot;: &quot;analyst@mol.qa&quot;
+    },
+    {
+      &quot;file&quot;: &quot;src/qnwis/docs/audit/readiness_report.json&quot;,
+      &quot;pattern&quot;: &quot;email&quot;,
+      &quot;snippet&quot;: &quot;analyst@mol.gov.qa&quot;
+    },
+    {
+      &quot;file&quot;: &quot;src/qnwis/docs/audit/READINESS_REPORT_1_25.md&quot;,
+      &quot;pattern&quot;: &quot;email&quot;,
+      &quot;snippet&quot;: &quot;analyst@mol.gov.qa&quot;
+    }
+  ],
+  &quot;rbac_schema&quot;: true,
+  &quot;rbac_tests&quot;: true
+}
+```
+**Evidence:**
+- `src/qnwis/verification/schemas.py`
 </pre>

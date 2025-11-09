@@ -168,9 +168,7 @@ class PredictorAgent:
             return values, reason
 
         marker = tail_dates[0] if tail_dates else dates[last_break]
-        reason = (
-            f"Detected change-point near {marker}; training on post-break tail of {len(tail)} points."
-        )
+        reason = f"Detected change-point near {marker}; training on post-break tail of {len(tail)} points."
         return tail, reason
 
     @staticmethod
@@ -285,9 +283,7 @@ class PredictorAgent:
         )
 
         # In-sample fit for MAD interval
-        fitted_full = method_func(
-            train_series, horizon=len(train_series), **method_params
-        )
+        fitted_full = method_func(train_series, horizon=len(train_series), **method_params)
         residuals = residuals_in_sample(train_series, fitted_full)
         half_width = mad_interval(residuals, z=1.96)
 
@@ -394,33 +390,37 @@ class PredictorAgent:
                 f"| {int(row['h'])} | {row['yhat']:.2f} | {row['lo']:.2f} | {row['hi']:.2f} |"
             )
 
-        lines.extend([
-            f"(QID={forecast_qid})",
-            "",
-            "## Backtest Performance",
-            f"- **MAE**: {backtest_metrics['mae']:.4f} (QID={backtest_qid})",
-            f"- **MAPE**: {backtest_metrics['mape']:.2f}% (QID={backtest_qid})",
-            f"- **RMSE**: {backtest_metrics['rmse']:.4f} (QID={backtest_qid})",
-            f"- **Method**: {method}",
-            f"- **Test points**: {int(backtest_metrics['n'])}",
-        ])
+        lines.extend(
+            [
+                f"(QID={forecast_qid})",
+                "",
+                "## Backtest Performance",
+                f"- **MAE**: {backtest_metrics['mae']:.4f} (QID={backtest_qid})",
+                f"- **MAPE**: {backtest_metrics['mape']:.2f}% (QID={backtest_qid})",
+                f"- **RMSE**: {backtest_metrics['rmse']:.4f} (QID={backtest_qid})",
+                f"- **Method**: {method}",
+                f"- **Test points**: {int(backtest_metrics['n'])}",
+            ]
+        )
 
         if method_reasons:
             lines.extend(["", "## Method Rationale"])
             for reason in method_reasons:
                 lines.append(f"- {reason}")
 
-        lines.extend([
-            "",
-            "## Freshness",
-            f"- **Data as of**: {freshness_date} (QID={data_qid})",
-            "",
-            "## Reproducibility",
-            "```python",
-            f'DataClient.run("{data_qid}")',
-            f'PredictorAgent.forecast_baseline(metric="{metric}", sector="{sector}", horizon_months={horizon})',
-            "```",
-        ])
+        lines.extend(
+            [
+                "",
+                "## Freshness",
+                f"- **Data as of**: {freshness_date} (QID={data_qid})",
+                "",
+                "## Reproducibility",
+                "```python",
+                f'DataClient.run("{data_qid}")',
+                f'PredictorAgent.forecast_baseline(metric="{metric}", sector="{sector}", horizon_months={horizon})',
+                "```",
+            ]
+        )
 
         confidence_line = self._confidence_hint_line(confidence_hint)
         if confidence_line:
@@ -454,10 +454,7 @@ class PredictorAgent:
 
         series, dates = self._extract_time_series(res, metric_field=metric)
         if len(series) < 12:
-            return (
-                f"Insufficient data for early warning: {len(series)} points "
-                "(need ≥ 12)."
-            )
+            return f"Insufficient data for early warning: {len(series)} points (need ≥ 12)."
         if len(series) < 2:
             return "Need at least 2 observations to compute early-warning signals."
 
@@ -595,25 +592,29 @@ class PredictorAgent:
             for reason in method_reasons:
                 lines.append(f"- {reason}")
 
-        lines.extend([
-            "",
-            "## Recommended Actions",
-        ])
+        lines.extend(
+            [
+                "",
+                "## Recommended Actions",
+            ]
+        )
 
         recommendations = self._generate_recommendations(metric, sector, flags)
         for i, rec in enumerate(recommendations, 1):
             lines.append(f"{i}. {rec}")
 
-        lines.extend([
-            "",
-            "## Freshness",
-            f"- **Data as of**: {freshness_date} (QID={data_qid})",
-            "",
-            "## Reproducibility",
-            "```python",
-            f'PredictorAgent.early_warning(metric="{metric}", sector="{sector}", end=date.today())',
-            "```",
-        ])
+        lines.extend(
+            [
+                "",
+                "## Freshness",
+                f"- **Data as of**: {freshness_date} (QID={data_qid})",
+                "",
+                "## Reproducibility",
+                "```python",
+                f'PredictorAgent.early_warning(metric="{metric}", sector="{sector}", end=date.today())',
+                "```",
+            ]
+        )
 
         confidence_line = self._confidence_hint_line(confidence_hint)
         if confidence_line:
@@ -647,11 +648,13 @@ class PredictorAgent:
 
         # Default recommendations if no flags
         if not any(flags.values()):
-            recommendations.extend([
-                f"Continue monitoring {metric} in {sector} with current baseline.",
-                f"Update forecast model quarterly to reflect latest {metric} patterns.",
-                f"Establish early-warning thresholds for {sector}-specific risks.",
-            ])
+            recommendations.extend(
+                [
+                    f"Continue monitoring {metric} in {sector} with current baseline.",
+                    f"Update forecast model quarterly to reflect latest {metric} patterns.",
+                    f"Establish early-warning thresholds for {sector}-specific risks.",
+                ]
+            )
 
         return recommendations[:3]  # Return max 3 recommendations
 
@@ -829,12 +832,14 @@ class PredictorAgent:
                 )
             )
 
-        lines.extend([
-            "",
-            f"### Forecast Comparison (QID={forecast_qid})",
-            "| h | " + " | ".join(method_names) + " | Max Delta |",
-            "|---|" + "|".join(["------"] * (len(method_names) + 1)) + "|",
-        ])
+        lines.extend(
+            [
+                "",
+                f"### Forecast Comparison (QID={forecast_qid})",
+                "| h | " + " | ".join(method_names) + " | Max Delta |",
+                "|---|" + "|".join(["------"] * (len(method_names) + 1)) + "|",
+            ]
+        )
 
         for h in range(1, horizon + 1):
             row_vals = []
@@ -842,39 +847,42 @@ class PredictorAgent:
             for method_name in method_names:
                 forecast = results[method_name]["forecast"]
                 val = forecast[h - 1] if h <= len(forecast) else None
-                if val is None or not isinstance(val, (int, float)) or not math.isfinite(float(val)):
+                if (
+                    val is None
+                    or not isinstance(val, (int, float))
+                    or not math.isfinite(float(val))
+                ):
                     row_vals.append("na")
                 else:
                     num = float(val)
                     row_vals.append(f"{num:.2f}")
                     horizon_values.append(num)
             max_delta = (
-                max(horizon_values) - min(horizon_values)
-                if len(horizon_values) >= 2
-                else 0.0
+                max(horizon_values) - min(horizon_values) if len(horizon_values) >= 2 else 0.0
             )
             row_vals.append(f"{max_delta:.2f}")
             lines.append(f"| {h} | " + " | ".join(row_vals) + " |")
 
-        lines.extend([
-            "",
-            "## Key Takeaways",
-            "- Backtest metrics highlight relative accuracy across deterministic baselines.",
-            "- Forecast rows capture divergence at each horizon (Max Delta column).",
-            f"- All comparisons reference deterministic query (QID={data_qid}).",
-            "",
-            "## Freshness",
-            f"- **Data as of**: {freshness_date} (QID={data_qid})",
-            "",
-            "## Reproducibility",
-            "```python",
-            f'PredictorAgent.scenario_compare(metric="{metric}", sector="{sector}", methods={method_names}, horizon_months={horizon})',
-            "```",
-        ])
+        lines.extend(
+            [
+                "",
+                "## Key Takeaways",
+                "- Backtest metrics highlight relative accuracy across deterministic baselines.",
+                "- Forecast rows capture divergence at each horizon (Max Delta column).",
+                f"- All comparisons reference deterministic query (QID={data_qid}).",
+                "",
+                "## Freshness",
+                f"- **Data as of**: {freshness_date} (QID={data_qid})",
+                "",
+                "## Reproducibility",
+                "```python",
+                f'PredictorAgent.scenario_compare(metric="{metric}", sector="{sector}", methods={method_names}, horizon_months={horizon})',
+                "```",
+            ]
+        )
 
         confidence_line = self._confidence_hint_line(confidence_hint)
         if confidence_line:
             lines.extend(["", f"> {confidence_line}"])
 
         return "\n".join(lines)
-

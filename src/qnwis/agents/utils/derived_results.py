@@ -13,9 +13,9 @@ from collections.abc import Mapping, Sequence
 from datetime import date, datetime
 from typing import Any
 
-logger = logging.getLogger(__name__)
-
 from ...data.deterministic.models import Freshness, Provenance, QueryResult, Row
+
+logger = logging.getLogger(__name__)
 
 
 def make_derived_query_result(
@@ -128,15 +128,9 @@ def make_derived_query_result(
         return asof_dates, updated_at_values
 
     asof_dates, updated_values = _collect_freshness_inputs(freshness_like)
-    if asof_dates:
-        asof_date = min(asof_dates).isoformat()
-    else:
-        asof_date = datetime.now().strftime("%Y-%m-%d")
+    asof_date = min(asof_dates).isoformat() if asof_dates else datetime.now().strftime("%Y-%m-%d")
 
-    if updated_values:
-        updated_at = max(updated_values).isoformat()
-    else:
-        updated_at = datetime.now().isoformat()
+    updated_at = max(updated_values).isoformat() if updated_values else datetime.now().isoformat()
 
     return QueryResult(
         query_id=query_id,

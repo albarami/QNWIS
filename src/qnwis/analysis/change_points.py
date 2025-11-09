@@ -6,7 +6,7 @@ All functions guard against edge cases (constant series, small samples).
 """
 
 
-from src.qnwis.analysis.trend_utils import safe_mean, safe_std
+from .trend_utils import safe_mean, safe_std
 
 
 def cusum_breaks(
@@ -16,17 +16,17 @@ def cusum_breaks(
 ) -> list[int]:
     """
     Detect change points using CUSUM (Cumulative Sum) algorithm.
-    
+
     Two-sided CUSUM detects both upward and downward shifts in mean.
-    
+
     Args:
         series: Time series values
         k: Drift parameter (allowance for noise). Typical: 0.5 to 2.0
         h: Threshold for detection. Typical: 4.0 to 6.0
-        
+
     Returns:
         List of indices where structural breaks are detected
-        
+
     Example:
         >>> cusum_breaks([100]*10 + [150]*10, k=1.0, h=3.0)
         [10]
@@ -67,14 +67,14 @@ def cusum_breaks(
 def zscore_outliers(series: list[float], z: float = 2.5) -> list[int]:
     """
     Detect outliers using z-score method.
-    
+
     Args:
         series: Time series values
         z: Z-score threshold (typical: 2.0 to 3.0)
-        
+
     Returns:
         List of indices where |z-score| >= threshold
-        
+
     Example:
         >>> zscore_outliers([100, 102, 101, 200, 99], z=2.0)
         [3]
@@ -101,17 +101,17 @@ def zscore_outliers(series: list[float], z: float = 2.5) -> list[int]:
 def summarize_breaks(series: list[float]) -> dict[str, float | None]:
     """
     Summarize structural breaks and outliers in a series.
-    
+
     Args:
         series: Time series values
-        
+
     Returns:
         Dictionary with:
         - first_break_idx: Index of first CUSUM break (or None)
         - n_breaks: Number of CUSUM breaks detected
         - max_jump_abs: Largest absolute jump between consecutive points
         - max_jump_pct: Largest percentage jump (or None if prev is 0)
-        
+
     Example:
         >>> summarize_breaks([100, 102, 150, 152])
         {'first_break_idx': 2, 'n_breaks': 1, 'max_jump_abs': 48.0, 'max_jump_pct': 47.06}
@@ -156,12 +156,12 @@ def rolling_variance_breaks(
 ) -> list[int]:
     """
     Detect changes in volatility using rolling variance.
-    
+
     Args:
         series: Time series values
         window: Window size for computing rolling variance
         threshold: Multiplier for detecting variance breaks
-        
+
     Returns:
         List of indices where variance changes significantly
     """

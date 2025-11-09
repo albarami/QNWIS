@@ -12,21 +12,30 @@ from __future__ import annotations
 import logging
 import os
 from collections.abc import Mapping
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 import yaml
 
-from ..metrics import MetricsObserver, ensure_observer
-
 from ...agents.base import AgentReport, Evidence
 from ...data.deterministic.models import QueryResult
-from ...verification.engine import VerificationEngine
-from ...verification.schemas import CitationRules, CitationReport, VerificationConfig
 from ...verification.audit_trail import AuditTrail
 from ...verification.audit_utils import redact_text
-from ..schemas import WorkflowState
+from ...verification.confidence import (
+    ConfidenceInputs,
+    ConfidenceRules,
+    aggregate_confidence,
+)
+from ...verification.engine import VerificationEngine
+from ...verification.schemas import (
+    CitationReport,
+    CitationRules,
+    VerificationConfig,
+    VerificationSummary,
+)
+from ..metrics import MetricsObserver, ensure_observer
+from ..schemas import ConfidenceBreakdown, WorkflowState
 from ..utils import filter_sensitive_params
 
 logger = logging.getLogger(__name__)
@@ -36,6 +45,7 @@ _VERIFICATION_CONFIG: VerificationConfig | None = None
 _CITATION_RULES: CitationRules | None = None
 _RESULT_VERIFICATION_TOLERANCES: dict[str, Any] | None = None
 _AUDIT_CONFIG: dict[str, Any] | None = None
+_CONFIDENCE_RULES: ConfidenceRules | None = None
 
 
 def _load_verification_config() -> VerificationConfig | None:
@@ -56,7 +66,7 @@ def _load_verification_config() -> VerificationConfig | None:
         return None
 
     try:
-        with open(config_path, "r", encoding="utf-8") as f:
+        with open(config_path, encoding="utf-8") as f:
             config_data = yaml.safe_load(f)
         _VERIFICATION_CONFIG = VerificationConfig.model_validate(config_data)
         logger.info("Loaded verification config from %s", config_path)
@@ -84,7 +94,7 @@ def _load_citation_rules() -> CitationRules | None:
         return None
 
     try:
-        with open(config_path, "r", encoding="utf-8") as f:
+        with open(config_path, encoding="utf-8") as f:
             config_data = yaml.safe_load(f)
         _CITATION_RULES = CitationRules.model_validate(config_data)
         logger.info("Loaded citation rules from %s", config_path)
@@ -112,7 +122,7 @@ def _load_result_verification_tolerances() -> dict[str, Any] | None:
         return None
 
     try:
-        with open(config_path, "r", encoding="utf-8") as f:
+        with open(config_path, encoding="utf-8") as f:
             config_data = yaml.safe_load(f)
         # Flatten nested config for easier access
         tolerances: dict[str, Any] = {}
@@ -155,7 +165,7 @@ def _load_audit_config() -> dict[str, Any]:
         return _AUDIT_CONFIG
 
     try:
-        with open(config_path, "r", encoding="utf-8") as f:
+        with open(config_path, encoding="utf-8") as f:
             config_data = yaml.safe_load(f)
         audit_config = config_data.get("audit", {})
         # Merge with defaults
@@ -166,6 +176,89 @@ def _load_audit_config() -> dict[str, Any]:
         logger.error("Failed to load audit config: %s", exc)
         _AUDIT_CONFIG = defaults
         return _AUDIT_CONFIG
+
+
+def _load_confidence_rules() -> ConfidenceRules | None:
+    """
+    Load confidence scoring rules from YAML file (cached).
+
+    Returns:
+        ConfidenceRules if file exists and valid, None otherwise
+    """
+    global _CONFIDENCE_RULES
+
+    if _CONFIDENCE_RULES is not None:
+        return _CONFIDENCE_RULES
+
+    config_path = Path("src/qnwis/config/confidence.yml")
+    if not config_path.exists():
+        logger.info("Confidence config not found at %s", config_path)
+        return None
+
+    try:
+        with open(config_path, encoding="utf-8") as f:
+            config_data = yaml.safe_load(f)
+
+        weights = config_data.get("weights", {})
+        penalties = config_data.get("penalties", {})
+        thresholds = config_data.get("thresholds", {})
+        guards = config_data.get("guards", {})
+        caps = config_data.get("caps", {})
+        stability = config_data.get("stability", {})
+
+        _CONFIDENCE_RULES = ConfidenceRules(
+            w_citation=weights.get("citation", 0.25),
+            w_numbers=weights.get("numbers", 0.40),
+            w_cross=weights.get("cross", 0.10),
+            w_privacy=weights.get("privacy", 0.10),
+            w_freshness=weights.get("freshness", 0.15),
+            penalty_math_fail=penalties.get("math_fail", 15.0),
+            penalty_l2_per_item=penalties.get("l2_per_item", 3.0),
+            penalty_redaction_per_item=penalties.get("redaction_per_item", 1.0),
+            penalty_freshness_per_10h=penalties.get("freshness_per_10h", 2.0),
+            min_score_on_insufficient=guards.get("min_score_on_insufficient", 60),
+            bands=thresholds,
+            penalty_cap_fraction=caps.get("penalty_fraction", 0.5),
+            max_reason_count=guards.get("max_reason_count", 10),
+            enable_hysteresis=stability.get("enable_band_hysteresis", False),
+            hysteresis_tolerance=stability.get("hysteresis_tolerance", 5),
+            min_support_numbers=guards.get("min_support_numbers", 3),
+            min_support_claims=guards.get("min_support_claims", 3),
+        )
+
+        logger.info("Loaded confidence rules from %s", config_path)
+        return _CONFIDENCE_RULES
+    except Exception as exc:
+        logger.error("Failed to load confidence rules: %s", exc)
+        return None
+
+
+def _coerce_previous_score(value: Any) -> int | None:
+    """
+    Best-effort coercion of a stored value into an integer score for hysteresis.
+
+    Args:
+        value: Arbitrary metadata value
+
+    Returns:
+        Integer score or None if coercion fails
+    """
+    if value is None or isinstance(value, bool):
+        return None
+
+    if isinstance(value, (int, float)):
+        return int(value)
+
+    if isinstance(value, str):
+        stripped = value.strip()
+        if not stripped:
+            return None
+        try:
+            return int(float(stripped))
+        except ValueError:
+            return None
+
+    return None
 
 
 def _build_replay_stub(
@@ -193,10 +286,7 @@ def _build_replay_stub(
     routing_decision = None
     if workflow_state.routing_decision is not None:
         decision = workflow_state.routing_decision
-        if hasattr(decision, "model_dump"):
-            routing_decision = decision.model_dump()
-        else:
-            routing_decision = decision  # type: ignore[assignment]
+        routing_decision = decision.model_dump() if hasattr(decision, "model_dump") else decision  # type: ignore[assignment]
 
     agent_calls: list[dict[str, Any]] = []
     agent_output = workflow_state.agent_output
@@ -234,7 +324,7 @@ def _build_replay_stub(
         "agent_calls": agent_calls,
         "cache_stats": orchestration_meta.get("cache_stats", {}),
         "query_ids": [qr.query_id for qr in query_results],
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
     }
 
 
@@ -276,6 +366,120 @@ def _extract_query_results_from_evidence(
             seen.add(qid)
 
     return ordered
+
+
+def _compute_confidence(
+    verification_summary: VerificationSummary,
+    verification_config: VerificationConfig | None,
+    confidence_rules: ConfidenceRules,
+    *,
+    previous_score: int | None = None,
+) -> ConfidenceBreakdown | None:
+    """
+    Compute confidence score from verification outputs.
+
+    This is called AFTER all verification layers (Steps 18-20) have run.
+    Confidence is computed even if verification failed (for audit purposes).
+
+    Args:
+        verification_summary: Summary from verification engine
+        verification_config: Verification config (for freshness SLA)
+        confidence_rules: Confidence scoring rules
+        previous_score: Previous score for band hysteresis (optional)
+
+    Returns:
+        ConfidenceBreakdown or None if inputs insufficient
+    """
+    try:
+        # Extract inputs from verification summary
+        citation_report = verification_summary.citation_report
+        result_report = verification_summary.result_verification_report
+
+        # Citation metrics
+        total_numbers = citation_report.total_numbers if citation_report else 0
+        cited_numbers = citation_report.cited_numbers if citation_report else 0
+        citation_errors = 0
+        if citation_report:
+            citation_errors = (
+                len(citation_report.uncited)
+                + len(citation_report.malformed)
+                + len(citation_report.missing_qid)
+            )
+
+        # Result verification metrics
+        claims_total = result_report.claims_total if result_report else 0
+        claims_matched = result_report.claims_matched if result_report else 0
+        math_checks = result_report.math_checks if result_report else {}
+
+        # Layer 2-4 metrics
+        l2_warnings = sum(
+            1
+            for issue in verification_summary.issues
+            if issue.layer == "L2" and issue.severity == "warning"
+        )
+        l3_redactions = verification_summary.applied_redactions
+        l4_errors = sum(
+            1
+            for issue in verification_summary.issues
+            if issue.layer == "L4" and issue.severity == "error"
+        )
+        l4_warnings = sum(
+            1
+            for issue in verification_summary.issues
+            if issue.layer == "L4" and issue.severity == "warning"
+        )
+
+        # Freshness (placeholder - would extract from query results in real impl)
+        freshness_sla_hours = (
+            verification_config.freshness_max_hours
+            if verification_config
+            else 72.0
+        )
+        max_age_hours = 0.0  # Conservative default (fresh data)
+
+        # Build inputs
+        inputs = ConfidenceInputs(
+            total_numbers=total_numbers,
+            cited_numbers=cited_numbers,
+            citation_errors=citation_errors,
+            claims_total=claims_total,
+            claims_matched=claims_matched,
+            math_checks=math_checks,
+            l2_warnings=l2_warnings,
+            l3_redactions=l3_redactions,
+            l4_errors=l4_errors,
+            l4_warnings=l4_warnings,
+            max_age_hours=max_age_hours,
+            freshness_sla_hours=freshness_sla_hours,
+            previous_score=previous_score,
+        )
+
+        # Compute confidence
+        result = aggregate_confidence(inputs, confidence_rules)
+
+        # Convert to ConfidenceBreakdown
+        breakdown = ConfidenceBreakdown(
+            score=result.score,
+            band=result.band,
+            components=result.components,
+            reasons=result.reasons,
+            coverage=result.coverage,
+            freshness=result.freshness,
+            dashboard_payload=result.dashboard_payload,
+        )
+
+        logger.info(
+            "Confidence computed: score=%d, band=%s, components=%s",
+            result.score,
+            result.band,
+            list(result.components.keys()),
+        )
+
+        return breakdown
+
+    except Exception:
+        logger.exception("Failed to compute confidence")
+        return None
 
 
 def verify_structure(
@@ -497,11 +701,11 @@ def verify_structure(
                     verification_summary.ok,
                 )
                 log_messages.append(
-                    (
+
                         "Verification summary attached: "
                         f"{len(verification_summary.issues)} issue(s), "
                         f"{verification_summary.applied_redactions} redaction(s)"
-                    )
+
                 )
 
                 # CRITICAL: Fail workflow if verification detects errors
@@ -614,6 +818,33 @@ def verify_structure(
             warnings.append(
                 f"Audit trail generation failed: {type(exc).__name__}: {exc}"
             )
+
+    # Compute confidence score (Step 22) - happens even on verification failures
+    confidence_breakdown: ConfidenceBreakdown | None = None
+    if verification_summary is not None:
+        confidence_rules = _load_confidence_rules()
+        if confidence_rules is not None:
+            prev_score_value = workflow_state.metadata.get("confidence_previous_score")
+            previous_score = _coerce_previous_score(prev_score_value)
+            if previous_score is None:
+                prior_breakdown = workflow_state.metadata.get("confidence_breakdown")
+                if isinstance(prior_breakdown, dict):
+                    previous_score = _coerce_previous_score(prior_breakdown.get("score"))
+
+            confidence_breakdown = _compute_confidence(
+                verification_summary,
+                config,
+                confidence_rules,
+                previous_score=previous_score,
+            )
+            if confidence_breakdown is not None:
+                # Attach confidence to metadata for format node
+                verification_metadata["confidence_breakdown"] = confidence_breakdown.model_dump()
+                verification_metadata["confidence_dashboard_payload"] = confidence_breakdown.dashboard_payload
+                verification_metadata["confidence_previous_score"] = confidence_breakdown.score
+                log_messages.append(
+                    f"Confidence: {confidence_breakdown.score}/100 ({confidence_breakdown.band})"
+                )
 
     # If verification found errors, fail the workflow but still attach audit metadata
     if verification_error:

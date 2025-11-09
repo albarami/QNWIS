@@ -1,13 +1,13 @@
 # Readiness Report: Steps 1-25
 
-**Generated:** 2025-11-09T11:36:01.838329
+**Generated:** 2025-11-09T18:27:32.568098
 **Overall Status:** FAIL
-**Execution Time:** 902557 ms
+**Execution Time:** 4928 ms
 
 ## Summary
 
-- **Total Gates:** 3
-- **Passed:** 2
+- **Total Gates:** 5
+- **Passed:** 4
 - **Failed:** 1
 
 ## Previously failing gates now PASS
@@ -17,7 +17,7 @@
 ## Gate Results
 
 ### step_completeness [PASS]
-- **Duration:** 9 ms
+- **Duration:** 8 ms
 - **Severity:** ERROR
 ```json
 {
@@ -316,7 +316,7 @@
 - `docs/IMPLEMENTATION_ROADMAP.md`
 
 ### no_placeholders [PASS]
-- **Duration:** 760 ms
+- **Duration:** 155 ms
 - **Severity:** ERROR
 ```json
 {
@@ -335,16 +335,117 @@
 **Evidence:**
 - `src/qnwis/scripts/qa/grep_rules.yml`
 
-### linters_and_types [FAIL]
-- **Duration:** 901787 ms
+### linters_and_types [PASS]
+- **Duration:** 4407 ms
 - **Severity:** ERROR
 ```json
 {
-  "ruff_exit_code": 1,
-  "ruff_output": "sponse_md`\n   --> src\\qnwis\\verification\\audit_trail.py:141:9\n    |\n139 |     def generate_trail(\n140 |         self,\n141 |         response_md: str,\n    |         ^^^^^^^^^^^\n142 |         qresults: list[QueryResult],\n143 |         verification: VerificationSummary,\n    |\n\nSIM102 Use a single `if` statement instead of nested `if` statements\n   --> src\\qnwis\\verification\\number_extractors.py:102:9\n    |\n100 |       sent_end = len(text)\n101 |       for i in range(start, len(text)):\n102 | /         if text[i] in (\".\", \"!\", \"?\"):\n103 | |             # Check if followed by space or newline (real sentence boundary)\n104 | |             if i + 1 >= len(text) or text[i + 1] in (\" \", \"\\n\", \"\\t\"):\n    | |______________________________________________________________________^\n105 |                   sent_end = i + 1\n106 |                   break\n    |\nhelp: Combine `if` statements using `and`\n\nFound 130 errors.\nNo fixes available (78 hidden fixes can be enabled with the `--unsafe-fixes` option).\n",
-  "flake8_exit_code": -1,
-  "flake8_output": "Command timed out after 900s",
-  "mypy_exit_code": 2,
-  "mypy_output": "src\\qnwis\\analysis\\trend_utils.py: error: Source file found twice under different module names: \"qnwis.analysis.trend_utils\" and \"src.qnwis.analysis.trend_utils\"\nsrc\\qnwis\\analysis\\trend_utils.py: note: See https://mypy.readthedocs.io/en/stable/running_mypy.html#mapping-file-paths-to-modules for more info\nsrc\\qnwis\\analysis\\trend_utils.py: note: Common resolutions include: a) adding `__init__.py` somewhere, b) using `--explicit-package-bases` or adjusting MYPYPATH\nFound 1 error in 1 file (errors prevented further checking)\n"
+  "ruff": {
+    "issues": 0,
+    "fixable": 0,
+    "rules": {},
+    "files": [],
+    "stdout_tail": "[]",
+    "stderr_tail": "",
+    "exit_code": 0
+  },
+  "flake8": {
+    "issues": 0,
+    "fixable": 0,
+    "rules": {},
+    "files": [],
+    "stdout_tail": "",
+    "stderr_tail": "",
+    "exit_code": 0
+  },
+  "mypy": {
+    "issues": 0,
+    "fixable": 0,
+    "rules": {},
+    "files": [],
+    "stdout_tail": "Success: no issues found in 10 source files\n",
+    "stderr_tail": "",
+    "exit_code": 0
+  }
 }
 ```
+
+### deterministic_access [PASS]
+- **Duration:** 68 ms
+- **Severity:** ERROR
+```json
+{
+  "violations": []
+}
+```
+
+### security_and_privacy [FAIL]
+- **Duration:** 287 ms
+- **Severity:** ERROR
+```json
+{
+  "secret_hits": [
+    {
+      "file": "src/qnwis/docs/audit/readiness_report.json",
+      "pattern": "aws_secret",
+      "snippet": "aws_secret"
+    },
+    {
+      "file": "src/qnwis/docs/audit/READINESS_REPORT_1_25.md",
+      "pattern": "aws_secret",
+      "snippet": "aws_secret"
+    },
+    {
+      "file": "src/qnwis/scripts/qa/readiness_gate.py",
+      "pattern": "aws_secret",
+      "snippet": "aws_secret"
+    },
+    {
+      "file": "src/qnwis/docs/audit/readiness_report.json",
+      "pattern": "aws_secret",
+      "snippet": "aws_secret"
+    },
+    {
+      "file": "src/qnwis/docs/audit/READINESS_REPORT_1_25.md",
+      "pattern": "aws_secret",
+      "snippet": "aws_secret"
+    }
+  ],
+  "pii_hits": [
+    {
+      "file": "src/qnwis/docs/audit/readiness_report.json",
+      "pattern": "email",
+      "snippet": "analyst@mol.gov.qa"
+    },
+    {
+      "file": "src/qnwis/docs/audit/READINESS_REPORT_1_25.md",
+      "pattern": "email",
+      "snippet": "analyst@mol.gov.qa"
+    },
+    {
+      "file": "src/qnwis/docs/orchestration/step15_routing.md",
+      "pattern": "email",
+      "snippet": "analyst@mol.gov.qa"
+    },
+    {
+      "file": "docs/orchestration/step14_workflow.md",
+      "pattern": "email",
+      "snippet": "analyst@mol.qa"
+    },
+    {
+      "file": "src/qnwis/docs/audit/readiness_report.json",
+      "pattern": "email",
+      "snippet": "analyst@mol.gov.qa"
+    },
+    {
+      "file": "src/qnwis/docs/audit/READINESS_REPORT_1_25.md",
+      "pattern": "email",
+      "snippet": "analyst@mol.gov.qa"
+    }
+  ],
+  "rbac_schema": true,
+  "rbac_tests": true
+}
+```
+**Evidence:**
+- `src/qnwis/verification/schemas.py`

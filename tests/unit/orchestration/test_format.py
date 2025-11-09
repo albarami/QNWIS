@@ -9,8 +9,6 @@ Tests cover:
 - Freshness metadata extraction
 """
 
-
-
 from src.qnwis.agents.base import AgentReport, Evidence, Insight
 from src.qnwis.orchestration.nodes.format import format_report
 from src.qnwis.orchestration.schemas import OrchestrationResult, OrchestrationTask
@@ -45,8 +43,8 @@ def create_report_with_many_findings(count: int) -> AgentReport:
     findings = []
     for i in range(count):
         insight = Insight(
-            title=f"Finding {i+1}",
-            summary=f"This is finding number {i+1}",
+            title=f"Finding {i + 1}",
+            summary=f"This is finding number {i + 1}",
             metrics={f"metric_{i}": float(i)},
             evidence=[
                 Evidence(
@@ -551,3 +549,102 @@ def test_format_metric_redaction() -> None:
     assert "[REDACTED]" in key_findings.body_md
     # Non-sensitive metric should be visible
     assert "789" in key_findings.body_md
+
+
+def test_format_appends_verification_summary_section() -> None:
+    """Verification summary Markdown should become a dedicated section."""
+    task = OrchestrationTask(intent="pattern.correlation", params={})
+    report = create_report_with_pii()
+    state = {
+        "task": task,
+        "route": "pattern.correlation",
+        "agent_output": report,
+        "error": None,
+        "logs": [],
+        "metadata": {
+            "agent": "TestAgent",
+            "method": "test_method",
+            "verification_ok": True,
+            "verification_issues_count": 0,
+            "verification_stats": {},
+            "verification_redactions": 0,
+            "verification_summary_md": "Status: PASS",
+        },
+    }
+
+    result = format_report(state)
+    formatted = result["agent_output"]
+
+    assert formatted.sections[-1].title == "Verification Summary"
+    assert "Status: PASS" in formatted.sections[-1].body_md
+
+
+def test_format_appends_redaction_reason_codes() -> None:
+    """Redaction reason codes should render as the final section."""
+    task = OrchestrationTask(intent="pattern.correlation", params={})
+    report = create_report_with_pii()
+    state = {
+        "task": task,
+        "route": "pattern.correlation",
+        "agent_output": report,
+        "error": None,
+        "logs": [],
+        "metadata": {
+            "agent": "TestAgent",
+            "method": "test_method",
+            "verification_ok": True,
+            "verification_issues_count": 1,
+            "verification_stats": {"L3:warning": 1},
+            "verification_redactions": 2,
+            "verification_redaction_codes": ["PII_EMAIL", "PII_ID"],
+            "verification_summary_md": "Status: PASS",
+        },
+    }
+
+    result = format_report(state)
+    formatted = result["agent_output"]
+
+    assert formatted.sections[-1].title == "Redaction Reasons"
+    body = formatted.sections[-1].body_md
+    assert "PII_EMAIL" in body and "PII_ID" in body
+
+
+def test_format_includes_citations_summary() -> None:
+    """Citations summary should render with runtime, examples, and tips."""
+    task = OrchestrationTask(intent="pattern.correlation", params={})
+    report = create_report_with_pii()
+    citation_report = {
+        "ok": False,
+        "total_numbers": 3,
+        "cited_numbers": 2,
+        "sources_used": {"Per LMIS:": 2},
+        "uncited": [
+            {"value_text": "12%", "message": "Missing Per LMIS prefix", "severity": "error"}
+        ],
+        "missing_qid": [
+            {"value_text": "8%", "message": "Add QID reference", "severity": "warning"}
+        ],
+        "malformed": [],
+        "runtime_ms": 8.2,
+    }
+    state = {
+        "task": task,
+        "route": "pattern.correlation",
+        "agent_output": report,
+        "error": None,
+        "logs": [],
+        "metadata": {
+            "agent": "TestAgent",
+            "method": "test_method",
+            "citation_report": citation_report,
+        },
+    }
+
+    result = format_report(state)
+    formatted = result["agent_output"]
+    sections = {section.title: section for section in formatted.sections}
+    assert "Citations Summary" in sections
+    body = sections["Citations Summary"].body_md
+    assert "**Remediation Tips:**" in body
+    assert "**Runtime**" in body
+    assert "Missing Query IDs" in body

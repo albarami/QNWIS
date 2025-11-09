@@ -8,7 +8,7 @@ with full provenance tracking and citation-ready narratives.
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, Literal
 
 from ..data.deterministic.models import QueryResult
 from ..scenario.apply import apply_scenario, cascade_sector_to_national
@@ -48,6 +48,11 @@ class ScenarioAgent:
         Args:
             client: DataClient for deterministic query access
         """
+        if not isinstance(client, DataClient):
+            raise TypeError(
+                "ScenarioAgent requires a DataClient instance for deterministic "
+                f"access, got {type(client).__name__}"
+            )
         self.client = client
         logger.info("ScenarioAgent initialized")
 
@@ -63,8 +68,7 @@ class ScenarioAgent:
         """
         if metric.lower() not in ALLOWED_METRICS:
             raise ValueError(
-                f"Metric '{metric}' not whitelisted. "
-                f"Allowed: {sorted(ALLOWED_METRICS)}"
+                f"Metric '{metric}' not whitelisted. Allowed: {sorted(ALLOWED_METRICS)}"
             )
 
     def _fetch_baseline_forecast(
@@ -111,7 +115,7 @@ class ScenarioAgent:
     def apply(
         self,
         scenario_spec: str | dict[str, Any] | ScenarioSpec,
-        spec_format: str = "yaml",
+        spec_format: ScenarioFormat = "yaml",
         baseline_override: QueryResult | None = None,
         confidence_hint: dict[str, Any] | None = None,
     ) -> str:
@@ -146,7 +150,7 @@ class ScenarioAgent:
             if isinstance(scenario_spec, ScenarioSpec):
                 spec = scenario_spec
             else:
-                spec = parse_scenario(scenario_spec, format=spec_format)  # type: ignore[arg-type]
+                spec = parse_scenario(scenario_spec, format=spec_format)
 
             # Validate metric
             self._validate_metric(spec.metric)
@@ -171,10 +175,7 @@ class ScenarioAgent:
             adjusted_qr = apply_scenario(baseline, spec)
 
             # Run stability check
-            adjusted_values = [
-                float(row.data.get("adjusted", 0.0))
-                for row in adjusted_qr.rows
-            ]
+            adjusted_values = [float(row.data.get("adjusted", 0.0)) for row in adjusted_qr.rows]
             stability = stability_check(adjusted_values)
 
             # Build narrative
@@ -191,7 +192,7 @@ class ScenarioAgent:
     def compare(
         self,
         scenario_specs: list[str | dict[str, Any] | ScenarioSpec],
-        spec_format: str = "yaml",
+        spec_format: ScenarioFormat = "yaml",
         baseline_override: QueryResult | None = None,
         confidence_hint: dict[str, Any] | None = None,
     ) -> str:
@@ -214,7 +215,7 @@ class ScenarioAgent:
                 if isinstance(spec_input, ScenarioSpec):
                     specs.append(spec_input)
                 else:
-                    specs.append(parse_scenario(spec_input, format=spec_format))  # type: ignore[arg-type]
+                    specs.append(parse_scenario(spec_input, format=spec_format))
 
             if not specs:
                 return "Error: No scenarios provided for comparison"
@@ -226,17 +227,11 @@ class ScenarioAgent:
 
             for spec in specs[1:]:
                 if spec.metric != base_metric:
-                    return (
-                        f"Error: Inconsistent metrics ({base_metric} vs {spec.metric})"
-                    )
+                    return f"Error: Inconsistent metrics ({base_metric} vs {spec.metric})"
                 if spec.sector != base_sector:
-                    return (
-                        f"Error: Inconsistent sectors ({base_sector} vs {spec.sector})"
-                    )
+                    return f"Error: Inconsistent sectors ({base_sector} vs {spec.sector})"
                 if spec.horizon_months != base_horizon:
-                    return (
-                        f"Error: Inconsistent horizons ({base_horizon} vs {spec.horizon_months})"
-                    )
+                    return f"Error: Inconsistent horizons ({base_horizon} vs {spec.horizon_months})"
 
             # Validate metric
             self._validate_metric(base_metric)
@@ -252,9 +247,7 @@ class ScenarioAgent:
             if baseline_override is not None:
                 baseline = baseline_override
             else:
-                baseline = self._fetch_baseline_forecast(
-                    base_metric, base_sector, base_horizon
-                )
+                baseline = self._fetch_baseline_forecast(base_metric, base_sector, base_horizon)
 
             # Apply all scenarios
             results: dict[str, QueryResult] = {}
@@ -263,9 +256,7 @@ class ScenarioAgent:
                 results[spec.name] = adjusted_qr
 
             # Build comparison narrative
-            narrative = self._format_compare_narrative(
-                specs, baseline, results, confidence_hint
-            )
+            narrative = self._format_compare_narrative(specs, baseline, results, confidence_hint)
 
             return narrative
 
@@ -276,7 +267,7 @@ class ScenarioAgent:
     def batch(
         self,
         scenario_specs: dict[str, str | dict[str, Any] | ScenarioSpec],
-        spec_format: str = "yaml",
+        spec_format: ScenarioFormat = "yaml",
         sector_weights: dict[str, float] | None = None,
         confidence_hint: dict[str, Any] | None = None,
     ) -> str:
@@ -299,7 +290,7 @@ class ScenarioAgent:
                 if isinstance(spec_input, ScenarioSpec):
                     sector_specs[sector] = spec_input
                 else:
-                    sector_specs[sector] = parse_scenario(spec_input, format=spec_format)  # type: ignore[arg-type]
+                    sector_specs[sector] = parse_scenario(spec_input, format=spec_format)
 
             if not sector_specs:
                 return "Error: No sector scenarios provided"
@@ -340,9 +331,7 @@ class ScenarioAgent:
                     adjusted_qr = apply_scenario(baseline, spec)
                     sector_results[sector] = adjusted_qr
                 except Exception as exc:
-                    logger.warning(
-                        "Failed to process sector '%s': %s", sector, exc
-                    )
+                    logger.warning("Failed to process sector '%s': %s", sector, exc)
                     continue
 
             if not sector_results:
@@ -401,20 +390,24 @@ class ScenarioAgent:
 
         # Stability assessment
         if not stability["stable"]:
-            lines.extend([
-                "### ⚠️ Stability Warning",
-                f"Forecast shows instability: {stability['reason']}",
-                f"- Coefficient of Variation: {stability['cv']:.3f}",
-                f"- Trend Reversals: {stability['reversals']}",
-                "",
-            ])
+            lines.extend(
+                [
+                    "### ⚠️ Stability Warning",
+                    f"Forecast shows instability: {stability['reason']}",
+                    f"- Coefficient of Variation: {stability['cv']:.3f}",
+                    f"- Trend Reversals: {stability['reversals']}",
+                    "",
+                ]
+            )
 
         # Scenario table (first 12 months)
-        lines.extend([
-            "## Scenario Forecast (First 12 Months)",
-            "| Month | Baseline | Adjusted | Delta | Delta % |",
-            "|-------|----------|----------|-------|---------|",
-        ])
+        lines.extend(
+            [
+                "## Scenario Forecast (First 12 Months)",
+                "| Month | Baseline | Adjusted | Delta | Delta % |",
+                "|-------|----------|----------|-------|---------|",
+            ]
+        )
 
         for i, row in enumerate(adjusted.rows[:12]):
             baseline_val = row.data.get("baseline")
@@ -428,16 +421,17 @@ class ScenarioAgent:
             delta_pct_str = f"{delta_pct:+.1f}%" if delta_pct is not None else "N/A"
 
             lines.append(
-                f"| {i+1} | {baseline_str} | {adjusted_str} | "
-                f"{delta_str} | {delta_pct_str} |"
+                f"| {i + 1} | {baseline_str} | {adjusted_str} | {delta_str} | {delta_pct_str} |"
             )
 
-        lines.extend([
-            "",
-            f"(QID={adjusted.query_id})",
-            "",
-            "## Transform Details",
-        ])
+        lines.extend(
+            [
+                "",
+                f"(QID={adjusted.query_id})",
+                "",
+                "## Transform Details",
+            ]
+        )
 
         for i, transform in enumerate(spec.transforms, 1):
             lines.append(
@@ -445,18 +439,20 @@ class ScenarioAgent:
                 f"months {transform.start_month}-{transform.end_month or 'end'}"
             )
 
-        lines.extend([
-            "",
-            "## Data Sources",
-            f"- **Baseline**: (QID={baseline.query_id})",
-            f"- **Scenario Result**: (QID={adjusted.query_id})",
-            f"- **Freshness**: {baseline.freshness.asof_date}",
-            "",
-            "## Reproducibility",
-            "```python",
-            f'ScenarioAgent.apply(scenario_spec="{spec.name}")',
-            "```",
-        ])
+        lines.extend(
+            [
+                "",
+                "## Data Sources",
+                f"- **Baseline**: (QID={baseline.query_id})",
+                f"- **Scenario Result**: (QID={adjusted.query_id})",
+                f"- **Freshness**: {baseline.freshness.asof_date}",
+                "",
+                "## Reproducibility",
+                "```python",
+                f'ScenarioAgent.apply(scenario_spec="{spec.name}")',
+                "```",
+            ]
+        )
 
         return "\n".join(lines)
 
@@ -487,19 +483,25 @@ class ScenarioAgent:
                 lines.extend([f"> Confidence hint: {score_val:.0f}/100", ""])
 
         # Scenario summaries
-        lines.extend([
-            "## Scenarios",
-        ])
+        lines.extend(
+            [
+                "## Scenarios",
+            ]
+        )
 
         for spec in specs:
-            lines.append(f"- **{spec.name}**: {spec.description} ({len(spec.transforms)} transforms)")
+            lines.append(
+                f"- **{spec.name}**: {spec.description} ({len(spec.transforms)} transforms)"
+            )
 
-        lines.extend([
-            "",
-            "## Comparison Table (Month 6 and 12)",
-            "| Scenario | Month 6 | Month 12 | Avg Delta % |",
-            "|----------|---------|----------|-------------|",
-        ])
+        lines.extend(
+            [
+                "",
+                "## Comparison Table (Month 6 and 12)",
+                "| Scenario | Month 6 | Month 12 | Avg Delta % |",
+                "|----------|---------|----------|-------------|",
+            ]
+        )
 
         for spec in specs:
             qr = results[spec.name]
@@ -517,24 +519,26 @@ class ScenarioAgent:
             m6_str = f"{m6_val:.2f}" if m6_val is not None else "N/A"
             m12_str = f"{m12_val:.2f}" if m12_val is not None else "N/A"
 
-            lines.append(
-                f"| {spec.name} | {m6_str} | {m12_str} | {avg_delta:+.1f}% |"
-            )
+            lines.append(f"| {spec.name} | {m6_str} | {m12_str} | {avg_delta:+.1f}% |")
 
-        lines.extend([
-            "",
-            "## Data Sources",
-            f"- **Baseline**: (QID={baseline.query_id})",
-        ])
+        lines.extend(
+            [
+                "",
+                "## Data Sources",
+                f"- **Baseline**: (QID={baseline.query_id})",
+            ]
+        )
 
         for spec in specs:
             qr = results[spec.name]
             lines.append(f"- **{spec.name}**: (QID={qr.query_id})")
 
-        lines.extend([
-            "",
-            f"- **Freshness**: {baseline.freshness.asof_date}",
-        ])
+        lines.extend(
+            [
+                "",
+                f"- **Freshness**: {baseline.freshness.asof_date}",
+            ]
+        )
 
         return "\n".join(lines)
 
@@ -562,11 +566,13 @@ class ScenarioAgent:
         ]
 
         # Sector results
-        lines.extend([
-            "## Sector Results (Month 12)",
-            "| Sector | Scenario | Adjusted Value | QID |",
-            "|--------|----------|----------------|-----|",
-        ])
+        lines.extend(
+            [
+                "## Sector Results (Month 12)",
+                "| Sector | Scenario | Adjusted Value | QID |",
+                "|--------|----------|----------------|-----|",
+            ]
+        )
 
         for sector, spec in specs.items():
             if sector in results:
@@ -574,28 +580,30 @@ class ScenarioAgent:
                 m12_row = qr.rows[11] if len(qr.rows) > 11 else qr.rows[-1]
                 m12_val = m12_row.data.get("adjusted")
                 val_str = f"{m12_val:.2f}" if m12_val is not None else "N/A"
-                lines.append(
-                    f"| {sector} | {spec.name} | {val_str} | (QID={qr.query_id}) |"
-                )
+                lines.append(f"| {sector} | {spec.name} | {val_str} | (QID={qr.query_id}) |")
 
-        lines.extend([
-            "",
-            "## National Aggregation (First 12 Months)",
-            "| Month | National Forecast |",
-            "|-------|-------------------|",
-        ])
+        lines.extend(
+            [
+                "",
+                "## National Aggregation (First 12 Months)",
+                "| Month | National Forecast |",
+                "|-------|-------------------|",
+            ]
+        )
 
         for i, row in enumerate(national.rows[:12]):
             val = row.data.get("adjusted")
             val_str = f"{val:.2f}" if val is not None else "N/A"
-            lines.append(f"| {i+1} | {val_str} |")
+            lines.append(f"| {i + 1} | {val_str} |")
 
-        lines.extend([
-            "",
-            f"(QID={national.query_id})",
-            "",
-            "## Weights",
-        ])
+        lines.extend(
+            [
+                "",
+                f"(QID={national.query_id})",
+                "",
+                "## Weights",
+            ]
+        )
 
         if weights:
             for sector, weight in weights.items():
@@ -603,10 +611,12 @@ class ScenarioAgent:
         else:
             lines.append("- Equal weighting applied")
 
-        lines.extend([
-            "",
-            "## Data Sources",
-        ])
+        lines.extend(
+            [
+                "",
+                "## Data Sources",
+            ]
+        )
 
         for sector, qr in results.items():
             lines.append(f"- **{sector}**: (QID={qr.query_id})")
@@ -614,3 +624,6 @@ class ScenarioAgent:
         lines.append(f"- **National**: (QID={national.query_id})")
 
         return "\n".join(lines)
+
+
+ScenarioFormat = Literal["yaml", "json", "dict"]

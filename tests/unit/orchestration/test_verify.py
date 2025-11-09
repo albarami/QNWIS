@@ -8,8 +8,6 @@ Tests cover:
 - Citation metadata validation
 """
 
-
-
 from src.qnwis.agents.base import AgentReport, Evidence, Insight
 from src.qnwis.orchestration.nodes.verify import verify_structure
 from src.qnwis.orchestration.schemas import OrchestrationTask

@@ -11,14 +11,14 @@ from collections.abc import Mapping, MutableMapping
 from pathlib import Path
 from typing import Any
 
-logger = logging.getLogger(__name__)
-
 from ..cache.backends import CacheBackend, get_cache_backend
 from ..catalog.registry import DatasetCatalog
 from ..freshness.verifier import verify_freshness
 from .access import execute as execute_uncached
 from .models import QueryResult, QuerySpec
 from .registry import QueryRegistry
+
+logger = logging.getLogger(__name__)
 
 MAX_CACHE_TTL_S = 24 * 60 * 60  # 24 hours
 COMPRESS_THRESHOLD_BYTES = 8 * 1024  # 8KB

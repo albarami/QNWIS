@@ -7,6 +7,7 @@ deterministic data only. No SQL, RAG, or network calls are permitted here.
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -16,13 +17,15 @@ from ..data.deterministic.models import QueryResult, QuerySpec, Row
 from ..data.deterministic.normalize import normalize_rows
 from ..data.deterministic.registry import QueryRegistry
 
+logger = logging.getLogger(__name__)
+
 
 class MissingQueryDefinitionError(LookupError):
     """Raised when a deterministic query definition cannot be found."""
 
 
 class QueryRegistryView:
-    """Read-only façade over a QueryRegistry to prevent accidental mutation."""
+    """Read-only facade over a QueryRegistry to prevent accidental mutation."""
 
     def __init__(self, registry: QueryRegistry) -> None:
         self._registry = registry
@@ -52,12 +55,16 @@ class Evidence:
         dataset_id: Source dataset identifier
         locator: File path or API endpoint
         fields: List of field names in the result
+        freshness_as_of: ISO date indicating data currency
+        freshness_updated_at: Timestamp for the upstream refresh (if available)
     """
 
     query_id: str
     dataset_id: str
     locator: str
     fields: list[str]
+    freshness_as_of: str | None = None
+    freshness_updated_at: str | None = None
 
 
 @dataclass
@@ -171,6 +178,13 @@ class DataClient:
             self._raise_missing(query_id, cause=self._load_error)
         try:
             res = execute_cached(query_id, self._registry, ttl_s=self.ttl_s)
+            # Log cache status for observability (no behavior change)
+            logger.debug(
+                "Query executed: %s (rows=%d, cache_ttl=%ds)",
+                query_id,
+                len(res.rows),
+                self.ttl_s,
+            )
         except KeyError as exc:
             self._raise_missing(query_id, cause=exc)
         normalized = normalize_rows([{"data": r.data} for r in res.rows])
@@ -212,6 +226,8 @@ def evidence_from(res: QueryResult) -> Evidence:
         dataset_id=res.provenance.dataset_id,
         locator=res.provenance.locator,
         fields=list(res.rows[0].data.keys()) if res.rows else [],
+        freshness_as_of=res.freshness.asof_date,
+        freshness_updated_at=res.freshness.updated_at,
     )
 
 

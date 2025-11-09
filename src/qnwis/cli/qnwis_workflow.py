@@ -24,7 +24,7 @@ import json
 import logging
 import sys
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 from ..agents.base import DataClient
 from ..config.orchestration_loader import load_config
@@ -179,7 +179,7 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def build_params(args: argparse.Namespace) -> Dict[str, Any]:
+def build_params(args: argparse.Namespace) -> dict[str, Any]:
     """
     Build parameter dictionary from CLI arguments.
 
@@ -325,8 +325,9 @@ def main() -> int:
                 user_id=args.user_id,
                 request_id=args.request_id,
             )
-            logger.info("Executing workflow: query='%s...' params=%s",
-                       args.query[:50], list(params.keys()))
+            logger.info(
+                "Executing workflow: query='%s...' params=%s", args.query[:50], list(params.keys())
+            )
 
         # Run workflow
         result = graph.run(task)

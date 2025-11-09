@@ -12,7 +12,7 @@ SRC_ROOT = Path(__file__).parents[3] / "src"
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
-from qnwis.data.cache.backends import CacheBackend, MemoryCacheBackend
+from qnwis.data.cache.backends import CacheBackend, MemoryCacheBackend  # noqa: E402
 
 
 def test_cannot_instantiate_abstract_backend():

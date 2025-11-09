@@ -146,10 +146,7 @@ def robust_trend_forecast(
 
     slopes.sort()
     mid = len(slopes) // 2
-    if len(slopes) % 2 == 0:
-        slope = (slopes[mid - 1] + slopes[mid]) / 2.0
-    else:
-        slope = slopes[mid]
+    slope = (slopes[mid - 1] + slopes[mid]) / 2.0 if len(slopes) % 2 == 0 else slopes[mid]
 
     last_val = float(recent[-1])
     return [last_val + slope * h for h in range(1, horizon + 1)]
@@ -245,8 +242,8 @@ def clamp_nonnegative(values: list[float | None]) -> list[float | None]:
 
 
 def build_forecast_table(
-    method: str,
-    history: list[float],
+    _method: str,
+    _history: list[float],
     forecast: list[float | None],
     half_width: float,
     start_idx: int,
