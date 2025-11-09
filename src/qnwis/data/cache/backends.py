@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import time
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 
@@ -15,20 +16,23 @@ class CacheEntry:
     expires_at: float | None  # epoch seconds
 
 
-class CacheBackend:
+class CacheBackend(ABC):
     """Abstract cache backend interface."""
 
+    @abstractmethod
     def get(self, key: str) -> str | None:
         """Retrieve cached value by key."""
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def set(self, key: str, value: str, ttl_s: int | None = None) -> None:
-        """Store value with optional TTL in seconds."""
-        raise NotImplementedError
+        """Store value with optional TTL (seconds)."""
+        ...
 
+    @abstractmethod
     def delete(self, key: str) -> None:
-        """Remove cached value by key."""
-        raise NotImplementedError
+        """Delete key if exists."""
+        ...
 
 
 class MemoryCacheBackend(CacheBackend):

@@ -5,10 +5,13 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import logging
 import zlib
 from collections.abc import Mapping, MutableMapping
 from pathlib import Path
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 from ..cache.backends import CacheBackend, get_cache_backend
 from ..catalog.registry import DatasetCatalog
@@ -78,8 +81,12 @@ def _enrich_provenance(res: QueryResult) -> None:
                 license_value = item.get("license")
                 if license_value:
                     res.provenance.license = license_value
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug(
+                "Failed to enrich provenance from catalog for %s: %s",
+                res.provenance.locator,
+                exc,
+            )
 
 
 def _normalize_ttl(ttl_s: int | None) -> int | None:

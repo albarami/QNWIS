@@ -283,103 +283,67 @@
         },
         "missing": {}
       },
-      "duration_ms": 8.604288101196289,
+      "duration_ms": 7.259845733642578,
       "severity": "ERROR",
       "evidence_paths": [
         "docs/IMPLEMENTATION_ROADMAP.md"
       ],
-      "timestamp": "2025-11-08T16:35:14.729244"
+      "timestamp": "2025-11-09T02:19:53.031812"
     },
     {
       "name": "no_placeholders",
-      "ok": false,
+      "ok": true,
       "details": {
         "patterns": [
-          "\\bTODO\\b",
-          "\\bFIXME\\b",
-          "\\bHACK\\b",
-          "\\bXXX\\b",
-          "\\bpass\\b(?=\\s*$)",
-          "\\bNotImplemented\\b",
-          "raise\\s+NotImplementedError"
+          "^\\s*(?:#\\s*)?TODO\\b.*$",
+          "^\\s*(?:#\\s*)?FIXME\\b.*$",
+          "^\\s*(?:#\\s*)?HACK\\b.*$",
+          "^\\s*(?:#\\s*)?XXX\\b.*$",
+          "^\\s*pass\\s*$",
+          "^\\s*NotImplemented\\b.*$",
+          "^\\s*raise\\s+NotImplementedError\\b.*$"
         ],
-        "violations": [
-          {
-            "file": "src/qnwis/agents/utils/derived_results.py",
-            "line": 94,
-            "pattern": "\\bpass\\b(?=\\s*$)",
-            "snippet": "pass"
-          },
-          {
-            "file": "src/qnwis/agents/utils/derived_results.py",
-            "line": 99,
-            "pattern": "\\bpass\\b(?=\\s*$)",
-            "snippet": "pass"
-          },
-          {
-            "file": "src/qnwis/data/cache/backends.py",
-            "line": 23,
-            "pattern": "raise\\s+NotImplementedError",
-            "snippet": "raise NotImplementedError"
-          },
-          {
-            "file": "src/qnwis/data/cache/backends.py",
-            "line": 27,
-            "pattern": "raise\\s+NotImplementedError",
-            "snippet": "raise NotImplementedError"
-          },
-          {
-            "file": "src/qnwis/data/cache/backends.py",
-            "line": 31,
-            "pattern": "raise\\s+NotImplementedError",
-            "snippet": "raise NotImplementedError"
-          },
-          {
-            "file": "src/qnwis/data/deterministic/cache_access.py",
-            "line": 82,
-            "pattern": "\\bpass\\b(?=\\s*$)",
-            "snippet": "pass"
-          },
-          {
-            "file": "src/qnwis/scripts/qa/readiness_gate.py",
-            "line": 38,
-            "pattern": "\\bpass\\b(?=\\s*$)",
-            "snippet": "pass"
-          },
-          {
-            "file": "src/qnwis/scripts/qa/readiness_gate.py",
-            "line": 43,
-            "pattern": "\\bpass\\b(?=\\s*$)",
-            "snippet": "pass"
-          },
-          {
-            "file": "src/qnwis/verification/audit_trail.py",
-            "line": 477,
-            "pattern": "\\bpass\\b(?=\\s*$)",
-            "snippet": "- is_valid: True if all checks pass"
-          }
-        ]
+        "violations": []
       },
-      "duration_ms": 1472.7210998535156,
+      "duration_ms": 149.34849739074707,
       "severity": "ERROR",
       "evidence_paths": [
         "src/qnwis/scripts/qa/grep_rules.yml"
       ],
-      "timestamp": "2025-11-08T16:35:16.201965"
+      "timestamp": "2025-11-09T02:19:53.182278"
+    },
+    {
+      "name": "linters_and_types",
+      "ok": false,
+      "details": {
+        "ruff_exit_code": 1,
+        "ruff_output": "rc\\qnwis\\verification\\audit_trail.py:141:9\n    |\n139 |     def generate_trail(\n140 |         self,\n141 |         response_md: str,\n    |         ^^^^^^^^^^^\n142 |         qresults: list[QueryResult],\n143 |         verification: VerificationSummary,\n    |\n\nSIM102 Use a single `if` statement instead of nested `if` statements\n   --> src\\qnwis\\verification\\number_extractors.py:102:9\n    |\n100 |       sent_end = len(text)\n101 |       for i in range(start, len(text)):\n102 | /         if text[i] in (\".\", \"!\", \"?\"):\n103 | |             # Check if followed by space or newline (real sentence boundary)\n104 | |             if i + 1 >= len(text) or text[i + 1] in (\" \", \"\\n\", \"\\t\"):\n    | |______________________________________________________________________^\n105 |                   sent_end = i + 1\n106 |                   break\n    |\nhelp: Combine `if` statements using `and`\n\nFound 125 errors.\n[*] 1 fixable with the `--fix` option (78 hidden fixes can be enabled with the `--unsafe-fixes` option).\n",
+        "flake8_exit_code": -1,
+        "flake8_output": "Command timed out after 900s",
+        "mypy_exit_code": 2,
+        "mypy_output": "src\\qnwis\\analysis\\trend_utils.py: error: Source file found twice under different module names: \"qnwis.analysis.trend_utils\" and \"src.qnwis.analysis.trend_utils\"\nsrc\\qnwis\\analysis\\trend_utils.py: note: See https://mypy.readthedocs.io/en/stable/running_mypy.html#mapping-file-paths-to-modules for more info\nsrc\\qnwis\\analysis\\trend_utils.py: note: Common resolutions include: a) adding `__init__.py` somewhere, b) using `--explicit-package-bases` or adjusting MYPYPATH\nFound 1 error in 1 file (errors prevented further checking)\n"
+      },
+      "duration_ms": 905655.1916599274,
+      "severity": "ERROR",
+      "evidence_paths": [],
+      "timestamp": "2025-11-09T02:34:58.837470"
     }
   ],
   "overall_pass": false,
-  "execution_time_ms": 1481.325387954712,
-  "timestamp": "2025-11-08T16:35:16.201965",
+  "execution_time_ms": 905814.4750595093,
+  "timestamp": "2025-11-09T02:34:58.839027",
   "summary": {
-    "total_gates": 2,
-    "passed": 1,
+    "total_gates": 3,
+    "passed": 2,
     "failed": 1
   },
   "artifacts": {
     "junit.xml": "eaf59b6ed8cbc9997e784126f24d7227f0c2dfd3dab4cdd17018b219b9dd6e3c",
-    "src/qnwis/docs/audit/READINESS_REPORT_1_25.md": "438f1c307a8e89d10ef93312e1c3a20f3f4755af41a637312998b89579431523",
-    "src/qnwis/docs/audit/READINESS_SUMMARY.html": "15395891e179d74cd37119b28e0409a19894c0cf62233bf9499b4a888b29a8e8",
+    "src/qnwis/docs/audit/READINESS_REPORT_1_25.md": "c4b123a8570fc91397413042a2f1fb6d732f969ae9b8c24cc85183047a8825ac",
+    "src/qnwis/docs/audit/READINESS_SUMMARY.html": "57023e993c1cae7405e1371d027a3fc1800f0aaf5bf31e4cf49c42c91d7f453f",
     "src/qnwis/docs/audit/badges/rg1_pass.svg": "9995f7f48c4cb371d7db73a0cb755b09a43f686d6f82bb85a81eb9d7b1b857d8"
-  }
+  },
+  "fixed_gates": [
+    "no_placeholders"
+  ]
 }

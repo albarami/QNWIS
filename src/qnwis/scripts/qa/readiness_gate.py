@@ -7,19 +7,29 @@ import hashlib
 import html
 import json
 import locale
+import logging
 import os
 import random
 import re
 import subprocess
 import sys
 import time
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any
 
-import yaml
+import yaml  # type: ignore[import-untyped]
+
+from .placeholder_scan import (
+    as_dict as serialize_placeholder_matches,
+    load_placeholder_patterns,
+    scan_placeholders,
+)
+
+logger = logging.getLogger("readiness_gate")
 
 ROOT = Path(__file__).parents[4].resolve()
 SRC_ROOT = ROOT / "src"
@@ -34,13 +44,13 @@ os.environ.setdefault("LC_ALL", "C")
 os.environ.setdefault("PYTHONHASHSEED", "0")
 try:
     locale.setlocale(locale.LC_ALL, "C")
-except locale.Error:
-    pass
+except locale.Error as exc:
+    logger.debug("Could not set locale to C: %s (continuing with system default)", exc)
 random.seed(RANDOM_SEED)
 try:
     time.tzset()
-except AttributeError:
-    pass
+except AttributeError as exc:
+    logger.debug("time.tzset() not available on this platform: %s", exc)
 
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
@@ -89,7 +99,7 @@ PII_PATTERNS = {
     "credit_card": re.compile(r"\b\d{4}[- ]\d{4}[- ]\d{4}[- ]\d{4}\b"),
     "email": re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"),
 }
-CRITICAL_COVERAGE_TARGETS: Dict[str, float] = {
+CRITICAL_COVERAGE_TARGETS: dict[str, float] = {
     "src/qnwis/agents/pattern_miner.py": 90.0,
     "src/qnwis/agents/predictor.py": 90.0,
     "src/qnwis/agents/time_machine.py": 90.0,
@@ -106,12 +116,12 @@ CRITICAL_COVERAGE_TARGETS: Dict[str, float] = {
 class StepRequirement:
     step: int
     name: str
-    code_paths: Tuple[str, ...]
-    test_paths: Tuple[str, ...]
-    smoke_targets: Tuple[str, ...]
+    code_paths: tuple[str, ...]
+    test_paths: tuple[str, ...]
+    smoke_targets: tuple[str, ...]
 
 
-STEP_REQUIREMENTS: Tuple[StepRequirement, ...] = (
+STEP_REQUIREMENTS: tuple[StepRequirement, ...] = (
     StepRequirement(
         step=1,
         name="Project structure & configuration",
@@ -301,34 +311,35 @@ NARRATIVE_SAMPLE_PATHS = (
 class GateResult:
     name: str
     ok: bool
-    details: Dict[str, Any]
+    details: dict[str, Any]
     duration_ms: float = 0.0
     severity: str = "ERROR"
-    evidence_paths: List[str] = field(default_factory=list)
+    evidence_paths: list[str] = field(default_factory=list)
     timestamp: str = field(default_factory=lambda: datetime.utcnow().isoformat())
 
 
 @dataclass
 class ReadinessReport:
-    gates: List[GateResult]
+    gates: list[GateResult]
     overall_pass: bool
     execution_time_ms: float
     timestamp: str
-    summary: Dict[str, Any]
-    artifacts: Dict[str, str]
+    summary: dict[str, Any]
+    artifacts: dict[str, str]
+    fixed_gates: list[str] = field(default_factory=list)
 
 
 def checksum(path: Path) -> str:
     digest = hashlib.sha256()
-    with open(path, "rb") as handle:
+    with path.open("rb") as handle:
         for chunk in iter(lambda: handle.read(8192), b""):
             digest.update(chunk)
     return digest.hexdigest()
 
 
-def write_json(path: Path, data: Dict[str, Any]) -> None:
+def write_json(path: Path, data: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "w", encoding="utf-8") as handle:
+    with path.open("w", encoding="utf-8") as handle:
         json.dump(data, handle, indent=2, default=str)
 
 
@@ -339,17 +350,34 @@ def _rel(path: Path) -> str:
         return path.as_posix()
 
 
+def _load_previous_gate_status(report_path: Path) -> dict[str, bool]:
+    if not report_path.exists():
+        return {}
+    try:
+        data = json.loads(report_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as exc:  # pragma: no cover - defensive
+        logger.debug("Unable to parse previous gate status from %s: %s", report_path, exc)
+        return {}
+    outcomes: dict[str, bool] = {}
+    for gate in data.get("gates", []):
+        name = gate.get("name")
+        if not name:
+            continue
+        outcomes[name] = bool(gate.get("ok"))
+    return outcomes
+
+
 def _non_empty(rel_path: str) -> bool:
     full = ROOT / rel_path
     return full.exists() and full.stat().st_size > 0
 
 
 def run_cmd(
-    cmd: List[str],
+    cmd: list[str],
     timeout: int = 900,
-    cwd: Optional[Path] = None,
-    env: Optional[Dict[str, str]] = None,
-) -> Tuple[int, str, str]:
+    cwd: Path | None = None,
+    env: dict[str, str] | None = None,
+) -> tuple[int, str, str]:
     merged_env = os.environ.copy()
     if env:
         merged_env.update(env)
@@ -386,8 +414,8 @@ def _iter_text_files(base: Path) -> Iterable[Path]:
 
 def gate_step_completeness() -> GateResult:
     start = time.time()
-    failures: Dict[str, Dict[str, List[str]]] = {}
-    step_details: Dict[str, Any] = {}
+    failures: dict[str, dict[str, list[str]]] = {}
+    step_details: dict[str, Any] = {}
 
     for req in STEP_REQUIREMENTS:
         step_key = f"step_{req.step:02d}"
@@ -421,35 +449,13 @@ def gate_step_completeness() -> GateResult:
 def gate_no_placeholders() -> GateResult:
     start = time.time()
     rules_path = QA_ROOT / "grep_rules.yml"
-    placeholder_patterns: List[str] = []
-    if rules_path.exists():
-        rules = yaml.safe_load(rules_path.read_text(encoding="utf-8"))
-        placeholder_patterns = rules.get("disallow", {}).get("placeholders", {}).get("patterns", [])
-    else:  # pragma: no cover
-        placeholder_patterns = [r"\bTODO\b", r"\bFIXME\b", r"\bpass\b", r"\bNotImplemented\b"]
-
-    matches: List[Dict[str, Any]] = []
-    compiled = [re.compile(pattern, re.MULTILINE) for pattern in placeholder_patterns]
-    for file_path in (SRC_ROOT / "qnwis").rglob("*.py"):
-        text = file_path.read_text(encoding="utf-8", errors="ignore")
-        for regex in compiled:
-            for match in regex.finditer(text):
-                line_no = text.count("\n", 0, match.start()) + 1
-                snippet = text.splitlines()[line_no - 1].strip()
-                matches.append(
-                    {"file": _rel(file_path), "line": line_no, "pattern": regex.pattern, "snippet": snippet}
-                )
-                if len(matches) >= 50:
-                    break
-            if len(matches) >= 50:
-                break
-        if len(matches) >= 50:
-            break
+    placeholder_patterns = load_placeholder_patterns(rules_path)
+    matches = scan_placeholders(search_root=SRC_ROOT / "qnwis", limit=50, rules_path=rules_path)
 
     return GateResult(
         name="no_placeholders",
         ok=len(matches) == 0,
-        details={"patterns": placeholder_patterns, "violations": matches},
+        details={"patterns": placeholder_patterns, "violations": serialize_placeholder_matches(matches)},
         duration_ms=(time.time() - start) * 1000,
         evidence_paths=[_rel(rules_path)] if rules_path.exists() else [],
     )
@@ -457,7 +463,7 @@ def gate_no_placeholders() -> GateResult:
 
 def gate_linters_and_types() -> GateResult:
     start = time.time()
-    details: Dict[str, Any] = {}
+    details: dict[str, Any] = {}
 
     ruff_code, ruff_out, ruff_err = run_cmd([sys.executable, "-m", "ruff", "check", "src/"])
     details["ruff_exit_code"] = ruff_code
@@ -482,7 +488,7 @@ def gate_linters_and_types() -> GateResult:
 
 def gate_deterministic_access() -> GateResult:
     start = time.time()
-    violations: List[Dict[str, Any]] = []
+    violations: list[dict[str, Any]] = []
     disallowed_imports = {"requests", "httpx", "sqlalchemy", "psycopg2", "pymysql"}
     disallowed_methods = {"get", "post", "put", "delete", "patch"}
     sql_regex = re.compile(r"(execute|executemany).*(SELECT|INSERT|UPDATE|DELETE|CREATE|DROP)", re.IGNORECASE)
@@ -509,19 +515,20 @@ def gate_deterministic_access() -> GateResult:
                     violations.append(
                         {"file": _rel(agent_file), "line": node.lineno, "issue": f"disallowed import {root_name}"}
                     )
-            elif isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
-                if (
-                    isinstance(node.func.value, ast.Name)
-                    and node.func.value.id in {"requests", "httpx"}
-                    and node.func.attr in disallowed_methods
-                ):
-                    violations.append(
-                        {
-                            "file": _rel(agent_file),
-                            "line": node.lineno,
-                            "issue": f"direct {node.func.value.id}.{node.func.attr} call",
-                        }
-                    )
+            elif (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Attribute)
+                and isinstance(node.func.value, ast.Name)
+                and node.func.value.id in {"requests", "httpx"}
+                and node.func.attr in disallowed_methods
+            ):
+                violations.append(
+                    {
+                        "file": _rel(agent_file),
+                        "line": node.lineno,
+                        "issue": f"direct {node.func.value.id}.{node.func.attr} call",
+                    }
+                )
 
         for line_no, line in enumerate(text.splitlines(), start=1):
             if sql_regex.search(line):
@@ -537,13 +544,13 @@ def gate_deterministic_access() -> GateResult:
     )
 
 
-def _collect_pytest_env() -> Dict[str, str]:
+def _collect_pytest_env() -> dict[str, str]:
     return {"READINESS_GATE_CHILD": "1", "PYTHONHASHSEED": os.environ.get("PYTHONHASHSEED", "0")}
 
 
 def gate_unit_and_integration_tests() -> GateResult:
     start = time.time()
-    details: Dict[str, Any] = {}
+    details: dict[str, Any] = {}
     cmd = [
         sys.executable,
         "-m",
@@ -586,9 +593,9 @@ def gate_unit_and_integration_tests() -> GateResult:
     )
 
 
-def parse_coverage() -> Tuple[Dict[str, float], str]:
+def parse_coverage() -> tuple[dict[str, float], str]:
     coverage_file = ROOT / "coverage.xml"
-    coverage_map: Dict[str, float] = {}
+    coverage_map: dict[str, float] = {}
     coverage_table_lines = ["path | coverage", "--- | ---"]
     if not coverage_file.exists():
         return coverage_map, "coverage.xml missing"
@@ -652,7 +659,7 @@ def gate_verification_layers() -> GateResult:
 
 def gate_citation_enforcement() -> GateResult:
     start = time.time()
-    details: Dict[str, Any] = {}
+    details: dict[str, Any] = {}
     try:
         from qnwis.verification.citation_enforcer import CitationEnforcer
 
@@ -677,7 +684,7 @@ def gate_citation_enforcement() -> GateResult:
 
 def gate_result_verification() -> GateResult:
     start = time.time()
-    details: Dict[str, Any] = {}
+    details: dict[str, Any] = {}
     try:
         from qnwis.verification.result_verifier import ResultVerifier
 
@@ -730,7 +737,7 @@ def gate_agents_end_to_end() -> GateResult:
         "pattern_miner": "src/qnwis/agents/pattern_miner.py",
         "predictor": "src/qnwis/agents/predictor.py",
     }
-    details: Dict[str, Any] = {}
+    details: dict[str, Any] = {}
     missing = []
     for name, rel_path in agents.items():
         path = ROOT / rel_path
@@ -756,7 +763,7 @@ def gate_citations_and_derived() -> GateResult:
     paragraphs = _load_narrative_paragraphs()
     sampled = rng.sample(paragraphs, k=min(5, len(paragraphs))) if paragraphs else []
     known_qids = load_known_qids()
-    violations: List[Dict[str, Any]] = []
+    violations: list[dict[str, Any]] = []
 
     for para in sampled:
         numbers = re.findall(r"[0-9][0-9,.%]*", para["text"])
@@ -778,8 +785,8 @@ def gate_citations_and_derived() -> GateResult:
     )
 
 
-def _load_narrative_paragraphs() -> List[Dict[str, Any]]:
-    paragraphs: List[Dict[str, Any]] = []
+def _load_narrative_paragraphs() -> list[dict[str, Any]]:
+    paragraphs: list[dict[str, Any]] = []
     for rel in NARRATIVE_SAMPLE_PATHS:
         path = ROOT / rel
         if not path.exists():
@@ -815,17 +822,17 @@ def _qid_allowed(qid: str, known: set[str]) -> bool:
 
 def gate_performance_guards() -> GateResult:
     start = time.time()
-    details: Dict[str, Any] = {}
+    details: dict[str, Any] = {}
     thresholds = {
         "normalize_params": 0.25,
         "share_of_total": 0.35,
         "ewma": 0.20,
     }
-    durations: Dict[str, float] = {}
+    durations: dict[str, float] = {}
     try:
-        from qnwis.data.deterministic import normalize
-        from qnwis.data.derived import metrics
         from qnwis.analysis import trend_utils
+        from qnwis.data.derived import metrics
+        from qnwis.data.deterministic import normalize
 
         payloads = [{"year": 2020 + (i % 5), "value": i * 1.5, "timeout_s": str(i % 10)} for i in range(2000)]
         rows = [{"data": {"year": 2020 + (i % 3), "value": i + 1}} for i in range(1500)]
@@ -868,8 +875,8 @@ def gate_performance_guards() -> GateResult:
 
 def gate_security_and_privacy() -> GateResult:
     start = time.time()
-    secret_hits: List[Dict[str, Any]] = []
-    pii_hits: List[Dict[str, Any]] = []
+    secret_hits: list[dict[str, Any]] = []
+    pii_hits: list[dict[str, Any]] = []
     bases = [SRC_ROOT / "qnwis", ROOT / "docs", AUDIT_ROOT]
 
     for base in bases:
@@ -912,7 +919,7 @@ def gate_stability_controls() -> GateResult:
         "PYTHONHASHSEED": os.environ.get("PYTHONHASHSEED") == "0",
     }
     matrix_path = QA_ROOT / "smoke_matrix.yml"
-    unsorted_sections: Dict[str, List[str]] = {}
+    unsorted_sections: dict[str, list[str]] = {}
     if matrix_path.exists():
         try:
             matrix = yaml.safe_load(matrix_path.read_text(encoding="utf-8")) or {}
@@ -951,9 +958,21 @@ def generate_markdown_report(report: ReadinessReport) -> str:
         f"- **Passed:** {sum(1 for g in report.gates if g.ok)}",
         f"- **Failed:** {sum(1 for g in report.gates if not g.ok)}",
         "",
-        "## Gate Results",
+        "## Previously failing gates now PASS",
         "",
     ]
+    if report.fixed_gates:
+        for gate_name in sorted(report.fixed_gates):
+            lines.append(f"- {gate_name}")
+    else:
+        lines.append("- None")
+    lines.extend(
+        [
+            "",
+            "## Gate Results",
+            "",
+        ]
+    )
     for gate in report.gates:
         status = "PASS" if gate.ok else "FAIL"
         lines.append(f"### {gate.name} [{status}]")
@@ -1011,15 +1030,15 @@ def write_badge(overall_pass: bool) -> Path:
     return badge_path
 
 
-def _hash_artifacts(paths: Iterable[Path]) -> Dict[str, str]:
-    hashes: Dict[str, str] = {}
+def _hash_artifacts(paths: Iterable[Path]) -> dict[str, str]:
+    hashes: dict[str, str] = {}
     for path in paths:
         if path.exists() and path.is_file():
             hashes[_rel(path)] = checksum(path)
     return hashes
 
 
-def build_artifact_index(extra_paths: Iterable[Path]) -> Dict[str, str]:
+def build_artifact_index(extra_paths: Iterable[Path]) -> dict[str, str]:
     candidates = [
         ROOT / "coverage.xml",
         ROOT / "junit.xml",
@@ -1027,7 +1046,7 @@ def build_artifact_index(extra_paths: Iterable[Path]) -> Dict[str, str]:
         AUDIT_ROOT / "READINESS_REPORT_1_25.md",
     ]
     candidates.extend(extra_paths)
-    artifacts: List[Dict[str, Any]] = []
+    artifacts: list[dict[str, Any]] = []
     seen: set[str] = set()
     for path in candidates:
         if path is None or not path.exists() or path.is_dir():
@@ -1088,8 +1107,10 @@ def main() -> int:
 
     AUDIT_ROOT.mkdir(parents=True, exist_ok=True)
     BADGE_ROOT.mkdir(parents=True, exist_ok=True)
+    previous_report_path = AUDIT_ROOT / "readiness_report.json"
+    previous_gate_status = _load_previous_gate_status(previous_report_path)
     start_time = time.time()
-    gates: List[GateResult] = []
+    gates: list[GateResult] = []
 
     gate_functions = [
         gate_step_completeness,
@@ -1125,6 +1146,9 @@ def main() -> int:
 
     execution_time = (time.time() - start_time) * 1000
     overall_pass = all(g.ok for g in gates if g.severity == "ERROR")
+    fixed_gates = [
+        gate.name for gate in gates if gate.ok and previous_gate_status.get(gate.name) is False
+    ]
 
     report = ReadinessReport(
         gates=gates,
@@ -1137,6 +1161,7 @@ def main() -> int:
             "failed": sum(1 for g in gates if not g.ok),
         },
         artifacts={},
+        fixed_gates=fixed_gates,
     )
 
     markdown_text = generate_markdown_report(report)
@@ -1154,7 +1179,7 @@ def main() -> int:
     ]
     report.artifacts = _hash_artifacts(artifact_inputs)
 
-    report_json_path = AUDIT_ROOT / "readiness_report.json"
+    report_json_path = previous_report_path
     write_json(report_json_path, asdict(report))
     build_artifact_index(artifact_inputs + [report_json_path])
     review_path = write_readiness_review(report)

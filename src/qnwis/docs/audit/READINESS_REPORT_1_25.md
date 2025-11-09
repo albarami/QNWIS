@@ -1,19 +1,23 @@
 # Readiness Report: Steps 1-25
 
-**Generated:** 2025-11-08T16:35:16.201965
+**Generated:** 2025-11-09T02:34:58.839027
 **Overall Status:** FAIL
-**Execution Time:** 1481 ms
+**Execution Time:** 905814 ms
 
 ## Summary
 
-- **Total Gates:** 2
-- **Passed:** 1
+- **Total Gates:** 3
+- **Passed:** 2
 - **Failed:** 1
+
+## Previously failing gates now PASS
+
+- no_placeholders
 
 ## Gate Results
 
 ### step_completeness [PASS]
-- **Duration:** 9 ms
+- **Duration:** 7 ms
 - **Severity:** ERROR
 ```json
 {
@@ -300,77 +304,36 @@
 **Evidence:**
 - `docs/IMPLEMENTATION_ROADMAP.md`
 
-### no_placeholders [FAIL]
-- **Duration:** 1473 ms
+### no_placeholders [PASS]
+- **Duration:** 149 ms
 - **Severity:** ERROR
 ```json
 {
   "patterns": [
-    "\\bTODO\\b",
-    "\\bFIXME\\b",
-    "\\bHACK\\b",
-    "\\bXXX\\b",
-    "\\bpass\\b(?=\\s*$)",
-    "\\bNotImplemented\\b",
-    "raise\\s+NotImplementedError"
+    "^\\s*(?:#\\s*)?TODO\\b.*$",
+    "^\\s*(?:#\\s*)?FIXME\\b.*$",
+    "^\\s*(?:#\\s*)?HACK\\b.*$",
+    "^\\s*(?:#\\s*)?XXX\\b.*$",
+    "^\\s*pass\\s*$",
+    "^\\s*NotImplemented\\b.*$",
+    "^\\s*raise\\s+NotImplementedError\\b.*$"
   ],
-  "violations": [
-    {
-      "file": "src/qnwis/agents/utils/derived_results.py",
-      "line": 94,
-      "pattern": "\\bpass\\b(?=\\s*$)",
-      "snippet": "pass"
-    },
-    {
-      "file": "src/qnwis/agents/utils/derived_results.py",
-      "line": 99,
-      "pattern": "\\bpass\\b(?=\\s*$)",
-      "snippet": "pass"
-    },
-    {
-      "file": "src/qnwis/data/cache/backends.py",
-      "line": 23,
-      "pattern": "raise\\s+NotImplementedError",
-      "snippet": "raise NotImplementedError"
-    },
-    {
-      "file": "src/qnwis/data/cache/backends.py",
-      "line": 27,
-      "pattern": "raise\\s+NotImplementedError",
-      "snippet": "raise NotImplementedError"
-    },
-    {
-      "file": "src/qnwis/data/cache/backends.py",
-      "line": 31,
-      "pattern": "raise\\s+NotImplementedError",
-      "snippet": "raise NotImplementedError"
-    },
-    {
-      "file": "src/qnwis/data/deterministic/cache_access.py",
-      "line": 82,
-      "pattern": "\\bpass\\b(?=\\s*$)",
-      "snippet": "pass"
-    },
-    {
-      "file": "src/qnwis/scripts/qa/readiness_gate.py",
-      "line": 38,
-      "pattern": "\\bpass\\b(?=\\s*$)",
-      "snippet": "pass"
-    },
-    {
-      "file": "src/qnwis/scripts/qa/readiness_gate.py",
-      "line": 43,
-      "pattern": "\\bpass\\b(?=\\s*$)",
-      "snippet": "pass"
-    },
-    {
-      "file": "src/qnwis/verification/audit_trail.py",
-      "line": 477,
-      "pattern": "\\bpass\\b(?=\\s*$)",
-      "snippet": "- is_valid: True if all checks pass"
-    }
-  ]
+  "violations": []
 }
 ```
 **Evidence:**
 - `src/qnwis/scripts/qa/grep_rules.yml`
+
+### linters_and_types [FAIL]
+- **Duration:** 905655 ms
+- **Severity:** ERROR
+```json
+{
+  "ruff_exit_code": 1,
+  "ruff_output": "rc\\qnwis\\verification\\audit_trail.py:141:9\n    |\n139 |     def generate_trail(\n140 |         self,\n141 |         response_md: str,\n    |         ^^^^^^^^^^^\n142 |         qresults: list[QueryResult],\n143 |         verification: VerificationSummary,\n    |\n\nSIM102 Use a single `if` statement instead of nested `if` statements\n   --> src\\qnwis\\verification\\number_extractors.py:102:9\n    |\n100 |       sent_end = len(text)\n101 |       for i in range(start, len(text)):\n102 | /         if text[i] in (\".\", \"!\", \"?\"):\n103 | |             # Check if followed by space or newline (real sentence boundary)\n104 | |             if i + 1 >= len(text) or text[i + 1] in (\" \", \"\\n\", \"\\t\"):\n    | |______________________________________________________________________^\n105 |                   sent_end = i + 1\n106 |                   break\n    |\nhelp: Combine `if` statements using `and`\n\nFound 125 errors.\n[*] 1 fixable with the `--fix` option (78 hidden fixes can be enabled with the `--unsafe-fixes` option).\n",
+  "flake8_exit_code": -1,
+  "flake8_output": "Command timed out after 900s",
+  "mypy_exit_code": 2,
+  "mypy_output": "src\\qnwis\\analysis\\trend_utils.py: error: Source file found twice under different module names: \"qnwis.analysis.trend_utils\" and \"src.qnwis.analysis.trend_utils\"\nsrc\\qnwis\\analysis\\trend_utils.py: note: See https://mypy.readthedocs.io/en/stable/running_mypy.html#mapping-file-paths-to-modules for more info\nsrc\\qnwis\\analysis\\trend_utils.py: note: Common resolutions include: a) adding `__init__.py` somewhere, b) using `--explicit-package-bases` or adjusting MYPYPATH\nFound 1 error in 1 file (errors prevented further checking)\n"
+}
+```
