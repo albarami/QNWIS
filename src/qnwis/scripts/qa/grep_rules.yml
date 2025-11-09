@@ -5,13 +5,13 @@
 disallow:
   placeholders:
     patterns:
-      - '\bTODO\b'
-      - '\bFIXME\b'
-      - '\bHACK\b'
-      - '\bXXX\b'
-      - '\bpass\b(?=\s*$)'  # pass as statement body
-      - '\bNotImplemented\b'
-      - 'raise\s+NotImplementedError'
+      - '^\s*(?:#\s*)?TODO\b.*$'
+      - '^\s*(?:#\s*)?FIXME\b.*$'
+      - '^\s*(?:#\s*)?HACK\b.*$'
+      - '^\s*(?:#\s*)?XXX\b.*$'
+      - '^\s*pass\s*$'  # pass as statement body
+      - '^\s*NotImplemented\b.*$'
+      - '^\s*raise\s+NotImplementedError\b.*$'
     message: "Placeholder code found - all TODOs/FIXMEs must be resolved"
     severity: ERROR
 

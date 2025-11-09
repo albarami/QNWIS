@@ -25,6 +25,8 @@ import yaml  # type: ignore[import-untyped]
 
 from .placeholder_scan import (
     as_dict as serialize_placeholder_matches,
+)
+from .placeholder_scan import (
     load_placeholder_patterns,
     scan_placeholders,
 )

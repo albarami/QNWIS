@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-11-08T16:35:16.236141",
+  "generated_at": "2025-11-09T02:34:58.890192",
   "artifacts": [
     {
       "path": "junit.xml",
@@ -8,18 +8,18 @@
     },
     {
       "path": "src/qnwis/docs/audit/readiness_report.json",
-      "sha256": "949dba11c0744c47e988e3bbe52a25bee28253c3c687eeccab07c94236871c79",
-      "size_bytes": 10887
+      "sha256": "df7b395a940a436947cb66624a4bc14b962f04667c490ec4338767325bf7a74b",
+      "size_bytes": 11191
     },
     {
       "path": "src/qnwis/docs/audit/READINESS_REPORT_1_25.md",
-      "sha256": "438f1c307a8e89d10ef93312e1c3a20f3f4755af41a637312998b89579431523",
-      "size_bytes": 8070
+      "sha256": "c4b123a8570fc91397413042a2f1fb6d732f969ae9b8c24cc85183047a8825ac",
+      "size_bytes": 8536
     },
     {
       "path": "src/qnwis/docs/audit/READINESS_SUMMARY.html",
-      "sha256": "15395891e179d74cd37119b28e0409a19894c0cf62233bf9499b4a888b29a8e8",
-      "size_bytes": 11329
+      "sha256": "57023e993c1cae7405e1371d027a3fc1800f0aaf5bf31e4cf49c42c91d7f453f",
+      "size_bytes": 11341
     },
     {
       "path": "src/qnwis/docs/audit/badges/rg1_pass.svg",
