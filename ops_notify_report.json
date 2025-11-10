@@ -1,11 +1,11 @@
 {
-  "generated_at": "2025-11-10T16:20:33.122386+00:00",
+  "generated_at": "2025-11-10T20:36:57.904526+00:00",
   "overall_passed": true,
   "performance": {
     "sample_size": 100,
-    "p50_ms": 0.5831000162288547,
-    "p95_ms": 0.6754900212399662,
-    "p99_ms": 0.750598113518209
+    "p50_ms": 0.5971499485895038,
+    "p95_ms": 0.7482098764739931,
+    "p99_ms": 0.7954259682446743
   },
   "incidents": {
     "total": 102,
@@ -21,11 +21,9 @@
       "src\\qnwis\\notify",
       "src\\qnwis\\agents\\__init__.py",
       "src\\qnwis\\agents\\alert_center.py",
-      "src\\qnwis\\agents\\alert_center_notify.py",
       "src\\qnwis\\agents\\base.py",
       "src\\qnwis\\agents\\national_strategy.py",
       "src\\qnwis\\agents\\pattern_detective.py",
-      "src\\qnwis\\agents\\pattern_miner.py",
       "src\\qnwis\\agents\\prompts\\__init__.py",
       "src\\qnwis\\agents\\prompts\\national_strategy_prompts.py",
       "src\\qnwis\\agents\\prompts\\pattern_detective_prompts.py",

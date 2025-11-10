@@ -1,6 +1,6 @@
 {
   "incident_id": "perf_test_056",
-  "payload": "{\"incident_id\":\"perf_test_056\",\"notification_id\":\"perf_test_056\",\"rule_id\":\"test_rule_6\",\"severity\":\"info\",\"state\":\"open\",\"message\":\"Performance test notification 56\",\"scope\":{\"level\":\"national\",\"code\":\"\"},\"window_start\":\"2024-01-01T00:00:00Z\",\"window_end\":\"2024-01-01T23:59:59Z\",\"created_at\":\"2025-11-10T16:20:33.010225+00:00\",\"updated_at\":\"2025-11-10T16:20:33.010225+00:00\",\"ack_at\":null,\"resolved_at\":null,\"consecutive_green_count\":0,\"metadata\":{\"dispatch_results\":{\"email\":\"dry_run_success\"}}}",
-  "signature": "f97cd6372a932e42894a0b51f9fa0280cc9ad179d9bea6687066e487fccc309f",
+  "payload": "{\"incident_id\":\"perf_test_056\",\"notification_id\":\"perf_test_056\",\"rule_id\":\"test_rule_6\",\"severity\":\"info\",\"state\":\"open\",\"message\":\"Performance test notification 56\",\"scope\":{\"level\":\"national\",\"code\":\"\"},\"window_start\":\"2024-01-01T00:00:00Z\",\"window_end\":\"2024-01-01T23:59:59Z\",\"created_at\":\"2025-11-10T20:36:57.692489+00:00\",\"updated_at\":\"2025-11-10T20:36:57.692489+00:00\",\"ack_at\":null,\"resolved_at\":null,\"consecutive_green_count\":0,\"metadata\":{\"dispatch_results\":{\"email\":\"dry_run_success\"}}}",
+  "signature": "d7460709ca80d61c8eb4ff7ed3893444a7be95a3d3367c40351c8640f4f7e73d",
   "algorithm": "sha256"
 }

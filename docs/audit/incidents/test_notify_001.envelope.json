@@ -1,6 +1,6 @@
 {
   "incident_id": "test_notify_001",
-  "payload": "{\"incident_id\":\"test_notify_001\",\"notification_id\":\"test_notify_001\",\"rule_id\":\"test_rule_retention_low\",\"severity\":\"warning\",\"state\":\"open\",\"message\":\"Test alert: Retention below threshold\",\"scope\":{\"level\":\"sector\",\"code\":\"010\"},\"window_start\":\"2024-01-01T00:00:00Z\",\"window_end\":\"2024-01-01T23:59:59Z\",\"created_at\":\"2025-11-10T16:20:32.960432+00:00\",\"updated_at\":\"2025-11-10T16:20:32.960432+00:00\",\"ack_at\":null,\"resolved_at\":null,\"consecutive_green_count\":0,\"metadata\":{\"dispatch_results\":{\"email\":\"dry_run_success\",\"teams\":\"dry_run_success\"}}}",
-  "signature": "b65802e467af962bf502ddf229c486fbdceaa179a850b02302d55151a2c87752",
+  "payload": "{\"incident_id\":\"test_notify_001\",\"notification_id\":\"test_notify_001\",\"rule_id\":\"test_rule_retention_low\",\"severity\":\"warning\",\"state\":\"open\",\"message\":\"Test alert: Retention below threshold\",\"scope\":{\"level\":\"sector\",\"code\":\"010\"},\"window_start\":\"2024-01-01T00:00:00Z\",\"window_end\":\"2024-01-01T23:59:59Z\",\"created_at\":\"2025-11-10T20:36:57.646080+00:00\",\"updated_at\":\"2025-11-10T20:36:57.646080+00:00\",\"ack_at\":null,\"resolved_at\":null,\"consecutive_green_count\":0,\"metadata\":{\"dispatch_results\":{\"email\":\"dry_run_success\",\"teams\":\"dry_run_success\"}}}",
+  "signature": "642da5993b5da755e2a39cf5d6b9a8428bd9da19bfbb4f8ab477b6db390019c8",
   "algorithm": "sha256"
 }

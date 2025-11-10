@@ -1,15 +1,15 @@
 # RG-4 Ops Notify Summary
 
-- Generated: 2025-11-10T16:20:33.122386+00:00
+- Generated: 2025-11-10T20:36:57.904526+00:00
 - RG-4 Status: PASS
 
 ## Performance (ms)
 
 | Metric | Value |
 | --- | --- |
-| p50 | 0.58 |
-| p95 | 0.68 |
-| p99 | 0.75 |
+| p50 | 0.60 |
+| p95 | 0.75 |
+| p99 | 0.80 |
 | Sample Size | 100 |
 
 ## Incident Metrics
