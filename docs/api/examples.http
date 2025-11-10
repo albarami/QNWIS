@@ -1,0 +1,247 @@
+# QNWIS Service API - HTTP Request Examples
+#
+# Runnable HTTP samples for all QNWIS API endpoints.
+# Use with VS Code REST Client, IntelliJ HTTP Client, or HTTPie.
+#
+# Version: 1.0.0 | Last Updated: 2025-11-10
+
+### Variables
+@baseUrl = http://localhost:8000
+@apiKey = integration-key
+@jwtToken = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...
+
+###############################################################################
+# Health & Observability
+###############################################################################
+
+### Health - Liveness
+GET {{baseUrl}}/health/alive
+
+### Health - Readiness
+GET {{baseUrl}}/health/ready
+
+### Prometheus Metrics
+GET {{baseUrl}}/metrics
+
+### API Info
+GET {{baseUrl}}/
+
+###############################################################################
+# Time Machine Agent
+###############################################################################
+
+### Time Baseline (API Key Auth)
+POST {{baseUrl}}/api/v1/agents/time/baseline
+Content-Type: application/json
+X-API-Key: {{apiKey}}
+
+{
+  "intent": "time.baseline",
+  "params": {
+    "metric": "retention"
+  },
+  "options": {
+    "enforce_citations": true,
+    "verify_numbers": true,
+    "audit_pack": true
+  }
+}
+
+### Time Trend (JWT Auth)
+POST {{baseUrl}}/api/v1/agents/time/trend
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+{
+  "intent": "time.trend",
+  "params": {
+    "metric": "retention"
+  }
+}
+
+### Time Breaks
+POST {{baseUrl}}/api/v1/agents/time/breaks
+Content-Type: application/json
+X-API-Key: {{apiKey}}
+
+{
+  "intent": "time.breaks",
+  "params": {
+    "metric": "retention"
+  }
+}
+
+###############################################################################
+# Pattern Miner Agent
+###############################################################################
+
+### Pattern Anomalies
+POST {{baseUrl}}/api/v1/agents/pattern/anomalies
+Content-Type: application/json
+X-API-Key: {{apiKey}}
+
+{
+  "intent": "pattern.anomalies",
+  "params": {
+    "z_threshold": 2.0
+  }
+}
+
+### Pattern Correlations
+POST {{baseUrl}}/api/v1/agents/pattern/correlations
+Content-Type: application/json
+X-API-Key: {{apiKey}}
+
+{
+  "intent": "pattern.correlations",
+  "params": {
+    "min_correlation": 0.5
+  }
+}
+
+###############################################################################
+# Predictor Agent
+###############################################################################
+
+### Predictor Forecast
+POST {{baseUrl}}/api/v1/agents/predictor/forecast
+Content-Type: application/json
+X-API-Key: {{apiKey}}
+
+{
+  "intent": "predictor.forecast",
+  "params": {
+    "metric": "retention",
+    "horizon_months": 6
+  }
+}
+
+### Predictor Warnings
+POST {{baseUrl}}/api/v1/agents/predictor/warnings
+Content-Type: application/json
+X-API-Key: {{apiKey}}
+
+{
+  "intent": "predictor.warnings",
+  "params": {
+    "metric": "retention",
+    "horizon_months": 3
+  }
+}
+
+###############################################################################
+# Scenario Planner Agent
+###############################################################################
+
+### Scenario Apply
+POST {{baseUrl}}/api/v1/agents/scenario/apply
+Content-Type: application/json
+X-API-Key: {{apiKey}}
+
+{
+  "intent": "scenario.apply",
+  "params": {
+    "spec": {
+      "name": "Retention Boost",
+      "description": "5% retention increase",
+      "metric": "retention",
+      "sector": "Energy",
+      "horizon_months": 12,
+      "transforms": [
+        {"type": "multiplicative", "value": 0.05, "start_month": 0}
+      ]
+    },
+    "format": "dict"
+  }
+}
+
+### Scenario Compare
+POST {{baseUrl}}/api/v1/agents/scenario/compare
+Content-Type: application/json
+X-API-Key: {{apiKey}}
+
+{
+  "intent": "scenario.compare",
+  "params": {
+    "specs": [
+      {
+        "name": "Energy Push",
+        "description": "Energy sector focus",
+        "metric": "retention",
+        "sector": "Energy",
+        "horizon_months": 12,
+        "transforms": [{"type": "multiplicative", "value": 0.05, "start_month": 0}]
+      },
+      {
+        "name": "Construction Stabilize",
+        "description": "Construction stabilization",
+        "metric": "retention",
+        "sector": "Construction",
+        "horizon_months": 12,
+        "transforms": [{"type": "additive", "value": 2.0, "start_month": 0}]
+      }
+    ],
+    "format": "dict"
+  }
+}
+
+###############################################################################
+# National Strategy Agent
+###############################################################################
+
+### Strategy GCC Benchmark
+POST {{baseUrl}}/api/v1/agents/strategy/benchmark
+Content-Type: application/json
+X-API-Key: {{apiKey}}
+
+{
+  "intent": "strategy.benchmark",
+  "params": {
+    "min_countries": 3
+  }
+}
+
+### Strategy Vision Alignment
+POST {{baseUrl}}/api/v1/agents/strategy/vision
+Content-Type: application/json
+X-API-Key: {{apiKey}}
+
+{
+  "intent": "strategy.vision",
+  "params": {
+    "target_year": 2030
+  }
+}
+
+###############################################################################
+# Error Cases
+###############################################################################
+
+### Error - Missing Auth (401)
+POST {{baseUrl}}/api/v1/agents/time/baseline
+Content-Type: application/json
+
+{
+  "intent": "time.baseline",
+  "params": {"metric": "retention"}
+}
+
+### Error - Intent Mismatch (400)
+POST {{baseUrl}}/api/v1/agents/time/baseline
+Content-Type: application/json
+X-API-Key: {{apiKey}}
+
+{
+  "intent": "time.trend",
+  "params": {"metric": "retention"}
+}
+
+### Error - Missing Required Param (400)
+POST {{baseUrl}}/api/v1/agents/scenario/apply
+Content-Type: application/json
+X-API-Key: {{apiKey}}
+
+{
+  "intent": "scenario.apply",
+  "params": {}
+}
