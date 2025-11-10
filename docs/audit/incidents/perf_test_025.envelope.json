@@ -1,0 +1,6 @@
+{
+  "incident_id": "perf_test_025",
+  "payload": "{\"incident_id\":\"perf_test_025\",\"notification_id\":\"perf_test_025\",\"rule_id\":\"test_rule_5\",\"severity\":\"info\",\"state\":\"open\",\"message\":\"Performance test notification 25\",\"scope\":{\"level\":\"national\",\"code\":\"\"},\"window_start\":\"2024-01-01T00:00:00Z\",\"window_end\":\"2024-01-01T23:59:59Z\",\"created_at\":\"2025-11-10T16:20:32.990814+00:00\",\"updated_at\":\"2025-11-10T16:20:32.990814+00:00\",\"ack_at\":null,\"resolved_at\":null,\"consecutive_green_count\":0,\"metadata\":{\"dispatch_results\":{\"email\":\"dry_run_success\"}}}",
+  "signature": "e65a81b3490581df91fc6e5aaee9f8258e63d6acfbdaea6ac18acc3bbe0c1e08",
+  "algorithm": "sha256"
+}

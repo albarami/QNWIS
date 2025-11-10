@@ -1,0 +1,83 @@
+# Sample Alert Rules for QNWIS Alert Center
+# Production-grade early-warning system
+
+rules:
+  # Retention drop alert for construction sector
+  - rule_id: retention_drop_construction
+    metric: retention
+    scope:
+      level: sector
+      code: construction
+    window:
+      months: 6
+    trigger:
+      type: yoy_delta_pct
+      op: lte
+      value: -5.0
+    horizon: 12
+    severity: high
+    enabled: true
+    description: "Alert when construction sector retention drops >5% year-over-year"
+
+  # Wage floor violation alert
+  - rule_id: wage_floor_violation
+    metric: salary
+    scope:
+      level: sector
+    window:
+      months: 3
+    trigger:
+      type: threshold
+      op: lt
+      value: 3000.0
+    horizon: 6
+    severity: critical
+    enabled: true
+    description: "Alert when average wage falls below QAR 3000"
+
+  # Qatarization declining trend
+  - rule_id: qatarization_decline
+    metric: qatarization
+    scope:
+      level: sector
+    window:
+      months: 12
+    trigger:
+      type: slope_window
+      op: lt
+      value: -0.005
+    horizon: 24
+    severity: high
+    enabled: true
+    description: "Alert on negative 12-month qatarization trend"
+
+  # Employment structural break
+  - rule_id: employment_break
+    metric: employment
+    scope:
+      level: sector
+    window:
+      months: 18
+    trigger:
+      type: break_event
+      value: 4.0
+    horizon: 12
+    severity: medium
+    enabled: true
+    description: "Alert on sudden shift in employment levels"
+
+  # Disabled example rule
+  - rule_id: test_disabled_rule
+    metric: retention
+    scope:
+      level: sector
+    window:
+      months: 3
+    trigger:
+      type: threshold
+      op: lt
+      value: 0.3
+    horizon: 12
+    severity: low
+    enabled: false
+    description: "Example of a disabled rule"

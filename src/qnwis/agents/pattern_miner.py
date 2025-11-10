@@ -8,13 +8,14 @@ and cohorts using deterministic pattern mining with full provenance.
 from __future__ import annotations
 
 import logging
-from datetime import date, datetime
-from typing import Any, Dict, List, Optional, Tuple
+from datetime import date
+from typing import Any
 
+from ..data.deterministic.models import QueryResult
+from ..patterns.miner import PatternFinding, PatternMiner, PatternSpec
+from ..utils.clock import Clock
 from .base import DataClient, MissingQueryDefinitionError
 from .utils.derived_results import make_derived_query_result
-from ..data.deterministic.models import QueryResult
-from ..patterns.miner import PatternMiner, PatternSpec, PatternFinding, Window
 
 logger = logging.getLogger(__name__)
 
@@ -27,14 +28,16 @@ class PatternMinerAgent:
     with full provenance and reproducibility information.
     """
 
-    def __init__(self, client: DataClient):
+    def __init__(self, client: DataClient, clock: Clock | None = None):
         """
         Initialize Pattern Miner agent.
 
         Args:
             client: DataClient for deterministic query access
+            clock: Optional Clock for deterministic timestamps (defaults to Clock())
         """
         self.client = client
+        self.clock = clock or Clock()
         self.miner = PatternMiner(
             flat_threshold=0.15,
             nonlinear_threshold=0.3,
@@ -45,14 +48,14 @@ class PatternMinerAgent:
     def stable_relations(
         self,
         outcome: str,
-        drivers: List[str],
-        sector: Optional[str] = None,
+        drivers: list[str],
+        sector: str | None = None,
         window: int = 12,
-        end_date: Optional[date] = None,
+        end_date: date | None = None,
         min_support: int = 12,
         method: str = "spearman",
-        confidence_hint: Optional[dict[str, Any]] = None,
-        timeseries_data: Optional[Dict[str, QueryResult]] = None,
+        confidence_hint: dict[str, Any] | None = None,
+        timeseries_data: dict[str, QueryResult] | None = None,
     ) -> str:
         """
         Rank drivers by effect size/stability/support over the lookback window.
@@ -90,9 +93,9 @@ class PatternMinerAgent:
             if timeseries_data is not None:
                 series_map = timeseries_data
                 source_results = list(timeseries_data.values())
-                warnings: List[str] = []
+                warnings: list[str] = []
             else:
-                metrics_list = list([requested_spec.outcome]) + list(requested_spec.drivers)
+                metrics_list = [requested_spec.outcome] + list(requested_spec.drivers)
                 series_map, source_results, warnings = self._load_metric_series(
                     metrics_list,
                     requested_spec.sector,
@@ -188,11 +191,11 @@ class PatternMinerAgent:
     def seasonal_effects(
         self,
         outcome: str,
-        sector: Optional[str] = None,
-        end_date: Optional[date] = None,
+        sector: str | None = None,
+        end_date: date | None = None,
         min_support: int = 24,
-        confidence_hint: Optional[dict[str, Any]] = None,
-        timeseries_result: Optional[QueryResult] = None,
+        confidence_hint: dict[str, Any] | None = None,
+        timeseries_result: QueryResult | None = None,
     ) -> str:
         """
         Surface seasonal lift patterns by month-of-year (or quarter).
@@ -213,7 +216,7 @@ class PatternMinerAgent:
 
         window_months = 36
         ts_qid = self._build_timeseries_qid(outcome, sector, window_months)
-        warnings: List[str] = []
+        warnings: list[str] = []
 
         try:
             result = timeseries_result or self.client.run(ts_qid)
@@ -278,13 +281,13 @@ class PatternMinerAgent:
         self,
         driver: str,
         outcome: str,
-        cohorts: List[str],
-        windows: List[int],
-        sector: Optional[str] = None,
-        end_date: Optional[date] = None,
+        cohorts: list[str],
+        windows: list[int],
+        sector: str | None = None,
+        end_date: date | None = None,
         min_support: int = 12,
-        confidence_hint: Optional[dict[str, Any]] = None,
-        timeseries_data: Optional[Dict[str, Dict[str, QueryResult]]] = None,
+        confidence_hint: dict[str, Any] | None = None,
+        timeseries_data: dict[str, dict[str, QueryResult]] | None = None,
     ) -> str:
         """
         Screen a single driver across multiple windows/cohorts.
@@ -320,7 +323,7 @@ class PatternMinerAgent:
                 source_results = [
                     res for cohort in timeseries_data.values() for res in cohort.values()
                 ]
-                warnings: List[str] = []
+                warnings: list[str] = []
             else:
                 series_map, source_results, warnings = self._load_driver_screen_series(
                     driver, outcome, cohorts_to_use, valid_windows
@@ -387,14 +390,14 @@ class PatternMinerAgent:
 
     def _format_stable_relations_narrative(
         self,
-        findings: List[PatternFinding],
+        findings: list[PatternFinding],
         spec: PatternSpec,
         end_date: date,
         derived_qid: str,
-        source_qids: List[str],
+        source_qids: list[str],
         freshness: str,
-        warnings: List[str],
-        confidence_hint: Optional[dict[str, Any]],
+        warnings: list[str],
+        confidence_hint: dict[str, Any] | None,
     ) -> str:
         """Format stable relations findings into narrative."""
         lines = [
@@ -491,7 +494,7 @@ class PatternMinerAgent:
                 f"- **Derived Query ID:** {derived_qid}",
                 f"- **Source Queries:** {', '.join(source_qids)}",
                 f"- **Freshness:** {freshness}",
-                f"- **Analysis Date:** {datetime.now().isoformat()}",
+                f"- **Analysis Date:** {self.clock.now().isoformat()}",
             ]
         )
 
@@ -499,14 +502,14 @@ class PatternMinerAgent:
 
     def _format_seasonal_effects_narrative(
         self,
-        findings: List[PatternFinding],
+        findings: list[PatternFinding],
         outcome: str,
-        sector: Optional[str],
+        sector: str | None,
         derived_qid: str,
         source_qid: str,
         freshness: str,
-        warnings: List[str],
-        confidence_hint: Optional[dict[str, Any]],
+        warnings: list[str],
+        confidence_hint: dict[str, Any] | None,
     ) -> str:
         """Format seasonal effects findings into narrative."""
         lines = [
@@ -584,7 +587,7 @@ class PatternMinerAgent:
                 "## Data Context",
                 f"- **Metric:** {outcome}",
                 f"- **Cohort:** {sector or 'all sectors'}",
-                f"- **Baseline:** Overall mean across all months",
+                "- **Baseline:** Overall mean across all months",
             ]
         )
 
@@ -606,7 +609,7 @@ class PatternMinerAgent:
                 f"- **Derived Query ID:** {derived_qid}",
                 f"- **Source Query:** {source_qid}",
                 f"- **Freshness:** {freshness}",
-                f"- **Analysis Date:** {datetime.now().isoformat()}",
+                f"- **Analysis Date:** {self.clock.now().isoformat()}",
             ]
         )
 
@@ -614,16 +617,16 @@ class PatternMinerAgent:
 
     def _format_driver_screen_narrative(
         self,
-        findings: List[PatternFinding],
+        findings: list[PatternFinding],
         driver: str,
         outcome: str,
-        cohorts: List[str],
-        windows: List[int],
+        cohorts: list[str],
+        windows: list[int],
         derived_qid: str,
-        source_qids: List[str],
+        source_qids: list[str],
         freshness: str,
-        warnings: List[str],
-        confidence_hint: Optional[dict[str, Any]],
+        warnings: list[str],
+        confidence_hint: dict[str, Any] | None,
     ) -> str:
         """Format driver screening findings into narrative."""
         lines = [
@@ -693,7 +696,7 @@ class PatternMinerAgent:
                     f"({strength} {sign}, rho={strongest.effect:.3f})"
                 )
 
-            cohort_effects: Dict[str, List[float]] = {}
+            cohort_effects: dict[str, list[float]] = {}
             for f in findings:
                 base_cohort = f.cohort.split("_w")[0]
                 cohort_effects.setdefault(base_cohort, []).append(f.effect)
@@ -717,7 +720,7 @@ class PatternMinerAgent:
                 f"- **Derived Query ID:** {derived_qid}",
                 f"- **Source Queries:** {len(source_qids)} time series queries",
                 f"- **Freshness:** {freshness}",
-                f"- **Analysis Date:** {datetime.now().isoformat()}",
+                f"- **Analysis Date:** {self.clock.now().isoformat()}",
             ]
         )
 
@@ -736,7 +739,7 @@ class PatternMinerAgent:
     def _build_timeseries_qid(
         self,
         metric: str,
-        cohort: Optional[str],
+        cohort: str | None,
         window: int,
     ) -> str:
         """Construct deterministic time-series query identifier."""
@@ -746,19 +749,19 @@ class PatternMinerAgent:
 
     def _load_metric_series(
         self,
-        metrics: List[str],
-        sector: Optional[str],
+        metrics: list[str],
+        sector: str | None,
         window: int,
-    ) -> Tuple[Dict[str, QueryResult], List[QueryResult], List[str]]:
+    ) -> tuple[dict[str, QueryResult], list[QueryResult], list[str]]:
         """
         Load deterministic time series for the requested metrics.
 
         Returns:
             Tuple of (series_map, source_results, warnings).
         """
-        series_map: Dict[str, QueryResult] = {}
-        sources: List[QueryResult] = []
-        warnings: List[str] = []
+        series_map: dict[str, QueryResult] = {}
+        sources: list[QueryResult] = []
+        warnings: list[str] = []
         seen: set[str] = set()
 
         for metric in metrics:
@@ -780,18 +783,18 @@ class PatternMinerAgent:
         self,
         driver: str,
         outcome: str,
-        cohorts: List[str],
-        windows: List[int],
-    ) -> Tuple[Dict[str, Dict[str, QueryResult]], List[QueryResult], List[str]]:
+        cohorts: list[str],
+        windows: list[int],
+    ) -> tuple[dict[str, dict[str, QueryResult]], list[QueryResult], list[str]]:
         """
         Load driver/outcome series per cohort for screening.
 
         Always fetches the longest requested window to allow slicing for smaller windows.
         """
         history_window = max(windows)
-        warnings: List[str] = []
-        sources: List[QueryResult] = []
-        series_map: Dict[str, Dict[str, QueryResult]] = {}
+        warnings: list[str] = []
+        sources: list[QueryResult] = []
+        series_map: dict[str, dict[str, QueryResult]] = {}
 
         if len(cohorts) > self.miner.max_cohorts:
             warnings.append(
@@ -800,7 +803,7 @@ class PatternMinerAgent:
         cohorts_to_scan = cohorts[: self.miner.max_cohorts]
 
         for cohort in cohorts_to_scan:
-            cohort_data: Dict[str, QueryResult] = {}
+            cohort_data: dict[str, QueryResult] = {}
             for metric in (outcome, driver):
                 qid = self._build_timeseries_qid(metric, cohort, history_window)
                 try:
@@ -819,10 +822,10 @@ class PatternMinerAgent:
 
     def _unique_sources(
         self,
-        sources: List[QueryResult],
-    ) -> Tuple[List[str], List[QueryResult]]:
+        sources: list[QueryResult],
+    ) -> tuple[list[str], list[QueryResult]]:
         """Return sorted unique query IDs and their results."""
-        dedup: Dict[str, QueryResult] = {}
+        dedup: dict[str, QueryResult] = {}
         for res in sources:
             dedup[res.query_id] = res
         ordered_ids = sorted(dedup.keys())
@@ -831,8 +834,8 @@ class PatternMinerAgent:
 
     @staticmethod
     def _confidence_hint_line(
-        confidence_hint: Optional[dict[str, Any]]
-    ) -> Optional[str]:
+        confidence_hint: dict[str, Any] | None
+    ) -> str | None:
         """Format a confidence hint line from Step 22 metadata."""
         if not confidence_hint:
             return None

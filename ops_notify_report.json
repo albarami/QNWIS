@@ -1,0 +1,58 @@
+{
+  "generated_at": "2025-11-10T16:20:33.122386+00:00",
+  "overall_passed": true,
+  "performance": {
+    "sample_size": 100,
+    "p50_ms": 0.5831000162288547,
+    "p95_ms": 0.6754900212399662,
+    "p99_ms": 0.750598113518209
+  },
+  "incidents": {
+    "total": 102,
+    "open": 102,
+    "ack": 0,
+    "silenced": 0,
+    "resolved": 0
+  },
+  "determinism": {
+    "passed": true,
+    "violations": [],
+    "targets_scanned": [
+      "src\\qnwis\\notify",
+      "src\\qnwis\\agents\\__init__.py",
+      "src\\qnwis\\agents\\alert_center.py",
+      "src\\qnwis\\agents\\alert_center_notify.py",
+      "src\\qnwis\\agents\\base.py",
+      "src\\qnwis\\agents\\national_strategy.py",
+      "src\\qnwis\\agents\\pattern_detective.py",
+      "src\\qnwis\\agents\\pattern_miner.py",
+      "src\\qnwis\\agents\\prompts\\__init__.py",
+      "src\\qnwis\\agents\\prompts\\national_strategy_prompts.py",
+      "src\\qnwis\\agents\\prompts\\pattern_detective_prompts.py",
+      "src\\qnwis\\agents\\prompts\\pattern_miner_prompts.py",
+      "src\\qnwis\\agents\\prompts\\time_machine_prompts.py",
+      "src\\qnwis\\agents\\time_machine.py",
+      "src\\qnwis\\agents\\utils\\__init__.py",
+      "src\\qnwis\\agents\\utils\\evidence.py",
+      "src\\qnwis\\agents\\utils\\statistics.py",
+      "src\\qnwis\\agents\\utils\\verification.py"
+    ]
+  },
+  "checks": {
+    "notify_completeness": {
+      "passed": true
+    },
+    "notify_accuracy": {
+      "passed": true
+    },
+    "notify_performance": {
+      "passed": true
+    },
+    "notify_audit": {
+      "passed": true
+    },
+    "notify_determinism": {
+      "passed": true
+    }
+  }
+}
