@@ -5,8 +5,8 @@ Unit tests for materialized view registry.
 from pathlib import Path
 
 import pytest
-import yaml
 
+import yaml
 from src.qnwis.data.materialized.registry import (
     MaterializedRegistry,
     MaterializedSpecError,

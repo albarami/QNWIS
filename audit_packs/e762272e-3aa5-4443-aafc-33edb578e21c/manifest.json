@@ -1,0 +1,84 @@
+{
+  "audit_id": "e762272e-3aa5-4443-aafc-33edb578e21c",
+  "created_at": "2025-11-09T14:41:33.171236+00:00",
+  "request_id": "req-test-123",
+  "registry_version": "v1.0",
+  "code_version": "unknown",
+  "data_sources": [
+    "lmis_workforce"
+  ],
+  "query_ids": [
+    "qid_abc123"
+  ],
+  "freshness": {
+    "lmis_workforce": "2024-01-15T10:00:00Z"
+  },
+  "citations": {
+    "ok": false,
+    "total_numbers": 1,
+    "cited_numbers": 0,
+    "sources_used": {},
+    "uncited_count": 1,
+    "malformed_count": 0,
+    "missing_qid_count": 0,
+    "uncited_examples": [
+      {
+        "value_text": "85%",
+        "message": "Numeric claim '85%' lacks required citation source"
+      }
+    ]
+  },
+  "verification": {
+    "ok": false,
+    "issues_count": 4,
+    "redactions_applied": 1,
+    "stats": {
+      "L2:error": 1,
+      "L3:error": 1,
+      "L4:warning": 1,
+      "L3:warning": 1
+    },
+    "issue_codes": [
+      "L2/UNCITED_NUMBER",
+      "L3/CLAIM_UNCITED",
+      "L4/STALE_DATA",
+      "L3/PII_NAME"
+    ],
+    "result_verification": {
+      "ok": false,
+      "claims_total": 1,
+      "claims_matched": 0,
+      "math_checks": {}
+    }
+  },
+  "orchestration": {
+    "routing": {
+      "mode": "single"
+    },
+    "agents": [
+      "test_agent"
+    ],
+    "timings": {
+      "total_ms": 100
+    },
+    "cache_stats": {}
+  },
+  "reproducibility": {
+    "snippet": "\"\"\"\nReproducibility snippet for audit pack.\nRegistry version: v1.0\n\"\"\"\n\nfrom src.qnwis.data.deterministic.api import DataAPI\n\n# Initialize Data API with the same registry version\napi = DataAPI(registry_version=\"v1.0\")\n\n# Query IDs from original execution\nquery_ids = [\n    \"qid_abc123\"\n]\n\n# Fetch all QueryResults\nresults = []\nfor qid in query_ids:\n    try:\n        result = api.fetch(qid)\n        results.append(result)\n    except Exception as exc:\n        print(f\"Failed to fetch {qid}: {exc}\")\n\n# Compare results to evidence/*.json in audit pack\nprint(f\"Fetched {len(results)} / {len(query_ids)} QueryResults\")\n",
+    "params_hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "registry_version": "v1.0",
+    "code_version": "unknown"
+  },
+  "pack_root": "audit_packs\\e762272e-3aa5-4443-aafc-33edb578e21c",
+  "pack_paths": {
+    "narrative": "narrative.md",
+    "evidence/qid_abc123.json": "evidence\\qid_abc123.json",
+    "sources/lmis_workforce.json": "sources\\lmis_workforce.json",
+    "citations": "verification\\citations.json",
+    "result_verification": "verification\\result_verification.json",
+    "reproducibility": "reproducibility.py",
+    "replay": "replay.json"
+  },
+  "digest_sha256": "b99a8e7b6166d4c86e09478c79ae28a64264bfb843c48256a24c49cf547ae25a",
+  "hmac_sha256": null
+}

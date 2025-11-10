@@ -10,24 +10,25 @@ from __future__ import annotations
 import inspect
 import logging
 import time
-from typing import Any, Dict, Iterable
+from collections.abc import Iterable
+from typing import Any
 
+from ..metrics import MetricsObserver, ensure_observer
 from ..registry import AgentRegistry
 from ..schemas import WorkflowState
-from ..metrics import MetricsObserver, ensure_observer
 
 logger = logging.getLogger(__name__)
 
 
 def invoke_agent(
-    state: Dict[str, Any],
+    state: dict[str, Any],
     registry: AgentRegistry,
     timeout_ms: int = 30000,
     *,
     observer: MetricsObserver | None = None,
     max_retries: int = 1,
     transient_exceptions: Iterable[str] | None = None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Invoke the agent method with task parameters.
 
@@ -43,9 +44,14 @@ def invoke_agent(
         Updated state with agent_output or error
     """
     metrics = ensure_observer(observer)
-    transient_names = {name for name in (transient_exceptions or ())}
+    transient_names = set(transient_exceptions or ())
 
     workflow_state = WorkflowState(**state)
+
+    # Extract prefetch cache if available (backward-compatible)
+    prefetch_cache = workflow_state.prefetch_cache or {}
+    if prefetch_cache:
+        logger.debug("Prefetch cache available with %d entries", len(prefetch_cache))
 
     if workflow_state.route is None:
         error_msg = "No route available for invocation"
@@ -219,7 +225,6 @@ def invoke_agent(
                 }
             except Exception as exc:  # pylint: disable=broad-except
                 elapsed_ms = (time.perf_counter() - attempt_start) * 1000
-                last_error = exc
                 exc_name = type(exc).__name__
                 attempt_logs.append(
                     f"Attempt {attempt}/{attempts_allowed} failed: {exc_name}: {exc}"

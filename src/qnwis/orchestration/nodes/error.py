@@ -9,19 +9,19 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any
 
-from ..schemas import OrchestrationResult, ReportSection, Reproducibility, WorkflowState
 from ..metrics import MetricsObserver, ensure_observer
+from ..schemas import OrchestrationResult, ReportSection, Reproducibility, WorkflowState
 from ..utils import filter_sensitive_params
 
 logger = logging.getLogger(__name__)
 
 
 def error_handler(
-    state: Dict[str, Any],
+    state: dict[str, Any],
     observer: MetricsObserver | None = None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Convert workflow errors into safe OrchestrationResult.
 

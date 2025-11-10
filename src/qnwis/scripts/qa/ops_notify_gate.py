@@ -22,13 +22,20 @@ from ...notify.dispatcher import NotificationDispatcher
 from ...notify.models import Channel, Notification, Severity
 from ...notify.resolver import IncidentResolver
 from ...utils.clock import Clock
-from .determinism_scan import DEFAULT_BANNED_PATTERNS, scan_for_banned_calls
+from .determinism_scan import (
+    DEFAULT_BANNED_PATTERNS,
+    NETWORK_BANNED_PATTERNS,
+    scan_for_banned_calls,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 OPS_NOTIFY_REPORT_JSON = REPO_ROOT / "ops_notify_report.json"
 OPS_NOTIFY_SUMMARY_MD = REPO_ROOT / "OPS_NOTIFY_SUMMARY.md"
 NOTIFY_DIR = REPO_ROOT / "src" / "qnwis" / "notify"
+INCIDENTS_DIR = REPO_ROOT / "src" / "qnwis" / "incidents"
 AGENT_DIR = REPO_ROOT / "src" / "qnwis" / "agents"
+RG4_SUMMARY_JSON = REPO_ROOT / "docs" / "audit" / "ops" / "RG4_SUMMARY.json"
+RG4_BADGE_PATH = REPO_ROOT / "src" / "qnwis" / "docs" / "audit" / "badges" / "rg4_notify.svg"
 
 
 def _modified_agent_files() -> list[Path]:
@@ -60,6 +67,47 @@ def _modified_agent_files() -> list[Path]:
         return []
 
     return sorted(files)
+
+
+def _write_perf_snapshot(performance: dict[str, Any]) -> None:
+    """Persist RG-4 performance sample for audit docs."""
+    if not performance:
+        return
+
+    payload = {
+        "generated_at": Clock().now_iso(),
+        "performance": {
+            "sample_size": performance.get("sample_size"),
+            "p50_ms": performance.get("p50_ms"),
+            "p95_ms": performance.get("p95_ms"),
+            "p99_ms": performance.get("p99_ms"),
+        },
+    }
+    RG4_SUMMARY_JSON.parent.mkdir(parents=True, exist_ok=True)
+    RG4_SUMMARY_JSON.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+
+def _write_rg4_badge(passed: bool) -> Path:
+    """Write RG-4 badge reporting notify gate status."""
+    RG4_BADGE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    color = "#2c974b" if passed else "#d93025"
+    label = "PASS" if passed else "FAIL"
+    svg = f"""<svg xmlns='http://www.w3.org/2000/svg' width='160' height='20'>
+<linearGradient id='rg4_grad' x2='0' y2='100%'>
+  <stop offset='0' stop-color='#bbb' stop-opacity='.1'/>
+  <stop offset='1' stop-opacity='.1'/>
+</linearGradient>
+<rect rx='4' width='160' height='20' fill='#555'/>
+<rect rx='4' x='70' width='90' height='20' fill='{color}'/>
+<path fill='{color}' d='M70 0h4v20h-4z'/>
+<rect rx='4' width='160' height='20' fill='url(#rg4_grad)'/>
+<g fill='#fff' text-anchor='middle' font-family='Verdana' font-size='11'>
+  <text x='35' y='15'>RG-4 Notify</text>
+  <text x='114' y='15'>{label}</text>
+</g>
+</svg>"""
+    RG4_BADGE_PATH.write_text(svg, encoding="utf-8")
+    return RG4_BADGE_PATH
 
 
 class RG4OpsNotificationsGate:
@@ -271,6 +319,7 @@ class RG4OpsNotificationsGate:
                 "p95_ms": p95_latency,
                 "p99_ms": p99_latency,
             }
+            _write_perf_snapshot(self.performance_metrics)
 
             print(f"p50 latency: {p50_latency:.2f}ms")
             print(f"p95 latency: {p95_latency:.2f}ms")
@@ -370,13 +419,22 @@ class RG4OpsNotificationsGate:
 
         try:
             targets = [NOTIFY_DIR]
+            if INCIDENTS_DIR.exists():
+                targets.append(INCIDENTS_DIR)
             modified_agents = _modified_agent_files()
             targets.extend(modified_agents)
 
             violations = scan_for_banned_calls(targets, DEFAULT_BANNED_PATTERNS)
+            network_violations: list[dict[str, object]] = []
+            if INCIDENTS_DIR.exists():
+                network_violations = scan_for_banned_calls(
+                    [INCIDENTS_DIR],
+                    NETWORK_BANNED_PATTERNS,
+                )
             self.determinism_report = {
-                "passed": not violations,
+                "passed": not violations and not network_violations,
                 "violations": violations,
+                "network_violations": network_violations,
                 "targets_scanned": [
                     str(path.relative_to(REPO_ROOT)) if isinstance(path, Path) and path.is_absolute()
                     else str(path)
@@ -387,17 +445,33 @@ class RG4OpsNotificationsGate:
             if violations:
                 print("[ERROR] Non-deterministic code found:")
                 for violation in violations:
-                    file_path = violation.get('file')
-                    line = violation.get('line')
-                    pattern = violation.get('pattern')
+                    file_path = violation.get("file")
+                    line = violation.get("line")
+                    pattern = violation.get("pattern")
+                    print(f"  - {file_path}:{line} -> {pattern}")
+                return False
+
+            if network_violations:
+                print("[ERROR] Network/SMTP imports detected in incidents package:")
+                for violation in network_violations:
+                    file_path = violation.get("file")
+                    line = violation.get("line")
+                    pattern = violation.get("pattern")
                     print(f"  - {file_path}:{line} -> {pattern}")
                 return False
 
             print("[OK] No banned datetime/time/random usage detected")
+            if INCIDENTS_DIR.exists():
+                print("[OK] Incidents package is free of network/SMTP imports")
             return True
 
         except Exception as e:
-            self.determinism_report = {"passed": False, "error": str(e), "violations": []}
+            self.determinism_report = {
+                "passed": False,
+                "error": str(e),
+                "violations": [],
+                "network_violations": [],
+            }
             print(f"[ERROR] Determinism check error: {e}")
             return False
 
@@ -442,12 +516,20 @@ class RG4OpsNotificationsGate:
             "",
             f"- Generated: {payload.get('generated_at')}",
             f"- RG-4 Status: {'PASS' if payload.get('overall_passed') else 'FAIL'}",
-            "",
-            "## Performance (ms)",
-            "",
-            "| Metric | Value |",
-            "| --- | --- |",
+            f"- Perf Snapshot: `{RG4_SUMMARY_JSON.relative_to(REPO_ROOT)}`",
         ]
+        badge_rel = payload.get("badge_path")
+        if badge_rel:
+            lines.append(f"- Badge: `{badge_rel}`")
+        lines.extend(
+            [
+                "",
+                "## Performance (ms)",
+                "",
+                "| Metric | Value |",
+                "| --- | --- |",
+            ]
+        )
         perf = payload.get("performance") or {}
         lines.append(f"| p50 | {fmt_latency('p50_ms')} |")
         lines.append(f"| p95 | {fmt_latency('p95_ms')} |")
@@ -508,6 +590,11 @@ class RG4OpsNotificationsGate:
     ) -> None:
         """Write JSON + Markdown artifacts."""
         payload = self.build_summary_payload()
+        badge_path = _write_rg4_badge(bool(payload.get("overall_passed")))
+        try:
+            payload["badge_path"] = str(badge_path.relative_to(REPO_ROOT))
+        except ValueError:
+            payload["badge_path"] = str(badge_path)
         json_path.parent.mkdir(parents=True, exist_ok=True)
         markdown_path.parent.mkdir(parents=True, exist_ok=True)
         json_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")

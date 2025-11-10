@@ -12,8 +12,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ..cache.keys import make_cache_key
 from ..cache.redis_cache import DeterministicRedisCache
@@ -24,17 +25,19 @@ from ..cache.warmup import (
 )
 from ..data.deterministic.registry import REGISTRY_VERSION
 
+logger = logging.getLogger(__name__)
+
 NEGATIVE_CACHE_TTL = 5 * 60  # Align with middleware default
 
 
 def warmup(
     cache: DeterministicRedisCache,
-    samples: List[Dict[str, Any]],
+    samples: list[dict[str, Any]],
     client: Any,
     *,
-    version: Optional[str] = None,
-    negative_ttl: Optional[int] = NEGATIVE_CACHE_TTL,
-) -> Dict[str, int]:
+    version: str | None = None,
+    negative_ttl: int | None = NEGATIVE_CACHE_TTL,
+) -> dict[str, int]:
     """
     Run DataClient calls for commonly used queries to pre-populate cache.
 
@@ -69,7 +72,7 @@ def warmup(
     return {"sets": sets, "hits": hits}
 
 
-def _print_json(payload: Dict[str, Any]) -> None:
+def _print_json(payload: dict[str, Any]) -> None:
     """Print a JSON object with stable formatting."""
     print(json.dumps(payload, separators=(",", ":"), sort_keys=True))
 
@@ -114,6 +117,7 @@ def main() -> None:
 
     cache = DeterministicRedisCache()
     packs_path = Path(args.packs_path)
+    logger.info("Executing cache CLI action=%s", args.action)
 
     if args.action == "info":
         payload = {
@@ -134,6 +138,7 @@ def main() -> None:
         try:
             packs = list_warmup_packs(packs_path)
         except WarmupPackError as exc:
+            logger.debug("Warmup pack listing failed: path=%s error=%s", packs_path, exc, exc_info=exc)
             payload = {
                 "action": "list-packs",
                 "error": str(exc),
@@ -149,6 +154,13 @@ def main() -> None:
         try:
             specs = load_warmup_pack(args.pack, packs_path)
         except WarmupPackError as exc:
+            logger.debug(
+                "Warmup pack load failed: pack=%s path=%s error=%s",
+                args.pack,
+                packs_path,
+                exc,
+                exc_info=exc,
+            )
             payload = {
                 "action": "show-pack",
                 "pack": args.pack,

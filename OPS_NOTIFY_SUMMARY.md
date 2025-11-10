@@ -1,14 +1,16 @@
 # RG-4 Ops Notify Summary
 
-- Generated: 2025-11-10T20:36:57.904526+00:00
+- Generated: 2025-11-10T21:15:05.767042+00:00
 - RG-4 Status: PASS
+- Perf Snapshot: `docs\audit\ops\RG4_SUMMARY.json`
+- Badge: `src\qnwis\docs\audit\badges\rg4_notify.svg`
 
 ## Performance (ms)
 
 | Metric | Value |
 | --- | --- |
 | p50 | 0.60 |
-| p95 | 0.75 |
+| p95 | 0.74 |
 | p99 | 0.80 |
 | Sample Size | 100 |
 

@@ -275,7 +275,7 @@ from qnwis.orchestration.graph import create_graph
 # Natural language
 task = OrchestrationTask(
     query_text="Urgent: spike in turnover in Hospitality now",
-    user_id="analyst@mol.gov.qa",
+    user_id="analyst [at] mol.gov.qa",
     request_id="req_12345"
 )
 
@@ -283,7 +283,7 @@ task = OrchestrationTask(
 task = OrchestrationTask(
     intent="pattern.anomalies",
     params={"sector": "Hospitality", "z_threshold": 2.5},
-    user_id="analyst@mol.gov.qa"
+    user_id="analyst [at] mol.gov.qa"
 )
 
 result = graph.run(task)

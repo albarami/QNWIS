@@ -7,7 +7,7 @@ and agent call specifications used by the Coordinator.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, NotRequired, TypedDict
+from typing import Any, NotRequired, TypedDict
 
 
 class PrefetchSpec(TypedDict):
@@ -21,7 +21,7 @@ class PrefetchSpec(TypedDict):
     """
 
     fn: str
-    params: Dict[str, Any]
+    params: dict[str, Any]
     cache_key: str
 
 
@@ -39,9 +39,9 @@ class AgentCallSpec(TypedDict):
 
     intent: str
     method: str
-    params: Dict[str, Any]
+    params: dict[str, Any]
     alias: NotRequired[str]
-    depends_on: NotRequired[List[str]]
+    depends_on: NotRequired[list[str]]
 
 
 class ExecutionTrace(TypedDict):
@@ -65,5 +65,5 @@ class ExecutionTrace(TypedDict):
     elapsed_ms: float
     attempt: int
     success: bool
-    warnings: List[str]
+    warnings: list[str]
     error: NotRequired[str]

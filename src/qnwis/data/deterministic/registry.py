@@ -1,30 +1,98 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
+from hashlib import sha256
 from pathlib import Path
 
 import yaml  # type: ignore[import-untyped]
 
 from .models import QuerySpec
 
+PROJECT_ROOT = Path(__file__).resolve().parents[4]
+
+
+def _resolve_default_root() -> Path:
+    """Determine the default queries root, preferring bundled sources."""
+    candidates = [
+        PROJECT_ROOT / "data" / "queries",
+        PROJECT_ROOT / "src" / "qnwis" / "data" / "queries",
+    ]
+    for candidate in candidates:
+        if candidate.exists() and any(candidate.glob("*.yaml")):
+            return candidate
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return candidates[-1]
+
+
+DEFAULT_QUERY_ROOT = _resolve_default_root()
+
+
+def _digest_paths(files: Iterable[Path]) -> str:
+    """Compute deterministic checksum for the provided YAML files."""
+    hasher = sha256()
+    for file_path in sorted(files, key=lambda p: p.name):
+        hasher.update(file_path.name.encode("utf-8"))
+        hasher.update(b"\0")
+        hasher.update(file_path.read_bytes())
+    return hasher.hexdigest()[:12]
+
 
 class QueryRegistry:
     """In-memory registry of deterministic query specifications."""
 
     def __init__(self, root: str) -> None:
+        """
+        Initialize a registry pointing at the given directory.
+
+        Args:
+            root: Directory containing deterministic query YAML definitions.
+        """
         self.root = Path(root)
         self._items: dict[str, QuerySpec] = {}
+        self._version: str = "unloaded"
+
+    @property
+    def version(self) -> str:
+        """Checksum representing the currently loaded registry contents."""
+        return self._version
+
+    @staticmethod
+    def compute_version(root: str) -> str:
+        """
+        Compute a stable checksum for all YAML files in ``root``.
+
+        Args:
+            root: Directory containing deterministic query definitions.
+
+        Returns:
+            First 12 characters of the SHA256 digest across file names and
+            contents. Returns ``"empty"``, if the directory exists but has no
+            YAML definitions.
+        """
+        directory = Path(root)
+        if not directory.exists():
+            raise FileNotFoundError(f"Query registry directory not found: {directory}")
+        files = list(directory.glob("*.yaml"))
+        if not files:
+            return "empty"
+        return _digest_paths(files)
 
     def load_all(self) -> None:
         """Load every YAML query definition from the registry root."""
         if not self.root.exists():
             raise FileNotFoundError(f"Query registry directory not found: {self.root}")
 
-        for file_path in self.root.glob("*.yaml"):
-            data = yaml.safe_load(file_path.read_text(encoding="utf-8"))
+        files = list(self.root.glob("*.yaml"))
+        for file_path in sorted(files, key=lambda p: p.name):
+            data = yaml.safe_load(file_path.read_text(encoding="utf-8")) or {}
             spec = QuerySpec(**data)
             if spec.id in self._items:
                 raise ValueError(f"Duplicate QuerySpec id: {spec.id}")
             self._items[spec.id] = spec
+
+        self._version = _digest_paths(files) if files else "empty"
 
     def get(self, qid: str) -> QuerySpec:
         """Retrieve a query specification by ID."""
@@ -33,3 +101,14 @@ class QueryRegistry:
     def all_ids(self) -> list[str]:
         """Return all registered query identifiers."""
         return list(self._items.keys())
+
+
+def _default_registry_version() -> str:
+    """Best-effort computation of the registry checksum for default root."""
+    try:
+        return QueryRegistry.compute_version(str(DEFAULT_QUERY_ROOT))
+    except FileNotFoundError:
+        return "dev"
+
+
+REGISTRY_VERSION: str = _default_registry_version()

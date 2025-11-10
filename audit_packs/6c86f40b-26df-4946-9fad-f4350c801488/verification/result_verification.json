@@ -1,0 +1,49 @@
+{
+  "ok": false,
+  "claims_total": 1,
+  "claims_matched": 0,
+  "issues": [
+    {
+      "code": "CLAIM_UNCITED",
+      "message": "Claim '85%' lacks citation source",
+      "severity": "error",
+      "details": {
+        "value": "85.0",
+        "unit": "percent",
+        "sentence": "## Workforce Retention Analysis\n\nRetention rate is 85% in the oil and gas sector."
+      }
+    }
+  ],
+  "bindings": [
+    {
+      "claim": {
+        "value_text": "85%",
+        "value": 85.0,
+        "unit": "percent",
+        "span": [
+          51,
+          54
+        ],
+        "sentence": "## Workforce Retention Analysis\n\nRetention rate is 85% in the oil and gas sector.",
+        "citation_prefix": null,
+        "query_id": null,
+        "source_family": null
+      },
+      "matched": false,
+      "matched_source_qid": null,
+      "matched_location": null,
+      "candidate_qids": [],
+      "ambiguous": false,
+      "nearest_source_qid": null,
+      "nearest_location": null,
+      "nearest_value": null,
+      "nearest_diff": null,
+      "failure_reason": null,
+      "derived_consistent": null,
+      "derived_recomputed_value": null
+    }
+  ],
+  "math_checks": {},
+  "math_check_details": {},
+  "runtime_ms": 0.4379999591037631
+}

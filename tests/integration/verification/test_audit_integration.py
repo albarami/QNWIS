@@ -8,7 +8,6 @@ audit summaries.
 
 import tempfile
 from pathlib import Path
-from typing import List
 
 import pytest
 
@@ -24,7 +23,7 @@ from src.qnwis.verification.schemas import VerificationSummary
 
 
 @pytest.fixture
-def mock_query_results() -> List[QueryResult]:
+def mock_query_results() -> list[QueryResult]:
     """Create mock QueryResults for testing."""
     return [
         QueryResult(
@@ -77,7 +76,7 @@ class TestAuditIntegration:
 
     def test_audit_manifest_exists_in_state(
         self,
-        mock_query_results: List[QueryResult],
+        mock_query_results: list[QueryResult],
         temp_audit_dir: Path,
     ) -> None:
         """
@@ -143,7 +142,7 @@ class TestAuditIntegration:
 
     def test_audit_pack_written_and_verified(
         self,
-        mock_query_results: List[QueryResult],
+        mock_query_results: list[QueryResult],
         temp_audit_dir: Path,
     ) -> None:
         """
@@ -204,7 +203,7 @@ class TestAuditIntegration:
 
     def test_final_formatted_report_contains_audit_summary(
         self,
-        mock_query_results: List[QueryResult],
+        mock_query_results: list[QueryResult],
         temp_audit_dir: Path,
     ) -> None:
         """
@@ -272,7 +271,7 @@ For reproducibility instructions, see: `{final_manifest.pack_root}/reproducibili
 
     def test_minimal_orchestration_with_mocked_results(
         self,
-        mock_query_results: List[QueryResult],
+        mock_query_results: list[QueryResult],
         temp_audit_dir: Path,
     ) -> None:
         """

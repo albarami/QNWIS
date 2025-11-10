@@ -1,5 +1,6 @@
 """Agent modules for QNWIS multi-agent system."""
 
+from .alert_center import AlertCenterAgent
 from .base import (
     AgentReport,
     DataClient,
@@ -12,11 +13,15 @@ from .labour_economist import LabourEconomistAgent
 from .national_strategy import NationalStrategyAgent
 from .nationalization import NationalizationAgent
 from .pattern_detective import PatternDetectiveAgent
+from .predictor import PredictorAgent
 from .reporting.jsonl import write_report
+from .scenario_agent import ScenarioAgent
 from .skills import SkillsAgent
+from .time_machine import TimeMachineAgent
 
 __all__ = [
     "AgentReport",
+    "AlertCenterAgent",
     "DataClient",
     "Evidence",
     "Insight",
@@ -26,6 +31,9 @@ __all__ = [
     "NationalStrategyAgent",
     "NationalizationAgent",
     "PatternDetectiveAgent",
+    "PredictorAgent",
+    "ScenarioAgent",
     "SkillsAgent",
+    "TimeMachineAgent",
     "write_report",
 ]

@@ -7,12 +7,12 @@ all numeric claims are properly cited with source prefixes and query IDs.
 
 from __future__ import annotations
 
-from bisect import bisect_right
-from dataclasses import dataclass
 import logging
 import time
-from typing import List, Tuple
+from bisect import bisect_right
+from dataclasses import dataclass
 
+from ..data.deterministic.models import QueryResult
 from .citation_patterns import (
     NUMBER,
     extract_number_value,
@@ -22,7 +22,6 @@ from .citation_patterns import (
     is_year,
 )
 from .schemas import CitationIssue, CitationReport, CitationRules, Severity
-from ..data.deterministic.models import QueryResult
 
 logger = logging.getLogger(__name__)
 BULLET_MARKERS = ("-", "*", "+")
@@ -135,7 +134,7 @@ def _maybe_use_adjacent_bullet_context(
     return None
 
 
-def extract_numeric_spans(text: str, rules: CitationRules) -> List[Tuple[int, int, str]]:
+def extract_numeric_spans(text: str, rules: CitationRules) -> list[tuple[int, int, str]]:
     """
     Extract spans of candidate numeric claims from text.
 
@@ -148,7 +147,7 @@ def extract_numeric_spans(text: str, rules: CitationRules) -> List[Tuple[int, in
     Returns:
         List of (start, end, token) tuples for numeric claims
     """
-    spans: List[Tuple[int, int, str]] = []
+    spans: list[tuple[int, int, str]] = []
 
     for match in NUMBER.finditer(text):
         token = match.group(0)
@@ -278,7 +277,7 @@ def validate_context_has_source_and_qid(
 
 
 def map_sources_to_queryresults(
-    prefix: str, qresults: List[QueryResult], rules: CitationRules
+    prefix: str, qresults: list[QueryResult], rules: CitationRules
 ) -> bool:
     """
     Verify that cited source has corresponding QueryResult data.
@@ -313,7 +312,7 @@ def map_sources_to_queryresults(
 
 
 def enforce_citations(
-    text_md: str, qresults: List[QueryResult], rules: CitationRules
+    text_md: str, qresults: list[QueryResult], rules: CitationRules
 ) -> CitationReport:
     """
     Run citation enforcement on agent narrative text.
@@ -338,9 +337,9 @@ def enforce_citations(
     logger.debug("Found %d numeric claims to validate", total_numbers)
     lines, line_starts = _splitlines_with_positions(text_md)
 
-    uncited: List[CitationIssue] = []
-    malformed: List[CitationIssue] = []
-    missing_qid: List[CitationIssue] = []
+    uncited: list[CitationIssue] = []
+    malformed: list[CitationIssue] = []
+    missing_qid: list[CitationIssue] = []
     sources_used: dict[str, int] = {}
     cited_count = 0
 

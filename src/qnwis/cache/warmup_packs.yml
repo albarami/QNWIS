@@ -1,0 +1,44 @@
+# Declarative warmup packs for deterministic cache priming.
+# Each entry specifies a DataClient method (`fn`) and the parameters
+# used to fetch the deterministic QueryResult.
+
+core_kpis:
+  - fn: get_retention_by_company
+    params:
+      sector: "All"
+      horizon_months: 12
+      min_employees: 100
+  - fn: get_salary_statistics
+    params:
+      sector: "All"
+      metric: "median_salary"
+      rolling_quarters: 4
+  - fn: get_employee_transitions
+    params:
+      source_sector: "Energy"
+      target_sector: "Construction"
+      window_months: 12
+
+energy_focus:
+  - fn: get_qatarization_rates
+    params:
+      sector: "Energy"
+      time_granularity: "quarter"
+      lookback_periods: 8
+  - fn: get_gcc_indicator
+    params:
+      indicator: "employment_energy"
+      country: "QA"
+      frequency: "M"
+
+global_economy:
+  - fn: get_world_bank_indicator
+    params:
+      indicator: "NY.GDP.MKTP.KD.ZG"
+      country: "QAT"
+      frequency: "A"
+  - fn: get_world_bank_indicator
+    params:
+      indicator: "SL.UEM.TOTL.NE.ZS"
+      country: "SAU"
+      frequency: "A"

@@ -11,11 +11,10 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 import yaml
 
-from ..verification.engine import VerificationEngine
 from ..verification.schemas import VerificationConfig
 
 
@@ -34,13 +33,13 @@ def load_config(config_path: str) -> VerificationConfig:
     if not config_file.exists():
         raise FileNotFoundError(f"Config file not found: {config_path}")
 
-    with open(config_file, "r", encoding="utf-8") as f:
+    with open(config_file, encoding="utf-8") as f:
         config_data = yaml.safe_load(f)
 
     return VerificationConfig.model_validate(config_data)
 
 
-def load_report(report_path: str) -> Dict[str, Any]:
+def load_report(report_path: str) -> dict[str, Any]:
     """
     Load saved OrchestrationResult from JSON file.
 
@@ -55,7 +54,7 @@ def load_report(report_path: str) -> Dict[str, Any]:
     if not report_file.exists():
         raise FileNotFoundError(f"Report file not found: {report_path}")
 
-    with open(report_file, "r", encoding="utf-8") as f:
+    with open(report_file, encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -95,14 +94,14 @@ def main() -> int:
 
     try:
         # Load configuration
-        config = load_config(args.config)
+        load_config(args.config)
 
         # Load report
         report = load_report(args.report_json)
 
         # Extract narrative text from sections
         sections = report.get("sections", [])
-        narrative = "\n\n".join(
+        "\n\n".join(
             section.get("body_md", "") for section in sections
         )
 

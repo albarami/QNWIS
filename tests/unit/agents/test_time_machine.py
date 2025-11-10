@@ -28,7 +28,7 @@ class MockDataClient:
     def __init__(self, series_data=None):
         """
         Initialize mock client.
-        
+
         Args:
             series_data: Dict mapping query_id to list of (period, value) tuples
         """

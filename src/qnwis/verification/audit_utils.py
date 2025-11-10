@@ -12,7 +12,7 @@ import hmac
 import json
 import re
 import unicodedata
-from typing import Any, List
+from typing import Any
 
 
 def canonical_json(obj: Any) -> str:
@@ -131,7 +131,7 @@ def slugify_filename(value: str, default: str = "artifact") -> str:
 
 
 def reproducibility_snippet(
-    query_ids: List[str],
+    query_ids: list[str],
     registry_version: str,
 ) -> str:
     """
@@ -151,7 +151,7 @@ Reproducibility snippet for audit pack.
 Registry version: {registry_version}
 """
 
-from src.qnwis.data.deterministic.api import DataAPI
+from qnwis.data.deterministic.api import DataAPI
 
 # Initialize Data API with the same registry version
 api = DataAPI(registry_version="{registry_version}")

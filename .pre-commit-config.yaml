@@ -1,0 +1,63 @@
+repos:
+  - repo: local
+    hooks:
+      - id: placeholder-scan
+        name: Placeholder Scan
+        entry: python src/qnwis/scripts/qa/placeholder_scan.py --limit 200
+        language: system
+        pass_filenames: false
+      - id: ruff-check
+        name: Ruff Check
+        entry: >
+          python -m ruff check
+          src/qnwis
+          tests
+          src/qnwis/alerts
+          src/qnwis/monitoring
+          src/qnwis/agents/alert_center.py
+          src/qnwis/scripts/qa/ops_gate.py
+          src/qnwis/scripts/qa/determinism_scan.py
+        language: system
+        pass_filenames: false
+      - id: flake8-lint
+        name: Flake8 Lint
+        entry: >
+          python -m flake8
+          src/qnwis
+          tests
+          src/qnwis/alerts
+          src/qnwis/monitoring
+          src/qnwis/agents/alert_center.py
+          src/qnwis/scripts/qa/ops_gate.py
+          src/qnwis/scripts/qa/determinism_scan.py
+        language: system
+        pass_filenames: false
+      - id: mypy-fast
+        name: Mypy Fast Mode
+        entry: >
+          python -m mypy --strict
+          src/qnwis/scripts/qa
+          src/qnwis/scenario
+          src/qnwis/agents/scenario_agent.py
+          src/qnwis/cli/qnwis_scenario.py
+          src/qnwis/alerts
+          src/qnwis/monitoring
+          src/qnwis/agents/alert_center.py
+          src/qnwis/scripts/qa/ops_gate.py
+          src/qnwis/scripts/qa/determinism_scan.py
+        language: system
+        pass_filenames: false
+      - id: alert-pytest-slice
+        name: Alert Slice Pytest
+        entry: >
+          python -m pytest -q
+          tests/unit/alerts
+          tests/unit/agents/test_alert_center.py
+          tests/integration/agents/test_alert_flow.py
+        language: system
+        pass_filenames: false
+      - id: step29-notify-slice
+        name: Step 29 Notify Slice
+        entry: python src/qnwis/scripts/qa/notify_slice.py
+        language: system
+        pass_filenames: false

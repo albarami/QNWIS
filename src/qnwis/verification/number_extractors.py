@@ -8,7 +8,6 @@ classifying claims as counts, percentages, currency values, or ranges.
 from __future__ import annotations
 
 import re
-from typing import List, Tuple
 
 from .citation_patterns import extract_qid, extract_source_prefix
 from .schemas import NumericClaim, Unit
@@ -79,7 +78,7 @@ def _normalize_number(num_str: str, decimal_str: str | None, sign: str | None) -
     return value
 
 
-def _find_sentence_bounds(text: str, start: int) -> Tuple[int, int]:
+def _find_sentence_bounds(text: str, start: int) -> tuple[int, int]:
     """
     Find sentence boundaries around a position.
 
@@ -100,11 +99,10 @@ def _find_sentence_bounds(text: str, start: int) -> Tuple[int, int]:
     # Look forward for sentence end
     sent_end = len(text)
     for i in range(start, len(text)):
-        if text[i] in (".", "!", "?"):
-            # Check if followed by space or newline (real sentence boundary)
-            if i + 1 >= len(text) or text[i + 1] in (" ", "\n", "\t"):
-                sent_end = i + 1
-                break
+        # Check if followed by space or newline (real sentence boundary)
+        if text[i] in (".", "!", "?") and (i + 1 >= len(text) or text[i + 1] in (" ", "\n", "\t")):
+            sent_end = i + 1
+            break
         # Double newline is paragraph boundary
         if i < len(text) - 1 and text[i:i + 2] == "\n\n":
             sent_end = i
@@ -115,10 +113,10 @@ def _find_sentence_bounds(text: str, start: int) -> Tuple[int, int]:
 
 def extract_numeric_claims(
     text: str,
-    allowed_prefixes: List[str] | None = None,
+    allowed_prefixes: list[str] | None = None,
     ignore_years: bool = True,
     ignore_below: float = 1.0,
-) -> List[NumericClaim]:
+) -> list[NumericClaim]:
     """
     Scan narrative Markdown and extract numeric claims with unit classification.
 
@@ -146,7 +144,7 @@ def extract_numeric_claims(
             "According to World Bank:",
         ]
 
-    claims: List[NumericClaim] = []
+    claims: list[NumericClaim] = []
 
     for match in NUM_TOKEN.finditer(text):
         value_text = match.group(0).strip()

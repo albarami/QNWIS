@@ -8,7 +8,7 @@ with proper indexing for performance.
 from __future__ import annotations
 
 import textwrap
-from typing import Any, List
+from typing import Any
 
 
 class PostgresMaterializer:
@@ -29,7 +29,7 @@ class PostgresMaterializer:
         self.db = db
 
     def create_or_replace(
-        self, name: str, sql_select: str, indexes: List[str]
+        self, name: str, sql_select: str, indexes: list[str]
     ) -> None:
         """
         Create or refresh a materialized view with indexes.

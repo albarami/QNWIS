@@ -24,6 +24,16 @@ sanity:
     rate_0_1: true
   - metric: "qatarization_rate"
     rate_0_1: true
+  - metric: "retention"
+    must_be_non_negative: true
+  - metric: "qatarization"
+    must_be_non_negative: true
+  - metric: "employment"
+    must_be_non_negative: true
+  - metric: "turnover"
+    must_be_non_negative: true
+  - metric: "attrition"
+    must_be_non_negative: true
   - metric: "headcount"
     must_be_non_negative: true
   - metric: "employees"
@@ -31,6 +41,22 @@ sanity:
   - metric: "salary"
     must_be_non_negative: true
     min_value: 0
+  - metric: "wage"
+    must_be_non_negative: true
+  - metric: "productivity"
+    must_be_non_negative: true
+  - metric: "baseline"
+    must_be_non_negative: true
+  - metric: "adjusted"
+    must_be_non_negative: true
+  - metric: "delta_pct"
+    min_value: -100.0
+    max_value: 200.0
 
 # Freshness constraint (applies to all sources)
 freshness_max_hours: 72
+
+# Citation enforcement
+# Citation rules are loaded from citation.yml
+# Set citation_enforcement_enabled to false to disable
+citation_enforcement_enabled: true

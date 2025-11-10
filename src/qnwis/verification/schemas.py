@@ -6,7 +6,7 @@ Defines Pydantic models for verification rules, issues, and summaries.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional, Tuple
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -30,7 +30,7 @@ class Issue(BaseModel):
     code: str
     message: str
     severity: Severity
-    details: Dict[str, Any] = Field(default_factory=dict)
+    details: dict[str, Any] = Field(default_factory=dict)
 
 
 class CrossCheckRule(BaseModel):
@@ -67,7 +67,7 @@ class PrivacyRule(BaseModel):
     k_anonymity: int = 15
     redact_email: bool = True
     redact_ids_min_digits: int = 10
-    allow_names_when_role: List[str] = Field(default_factory=list)
+    allow_names_when_role: list[str] = Field(default_factory=list)
 
 
 class SanityRule(BaseModel):
@@ -85,8 +85,8 @@ class SanityRule(BaseModel):
     """
 
     metric: str
-    min_value: Optional[float] = None
-    max_value: Optional[float] = None
+    min_value: float | None = None
+    max_value: float | None = None
     must_be_non_negative: bool = False
     rate_0_1: bool = False
 
@@ -102,9 +102,9 @@ class VerificationConfig(BaseModel):
         freshness_max_hours: Maximum data age in hours
     """
 
-    crosschecks: List[CrossCheckRule] = Field(default_factory=list)
+    crosschecks: list[CrossCheckRule] = Field(default_factory=list)
     privacy: PrivacyRule = PrivacyRule()
-    sanity: List[SanityRule] = Field(default_factory=list)
+    sanity: list[SanityRule] = Field(default_factory=list)
     freshness_max_hours: int = 72
 
 
@@ -127,7 +127,7 @@ class CitationRules(BaseModel):
         adjacent_bullet_window: Number of adjacent bullet lines to consider for citations
     """
 
-    allowed_prefixes: List[str] = Field(
+    allowed_prefixes: list[str] = Field(
         default_factory=lambda: [
             "Per LMIS:",
             "According to GCC-STAT:",
@@ -135,7 +135,7 @@ class CitationRules(BaseModel):
         ]
     )
     require_query_id: bool = True
-    query_id_patterns: List[str] = Field(
+    query_id_patterns: list[str] = Field(
         default_factory=lambda: [
             r"\bQID[:=]\s*[A-Za-z0-9_-]{8,}\b",
             r"\bquery_id\s*=\s*[A-Za-z0-9_-]{8,}\b",
@@ -143,14 +143,14 @@ class CitationRules(BaseModel):
     )
     ignore_years: bool = True
     ignore_numbers_below: float = 1.0
-    ignore_tokens: List[str] = Field(
+    ignore_tokens: list[str] = Field(
         default_factory=lambda: ["ISO-3166", "NOC", "PO Box", "RFC", "ID"]
     )
-    source_mapping: Dict[str, List[str]] = Field(default_factory=dict)
+    source_mapping: dict[str, list[str]] = Field(default_factory=dict)
     missing_qid_severity: Severity = "error"
-    strict_qid_keywords: List[str] = Field(default_factory=list)
+    strict_qid_keywords: list[str] = Field(default_factory=list)
     strict_qid_severity: Severity = "error"
-    source_synonyms: Dict[str, List[str]] = Field(
+    source_synonyms: dict[str, list[str]] = Field(
         default_factory=lambda: {
             "According to GCC-STAT:": ["According to GCCSTAT:", "According to GCC STAT:"]
         }
@@ -179,7 +179,7 @@ class CitationIssue(BaseModel):
     message: str
     severity: Severity = "error"
     value_text: str
-    span: List[int] = Field(default_factory=list)
+    span: list[int] = Field(default_factory=list)
 
 
 class CitationReport(BaseModel):
@@ -200,10 +200,10 @@ class CitationReport(BaseModel):
     ok: bool
     total_numbers: int
     cited_numbers: int
-    uncited: List[CitationIssue] = Field(default_factory=list)
-    malformed: List[CitationIssue] = Field(default_factory=list)
-    missing_qid: List[CitationIssue] = Field(default_factory=list)
-    sources_used: Dict[str, int] = Field(default_factory=dict)
+    uncited: list[CitationIssue] = Field(default_factory=list)
+    malformed: list[CitationIssue] = Field(default_factory=list)
+    missing_qid: list[CitationIssue] = Field(default_factory=list)
+    sources_used: dict[str, int] = Field(default_factory=dict)
     runtime_ms: float | None = None
 
 
@@ -224,14 +224,14 @@ class VerificationSummary(BaseModel):
     """
 
     ok: bool
-    issues: List[Issue] = Field(default_factory=list)
-    redacted_text: Optional[str] = None
+    issues: list[Issue] = Field(default_factory=list)
+    redacted_text: str | None = None
     applied_redactions: int = 0
-    stats: Dict[str, int] = Field(default_factory=dict)
-    summary_md: Optional[str] = None
-    redaction_reason_codes: List[str] = Field(default_factory=list)
-    citation_report: Optional[CitationReport] = None
-    result_verification_report: Optional["ResultVerificationReport"] = None
+    stats: dict[str, int] = Field(default_factory=dict)
+    summary_md: str | None = None
+    redaction_reason_codes: list[str] = Field(default_factory=list)
+    citation_report: CitationReport | None = None
+    result_verification_report: ResultVerificationReport | None = None
 
 
 class NumericClaim(BaseModel):
@@ -252,11 +252,11 @@ class NumericClaim(BaseModel):
     value_text: str
     value: float
     unit: Unit
-    span: Tuple[int, int]
+    span: tuple[int, int]
     sentence: str
-    citation_prefix: Optional[str] = None
-    query_id: Optional[str] = None
-    source_family: Optional[str] = None
+    citation_prefix: str | None = None
+    query_id: str | None = None
+    source_family: str | None = None
 
 
 class ClaimBinding(BaseModel):
@@ -281,17 +281,17 @@ class ClaimBinding(BaseModel):
 
     claim: NumericClaim
     matched: bool
-    matched_source_qid: Optional[str] = None
-    matched_location: Optional[str] = None
-    candidate_qids: List[str] = Field(default_factory=list)
+    matched_source_qid: str | None = None
+    matched_location: str | None = None
+    candidate_qids: list[str] = Field(default_factory=list)
     ambiguous: bool = False
-    nearest_source_qid: Optional[str] = None
-    nearest_location: Optional[str] = None
-    nearest_value: Optional[float] = None
-    nearest_diff: Optional[float] = None
-    failure_reason: Optional[str] = None
-    derived_consistent: Optional[bool] = None
-    derived_recomputed_value: Optional[float] = None
+    nearest_source_qid: str | None = None
+    nearest_location: str | None = None
+    nearest_value: float | None = None
+    nearest_diff: float | None = None
+    failure_reason: str | None = None
+    derived_consistent: bool | None = None
+    derived_recomputed_value: float | None = None
 
 
 class VerificationIssue(BaseModel):
@@ -315,7 +315,7 @@ class VerificationIssue(BaseModel):
     ]
     message: str
     severity: Severity
-    details: Dict[str, str] = Field(default_factory=dict)
+    details: dict[str, str] = Field(default_factory=dict)
 
 
 class ResultVerificationReport(BaseModel):
@@ -336,8 +336,8 @@ class ResultVerificationReport(BaseModel):
     ok: bool
     claims_total: int
     claims_matched: int
-    issues: List[VerificationIssue] = Field(default_factory=list)
-    bindings: List[ClaimBinding] = Field(default_factory=list)
-    math_checks: Dict[str, bool] = Field(default_factory=dict)
-    math_check_details: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
-    runtime_ms: Optional[float] = None
+    issues: list[VerificationIssue] = Field(default_factory=list)
+    bindings: list[ClaimBinding] = Field(default_factory=list)
+    math_checks: dict[str, bool] = Field(default_factory=dict)
+    math_check_details: dict[str, dict[str, Any]] = Field(default_factory=dict)
+    runtime_ms: float | None = None

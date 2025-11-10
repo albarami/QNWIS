@@ -8,7 +8,7 @@ that should be prefetched after deployment to avoid cold starts.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 import yaml
 
@@ -19,7 +19,7 @@ class WarmupPackError(RuntimeError):
     """Raised when a warmup pack file is missing or malformed."""
 
 
-def _load_all(path: Path = PACKS_PATH) -> Dict[str, List[Dict[str, Any]]]:
+def _load_all(path: Path = PACKS_PATH) -> dict[str, list[dict[str, Any]]]:
     """Load all warmup packs from YAML."""
     if not path.exists():
         raise WarmupPackError(f"Warmup pack file not found: {path}")
@@ -27,11 +27,11 @@ def _load_all(path: Path = PACKS_PATH) -> Dict[str, List[Dict[str, Any]]]:
     if not isinstance(data, dict):
         raise WarmupPackError("Warmup pack YAML must be a mapping of pack names to specs.")
 
-    packs: Dict[str, List[Dict[str, Any]]] = {}
+    packs: dict[str, list[dict[str, Any]]] = {}
     for name, specs in data.items():
         if not isinstance(specs, list):
             raise WarmupPackError(f"Warmup pack '{name}' must be a list of specs.")
-        normalized: List[Dict[str, Any]] = []
+        normalized: list[dict[str, Any]] = []
         for spec in specs:
             if not isinstance(spec, dict):
                 raise WarmupPackError(f"Entries in pack '{name}' must be dictionaries.")
@@ -49,12 +49,12 @@ def _load_all(path: Path = PACKS_PATH) -> Dict[str, List[Dict[str, Any]]]:
     return packs
 
 
-def list_warmup_packs(path: Path = PACKS_PATH) -> List[str]:
+def list_warmup_packs(path: Path = PACKS_PATH) -> list[str]:
     """Return the list of available warmup pack names."""
     return sorted(_load_all(path).keys())
 
 
-def load_warmup_pack(name: str, path: Path = PACKS_PATH) -> List[Dict[str, Any]]:
+def load_warmup_pack(name: str, path: Path = PACKS_PATH) -> list[dict[str, Any]]:
     """
     Load a single warmup pack by name.
 

@@ -53,7 +53,7 @@ Identify month-of-year or quarter-of-year effects for an OUTCOME metric.
 STRICT RULES:
 1. Use ONLY the lift percentages and support scores provided
 2. Cite with (QID=query_id) for all numbers
-3. Report lift as "X% above/below baseline" 
+3. Report lift as "X% above/below baseline"
 4. Baseline = overall mean across all periods
 5. Include confidence notes based on support scores
 

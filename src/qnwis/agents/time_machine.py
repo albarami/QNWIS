@@ -43,7 +43,7 @@ MAX_EVIDENCE_ROWS = 12
 class TimeMachineAgent:
     """
     Deterministic historical analytics agent.
-    
+
     Fetches monthly time-series via DataClient by whitelisted query IDs, computes
     baselines/deltas/breaks, and returns executive narratives with citations and
     derived QueryResults. No direct SQL/HTTP access.
@@ -56,7 +56,7 @@ class TimeMachineAgent:
     ):
         """
         Initialize Time Machine Agent.
-        
+
         Args:
             data_client: DataClient with .run(query_id, params)
             series_map: Map metric name to query_id (e.g., {'retention':'LMIS_RETENTION_TS'})
@@ -82,16 +82,16 @@ class TimeMachineAgent:
     ) -> tuple[QueryResult, list[float], list[str]]:
         """
         Fetch time-series data from DataClient.
-        
+
         Args:
             metric: Metric name (must be in series_map)
             sector: Optional sector filter
             start: Start date
             end: End date
-            
+
         Returns:
             Tuple of (QueryResult, values list, date labels list)
-            
+
         Raises:
             ValueError: If metric not in series_map or insufficient data
         """
@@ -276,21 +276,21 @@ class TimeMachineAgent:
     ) -> str:
         """
         Build seasonal baseline & index-100 for a metric.
-        
+
         Args:
             metric: Metric name (e.g., 'retention', 'qatarization')
             sector: Optional sector filter
             start: Start date (default: 2 years ago)
             end: End date (default: today)
             base_at: Index for base period in index-100 (default: 12 months ago)
-            
+
         Returns:
             Executive narrative with:
             - Executive summary
             - Baseline table (last 12 points)
             - YoY & index-100 snapshots
             - Citations: original series QID + derived QID(s)
-            
+
         Raises:
             ValueError: If metric invalid or insufficient data (<12 points)
         """
@@ -464,8 +464,8 @@ class TimeMachineAgent:
             "",
             "## Reproducibility",
             "```python",
-            "from src.qnwis.analysis.baselines import seasonal_baseline",
-            "from src.qnwis.analysis.trend_utils import index_100",
+            "from qnwis.analysis.baselines import seasonal_baseline",
+            "from qnwis.analysis.trend_utils import index_100",
             "",
             f"# Fetch data: query_id='{original.query_id}'",
             "values = [...]  # Your time series",
@@ -490,20 +490,20 @@ class TimeMachineAgent:
     ) -> str:
         """
         Compute YoY/QtQ, EWMA, and multi-window slopes.
-        
+
         Args:
             metric: Metric name
             sector: Optional sector filter
             start: Start date (default: 2 years ago)
             end: End date (default: today)
             confidence_hint: Optional Step-22 confidence payload (e.g., {'score': 87, 'band': 'GREEN'})
-            
+
         Returns:
             Executive narrative with:
             - Trend summary (direction, acceleration)
             - Table (period, value, YoY%, QtQ%, EWMA)
             - Citations + reproducibility snippet
-            
+
         Raises:
             ValueError: If insufficient data
         """
@@ -649,7 +649,7 @@ class TimeMachineAgent:
             "",
             "## Reproducibility",
             "```python",
-            "from src.qnwis.analysis.trend_utils import yoy, qtq, ewma, window_slopes",
+            "from qnwis.analysis.trend_utils import yoy, qtq, ewma, window_slopes",
             "",
             f"# Fetch data: query_id='{original.query_id}'",
             "values = [...]  # Your time series",
@@ -675,7 +675,7 @@ class TimeMachineAgent:
     ) -> str:
         """
         Detect structural breaks/outliers.
-        
+
         Args:
             metric: Metric name
             sector: Optional sector filter
@@ -683,14 +683,14 @@ class TimeMachineAgent:
             end: End date (default: today)
             z_threshold: Z-score threshold for outlier detection
             cusum_h: CUSUM threshold for break detection
-            
+
         Returns:
             Executive narrative with:
             - Break points and size
             - Context vs seasonal baseline
             - Recommended checks
             - Full audit (QIDs + freshness)
-            
+
         Raises:
             ValueError: If insufficient data
         """
@@ -922,8 +922,8 @@ class TimeMachineAgent:
             "",
             "## Reproducibility",
             "```python",
-            "from src.qnwis.analysis.change_points import cusum_breaks, zscore_outliers",
-            "from src.qnwis.analysis.baselines import seasonal_baseline",
+            "from qnwis.analysis.change_points import cusum_breaks, zscore_outliers",
+            "from qnwis.analysis.baselines import seasonal_baseline",
             "",
             f"# Fetch data: query_id='{original.query_id}'",
             "values = [...]  # Your time series",

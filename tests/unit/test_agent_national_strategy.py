@@ -86,5 +86,34 @@ def test_national_strategy_combines_metrics(monkeypatch):
     assert m["gcc_unemployment_max"] == 5.4
 
 
+def test_gcc_benchmark_uses_data_client(monkeypatch):
+    calls: list[str] = []
+    client = DataClient()
+    gcc = QueryResult(
+        query_id="syn_unemployment_rate_gcc_latest",
+        rows=[
+            Row(data={"country": "Qatar", "unemployment_rate": 1.0, "year": 2023}),
+            Row(data={"country": "Oman", "unemployment_rate": 2.0, "year": 2023}),
+            Row(data={"country": "Bahrain", "unemployment_rate": 3.0, "year": 2023}),
+        ],
+        unit="percent",
+        provenance=Provenance(
+            source="csv",
+            dataset_id="syn_unemployment_rate_gcc_latest",
+            locator="syn_unemployment_rate_gcc_latest.csv",
+            fields=["country", "unemployment_rate", "year"],
+        ),
+        freshness=Freshness(asof_date="2024-01-01"),
+    )
+
+    def _run(query_id: str) -> QueryResult:
+        calls.append(query_id)
+        return gcc
+
+    monkeypatch.setattr(client, "run", _run)
+    NationalStrategyAgent(client).gcc_benchmark(min_countries=3)
+    assert calls == ["syn_unemployment_rate_gcc_latest"]
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

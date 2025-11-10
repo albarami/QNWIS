@@ -5,8 +5,8 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping
 from typing import Any
 
-from .schemas import CrossCheckRule, Issue
 from ..data.deterministic.models import QueryResult
+from .schemas import CrossCheckRule, Issue
 
 _SEGMENT_DEFAULT = "ALL"
 _TOLERANCE_EPS = 1e-9

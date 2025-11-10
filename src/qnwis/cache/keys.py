@@ -9,10 +9,10 @@ from __future__ import annotations
 
 import hashlib
 import json
-from typing import Any, Dict, Tuple
+from typing import Any
 
 # Dataset-specific TTL policy (seconds)
-TTL_POLICY: Dict[str, int] = {
+TTL_POLICY: dict[str, int] = {
     "get_retention_by_company": 24 * 3600,
     "get_salary_statistics": 24 * 3600,
     "get_employee_transitions": 12 * 3600,
@@ -22,7 +22,7 @@ TTL_POLICY: Dict[str, int] = {
 }
 
 
-def stable_params_hash(params: Dict[str, Any]) -> str:
+def stable_params_hash(params: dict[str, Any]) -> str:
     """
     Deterministic SHA256 over JSON with sorted keys + ISO dates.
 
@@ -47,8 +47,8 @@ def stable_params_hash(params: Dict[str, Any]) -> str:
 
 
 def make_cache_key(
-    op: str, query_id: str, params: Dict[str, Any], version: str = "v1"
-) -> Tuple[str, int]:
+    op: str, query_id: str, params: dict[str, Any], version: str = "v1"
+) -> tuple[str, int]:
     """
     Build deterministic cache key and TTL for a query operation.
 

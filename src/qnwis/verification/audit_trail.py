@@ -12,10 +12,11 @@ import logging
 import uuid
 from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
+from ..data.deterministic.models import QueryResult
 from .audit_utils import (
     canonical_json,
     compute_params_hash,
@@ -27,7 +28,6 @@ from .audit_utils import (
 )
 from .citation_enforcer import CitationReport
 from .schemas import ResultVerificationReport, VerificationSummary
-from ..data.deterministic.models import QueryResult
 
 logger = logging.getLogger(__name__)
 
@@ -67,17 +67,17 @@ class AuditManifest:
     request_id: str
     registry_version: str
     code_version: str
-    data_sources: List[str]
-    query_ids: List[str]
-    freshness: Dict[str, str]
-    citations: Dict[str, Any]
-    verification: Dict[str, Any]
-    orchestration: Dict[str, Any]
-    reproducibility: Dict[str, Any]
+    data_sources: list[str]
+    query_ids: list[str]
+    freshness: dict[str, str]
+    citations: dict[str, Any]
+    verification: dict[str, Any]
+    orchestration: dict[str, Any]
+    reproducibility: dict[str, Any]
     pack_root: str = ""
-    pack_paths: Dict[str, str] = field(default_factory=dict)
+    pack_paths: dict[str, str] = field(default_factory=dict)
     digest_sha256: str = ""
-    hmac_sha256: Optional[str] = None
+    hmac_sha256: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
@@ -117,8 +117,8 @@ class AuditTrail:
     def __init__(
         self,
         pack_dir: str,
-        sqlite_path: Optional[str] = None,
-        hmac_key: Optional[bytes] = None,
+        sqlite_path: str | None = None,
+        hmac_key: bytes | None = None,
     ):
         """
         Initialize audit trail with storage configuration.
@@ -139,10 +139,10 @@ class AuditTrail:
     def generate_trail(
         self,
         response_md: str,
-        qresults: List[QueryResult],
+        qresults: list[QueryResult],
         verification: VerificationSummary,
         citations: CitationReport,
-        orchestration_meta: Dict[str, Any],
+        orchestration_meta: dict[str, Any],
         code_version: str,
         registry_version: str,
         request_id: str,
@@ -166,13 +166,13 @@ class AuditTrail:
             AuditManifest ready for writing
         """
         audit_id = str(uuid.uuid4())
-        created_at = datetime.now(timezone.utc).isoformat()
+        created_at = datetime.now(UTC).isoformat()
 
         # Extract data sources and freshness
         data_sources_set: set[str] = set()
         query_ids = [qr.query_id for qr in qresults]
 
-        freshness: Dict[str, str] = {}
+        freshness: dict[str, str] = {}
         for qr in qresults:
             source_key = (
                 qr.provenance.dataset_id
@@ -276,10 +276,10 @@ class AuditTrail:
         self,
         manifest: AuditManifest,
         response_md: str,
-        qresults: List[QueryResult],
+        qresults: list[QueryResult],
         citations: CitationReport,
-        result_report: Optional[ResultVerificationReport],
-        replay_stub: Optional[Dict[str, Any]] = None,
+        result_report: ResultVerificationReport | None,
+        replay_stub: dict[str, Any] | None = None,
     ) -> AuditManifest:
         """
         Write audit pack to disk and compute digests.
@@ -317,7 +317,7 @@ class AuditTrail:
         verification_dir = pack_root / "verification"
         verification_dir.mkdir(exist_ok=True)
 
-        pack_paths: Dict[str, str] = {}
+        pack_paths: dict[str, str] = {}
 
         def _record_path(label: str, file_path: Path) -> None:
             """Store pack-relative path for manifest bookkeeping."""
@@ -347,7 +347,7 @@ class AuditTrail:
         # Write deduplicated source descriptors
         sources_dir = pack_root / "sources"
         sources_dir.mkdir(exist_ok=True)
-        source_index: Dict[str, Dict[str, Any]] = {}
+        source_index: dict[str, dict[str, Any]] = {}
         for qr in qresults:
             provenance = qr.provenance
             key = f"{provenance.dataset_id}:{provenance.locator}"

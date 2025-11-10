@@ -255,7 +255,7 @@ def apply_scenario(
     # Build output rows
     output_rows: list[dict[str, Any]] = []
     for i, adj_val in enumerate(adjusted_values):
-        row_data = {
+        row_data: dict[str, Any] = {
             "h": i + 1,
             "baseline": values[i] if i < len(values) else None,
             "adjusted": adj_val,

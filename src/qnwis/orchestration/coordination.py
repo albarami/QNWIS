@@ -9,11 +9,11 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any, Dict, List, Set, cast
+from typing import Any, cast
 
 from ..agents.base import AgentReport
 from ..orchestration.merge import merge_results
-from ..orchestration.policies import CoordinationPolicy, DEFAULT_POLICY
+from ..orchestration.policies import DEFAULT_POLICY, CoordinationPolicy
 from ..orchestration.registry import AgentRegistry
 from ..orchestration.schemas import (
     Citation,
@@ -56,7 +56,7 @@ class Coordinator:
         self.registry = registry
         self.policy = policy or DEFAULT_POLICY
 
-    def _normalize_specs(self, specs: List[AgentCallSpec]) -> List[AgentCallSpec]:
+    def _normalize_specs(self, specs: list[AgentCallSpec]) -> list[AgentCallSpec]:
         """
         Validate and normalize agent call specifications.
 
@@ -73,8 +73,8 @@ class Coordinator:
             CoordinationError: If specs reference unknown intents, unregistered
                 methods, or contain duplicate aliases/dependencies
         """
-        normalized: List[AgentCallSpec] = []
-        seen_aliases: Set[str] = set()
+        normalized: list[AgentCallSpec] = []
+        seen_aliases: set[str] = set()
 
         for raw_spec in specs:
             spec = cast(AgentCallSpec, dict(raw_spec))
@@ -123,7 +123,7 @@ class Coordinator:
 
         return normalized
 
-    def _validate_sequential_dependencies(self, specs: List[AgentCallSpec]) -> None:
+    def _validate_sequential_dependencies(self, specs: list[AgentCallSpec]) -> None:
         """
         Validate that sequential execution respects declared dependencies.
 
@@ -133,7 +133,7 @@ class Coordinator:
         Raises:
             CoordinationError: If a dependency would execute after its dependent
         """
-        executed: Set[str] = set()
+        executed: set[str] = set()
         for spec in specs:
             alias = spec["alias"]
             for dependency in spec.get("depends_on", []):
@@ -152,7 +152,7 @@ class Coordinator:
         elapsed_ms: float,
         attempt: int,
         success: bool,
-        warnings: List[str],
+        warnings: list[str],
         error: str | None = None,
     ) -> ExecutionTrace:
         """
@@ -221,7 +221,7 @@ class Coordinator:
             error=error,
         )
 
-        sections: List[ReportSection] = []
+        sections: list[ReportSection] = []
         if warning:
             sections.append(
                 ReportSection(
@@ -247,10 +247,10 @@ class Coordinator:
 
     def _record_wave_skip(
         self,
-        wave: List[AgentCallSpec],
+        wave: list[AgentCallSpec],
         reason: str,
-        alias_status: Dict[str, bool],
-    ) -> List[OrchestrationResult]:
+        alias_status: dict[str, bool],
+    ) -> list[OrchestrationResult]:
         """
         Produce placeholder results for an entire wave that is being skipped.
 
@@ -262,7 +262,7 @@ class Coordinator:
         Returns:
             List of placeholder results for the skipped wave
         """
-        skipped_results: List[OrchestrationResult] = []
+        skipped_results: list[OrchestrationResult] = []
         for spec in wave:
             alias = spec.get("alias", spec["intent"])
             warning = f"{reason} (alias='{alias}')"
@@ -280,9 +280,9 @@ class Coordinator:
     def plan(
         self,
         route: str,
-        specs: List[AgentCallSpec],
+        specs: list[AgentCallSpec],
         mode: str,
-    ) -> List[List[AgentCallSpec]]:
+    ) -> list[list[AgentCallSpec]]:
         """
         Plan execution waves based on mode.
 
@@ -317,7 +317,7 @@ class Coordinator:
         if mode == "parallel":
             # Split into waves based on policy max_parallel
             max_parallel = self.policy.max_parallel
-            waves: List[List[AgentCallSpec]] = []
+            waves: list[list[AgentCallSpec]] = []
             for i in range(0, len(normalized_specs), max_parallel):
                 wave = normalized_specs[i : i + max_parallel]
                 waves.append(wave)
@@ -345,10 +345,10 @@ class Coordinator:
 
     def execute(
         self,
-        waves: List[List[AgentCallSpec]],
-        prefetch_cache: Dict[str, Any],
+        waves: list[list[AgentCallSpec]],
+        prefetch_cache: dict[str, Any],
         mode: str = "parallel",
-    ) -> List[OrchestrationResult]:
+    ) -> list[OrchestrationResult]:
         """
         Execute agent call waves and collect results.
 
@@ -370,8 +370,8 @@ class Coordinator:
             len(prefetch_cache),
         )
 
-        results: List[OrchestrationResult] = []
-        alias_status: Dict[str, bool] = {}
+        results: list[OrchestrationResult] = []
+        alias_status: dict[str, bool] = {}
         total_start = time.perf_counter()
         total_timeout_ms = self.policy.total_timeout_ms
 
@@ -400,7 +400,7 @@ class Coordinator:
                 len(wave),
             )
             wave_start = time.perf_counter()
-            wave_results: List[OrchestrationResult] = []
+            wave_results: list[OrchestrationResult] = []
             wave_aborted = False
 
             for spec_index, spec in enumerate(wave):
@@ -554,7 +554,7 @@ class Coordinator:
     def _execute_single(
         self,
         spec: AgentCallSpec,
-        prefetch_cache: Dict[str, Any],
+        prefetch_cache: dict[str, Any],
     ) -> tuple[OrchestrationResult, ExecutionTrace]:
         """
         Execute a single agent call.
@@ -656,8 +656,8 @@ class Coordinator:
         agent_report: AgentReport,
         intent: str,
         method: str,
-        params: Dict[str, Any],
-        warnings: List[str],
+        params: dict[str, Any],
+        warnings: list[str],
         ok: bool,
         trace: ExecutionTrace,
     ) -> OrchestrationResult:
@@ -677,7 +677,7 @@ class Coordinator:
             OrchestrationResult
         """
         # Build sections from findings
-        sections: List[ReportSection] = []
+        sections: list[ReportSection] = []
 
         # Executive Summary
         if agent_report.findings:
@@ -722,8 +722,8 @@ class Coordinator:
             )
 
         # Build citations
-        citations: List[Citation] = []
-        freshness_map: Dict[str, Freshness] = {}
+        citations: list[Citation] = []
+        freshness_map: dict[str, Freshness] = {}
 
         for finding in agent_report.findings:
             for evidence in finding.evidence:
@@ -773,7 +773,7 @@ class Coordinator:
             agent_traces=[trace],
         )
 
-    def aggregate(self, partials: List[OrchestrationResult]) -> OrchestrationResult:
+    def aggregate(self, partials: list[OrchestrationResult]) -> OrchestrationResult:
         """
         Merge partial results into a single final report.
 

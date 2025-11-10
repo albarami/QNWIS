@@ -13,11 +13,13 @@ from __future__ import annotations
 
 import logging
 import re
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from math import isnan
 from time import perf_counter
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
+from typing import Any
 
+from ..data.deterministic.models import QueryResult
 from .number_extractors import extract_numeric_claims
 from .schemas import (
     ClaimBinding,
@@ -25,7 +27,6 @@ from .schemas import (
     ResultVerificationReport,
     VerificationIssue,
 )
-from ..data.deterministic.models import QueryResult
 
 logger = logging.getLogger(__name__)
 
@@ -51,9 +52,9 @@ class NumericCell:
 
     qresult: QueryResult
     location: str
-    row_index: Optional[int]
-    field_name: Optional[str]
-    row_data: Optional[Dict[str, Any]]
+    row_index: int | None
+    field_name: str | None
+    row_data: dict[str, Any] | None
     raw_value: float
     display_value: float
     diff: float
@@ -67,7 +68,7 @@ def _has_percent_token(value_text: str) -> bool:
     return any(token in lowered for token in ["%", "percent", "pp"])
 
 
-def _resolve_abs_epsilon(unit: str, tolerances: Dict[str, float]) -> float:
+def _resolve_abs_epsilon(unit: str, tolerances: dict[str, float]) -> float:
     """Resolve absolute epsilon per unit type (counts, percent, currency)."""
     base = tolerances.get("abs_epsilon", 0.5)
     if unit == "percent":
@@ -89,7 +90,7 @@ def _values_close(
     candidate_value: float,
     abs_epsilon: float,
     rel_epsilon: float,
-) -> Tuple[bool, float]:
+) -> tuple[bool, float]:
     """
     Compare claim vs candidate with unit-aware tolerances.
 
@@ -160,7 +161,7 @@ def _format_value_for_hint(claim: NumericClaim, value: float) -> str:
     return f"{display:.3f}"
 
 
-def _units_compatible(claim_unit: str, result_unit: Optional[str]) -> bool:
+def _units_compatible(claim_unit: str, result_unit: str | None) -> bool:
     """Best-effort compatibility check using declared result unit metadata."""
     if not result_unit or result_unit == "unknown":
         return True
@@ -179,7 +180,7 @@ def _detect_segment_rows(
     sentence: str,
     qresult: QueryResult,
     segment_fields: Sequence[str],
-) -> Optional[set[int]]:
+) -> set[int] | None:
     """
     Restrict search to rows whose segment labels (sector/company/etc.)
     appear in the claim sentence.
@@ -212,9 +213,9 @@ def _iterate_row_cells(
     claim: NumericClaim,
     abs_epsilon: float,
     rel_epsilon: float,
-    allowed_rows: Optional[set[int]],
+    allowed_rows: set[int] | None,
     claim_display_value: float,
-) -> Iterable[Tuple[bool, NumericCell]]:
+) -> Iterable[tuple[bool, NumericCell]]:
     """
     Yield tuples (matched, cell) for each numeric cell (row_count + data fields).
     """
@@ -277,9 +278,9 @@ def _iterate_row_cells(
 
 def _select_candidate_sources(
     claim: NumericClaim,
-    qresults: List[QueryResult],
+    qresults: list[QueryResult],
     prefer_query_id: bool,
-) -> Tuple[List[QueryResult], bool]:
+) -> tuple[list[QueryResult], bool]:
     """
     Determine which QueryResults should be searched first.
 
@@ -306,8 +307,8 @@ def _select_candidate_sources(
 
 def bind_claim_to_sources(
     claim: NumericClaim,
-    qresults: List[QueryResult],
-    tolerances: Dict[str, float],
+    qresults: list[QueryResult],
+    tolerances: dict[str, float],
 ) -> ClaimBinding:
     """
     Bind a numeric claim to QueryResult sources with ambiguity + rounding metadata.
@@ -335,8 +336,8 @@ def bind_claim_to_sources(
             binding.candidate_qids = [candidate_sources[0].query_id]
             return binding
 
-    matches: List[NumericCell] = []
-    near_candidate: Optional[NumericCell] = None
+    matches: list[NumericCell] = []
+    near_candidate: NumericCell | None = None
 
     for qr in candidate_sources:
         allowed_rows = _detect_segment_rows(claim.sentence, qr, segment_fields)
@@ -413,8 +414,8 @@ def _verify_derived_share(
     claim: NumericClaim,
     cell: NumericCell,
     enabled: bool,
-    tolerances: Dict[str, float],
-) -> Optional[Tuple[bool, Optional[float]]]:
+    tolerances: dict[str, float],
+) -> tuple[bool, float | None] | None:
     """
     Recompute percent/share derived values from row components when possible.
 
@@ -426,7 +427,7 @@ def _verify_derived_share(
     if claim.unit != "percent" and "percent" not in cell.field_name.lower():
         return None
 
-    numeric_components: Dict[str, float] = {}
+    numeric_components: dict[str, float] = {}
     for key, value in cell.row_data.items():
         if key == cell.field_name:
             continue
@@ -478,7 +479,7 @@ def _verify_derived_share(
     return False, closest_value
 
 
-def _parse_numeric_cell(cell_text: str) -> Optional[float]:
+def _parse_numeric_cell(cell_text: str) -> float | None:
     """Parse numeric value from Markdown table cell."""
     text = cell_text.strip()
     if not text:
@@ -495,16 +496,16 @@ def _parse_numeric_cell(cell_text: str) -> Optional[float]:
         return None
 
 
-def _extract_table_blocks(lines: List[str]) -> List[Tuple[int, List[str]]]:
+def _extract_table_blocks(lines: list[str]) -> list[tuple[int, list[str]]]:
     """
     Identify Markdown table blocks and return list of (start_index, block_lines).
     """
-    tables: List[Tuple[int, List[str]]] = []
+    tables: list[tuple[int, list[str]]] = []
     i = 0
     while i < len(lines) - 1:
         if TABLE_LINE_PATTERN.match(lines[i]) and TABLE_SEPARATOR_PATTERN.match(lines[i + 1]):
             start = i
-            block: List[str] = [lines[i], lines[i + 1]]
+            block: list[str] = [lines[i], lines[i + 1]]
             i += 2
             while i < len(lines) and TABLE_LINE_PATTERN.match(lines[i]):
                 block.append(lines[i])
@@ -518,15 +519,15 @@ def _extract_table_blocks(lines: List[str]) -> List[Tuple[int, List[str]]]:
 
 def check_math_consistency(
     narrative_md: str,
-    tolerances: Dict[str, float],
-) -> Tuple[Dict[str, bool], Dict[str, Dict[str, Any]]]:
+    tolerances: dict[str, float],
+) -> tuple[dict[str, bool], dict[str, dict[str, Any]]]:
     """
     Run math consistency checks on narrative text.
 
     Returns tuple (check_results, check_details).
     """
-    checks: Dict[str, bool] = {}
-    details: Dict[str, Dict[str, Any]] = {}
+    checks: dict[str, bool] = {}
+    details: dict[str, dict[str, Any]] = {}
     epsilon_pct = tolerances.get("epsilon_pct", 0.5)
     abs_epsilon = tolerances.get("abs_epsilon", 0.5)
     sum_to_100 = tolerances.get("sum_to_100", True)
@@ -536,7 +537,7 @@ def check_math_consistency(
     while sum_to_100 and i < len(lines):
         line = lines[i].strip()
         if line.startswith(("-", "*", "+")) and ("%" in line or "percent" in line.lower()):
-            percentages: List[float] = []
+            percentages: list[float] = []
             start_idx = i
             while i < len(lines):
                 current = lines[i].strip()
@@ -613,7 +614,7 @@ def check_math_consistency(
     return checks, details
 
 
-def _issue_hint_from_binding(binding: ClaimBinding, claim: NumericClaim) -> Optional[str]:
+def _issue_hint_from_binding(binding: ClaimBinding, claim: NumericClaim) -> str | None:
     """Construct retry hint string based on binding metadata."""
     if binding.nearest_value is not None:
         formatted = _format_value_for_hint(claim, binding.nearest_value)
@@ -627,7 +628,7 @@ def _issue_hint_from_binding(binding: ClaimBinding, claim: NumericClaim) -> Opti
     return None
 
 
-def _issue_from_math_detail(check_name: str, detail: Dict[str, Any]) -> Dict[str, str]:
+def _issue_from_math_detail(check_name: str, detail: dict[str, Any]) -> dict[str, str]:
     """Build issue details (including hint) for math check failures."""
     hint = None
     if "expected" in detail and "sum" in detail:
@@ -645,8 +646,8 @@ def _issue_from_math_detail(check_name: str, detail: Dict[str, Any]) -> Dict[str
 
 def verify_numbers(
     narrative_md: str,
-    qresults: List[QueryResult],
-    tolerances: Dict[str, float],
+    qresults: list[QueryResult],
+    tolerances: dict[str, float],
 ) -> ResultVerificationReport:
     """
     Verify numeric claims in narrative against QueryResult data.
@@ -677,8 +678,8 @@ def verify_numbers(
     )
     logger.debug("Extracted %d numeric claims", len(claims))
 
-    bindings: List[ClaimBinding] = []
-    issues: List[VerificationIssue] = []
+    bindings: list[ClaimBinding] = []
+    issues: list[VerificationIssue] = []
 
     for claim in claims:
         if require_citation and not claim.citation_prefix:

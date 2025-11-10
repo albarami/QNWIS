@@ -324,7 +324,7 @@ class TestRouterIntegration:
             "What is the trend for retention?",
             "Show YoY growth for qatarization",
             "Analyze salary momentum in Finance",
-            "Is employment accelerating or slowing?",
+            "What is the acceleration in employment trends?",
             "Quarter over quarter growth in Construction",
         ]
 

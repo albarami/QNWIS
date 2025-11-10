@@ -8,7 +8,6 @@ and integrity verification.
 import json
 import tempfile
 from pathlib import Path
-from typing import List
 
 import pytest
 
@@ -24,7 +23,7 @@ from src.qnwis.verification.schemas import CitationIssue, VerificationSummary
 
 
 @pytest.fixture
-def sample_query_results() -> List[QueryResult]:
+def sample_query_results() -> list[QueryResult]:
     """Create sample QueryResult objects for testing."""
     return [
         QueryResult(
@@ -127,7 +126,7 @@ class TestAuditTrailGenerateTrail:
 
     def test_generate_trail_collects_query_ids_sources_freshness(
         self,
-        sample_query_results: List[QueryResult],
+        sample_query_results: list[QueryResult],
         sample_verification: VerificationSummary,
         sample_citations: CitationReport,
         temp_pack_dir: Path,
@@ -181,7 +180,7 @@ class TestAuditTrailGenerateTrail:
 
     def test_redaction_applied_to_summaries(
         self,
-        sample_query_results: List[QueryResult],
+        sample_query_results: list[QueryResult],
         sample_verification: VerificationSummary,
         temp_pack_dir: Path,
     ) -> None:
@@ -231,7 +230,7 @@ class TestAuditTrailWritePack:
 
     def test_write_pack_writes_manifest_and_files(
         self,
-        sample_query_results: List[QueryResult],
+        sample_query_results: list[QueryResult],
         sample_verification: VerificationSummary,
         sample_citations: CitationReport,
         temp_pack_dir: Path,
@@ -283,7 +282,7 @@ class TestAuditTrailWritePack:
 
     def test_pack_digest_matches_verify_tool(
         self,
-        sample_query_results: List[QueryResult],
+        sample_query_results: list[QueryResult],
         sample_verification: VerificationSummary,
         sample_citations: CitationReport,
         temp_pack_dir: Path,
@@ -321,7 +320,7 @@ class TestAuditTrailWritePack:
 
     def test_write_pack_with_hmac(
         self,
-        sample_query_results: List[QueryResult],
+        sample_query_results: list[QueryResult],
         sample_verification: VerificationSummary,
         sample_citations: CitationReport,
         temp_pack_dir: Path,
@@ -369,7 +368,7 @@ class TestAuditTrailVerifyPack:
 
     def test_verify_pack_detects_tampering(
         self,
-        sample_query_results: List[QueryResult],
+        sample_query_results: list[QueryResult],
         sample_verification: VerificationSummary,
         sample_citations: CitationReport,
         temp_pack_dir: Path,

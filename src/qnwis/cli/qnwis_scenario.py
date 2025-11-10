@@ -15,10 +15,11 @@ import json
 import logging
 import sys
 from pathlib import Path
+from typing import Any
 
 from ..agents.base import DataClient
-from ..agents.scenario_agent import ScenarioAgent
-from ..scenario.dsl import validate_scenario_file
+from ..agents.scenario_agent import ScenarioAgent, ScenarioFormat
+from ..scenario.dsl import ScenarioSpec, validate_scenario_file
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,7 @@ logger = logging.getLogger(__name__)
 def apply_scenario(
     agent: ScenarioAgent,
     spec_path: str,
-    format: str = "yaml",
+    format: ScenarioFormat = "yaml",
 ) -> None:
     """
     Apply scenario from file.
@@ -57,7 +58,7 @@ def apply_scenario(
 def compare_scenarios(
     agent: ScenarioAgent,
     spec_paths: list[str],
-    format: str = "yaml",
+    format: ScenarioFormat = "yaml",
 ) -> None:
     """
     Compare multiple scenarios from files.
@@ -68,7 +69,7 @@ def compare_scenarios(
         format: File format ("yaml" or "json")
     """
     try:
-        specs: list[str] = []
+        specs: list[str | dict[str, Any] | ScenarioSpec] = []
         for spec_path in spec_paths:
             with open(spec_path, encoding="utf-8") as f:
                 specs.append(f.read())
@@ -91,7 +92,7 @@ def batch_scenarios(
     agent: ScenarioAgent,
     specs_dir: str,
     weights_path: str | None = None,
-    format: str = "yaml",
+    format: ScenarioFormat = "yaml",
 ) -> None:
     """
     Run batch scenarios from directory.
@@ -117,7 +118,7 @@ def batch_scenarios(
             sys.exit(1)
 
         # Build sector specs map
-        sector_specs: dict[str, str] = {}
+        sector_specs: dict[str, str | dict[str, Any] | ScenarioSpec] = {}
         for spec_file in spec_files:
             sector_name = spec_file.stem
             with open(spec_file, encoding="utf-8") as f:
@@ -127,7 +128,17 @@ def batch_scenarios(
         weights: dict[str, float] | None = None
         if weights_path:
             with open(weights_path, encoding="utf-8") as f:
-                weights = json.load(f)
+                weights_data = json.load(f)
+            if not isinstance(weights_data, dict):
+                raise ValueError("Weights file must be a JSON object of sector weights")
+            weights = {}
+            for key, value in weights_data.items():
+                try:
+                    weights[str(key)] = float(value)
+                except (TypeError, ValueError) as exc:
+                    raise ValueError(
+                        f"Invalid weight for sector '{key}': {value}"
+                    ) from exc
 
         print(f"Batch processing {len(sector_specs)} sectors from: {specs_dir}")
         print()

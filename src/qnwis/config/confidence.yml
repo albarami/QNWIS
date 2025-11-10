@@ -1,0 +1,44 @@
+# Confidence Scoring Configuration
+# Controls weights, penalties, thresholds, and guards for confidence scoring
+# All weights must sum to 1.0 (±1e-6)
+
+# Component weights (must sum to 1.0)
+weights:
+  citation: 0.25      # Citation coverage and correctness (Step 19)
+  numbers: 0.40       # Claim matching and math consistency (Step 20)
+  cross: 0.10         # Cross-source validation (Layer 2)
+  privacy: 0.10       # PII handling (Layer 3)
+  freshness: 0.15     # Data recency (Layer 4 + verification)
+
+# Penalties (deductions from component scores)
+penalties:
+  math_fail: 15                # Deduction when any math check fails
+  l2_per_item: 3               # Per cross-check warning
+  redaction_per_item: 1        # Per PII redaction (gentle penalty)
+  freshness_per_10h: 2         # Per 10 hours beyond SLA
+
+# Band thresholds (score ranges)
+thresholds:
+  GREEN: 90           # High confidence: 90-100
+  AMBER: 75           # Medium confidence: 75-89
+  RED: 0              # Low confidence: 0-74
+
+# Guards and fallbacks
+guards:
+  min_score_on_insufficient: 60   # Floor score when no numeric claims/verifications
+  min_support_numbers: 3          # Below this many numbers, soften penalties
+  min_support_claims: 3           # Below this many claims, soften penalties
+  max_reason_count: 8             # Max individual reasons to emit (rest summarized)
+
+# Penalty caps (limit runaway deductions)
+caps:
+  penalty_fraction: 0.5           # Any single penalty can shave at most 50%
+
+# Stability controls
+stability:
+  enable_band_hysteresis: true    # Keep band steady unless score delta exceeds tolerance
+  hysteresis_tolerance: 4         # Require ≥4 point delta to switch bands
+
+# Integration settings
+integration:
+  include_in_failures: true       # Compute confidence even on verification failures

@@ -7,7 +7,8 @@ logged or embedded in metadata to avoid leaking secrets.
 
 from __future__ import annotations
 
-from typing import Any, Mapping
+from collections.abc import Mapping
+from typing import Any
 
 SENSITIVE_KEYS = {"token", "secret", "password", "apikey", "api_key", "key"}
 

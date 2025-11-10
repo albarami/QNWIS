@@ -221,7 +221,7 @@ def test_graph_strategy_gcc_benchmark_end_to_end(test_registry: AgentRegistry) -
 
 def test_graph_handles_unknown_intent(test_registry: AgentRegistry) -> None:
     """Test that graph handles unknown intents gracefully."""
-    graph = create_graph(test_registry)
+    create_graph(test_registry)
 
     task = OrchestrationTask(
         intent="pattern.correlation",  # Valid literal but not registered
@@ -235,14 +235,6 @@ def test_graph_handles_unknown_intent(test_registry: AgentRegistry) -> None:
     task_dict["intent"] = "unknown.intent"
 
     # Create state manually to bypass validation
-    initial_state = {
-        "task": task,  # Use original task with valid intent literal
-        "route": None,
-        "agent_output": None,
-        "error": None,
-        "logs": [],
-        "metadata": {},
-    }
 
     # Manually set an unknown intent that isn't registered
     # We'll test by registering limited intents

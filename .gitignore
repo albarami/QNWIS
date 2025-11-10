@@ -82,6 +82,11 @@ data/migrations/
 *.sqlite
 *.sqlite3
 
+# Allow audit artifacts and reports
+!src/qnwis/docs/audit/**/*.csv
+!src/qnwis/docs/audit/**/*.json
+!src/qnwis/docs/audit/**/*.md
+
 # Allow API client code to be tracked
 !src/data/
 !src/data/apis/

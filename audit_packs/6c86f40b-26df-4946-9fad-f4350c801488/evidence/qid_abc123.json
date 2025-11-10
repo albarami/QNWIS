@@ -1,0 +1,28 @@
+{
+  "query_id": "qid_abc123",
+  "rows": [
+    {
+      "data": {
+        "sector": "oil_gas",
+        "retention_rate": 0.85
+      }
+    }
+  ],
+  "unit": "percent",
+  "provenance": {
+    "source": "csv",
+    "dataset_id": "lmis_workforce",
+    "locator": "/data/workforce.csv",
+    "fields": [
+      "sector",
+      "retention_rate"
+    ],
+    "license": null
+  },
+  "freshness": {
+    "asof_date": "2024-01-15",
+    "updated_at": "2024-01-15T10:00:00Z"
+  },
+  "metadata": {},
+  "warnings": []
+}

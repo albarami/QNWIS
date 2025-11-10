@@ -1,0 +1,41 @@
+roles:
+  analyst:
+    inherits: []
+  service:
+    inherits:
+      - analyst
+  auditor:
+    inherits: []
+  admin:
+    inherits:
+      - analyst
+      - auditor
+routes:
+  agents_time:
+    allow:
+      - analyst
+      - service
+      - admin
+  agents_pattern:
+    allow:
+      - analyst
+      - service
+      - admin
+  agents_predictor:
+    allow:
+      - analyst
+      - service
+      - admin
+  agents_scenario:
+    allow:
+      - analyst
+      - service
+      - admin
+  agents_strategy:
+    allow:
+      - analyst
+      - admin
+      - service
+  cache_admin:
+    allow:
+      - admin

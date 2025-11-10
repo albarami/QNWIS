@@ -475,9 +475,7 @@ class TestEnforceCitations:
     ):
         """Benchmark runtime remains below 20ms for realistic reports."""
         snippets = [
-            "Per LMIS: Metric {i} is {value}% (QID: lmis_test_001).".format(
-                i=i, value=50 + i
-            )
+            f"Per LMIS: Metric {i} is {50 + i}% (QID: lmis_test_001)."
             for i in range(1, 6)
         ]
         text = " ".join(snippets)

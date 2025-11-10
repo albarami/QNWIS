@@ -11,6 +11,7 @@ import json
 import logging
 from datetime import date, datetime
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from ..alerts.engine import AlertDecision, AlertEngine
 from ..alerts.registry import AlertRegistry
@@ -19,6 +20,11 @@ from ..alerts.rules import AlertRule
 from ..data.deterministic.models import QueryResult
 from .base import AgentReport, DataClient, Evidence, Insight
 from .utils.derived_results import make_derived_query_result
+
+if TYPE_CHECKING:
+    from ..notify.dispatcher import NotificationDispatcher
+    from ..notify.resolver import IncidentResolver
+    from ..utils.clock import Clock
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +62,9 @@ class AlertCenterAgent:
         data_client: DataClient,
         rule_registry: AlertRegistry | None = None,
         metric_queries: dict[str, str] | None = None,
+        notification_dispatcher: NotificationDispatcher | None = None,
+        incident_resolver: IncidentResolver | None = None,
+        clock: Clock | None = None,
     ):
         """
         Initialize Alert Center Agent.
@@ -64,12 +73,18 @@ class AlertCenterAgent:
             data_client: DataClient with .run(query_id, params)
             rule_registry: Optional pre-loaded AlertRegistry
             metric_queries: Optional mapping of metric names to query IDs
+            notification_dispatcher: Optional notification dispatcher
+            incident_resolver: Optional incident resolver
+            clock: Optional clock for deterministic timestamps
         """
         self.client = data_client
         self.registry = rule_registry or AlertRegistry()
         self.engine = AlertEngine()
         self.renderer = AlertReportRenderer()
         self.metric_queries = metric_queries or DEFAULT_METRIC_QUERIES
+        self.notification_dispatcher = notification_dispatcher
+        self.incident_resolver = incident_resolver
+        self.clock = clock
         self._silences: dict[str, str] = {}  # rule_id -> until_date (ISO)
         self._load_silences()
 
@@ -251,6 +266,18 @@ class AlertCenterAgent:
         insights = self._build_insights(decisions, rules_to_eval)
         narrative = self._build_narrative(decisions, rules_to_eval)
         derived_results = self._build_derived_results(decisions, rules_to_eval)
+
+        # Emit notifications for triggered alerts (L19→L22 integration)
+        if self.notification_dispatcher and self.clock:
+            from .alert_center_notify import emit_notifications
+
+            emit_notifications(decisions, rules_to_eval, self.notification_dispatcher, self.clock)
+
+        # Record green evaluations for auto-resolution
+        if self.incident_resolver:
+            from .alert_center_notify import record_green_evaluations
+
+            record_green_evaluations(decisions, rules_to_eval, self.incident_resolver)
 
         return AgentReport(
             agent="AlertCenter",

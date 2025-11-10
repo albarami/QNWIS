@@ -1,0 +1,32 @@
+{
+  "task": {
+    "intent": "pattern.anomalies",
+    "query_text": null,
+    "params": {},
+    "request_id": "req-test-summary",
+    "user_id": null
+  },
+  "routing": {},
+  "routing_decision": null,
+  "agents": [],
+  "agent_calls": [
+    {
+      "agent": "test_agent",
+      "findings": [
+        {
+          "title": "[REDACTED_NAME] Analysis",
+          "summary": "Per LMIS: Retention rate is 85% (QID: qid_abc123) in the oil and gas sector.",
+          "evidence_query_ids": [
+            "qid_abc123"
+          ]
+        }
+      ],
+      "warnings": []
+    }
+  ],
+  "cache_stats": {},
+  "query_ids": [
+    "qid_abc123"
+  ],
+  "generated_at": "2025-11-10T06:01:56.950977+00:00"
+}

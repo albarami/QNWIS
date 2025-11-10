@@ -12,8 +12,9 @@ import logging
 import math
 from typing import Any, Literal
 
-import yaml
 from pydantic import BaseModel, Field, field_validator
+
+import yaml
 
 logger = logging.getLogger(__name__)
 
@@ -211,7 +212,7 @@ def validate_scenario_file(filepath: str) -> tuple[bool, str]:
             content = f.read()
 
         # Detect format from extension
-        fmt = "json" if filepath.endswith(".json") else "yaml"
+        fmt: Literal["yaml", "json"] = "json" if filepath.endswith(".json") else "yaml"
 
         spec = parse_scenario(content, format=fmt)
 

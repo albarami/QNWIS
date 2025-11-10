@@ -36,6 +36,14 @@ notify_determinism               [PASS] ✓
 
 **Determinism**: Zero violations detected ✓
 
+### RG-4 Artifacts & Badge
+
+- Perf snapshot JSON: docs/audit/ops/RG4_SUMMARY.json
+- Ops summary: OPS_NOTIFY_SUMMARY.md
+- Badge: src/qnwis/docs/audit/badges/rg4_notify.svg
+
+![RG-4 Notify Badge](src/qnwis/docs/audit/badges/rg4_notify.svg)
+
 ### Test Coverage: **PASS**
 
 #### Unit Tests
@@ -183,6 +191,10 @@ tests/integration/notify/
 ### Reports
 - ✅ `ops_notify_report.json` (RG-4 gate results)
 - ✅ `OPS_NOTIFY_SUMMARY.md` (Human-readable summary)
+- ✅ docs/audit/ops/RG4_SUMMARY.json (Perf snapshot: p50, p95, sample size)
+
+### Badges
+- ✅ src/qnwis/docs/audit/badges/rg4_notify.svg (RG-4 status)
 
 ### Audit Ledger
 - ✅ `docs/audit/incidents/incidents.jsonl`

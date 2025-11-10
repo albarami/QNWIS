@@ -123,7 +123,7 @@ class TestCachedDataClient:
             "get_gcc_indicator",
             "get_world_bank_indicator",
         }
-        assert ALLOWLIST == expected_methods
+        assert expected_methods == ALLOWLIST
 
     def test_non_callable_attribute_passthrough(
         self, cached_client: CachedDataClient, mock_delegate: MagicMock

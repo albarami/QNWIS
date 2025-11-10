@@ -8,7 +8,6 @@ even with large narratives and multiple QueryResults.
 import tempfile
 import time
 from pathlib import Path
-from typing import List
 
 import pytest
 
@@ -69,7 +68,7 @@ through strategic investments in education and skills development.
 
 
 @pytest.fixture
-def multiple_query_results() -> List[QueryResult]:
+def multiple_query_results() -> list[QueryResult]:
     """Create 3 QueryResult objects for performance testing."""
     return [
         QueryResult(
@@ -142,7 +141,7 @@ class TestAuditPerformance:
     def test_pack_generation_with_large_narrative(
         self,
         large_narrative: str,
-        multiple_query_results: List[QueryResult],
+        multiple_query_results: list[QueryResult],
         temp_pack_dir: Path,
     ) -> None:
         """
@@ -245,7 +244,7 @@ class TestAuditPerformance:
     def test_pack_write_creates_all_files(
         self,
         large_narrative: str,
-        multiple_query_results: List[QueryResult],
+        multiple_query_results: list[QueryResult],
         temp_pack_dir: Path,
     ) -> None:
         """
@@ -297,7 +296,7 @@ class TestAuditPerformance:
     def test_hmac_computation_overhead(
         self,
         large_narrative: str,
-        multiple_query_results: List[QueryResult],
+        multiple_query_results: list[QueryResult],
         temp_pack_dir: Path,
     ) -> None:
         """

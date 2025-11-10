@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 from ..classifier import QueryClassifier
 from ..registry import AgentRegistry, UnknownIntentError
@@ -20,7 +20,7 @@ from ..schemas import RoutingDecision, WorkflowState
 logger = logging.getLogger(__name__)
 
 # Global classifier instance (lazy initialization)
-_classifier: Optional[QueryClassifier] = None
+_classifier: QueryClassifier | None = None
 
 
 def _build_clarifying_question(query_text: str) -> str:
@@ -71,7 +71,7 @@ def _get_classifier() -> QueryClassifier:
     return _classifier
 
 
-def route_intent(state: Dict[str, Any], registry: AgentRegistry) -> Dict[str, Any]:
+def route_intent(state: dict[str, Any], registry: AgentRegistry) -> dict[str, Any]:
     """
     Validate and route the task intent.
 

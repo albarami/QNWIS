@@ -171,6 +171,10 @@ All 26 steps documented with completion reports:
 - **[docs/api/step27_service_api.md](docs/api/step27_service_api.md)**: Service API + RBAC + Observability
 - **[docs/api/examples.http](docs/api/examples.http)**: Runnable HTTP request examples
 
+#### Notifications & Incidents (Step 29)
+- **[STEP29_NOTIFICATIONS_INCIDENTS_COMPLETE.md](STEP29_NOTIFICATIONS_INCIDENTS_COMPLETE.md)**: Notification dispatcher + incident management
+- **[OPS_NOTIFY_SUMMARY.md](OPS_NOTIFY_SUMMARY.md)**: RG-4 gate summary and metrics
+
 ---
 
 ## 🎓 Learning Path
@@ -207,8 +211,9 @@ All 26 steps documented with completion reports:
 ### Current Status
 - **Overall:** ✅ Production-Ready
 - **RG-2 Gates:** ✅ 6/6 PASSED
-- **Steps:** ✅ 27/27 Complete (incl. Step 27 API Service)
-- **Tests:** ✅ 31+ API tests passing (auth, RBAC, health, rate limiting)
+- **RG-4 Gate:** ✅ PASSED (Ops-Notifications)
+- **Steps:** ✅ 29/29 Complete (incl. Step 29 Notifications & Incidents)
+- **Tests:** ✅ 47+ notify tests passing (unit + integration)
 - **Coverage:** ✅ 91% overall, 94%+ on API core modules
 
 ### Quick Metrics

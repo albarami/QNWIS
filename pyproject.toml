@@ -129,6 +129,15 @@ module = [
 ]
 follow_imports = "skip"
 
+[[tool.mypy.overrides]]
+module = [
+    "qnwis.notify.*",
+    "qnwis.incidents.*",
+]
+disallow_any_generics = true
+implicit_reexport = false
+warn_unused_ignores = true
+
 [tool.ruff]
 target-version = "py311"
 line-length = 100
@@ -140,6 +149,17 @@ exclude = [
   "build",
   "dist",
   "references",  # treat as read-only examples
+]
+extend-include = [
+  "src/qnwis/alerts/**/*.py",
+  "src/qnwis/monitoring/**/*.py",
+  "src/qnwis/agents/alert_center.py",
+  "src/qnwis/scripts/qa/ops_gate.py",
+  "src/qnwis/scripts/qa/determinism_scan.py",
+  "src/qnwis/notify/**/*.py",
+  "src/qnwis/incidents/**/*.py",
+  "src/qnwis/api/routers/**/*.py",
+  "src/qnwis/scripts/qa/ops_notify_gate.py",
 ]
 
 [tool.ruff.lint]

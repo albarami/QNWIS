@@ -11,7 +11,6 @@ import logging
 import shutil
 import sqlite3
 from pathlib import Path
-from typing import List, Optional
 
 from .audit_trail import AuditManifest
 
@@ -187,7 +186,7 @@ class SQLiteAuditTrailStore:
 
         logger.debug("Upserted audit manifest: %s", manifest.audit_id)
 
-    def get(self, audit_id: str) -> Optional[AuditManifest]:
+    def get(self, audit_id: str) -> AuditManifest | None:
         """
         Retrieve audit manifest by ID.
 
@@ -210,7 +209,7 @@ class SQLiteAuditTrailStore:
         manifest_data = json.loads(row[0])
         return AuditManifest.from_dict(manifest_data)
 
-    def list_recent(self, limit: int = 50) -> List[AuditManifest]:
+    def list_recent(self, limit: int = 50) -> list[AuditManifest]:
         """
         List recent audit manifests ordered by creation time.
 
@@ -255,7 +254,7 @@ class SQLiteAuditTrailStore:
             )
         logger.debug("Deleted audit manifest record: %s", audit_id)
 
-    def search_by_request_id(self, request_id: str) -> List[AuditManifest]:
+    def search_by_request_id(self, request_id: str) -> list[AuditManifest]:
         """
         Find audit manifests by request ID.
 
@@ -286,7 +285,7 @@ class SQLiteAuditTrailStore:
 
         return manifests
 
-    def list_failed_verifications(self, limit: int = 50) -> List[AuditManifest]:
+    def list_failed_verifications(self, limit: int = 50) -> list[AuditManifest]:
         """
         List audit manifests with verification failures.
 
@@ -372,7 +371,7 @@ class FileSystemAuditTrailStore:
                 target_dir,
             )
 
-    def get_path(self, audit_id: str) -> Optional[str]:
+    def get_path(self, audit_id: str) -> str | None:
         """
         Get filesystem path for an audit pack.
 
@@ -387,7 +386,7 @@ class FileSystemAuditTrailStore:
             return str(pack_path)
         return None
 
-    def list_all(self) -> List[str]:
+    def list_all(self) -> list[str]:
         """
         List all audit IDs in store.
 
@@ -396,13 +395,12 @@ class FileSystemAuditTrailStore:
         """
         audit_ids = []
         for item in self.root_dir.iterdir():
-            if item.is_dir():
-                # Verify it looks like an audit pack (has manifest.json)
-                if (item / "manifest.json").exists():
-                    audit_ids.append(item.name)
+            # Verify it looks like an audit pack (has manifest.json)
+            if item.is_dir() and (item / "manifest.json").exists():
+                audit_ids.append(item.name)
         return sorted(audit_ids, reverse=True)
 
-    def load_manifest(self, audit_id: str) -> Optional[AuditManifest]:
+    def load_manifest(self, audit_id: str) -> AuditManifest | None:
         """
         Load audit manifest from filesystem.
 

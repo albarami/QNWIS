@@ -1,0 +1,17 @@
+# QNWIS Alert Center Metrics
+# Generated: 2025-11-10T09:20:37.660193Z
+
+## Counters
+rules_evaluated_total 2
+alerts_fired_total 1
+
+## Latency (milliseconds)
+eval_latency_ms_p50 0.06
+eval_latency_ms_p95 0.06
+eval_latency_ms_p99 0.06
+eval_latency_ms_mean 0.04
+eval_latency_ms_max 0.06
+
+## Per-Rule Statistics
+integration_test_1: evaluated=1, triggered=0, rate=0.0%
+integration_test_2: evaluated=1, triggered=1, rate=100.0%

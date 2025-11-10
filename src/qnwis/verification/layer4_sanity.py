@@ -8,8 +8,8 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from .schemas import Issue, SanityRule
 from ..data.deterministic.models import QueryResult
+from .schemas import Issue, SanityRule
 
 
 def sanity_checks(

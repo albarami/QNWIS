@@ -11,11 +11,12 @@ import logging
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 from ..data.deterministic.cache_access import execute_cached
 from ..data.deterministic.models import QueryResult, QuerySpec, Row
 from ..data.deterministic.normalize import normalize_rows
-from ..data.deterministic.registry import QueryRegistry
+from ..data.deterministic.registry import DEFAULT_QUERY_ROOT, QueryRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -103,12 +104,34 @@ class AgentReport:
     Attributes:
         agent: Agent name/identifier
         findings: List of insights discovered
+        insights: Alias for findings (backwards compatibility)
         warnings: Agent-level warnings
+        narrative: Optional markdown/text narrative
+        derived_results: Optional deterministic QueryResults (e.g., derived metrics)
+        metadata: Arbitrary metadata blob for downstream renderers
     """
 
     agent: str
-    findings: list[Insight]
+    findings: list[Insight] | None = None
     warnings: list[str] = field(default_factory=list)
+    insights: list[Insight] | None = None
+    narrative: str | None = None
+    derived_results: list[Any] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        base_insights: list[Insight]
+        if self.findings is not None:
+            base_insights = list(self.findings)
+        elif self.insights is not None:
+            base_insights = list(self.insights)
+        else:
+            base_insights = []
+
+        self.findings = base_insights
+        self.insights = base_insights
+        self.warnings = list(self.warnings)
+        self.metadata = dict(self.metadata)
 
 
 class DataClient:
@@ -127,7 +150,7 @@ class DataClient:
             queries_dir: Path to query definitions directory (default: data/queries)
             ttl_s: Cache TTL in seconds (default: 300)
         """
-        root = Path(queries_dir) if queries_dir is not None else Path("data/queries")
+        root = Path(queries_dir) if queries_dir is not None else DEFAULT_QUERY_ROOT
         self.ttl_s = ttl_s
         self._registry = QueryRegistry(str(root))
         self._registry_view = QueryRegistryView(self._registry)

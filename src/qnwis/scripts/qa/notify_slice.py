@@ -6,6 +6,7 @@ import subprocess
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
+INCIDENTS_DIR = REPO_ROOT / "src" / "qnwis" / "incidents"
 
 
 def _run(cmd: list[str]) -> None:
@@ -18,15 +19,24 @@ def _run(cmd: list[str]) -> None:
 
 def main() -> None:
     """Execute the notify hardening slice."""
-    lint_targets = [
-        "src/qnwis/notify",
-        "src/qnwis/api/routers",
-        "src/qnwis/scripts/qa/ops_notify_gate.py",
-    ]
+    notify_dir = "src/qnwis/notify"
+    ops_gate_path = "src/qnwis/scripts/qa/ops_notify_gate.py"
+    incidents_dir = (
+        str(INCIDENTS_DIR.relative_to(REPO_ROOT))
+        if INCIDENTS_DIR.exists()
+        else None
+    )
+
+    lint_targets = [notify_dir, ops_gate_path]
+    if incidents_dir:
+        lint_targets.insert(1, incidents_dir)
 
     _run(["python", "-m", "ruff", "check", *lint_targets])
     _run(["python", "-m", "flake8", *lint_targets])
-    _run(["python", "-m", "mypy", "--strict", "src/qnwis/notify", "src/qnwis/scripts/qa/ops_notify_gate.py"])
+    mypy_targets = [notify_dir, ops_gate_path]
+    if incidents_dir:
+        mypy_targets.insert(1, incidents_dir)
+    _run(["python", "-m", "mypy", "--strict", *mypy_targets])
     _run(["python", "-m", "pytest", "-q", "tests/unit/notify", "tests/integration/notify"])
 
 

@@ -8,7 +8,7 @@ query IDs, and citation source prefixes in agent narratives.
 from __future__ import annotations
 
 import re
-from typing import Iterable, Mapping
+from collections.abc import Iterable, Mapping
 
 DEFAULT_ALLOWED_PREFIXES = [
     "Per LMIS:",

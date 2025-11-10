@@ -1,0 +1,12 @@
+{
+  "ok": true,
+  "total_numbers": 1,
+  "cited_numbers": 1,
+  "uncited": [],
+  "malformed": [],
+  "missing_qid": [],
+  "sources_used": {
+    "Per LMIS:": 1
+  },
+  "runtime_ms": 0.19479996990412474
+}

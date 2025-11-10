@@ -204,7 +204,7 @@ def test_cli_query_mode_with_output_file(tmp_path: Path) -> None:
     assert output_file.exists(), "Output file not created"
 
     # Should have valid JSON in file
-    with open(output_file, "r", encoding="utf-8") as f:
+    with open(output_file, encoding="utf-8") as f:
         result = json.load(f)
 
     assert result.get("ok") is True

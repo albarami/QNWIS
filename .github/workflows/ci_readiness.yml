@@ -8,10 +8,214 @@ on:
   workflow_dispatch:  # Manual trigger
 
 jobs:
+  pre-gate:
+    name: "Pre-Gate Sanity"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install minimal dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyyaml
+
+      - name: Run placeholder scan
+        run: |
+          python src/qnwis/scripts/qa/placeholder_scan.py --limit 200
+
+      - name: Build import graph
+        run: |
+          python src/qnwis/scripts/qa/import_graph.py --output src/qnwis/docs/audit/import_graph.json
+
+  pre-commit:
+    name: "Pre-commit Hooks"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: pre-gate
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+          pip install pre-commit
+
+      - name: Run pre-commit
+        run: |
+          pre-commit run --all-files --show-diff-on-failure
+
+  api-slice:
+    name: "Step 27 API Slice"
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: pre-commit
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Lint API slice
+        run: |
+          ruff check src/qnwis/api src/qnwis/security src/qnwis/observability src/qnwis/cli
+
+      - name: Type-check API slice
+        run: |
+          mypy src/qnwis/api src/qnwis/security src/qnwis/observability src/qnwis/cli
+
+      - name: Run API unit/integration tests
+        run: |
+          pytest -q tests/unit/api tests/integration/api
+
+  step26-slice:
+    name: "Step 26 Scenario Slice"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: pre-commit
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dev dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Scenario placeholder scan (core)
+        run: |
+          python src/qnwis/scripts/qa/placeholder_scan.py --limit 200 --root src/qnwis/scenario
+
+      - name: Scenario placeholder scan (agents)
+        run: |
+          python src/qnwis/scripts/qa/placeholder_scan.py --limit 200 --root src/qnwis/agents
+
+      - name: Run Step 26 tests
+        run: |
+          pytest \
+            tests/unit/scenario \
+            tests/unit/agents/test_scenario_agent.py \
+            tests/integration/agents/test_scenario_end_to_end.py \
+            tests/integration/agents/test_scenario_verification.py \
+            -v --maxfail=1
+
+  step28-slice:
+    name: "Step 28 Alert Slice"
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: pre-commit
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run alert pytest slice
+        run: |
+          pytest -q \
+            tests/unit/alerts \
+            tests/unit/agents/test_alert_center.py \
+            tests/integration/agents/test_alert_flow.py
+
+      - name: Run Ops Gate
+        run: |
+          python src/qnwis/scripts/qa/ops_gate.py
+
+  step29-slice:
+    name: "Step 29 Notify Slice"
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: pre-commit
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+          pip install pre-commit
+
+      - name: Run notify pre-commit slice
+        run: |
+          pre-commit run step29-notify-slice --all-files --show-diff-on-failure
+
+      - name: Run Ops Notify Gate
+        run: |
+          python src/qnwis/scripts/qa/ops_notify_gate.py
+
+      - name: Upload notify artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: step29-notify-artifacts
+          path: |
+            OPS_NOTIFY_SUMMARY.md
+            ops_notify_report.json
+            docs/audit/ops/RG4_SUMMARY.json
+            src/qnwis/docs/audit/badges/rg4_notify.svg
+          retention-days: 30
+
   readiness-gate:
-    name: "Readiness Gate - Steps 1-25"
+    name: "Readiness Gate - Steps 1-29"
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    needs:
+      - pre-commit
+      - step28-slice
+      - step29-slice
 
     steps:
       - name: Checkout code
@@ -122,6 +326,7 @@ jobs:
     name: "System Tests - Readiness Gate"
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    needs: pre-commit
 
     steps:
       - name: Checkout code
@@ -141,7 +346,7 @@ jobs:
 
       - name: Run System Tests
         run: |
-          pytest tests/system/test_readiness_gate.py -v --tb=short
+          pytest tests/system/test_api_readiness.py -v --tb=short
 
       - name: Upload Test Results
         if: always()

@@ -1,11 +1,11 @@
 {
-  "generated_at": "2025-11-10T20:36:57.904526+00:00",
+  "generated_at": "2025-11-10T21:15:05.767042+00:00",
   "overall_passed": true,
   "performance": {
     "sample_size": 100,
-    "p50_ms": 0.5971499485895038,
-    "p95_ms": 0.7482098764739931,
-    "p99_ms": 0.7954259682446743
+    "p50_ms": 0.597400008700788,
+    "p95_ms": 0.7369201397523284,
+    "p99_ms": 0.7988249137997627
   },
   "incidents": {
     "total": 102,
@@ -17,8 +17,10 @@
   "determinism": {
     "passed": true,
     "violations": [],
+    "network_violations": [],
     "targets_scanned": [
       "src\\qnwis\\notify",
+      "src\\qnwis\\incidents",
       "src\\qnwis\\agents\\__init__.py",
       "src\\qnwis\\agents\\alert_center.py",
       "src\\qnwis\\agents\\base.py",
@@ -52,5 +54,6 @@
     "notify_determinism": {
       "passed": true
     }
-  }
+  },
+  "badge_path": "src\\qnwis\\docs\\audit\\badges\\rg4_notify.svg"
 }

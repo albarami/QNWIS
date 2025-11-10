@@ -9,8 +9,8 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-import yaml
 
+import yaml
 from src.qnwis.jobs.refresh_materializations import main as refresh_mv_main
 
 

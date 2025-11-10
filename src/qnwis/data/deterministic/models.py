@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from datetime import date, datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 SourceType = Literal["csv", "world_bank"]
 UnitType = Literal["count", "percent", "qar", "usd", "index", "unknown"]
@@ -17,8 +18,26 @@ class Provenance(BaseModel):
 
 
 class Freshness(BaseModel):
+    """Freshness metadata for a deterministic query result."""
+
     asof_date: str  # ISO date
     updated_at: str | None = None
+
+    @field_validator("asof_date")
+    @classmethod
+    def _validate_asof_date(cls, value: str) -> str:
+        """Ensure ``asof_date`` is a valid ISO-8601 date string."""
+        date.fromisoformat(value)
+        return value
+
+    @field_validator("updated_at")
+    @classmethod
+    def _validate_updated_at(cls, value: str | None) -> str | None:
+        """Ensure ``updated_at`` is either ``None`` or a valid ISO timestamp."""
+        if value is None:
+            return None
+        datetime.fromisoformat(value)
+        return value
 
 
 class TransformStep(BaseModel):
@@ -48,4 +67,5 @@ class QueryResult(BaseModel):
     unit: UnitType
     provenance: Provenance
     freshness: Freshness
+    metadata: dict[str, Any] = Field(default_factory=dict)
     warnings: list[str] = Field(default_factory=list)

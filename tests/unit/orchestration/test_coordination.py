@@ -9,9 +9,9 @@ import types
 import pytest
 
 from src.qnwis.agents.base import AgentReport
-from src.qnwis.orchestration.coordination import Coordinator, CoordinationError
-from src.qnwis.orchestration.policies import CoordinationPolicy
+from src.qnwis.orchestration.coordination import CoordinationError, Coordinator
 from src.qnwis.orchestration.merge import merge_results
+from src.qnwis.orchestration.policies import CoordinationPolicy
 from src.qnwis.orchestration.registry import AgentRegistry
 from src.qnwis.orchestration.schemas import (
     Citation,

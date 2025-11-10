@@ -17,8 +17,8 @@ from pathlib import Path
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-from src.qnwis.agents.base import DataClient
-from src.qnwis.agents.predictor import PredictorAgent
+from qnwis.agents.base import DataClient
+from qnwis.agents.predictor import PredictorAgent
 
 
 def parse_date(date_str: str) -> date:

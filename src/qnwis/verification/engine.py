@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections import Counter
 from typing import Any
 
+from ..data.deterministic.models import QueryResult
 from .citation_enforcer import enforce_citations
 from .layer2_crosschecks import cross_check
 from .layer3_policy_privacy import redact
@@ -17,7 +18,6 @@ from .schemas import (
     VerificationConfig,
     VerificationSummary,
 )
-from ..data.deterministic.models import QueryResult
 
 
 def _build_summary_md(issues: list[Issue], ok: bool) -> str:

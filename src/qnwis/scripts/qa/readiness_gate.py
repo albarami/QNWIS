@@ -420,6 +420,24 @@ STEP_REQUIREMENTS: tuple[StepRequirement, ...] = (
             "STEP28_ALERT_CENTER_IMPLEMENTATION_COMPLETE.md",
         ),
     ),
+    StepRequirement(
+        step=29,
+        name="Notifications Ops Hardening",
+        code_paths=(
+            "src/qnwis/notify",
+            "src/qnwis/api/routers/notifications.py",
+            "src/qnwis/scripts/qa/ops_notify_gate.py",
+        ),
+        test_paths=(
+            "tests/unit/notify",
+            "tests/integration/notify",
+        ),
+        smoke_targets=(
+            "docs/ops/step29_notifications.md",
+            "OPS_NOTIFY_SUMMARY.md",
+            "STEP29_NOTIFICATIONS_IMPLEMENTATION_COMPLETE.md",
+        ),
+    ),
 )
 
 NARRATIVE_SAMPLE_PATHS = (
@@ -438,12 +456,21 @@ SCENARIO_NARRATIVE_PATHS = (
 STEP26_SCENARIO_SPEC_PATH = ROOT / "examples" / "retention_boost_scenario.yml"
 OPS_GATE_SUMMARY_JSON = ROOT / "OPS_GATE_SUMMARY.json"
 OPS_GATE_SUMMARY_MD = ROOT / "OPS_GATE_SUMMARY.md"
+OPS_NOTIFY_SUMMARY_JSON = ROOT / "ops_notify_report.json"
+OPS_NOTIFY_SUMMARY_MD = ROOT / "OPS_NOTIFY_SUMMARY.md"
+RG4_SUMMARY_JSON = ROOT / "docs" / "audit" / "ops" / "RG4_SUMMARY.json"
+RG4_BADGE_PATH = SRC_ROOT / "qnwis" / "docs" / "audit" / "badges" / "rg4_notify.svg"
 STEP28_ALERT_PATHS = (
     SRC_ROOT / "qnwis" / "alerts",
     SRC_ROOT / "qnwis" / "monitoring",
     SRC_ROOT / "qnwis" / "agents" / "alert_center.py",
     SRC_ROOT / "qnwis" / "scripts" / "qa" / "ops_gate.py",
     SRC_ROOT / "qnwis" / "scripts" / "qa" / "determinism_scan.py",
+)
+STEP29_NOTIFY_PATHS = (
+    SRC_ROOT / "qnwis" / "notify",
+    SRC_ROOT / "qnwis" / "api" / "routers" / "notifications.py",
+    SRC_ROOT / "qnwis" / "scripts" / "qa" / "ops_notify_gate.py",
 )
 
 
@@ -843,7 +870,12 @@ def gate_linters_and_types() -> GateResult:
         "src/qnwis/scripts/qa/ops_gate.py",
         "src/qnwis/scripts/qa/determinism_scan.py",
     ]
-    lint_targets = list(dict.fromkeys(["src/qnwis", "tests", *step28_targets]))
+    step29_lint_targets = [
+        "src/qnwis/notify",
+        "src/qnwis/api/routers",
+        "src/qnwis/scripts/qa/ops_notify_gate.py",
+    ]
+    lint_targets = list(dict.fromkeys(["src/qnwis", "tests", *step28_targets, *step29_lint_targets]))
     step26_targets = [
         "src/qnwis/scenario",
         "src/qnwis/agents/scenario_agent.py",
@@ -855,7 +887,11 @@ def gate_linters_and_types() -> GateResult:
         "src/qnwis/monitoring",
         "src/qnwis/agents/alert_center.py",
     ]
-    strict_targets = [*step26_targets, *step28_mypy_targets]
+    step29_mypy_targets = [
+        "src/qnwis/notify",
+        "src/qnwis/scripts/qa/ops_notify_gate.py",
+    ]
+    strict_targets = list(dict.fromkeys([*step26_targets, *step28_mypy_targets, *step29_mypy_targets]))
 
     ruff_code, ruff_out, ruff_err = run_cmd(
         [sys.executable, "-m", "ruff", "check", "--fix", "--extend-ignore=E402,ARG001", "--output-format", "json", *lint_targets],
@@ -900,6 +936,26 @@ def _load_ops_gate_summary() -> dict[str, Any] | None:
         return json.loads(OPS_GATE_SUMMARY_JSON.read_text(encoding="utf-8"))
     except Exception as exc:  # pragma: no cover
         logger.warning("Failed to parse Ops Gate summary: %s", exc)
+        return None
+
+
+def _load_ops_notify_summary() -> dict[str, Any] | None:
+    if not OPS_NOTIFY_SUMMARY_JSON.exists():
+        return None
+    try:
+        return json.loads(OPS_NOTIFY_SUMMARY_JSON.read_text(encoding="utf-8"))
+    except Exception as exc:  # pragma: no cover
+        logger.warning("Failed to parse Ops Notify summary: %s", exc)
+        return None
+
+
+def _load_rg4_perf_summary() -> dict[str, Any] | None:
+    if not RG4_SUMMARY_JSON.exists():
+        return None
+    try:
+        return json.loads(RG4_SUMMARY_JSON.read_text(encoding="utf-8"))
+    except Exception as exc:  # pragma: no cover
+        logger.warning("Failed to parse RG-4 perf summary: %s", exc)
         return None
 
 
@@ -1689,9 +1745,75 @@ def gate_alerts_ops_step28() -> GateResult:
     )
 
 
+def gate_notify_ops_step29() -> GateResult:
+    """Step 29: Validate RG-4 notify artifacts and determinism."""
+    start = time.time()
+    summary = _load_ops_notify_summary()
+    perf_snapshot = _load_rg4_perf_summary()
+    evidence: list[str] = []
+    if OPS_NOTIFY_SUMMARY_MD.exists():
+        evidence.append(_rel(OPS_NOTIFY_SUMMARY_MD))
+    if OPS_NOTIFY_SUMMARY_JSON.exists():
+        evidence.append(_rel(OPS_NOTIFY_SUMMARY_JSON))
+    if RG4_SUMMARY_JSON.exists():
+        evidence.append(_rel(RG4_SUMMARY_JSON))
+    if RG4_BADGE_PATH.exists():
+        evidence.append(_rel(RG4_BADGE_PATH))
+
+    determinism_hits: list[dict[str, Any]] = []
+    network_hits: list[dict[str, Any]] = []
+    if summary and "determinism" in summary:
+        determinism_section = summary.get("determinism", {})
+        determinism_hits = determinism_section.get("violations", [])
+        network_hits = determinism_section.get("network_violations", [])
+
+    performance = (summary or {}).get("performance", {})
+    perf_snapshot_metrics = (perf_snapshot or {}).get("performance", {})
+    if not performance and perf_snapshot_metrics:
+        performance = perf_snapshot_metrics
+    incidents = (summary or {}).get("incidents", {})
+    rg4_pass = (summary or {}).get("overall_passed", False)
+    badge_present = RG4_BADGE_PATH.exists()
+    rg4_snapshot_present = perf_snapshot_metrics.get("p50_ms") is not None and perf_snapshot_metrics.get("p95_ms") is not None
+
+    details = {
+        "ops_notify_summary_present": summary is not None,
+        "rg4_passed": rg4_pass,
+        "rg4_perf_snapshot_present": rg4_snapshot_present,
+        "rg4_badge_present": badge_present,
+        "badge_path": _rel(RG4_BADGE_PATH) if badge_present else None,
+        "performance": performance,
+        "incidents": incidents,
+        "determinism_hits": determinism_hits,
+        "network_determinism_hits": network_hits,
+        "perf_snapshot": perf_snapshot_metrics,
+    }
+
+    performance_ok = bool(performance.get("p50_ms") is not None and performance.get("p95_ms") is not None)
+    incidents_ok = bool(incidents) and all(key in incidents for key in ("open", "ack", "resolved"))
+    determinism_ok = not determinism_hits and not network_hits
+    ok = (
+        summary is not None
+        and rg4_pass
+        and performance_ok
+        and incidents_ok
+        and determinism_ok
+        and rg4_snapshot_present
+        and badge_present
+    )
+
+    return GateResult(
+        name="notify_ops_step29",
+        ok=ok,
+        details=details,
+        duration_ms=(time.time() - start) * 1000,
+        evidence_paths=evidence,
+    )
+
+
 def generate_markdown_report(report: ReadinessReport) -> str:
     lines = [
-        "# Readiness Report: Steps 1-28",
+        "# Readiness Report: Steps 1-29",
         "",
         f"**Generated:** {report.timestamp}",
         f"**Overall Status:** {'PASS' if report.overall_pass else 'FAIL'}",
@@ -1718,6 +1840,32 @@ def generate_markdown_report(report: ReadinessReport) -> str:
                 f"- **Ops Summary Present:** {ops_summary_flag}",
                 f"- **p50 / p95 (ms):** {perf.get('p50_ms', 'n/a')} / {perf.get('p95_ms', 'n/a')}",
                 f"- **Determinism Violations:** {len(step28_info.get('determinism_hits', []))}",
+                "",
+            ]
+        )
+    step29_info = report.summary.get("step29")
+    if step29_info:
+        perf = step29_info.get("performance") or {}
+        incidents = step29_info.get("incidents") or {}
+        rg4_passed = step29_info.get("rg4_passed")
+        rg4_status = "n/a" if rg4_passed is None else ("PASS" if rg4_passed else "FAIL")
+        summary_present = "yes" if step29_info.get("ops_notify_summary_present") else "no"
+        snapshot_present = "yes" if step29_info.get("rg4_perf_snapshot_present") else "no"
+        badge_present = "yes" if step29_info.get("rg4_badge_present") else "no"
+        badge_path = step29_info.get("badge_path") or "n/a"
+        lines.extend(
+            [
+                "## Step 29 - Notifications Ops",
+                "",
+                f"- **RG-4 Status:** {rg4_status}",
+                f"- **Ops Summary Present:** {summary_present}",
+                f"- **RG-4 Perf Snapshot:** {snapshot_present}",
+                f"- **RG-4 Badge:** {badge_present} (`{badge_path}`)",
+                f"- **p50 / p95 (ms):** {perf.get('p50_ms', 'n/a')} / {perf.get('p95_ms', 'n/a')}",
+                f"- **Incidents (open/ack/resolved):** "
+                f"{incidents.get('open', 'n/a')} / {incidents.get('ack', 'n/a')} / {incidents.get('resolved', 'n/a')}",
+                f"- **Determinism Violations:** {len(step29_info.get('determinism_hits', []))}",
+                f"- **Network Import Violations:** {len(step29_info.get('network_determinism_hits', []))}",
                 "",
             ]
         )
@@ -1812,6 +1960,8 @@ def build_artifact_index(extra_paths: Iterable[Path]) -> dict[str, str]:
         AUDIT_ROOT / "READINESS_REPORT_1_25.md",
         OPS_GATE_SUMMARY_JSON,
         OPS_GATE_SUMMARY_MD,
+        OPS_NOTIFY_SUMMARY_JSON,
+        OPS_NOTIFY_SUMMARY_MD,
     ]
     candidates.extend(extra_paths)
     artifacts: list[dict[str, Any]] = []
@@ -1840,10 +1990,23 @@ def write_readiness_review(report: ReadinessReport) -> Path:
     review_path = REVIEWS_ROOT / "readiness_gate_review.md"
     total_steps = len(STEP_REQUIREMENTS)
     step28_info = report.summary.get("step28", {})
+    step29_info = report.summary.get("step29", {})
     ops_gate_passed = step28_info.get("ops_gate_passed")
     ops_gate_status = "n/a" if ops_gate_passed is None else ("PASS" if ops_gate_passed else "FAIL")
     ops_summary_present = "yes" if step28_info.get("ops_summary_present") else "no"
     perf = step28_info.get("performance") or {}
+    notify_status = step29_info.get("rg4_passed")
+    notify_status_str = "n/a" if notify_status is None else ("PASS" if notify_status else "FAIL")
+    notify_summary_present = "yes" if step29_info.get("ops_notify_summary_present") else "no"
+    notify_perf = step29_info.get("performance") or {}
+    notify_incidents = step29_info.get("incidents") or {}
+    notify_snapshot = step29_info.get("rg4_perf_snapshot_present")
+    notify_badge = step29_info.get("rg4_badge_present")
+    notify_badge_path = step29_info.get("badge_path") or "n/a"
+
+    def _fmt_latency(value: Any) -> str:
+        return f"{value:.2f}" if isinstance(value, (int, float)) else "n/a"
+
     lines = [
         "# Readiness Gate Review (RG-1)",
         "",
@@ -1860,6 +2023,7 @@ def write_readiness_review(report: ReadinessReport) -> Path:
         "4. Performance guards benchmark deterministic layers to prevent regressions.",
         "5. Security scans ensure no secrets/PII and RBAC policies stay enforced.",
         "6. Step 28 Ops Gate artifacts capture p50/p95 latency with determinism enforcement.",
+        "7. Step 29 RG-4 notify gate reports latency + incident readiness with determinism guard.",
         "",
         "## Step 28 - Alert Center Hardening",
         "",
@@ -1867,6 +2031,21 @@ def write_readiness_review(report: ReadinessReport) -> Path:
         f"- Ops Summary Present: {ops_summary_present}",
         f"- p50 / p95 (ms): {perf.get('p50_ms', 'n/a')} / {perf.get('p95_ms', 'n/a')}",
         f"- Determinism Violations: {len(step28_info.get('determinism_hits', []))}",
+        "",
+        "## Step 29 - Notifications Ops",
+        "",
+        "| Metric | Value |",
+        "| --- | --- |",
+        f"| RG-4 Status | {notify_status_str} |",
+        f"| Ops Summary Present | {notify_summary_present} |",
+        f"| RG-4 Perf Snapshot | {'yes' if notify_snapshot else 'no'} |",
+        f"| RG-4 Badge | {'yes' if notify_badge else 'no'} ({notify_badge_path}) |",
+        f"| p50 / p95 (ms) | {_fmt_latency(notify_perf.get('p50_ms'))} / {_fmt_latency(notify_perf.get('p95_ms'))} |",
+        f"| Incidents (open/ack/resolved) | "
+        f"{notify_incidents.get('open', 'n/a')} / {notify_incidents.get('ack', 'n/a')} / "
+        f"{notify_incidents.get('resolved', 'n/a')} |",
+        f"| Determinism Violations | {len(step29_info.get('determinism_hits', []))} |",
+        f"| Network Import Violations | {len(step29_info.get('network_determinism_hits', []))} |",
         "",
         "## Gate Evidence",
         "",
@@ -1910,6 +2089,7 @@ def main() -> int:
         gate_agents_end_to_end,
         gate_performance_guards,
         gate_alerts_ops_step28,
+        gate_notify_ops_step29,
         gate_stability_controls,
         gate_api_endpoints,
         gate_api_security,
@@ -1952,6 +2132,21 @@ def main() -> int:
             "performance": step28_gate.details.get("performance", {}),
             "determinism_hits": step28_gate.details.get("determinism_hits", []),
         }
+    step29_gate = next((g for g in gates if g.name == "notify_ops_step29"), None)
+    if step29_gate is not None:
+        summary_data["step29"] = {
+            "passed": step29_gate.ok,
+            "ops_notify_summary_present": step29_gate.details.get("ops_notify_summary_present"),
+            "rg4_passed": step29_gate.details.get("rg4_passed"),
+             "rg4_perf_snapshot_present": step29_gate.details.get("rg4_perf_snapshot_present"),
+             "rg4_badge_present": step29_gate.details.get("rg4_badge_present"),
+             "badge_path": step29_gate.details.get("badge_path"),
+            "performance": step29_gate.details.get("performance", {}),
+            "incidents": step29_gate.details.get("incidents", {}),
+            "determinism_hits": step29_gate.details.get("determinism_hits", []),
+             "network_determinism_hits": step29_gate.details.get("network_determinism_hits", []),
+             "perf_snapshot": step29_gate.details.get("perf_snapshot", {}),
+        }
 
     report = ReadinessReport(
         gates=gates,
@@ -1975,6 +2170,10 @@ def main() -> int:
         report_md,
         html_summary_path,
         badge_path,
+        OPS_NOTIFY_SUMMARY_JSON,
+        OPS_NOTIFY_SUMMARY_MD,
+        RG4_SUMMARY_JSON,
+        RG4_BADGE_PATH,
     ]
     report.artifacts = _hash_artifacts(artifact_inputs)
 

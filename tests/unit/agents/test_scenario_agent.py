@@ -11,6 +11,7 @@ Tests cover:
 
 import pytest
 
+from src.qnwis.agents.base import DataClient
 from src.qnwis.agents.scenario_agent import ScenarioAgent
 from src.qnwis.data.deterministic.models import (
     Freshness,
@@ -23,13 +24,13 @@ from src.qnwis.scenario.dsl import ScenarioSpec, Transform
 STATIC_UPDATED_AT = "2024-12-31T00:00:00Z"
 
 
-class MockDataClient:
-    """Mock DataClient for testing."""
+class MockDataClient(DataClient):
+    """Deterministic stub DataClient for tests."""
 
     def __init__(self, baseline_data=None):
         """
         Initialize mock client.
-        
+
         Args:
             baseline_data: Dict mapping query_id to list of values
         """
@@ -74,6 +75,11 @@ class TestScenarioAgentInit:
         agent = ScenarioAgent(client)
 
         assert agent.client is client
+
+    def test_rejects_non_data_client(self):
+        """ScenarioAgent should enforce DataClient-only usage."""
+        with pytest.raises(TypeError, match="DataClient"):
+            ScenarioAgent(object())  # type: ignore[arg-type]
 
 
 class TestApplyMethod:

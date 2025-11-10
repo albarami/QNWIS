@@ -7,7 +7,7 @@ Defines typed inputs, outputs, and state for the LangGraph workflow.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -35,9 +35,9 @@ class Entities(BaseModel):
             Defaults to last 36 months when absent.
     """
 
-    sectors: List[str] = Field(default_factory=list)
-    metrics: List[str] = Field(default_factory=list)
-    time_horizon: Optional[Dict[str, Any]] = None
+    sectors: list[str] = Field(default_factory=list)
+    metrics: list[str] = Field(default_factory=list)
+    time_horizon: dict[str, Any] | None = None
 
 
 class Classification(BaseModel):
@@ -55,17 +55,17 @@ class Classification(BaseModel):
         tie_within_threshold: Whether top intents were within tie delta
     """
 
-    intents: List[str]
+    intents: list[str]
     complexity: Complexity
     entities: Entities
     confidence: float = Field(ge=0.0, le=1.0)
-    reasons: List[str] = Field(default_factory=list)
-    intent_scores: Dict[str, float] = Field(default_factory=dict)
+    reasons: list[str] = Field(default_factory=list)
+    intent_scores: dict[str, float] = Field(default_factory=dict)
     elapsed_ms: float = Field(default=0.0, ge=0.0)
     tie_within_threshold: bool = False
 
     @model_validator(mode="after")
-    def _validate_intent_scores(self) -> "Classification":
+    def _validate_intent_scores(self) -> Classification:
         """Validate that scores exist for all intents and tie metadata is consistent."""
         missing = [intent for intent in self.intents if intent not in self.intent_scores]
         if missing:
@@ -89,14 +89,14 @@ class RoutingDecision(BaseModel):
         execution_hints: Execution hints for coordination (complexity, priority, etc.)
     """
 
-    agents: List[str]
+    agents: list[str]
     mode: Literal["single", "parallel", "sequential"]
-    prefetch: List[Dict[str, Any]] = Field(default_factory=list)
-    notes: List[str] = Field(default_factory=list)
-    execution_hints: Dict[str, Any] = Field(default_factory=dict)
+    prefetch: list[dict[str, Any]] = Field(default_factory=list)
+    notes: list[str] = Field(default_factory=list)
+    execution_hints: dict[str, Any] = Field(default_factory=dict)
 
     @model_validator(mode="after")
-    def _validate_mode_agents(self) -> "RoutingDecision":
+    def _validate_mode_agents(self) -> RoutingDecision:
         """Ensure routing mode is consistent with number of agents."""
         if not self.agents:
             raise ValueError("RoutingDecision.agents must not be empty")
@@ -123,30 +123,29 @@ class OrchestrationTask(BaseModel):
         classification: Classification result (populated by router if query_text used)
     """
 
-    intent: Optional[Intent] = None
-    query_text: Optional[str] = None
-    params: Dict[str, Any] = Field(default_factory=dict)
-    user_id: Optional[str] = None
-    request_id: Optional[str] = None
-    classification: Optional[Classification] = None
+    intent: Intent | None = None
+    query_text: str | None = None
+    params: dict[str, Any] = Field(default_factory=dict)
+    user_id: str | None = None
+    request_id: str | None = None
+    classification: Classification | None = None
 
     @model_validator(mode="after")
-    def _validate_intent_or_query(self) -> "OrchestrationTask":
+    def _validate_intent_or_query(self) -> OrchestrationTask:
         """Ensure either intent or query_text is provided."""
         if self.intent is None and self.query_text is None:
             raise ValueError("Either intent or query_text must be provided")
         return self
 
     @model_validator(mode="after")
-    def _validate_params_after_intent(self) -> "OrchestrationTask":
+    def _validate_params_after_intent(self) -> OrchestrationTask:
         """Cross-field validation for commonly supplied parameters."""
         params = self.params or {}
 
         start_year = params.get("start_year")
         end_year = params.get("end_year")
-        if isinstance(start_year, int) and isinstance(end_year, int):
-            if start_year > end_year:
-                raise ValueError("start_year must be less than or equal to end_year")
+        if isinstance(start_year, int) and isinstance(end_year, int) and start_year > end_year:
+            raise ValueError("start_year must be less than or equal to end_year")
 
         top_n = params.get("top_n")
         if top_n is not None:
@@ -156,9 +155,8 @@ class OrchestrationTask(BaseModel):
                 raise ValueError("top_n must be between 1 and 50")
 
         months = params.get("months")
-        if months is not None:
-            if months not in {12, 24, 36}:
-                raise ValueError("months must be one of {12, 24, 36}")
+        if months is not None and months not in {12, 24, 36}:
+            raise ValueError("months must be one of {12, 24, 36}")
 
         return self
 
@@ -191,8 +189,8 @@ class Citation(BaseModel):
     query_id: str
     dataset_id: str
     locator: str
-    fields: List[str]
-    timestamp: Optional[str] = None
+    fields: list[str]
+    timestamp: str | None = None
 
 
 class Freshness(BaseModel):
@@ -209,9 +207,9 @@ class Freshness(BaseModel):
 
     source: str
     last_updated: str
-    age_days: Optional[float] = None
-    min_timestamp: Optional[str] = None
-    max_timestamp: Optional[str] = None
+    age_days: float | None = None
+    min_timestamp: str | None = None
+    max_timestamp: str | None = None
 
 
 class Reproducibility(BaseModel):
@@ -225,8 +223,31 @@ class Reproducibility(BaseModel):
     """
 
     method: str
-    params: Dict[str, Any]
+    params: dict[str, Any]
     timestamp: str
+
+
+class ConfidenceBreakdown(BaseModel):
+    """
+    Confidence scoring breakdown from verification layers.
+
+    Attributes:
+        score: Overall confidence score (0-100)
+        band: Confidence band (GREEN/AMBER/RED)
+        components: Per-dimension component scores (0-100)
+        reasons: Human-readable reasons affecting score
+        coverage: Citation coverage ratio (0-1)
+        freshness: Freshness ratio (0-1)
+        dashboard_payload: Compact payload for UI hooks ({score, band, coverage, freshness})
+    """
+
+    score: int = Field(ge=0, le=100)
+    band: Literal["GREEN", "AMBER", "RED"]
+    components: dict[str, float] = Field(default_factory=dict)
+    reasons: list[str] = Field(default_factory=list)
+    coverage: float = Field(default=1.0, ge=0.0, le=1.0)
+    freshness: float = Field(default=1.0, ge=0.0, le=1.0)
+    dashboard_payload: dict[str, Any] = Field(default_factory=dict)
 
 
 class OrchestrationResult(BaseModel):
@@ -249,24 +270,26 @@ class OrchestrationResult(BaseModel):
         issues_summary: Count of issues by severity
         audit_manifest: Audit manifest metadata (Layer 4)
         audit_id: Audit pack identifier for tamper-evident trail
+        confidence: Confidence scoring breakdown (if computed)
     """
 
     ok: bool
     intent: str  # Changed from Intent Literal to str for coordination flexibility
-    sections: List[ReportSection]
-    citations: List[Citation]
-    freshness: Dict[str, Freshness]
+    sections: list[ReportSection]
+    citations: list[Citation]
+    freshness: dict[str, Freshness]
     reproducibility: Reproducibility
-    warnings: List[str] = Field(default_factory=list)
-    request_id: Optional[str] = None
+    warnings: list[str] = Field(default_factory=list)
+    request_id: str | None = None
     timestamp: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
-    agent_traces: List[Dict[str, Any]] = Field(default_factory=list)
-    cache_stats: Dict[str, int] = Field(default_factory=dict)
-    verification: Dict[str, Any] = Field(default_factory=dict)
+    agent_traces: list[dict[str, Any]] = Field(default_factory=list)
+    cache_stats: dict[str, int] = Field(default_factory=dict)
+    verification: dict[str, Any] = Field(default_factory=dict)
     redactions_applied: int = 0
-    issues_summary: Dict[str, int] = Field(default_factory=dict)
-    audit_manifest: Optional[Dict[str, Any]] = None
-    audit_id: Optional[str] = None
+    issues_summary: dict[str, int] = Field(default_factory=dict)
+    audit_manifest: dict[str, Any] | None = None
+    audit_id: str | None = None
+    confidence: ConfidenceBreakdown | None = None
 
 
 class WorkflowState(BaseModel):
@@ -287,14 +310,14 @@ class WorkflowState(BaseModel):
         prefetch_cache: Cache of prefetched QueryResult objects
     """
 
-    task: Optional[OrchestrationTask] = None
-    route: Optional[str] = None
-    routing_decision: Optional[RoutingDecision] = None
-    agent_output: Optional[Any] = None  # AgentReport from agents.base
-    error: Optional[str] = None
-    logs: List[str] = Field(default_factory=list)
-    metadata: Dict[str, Any] = Field(default_factory=dict)
-    prefetch_cache: Dict[str, Any] = Field(default_factory=dict)
+    task: OrchestrationTask | None = None
+    route: str | None = None
+    routing_decision: RoutingDecision | None = None
+    agent_output: Any | None = None  # AgentReport from agents.base
+    error: str | None = None
+    logs: list[str] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    prefetch_cache: dict[str, Any] = Field(default_factory=dict)
 
     class Config:
         """Pydantic config."""

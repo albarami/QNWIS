@@ -1,0 +1,40 @@
+{
+  "ok": true,
+  "claims_total": 1,
+  "claims_matched": 1,
+  "issues": [],
+  "bindings": [
+    {
+      "claim": {
+        "value_text": "85%",
+        "value": 85.0,
+        "unit": "percent",
+        "span": [
+          61,
+          64
+        ],
+        "sentence": "## Workforce Retention Analysis\n\nPer LMIS: Retention rate is 85% (QID: qid_abc123) in the oil and gas sector.",
+        "citation_prefix": "Per LMIS:",
+        "query_id": "qid_abc123",
+        "source_family": "LMIS"
+      },
+      "matched": true,
+      "matched_source_qid": "qid_abc123",
+      "matched_location": "data[0].retention_rate",
+      "candidate_qids": [
+        "qid_abc123"
+      ],
+      "ambiguous": false,
+      "nearest_source_qid": null,
+      "nearest_location": null,
+      "nearest_value": null,
+      "nearest_diff": null,
+      "failure_reason": null,
+      "derived_consistent": null,
+      "derived_recomputed_value": null
+    }
+  ],
+  "math_checks": {},
+  "math_check_details": {},
+  "runtime_ms": 0.5312999710440636
+}

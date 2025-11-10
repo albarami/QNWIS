@@ -12,7 +12,7 @@ import logging
 import re
 from pathlib import Path
 from time import perf_counter
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import yaml
 
@@ -72,7 +72,7 @@ class QueryClassifier:
         if not catalog_file.exists():
             raise FileNotFoundError(f"Intent catalog not found: {catalog_path}")
 
-        with open(catalog_file, 'r', encoding='utf-8') as f:
+        with open(catalog_file, encoding='utf-8') as f:
             self.catalog = yaml.safe_load(f)
 
         if not self.catalog:
@@ -83,7 +83,7 @@ class QueryClassifier:
         if not sector_file.exists():
             raise FileNotFoundError(f"Sector lexicon not found: {sector_lex}")
 
-        with open(sector_file, 'r', encoding='utf-8') as f:
+        with open(sector_file, encoding='utf-8') as f:
             self.sectors = {line.strip().lower() for line in f if line.strip()}
 
         # Load metric lexicon
@@ -91,7 +91,7 @@ class QueryClassifier:
         if not metric_file.exists():
             raise FileNotFoundError(f"Metric lexicon not found: {metric_lex}")
 
-        with open(metric_file, 'r', encoding='utf-8') as f:
+        with open(metric_file, encoding='utf-8') as f:
             self.metrics = {line.strip().lower() for line in f if line.strip()}
 
         # Compile time horizon patterns
@@ -106,7 +106,7 @@ class QueryClassifier:
             "QueryClassifier initialized: %d sectors, %d metrics, %d intents",
             len(self.sectors),
             len(self.metrics),
-            len([k for k in self.catalog.keys() if '.' in k]),
+            len([k for k in self.catalog if '.' in k]),
         )
 
     def _compile_time_patterns(self) -> None:
@@ -182,7 +182,7 @@ class QueryClassifier:
             time_horizon=time_horizon,
         )
 
-    def _extract_time_horizon(self, text: str) -> Optional[Dict[str, Any]]:
+    def _extract_time_horizon(self, text: str) -> dict[str, Any] | None:
         """
         Extract time horizon from text using regex patterns.
 
@@ -320,7 +320,7 @@ class QueryClassifier:
             reasons.append(f"Applied default time horizon of {DEFAULT_HORIZON_MONTHS} months")
 
         # Score each intent
-        intent_scores: Dict[str, float] = {}
+        intent_scores: dict[str, float] = {}
 
         for intent_id, intent_config in self.catalog.items():
             if '.' not in intent_id:
@@ -339,7 +339,7 @@ class QueryClassifier:
         matched_intents = [
             intent for intent, score in scored_intents if score >= threshold
         ]
-        ordered_scores = {intent: score for intent, score in scored_intents}
+        ordered_scores = dict(scored_intents)
 
         # Calculate overall confidence
         tie_within_threshold = False
@@ -402,7 +402,7 @@ class QueryClassifier:
 
         return classification
 
-    def _score_intent(self, text_lower: str, intent_config: Dict[str, Any]) -> float:
+    def _score_intent(self, text_lower: str, intent_config: dict[str, Any]) -> float:
         """
         Score how well text matches an intent.
 
@@ -426,7 +426,7 @@ class QueryClassifier:
     def _determine_complexity(
         self,
         text_lower: str,
-        matched_intents: List[str],
+        matched_intents: list[str],
         entities: Entities,
     ) -> Complexity:
         """
@@ -505,7 +505,7 @@ class QueryClassifier:
         else:
             return "crisis"
 
-    def _redact_pii(self, reasons: List[str]) -> List[str]:
+    def _redact_pii(self, reasons: list[str]) -> list[str]:
         """
         Redact PII patterns from reason strings.
 
@@ -524,7 +524,7 @@ class QueryClassifier:
 
     def _should_include_prefetch(
         self,
-        entry: Dict[str, Any],
+        entry: dict[str, Any],
         classification: Classification,
     ) -> bool:
         """
@@ -541,9 +541,8 @@ class QueryClassifier:
         sectors_present = bool(classification.entities.sectors)
 
         metrics_any = entry.get('when_metrics_any')
-        if metrics_any:
-            if not metrics_lower.intersection({m.lower() for m in metrics_any}):
-                return False
+        if metrics_any and not metrics_lower.intersection({m.lower() for m in metrics_any}):
+            return False
 
         if entry.get('require_metrics') and not metrics_lower:
             return False
@@ -552,9 +551,8 @@ class QueryClassifier:
             return False
 
         min_confidence = entry.get('min_confidence')
-        if isinstance(min_confidence, (int, float)):
-            if classification.confidence < float(min_confidence):
-                return False
+        if isinstance(min_confidence, (int, float)) and classification.confidence < float(min_confidence):
+            return False
 
         complexity_list = entry.get('when_complexity_in')
         if complexity_list:
@@ -566,9 +564,9 @@ class QueryClassifier:
 
     def _resolve_prefetch_params(
         self,
-        template: Dict[str, Any],
+        template: dict[str, Any],
         classification: Classification,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Resolve a param template into concrete values.
 
@@ -579,7 +577,7 @@ class QueryClassifier:
         Returns:
             Resolved params dictionary
         """
-        resolved: Dict[str, Any] = {}
+        resolved: dict[str, Any] = {}
         for key, value in template.items():
             resolved[key] = self._resolve_prefetch_value(value, classification)
         return resolved
@@ -642,7 +640,7 @@ class QueryClassifier:
             return classification.confidence
         return None
 
-    def determine_data_needs(self, classification: Classification) -> List[Dict[str, Any]]:
+    def determine_data_needs(self, classification: Classification) -> list[dict[str, Any]]:
         """
         Translate classification into deterministic prefetch hints.
 
@@ -652,7 +650,7 @@ class QueryClassifier:
         Returns:
             List of prefetch specifications (function names + params)
         """
-        prefetch: List[Dict[str, Any]] = []
+        prefetch: list[dict[str, Any]] = []
 
         for intent in classification.intents:
             intent_config = self.catalog.get(intent, {})
@@ -665,7 +663,7 @@ class QueryClassifier:
                 params_template = entry.get('params', {})
                 resolved_params = self._resolve_prefetch_params(params_template, classification)
 
-                prefetch_entry: Dict[str, Any] = {
+                prefetch_entry: dict[str, Any] = {
                     'fn': entry['fn'],
                     'params': resolved_params,
                 }

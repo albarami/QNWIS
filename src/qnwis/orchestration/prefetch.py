@@ -11,7 +11,7 @@ import hashlib
 import json
 import logging
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ..agents.base import DataClient
 from ..data.deterministic.models import QueryResult
@@ -37,8 +37,8 @@ class Prefetcher:
         self,
         client: DataClient,
         timeout_ms: int = 25000,
-        cache: Optional[Any] = None,
-        cache_version: Optional[str] = None,
+        cache: Any | None = None,
+        cache_version: str | None = None,
     ) -> None:
         """
         Initialize the prefetcher.
@@ -54,7 +54,7 @@ class Prefetcher:
         self.cache = cache
         self.cache_version = cache_version or REGISTRY_VERSION
 
-    def run(self, specs: List[PrefetchSpec]) -> Dict[str, QueryResult]:
+    def run(self, specs: list[PrefetchSpec]) -> dict[str, QueryResult]:
         """
         Execute prefetch specifications and return cache.
 
@@ -68,7 +68,7 @@ class Prefetcher:
             PrefetchError: If prefetch fails or times out
         """
         start_time = time.perf_counter()
-        cache: Dict[str, QueryResult] = {}
+        cache: dict[str, QueryResult] = {}
         seen_keys: set[str] = set()
 
         logger.info("Starting prefetch with %d specs", len(specs))
@@ -160,7 +160,7 @@ class Prefetcher:
         return cache
 
     @staticmethod
-    def _sanitize_params(params: Dict[str, Any]) -> Dict[str, Any]:
+    def _sanitize_params(params: dict[str, Any]) -> dict[str, Any]:
         """Sanitize params for logging (remove PII)."""
         safe = {}
         for key, val in params.items():
@@ -171,7 +171,7 @@ class Prefetcher:
         return safe
 
 
-def generate_cache_key(fn: str, params: Dict[str, Any]) -> str:
+def generate_cache_key(fn: str, params: dict[str, Any]) -> str:
     """
     Generate deterministic cache key from function name and parameters.
 

@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 import os
 from datetime import date, datetime
-from typing import Any, Dict, Optional
+from typing import Any
 
 import redis
 
@@ -33,7 +33,7 @@ class DeterministicRedisCache:
     """
 
     def __init__(
-        self, url: Optional[str] = None, namespace: str = "qnwis"
+        self, url: str | None = None, namespace: str = "qnwis"
     ) -> None:
         """
         Initialize Redis cache connection.
@@ -51,7 +51,7 @@ class DeterministicRedisCache:
         """Add namespace prefix to key."""
         return f"{self.ns}:{key}"
 
-    def get(self, key: str) -> Optional[QueryResult]:
+    def get(self, key: str) -> QueryResult | None:
         """
         Retrieve QueryResult from cache.
 
@@ -104,7 +104,7 @@ class DeterministicRedisCache:
             return 0
         return int(self.r.delete(*keys))
 
-    def info(self) -> Dict[str, Any]:
+    def info(self) -> dict[str, Any]:
         """
         Get Redis server info.
 

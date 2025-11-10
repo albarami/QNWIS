@@ -1,13 +1,13 @@
-<pre># Readiness Report: Steps 1-25
+<pre># Readiness Report: Steps 1-29
 
-**Generated:** 2025-11-09T18:27:32.568098
+**Generated:** 2025-11-10T19:36:34.192779
 **Overall Status:** FAIL
-**Execution Time:** 4928 ms
+**Execution Time:** 14905 ms
 
 ## Summary
 
-- **Total Gates:** 5
-- **Passed:** 4
+- **Total Gates:** 3
+- **Passed:** 2
 - **Failed:** 1
 
 ## Previously failing gates now PASS
@@ -17,7 +17,7 @@
 ## Gate Results
 
 ### step_completeness [PASS]
-- **Duration:** 8 ms
+- **Duration:** 14 ms
 - **Severity:** ERROR
 ```json
 {
@@ -307,6 +307,28 @@
         &quot;tests&quot;: [],
         &quot;smoke&quot;: []
       }
+    },
+    &quot;step_28&quot;: {
+      &quot;name&quot;: &quot;Alert Center Hardening&quot;,
+      &quot;code_ok&quot;: true,
+      &quot;tests_ok&quot;: true,
+      &quot;smoke_ok&quot;: true,
+      &quot;missing&quot;: {
+        &quot;code&quot;: [],
+        &quot;tests&quot;: [],
+        &quot;smoke&quot;: []
+      }
+    },
+    &quot;step_29&quot;: {
+      &quot;name&quot;: &quot;Notifications Ops Hardening&quot;,
+      &quot;code_ok&quot;: true,
+      &quot;tests_ok&quot;: true,
+      &quot;smoke_ok&quot;: true,
+      &quot;missing&quot;: {
+        &quot;code&quot;: [],
+        &quot;tests&quot;: [],
+        &quot;smoke&quot;: []
+      }
     }
   },
   &quot;missing&quot;: {}
@@ -316,7 +338,7 @@
 - `docs/IMPLEMENTATION_ROADMAP.md`
 
 ### no_placeholders [PASS]
-- **Duration:** 155 ms
+- **Duration:** 2212 ms
 - **Severity:** ERROR
 ```json
 {
@@ -335,8 +357,8 @@
 **Evidence:**
 - `src/qnwis/scripts/qa/grep_rules.yml`
 
-### linters_and_types [PASS]
-- **Duration:** 4407 ms
+### linters_and_types [FAIL]
+- **Duration:** 12679 ms
 - **Severity:** ERROR
 ```json
 {
@@ -350,103 +372,37 @@
     &quot;exit_code&quot;: 0
   },
   &quot;flake8&quot;: {
-    &quot;issues&quot;: 0,
+    &quot;issues&quot;: 41,
     &quot;fixable&quot;: 0,
-    &quot;rules&quot;: {},
-    &quot;files&quot;: [],
-    &quot;stdout_tail&quot;: &quot;&quot;,
+    &quot;rules&quot;: {
+      &quot;E501&quot;: 32,
+      &quot;E203&quot;: 9
+    },
+    &quot;files&quot;: [
+      &quot;src/qnwis\\agents\\pattern_miner.py&quot;,
+      &quot;src/qnwis\\agents\\predictor.py&quot;,
+      &quot;src/qnwis\\agents\\prompts\\national_strategy_prompts.py&quot;,
+      &quot;src/qnwis\\api\\server.py&quot;,
+      &quot;src/qnwis\\cli\\qnwis_alerts.py&quot;,
+      &quot;src/qnwis\\cli\\qnwis_predict.py&quot;,
+      &quot;src/qnwis\\forecast\\backtest.py&quot;,
+      &quot;src/qnwis\\forecast\\early_warning.py&quot;,
+      &quot;src/qnwis\\orchestration\\coordination.py&quot;,
+      &quot;src/qnwis\\orchestration\\nodes\\verify.py&quot;
+    ],
+    &quot;stdout_tail&quot;: &quot;space before &#x27;:&#x27;\nsrc/qnwis\\orchestration\\coordination.py:506:58: E203 whitespace before &#x27;:&#x27;\nsrc/qnwis\\orchestration\\coordination.py:514:63: E203 whitespace before &#x27;:&#x27;\nsrc/qnwis\\orchestration\\nodes\\verify.py:289:121: E501 line too long (125 &gt; 120 characters)\nsrc/qnwis\\patterns\\metrics.py:217:30: E203 whitespace before &#x27;:&#x27;\nsrc/qnwis\\scenario\\qa.py:199:34: E203 whitespace before &#x27;:&#x27;\nsrc/qnwis\\scripts\\qa\\readiness_gate.py:895:121: E501 line too long (130 &gt; 120 characters)\nsrc/qnwis\\security\\auth.py:299:121: E501 line too long (126 &gt; 120 characters)\nsrc/qnwis\\security\\auth.py:321:121: E501 line too long (138 &gt; 120 characters)\nsrc/qnwis\\ui\\svg.py:38:121: E501 line too long (128 &gt; 120 characters)\nsrc/qnwis\\ui\\svg.py:41:121: E501 line too long (129 &gt; 120 characters)\nsrc/qnwis\\ui\\svg.py:93:121: E501 line too long (124 &gt; 120 characters)\nsrc/qnwis\\ui\\svg.py:147:121: E501 line too long (124 &gt; 120 characters)\ntests\\conftest.py:117:121: E501 line too long (127 &gt; 120 characters)\ntests\\conftest.py:130:121: E501 line too long (121 &gt; 120 characters)\ntests\\integration\\agents\\test_predictor_agent.py:27:121: E501 line too long (135 &gt; 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:79:121: E501 line too long (130 &gt; 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:96:121: E501 line too long (127 &gt; 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:111:121: E501 line too long (150 &gt; 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:222:121: E501 line too long (124 &gt; 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:245:121: E501 line too long (123 &gt; 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:268:121: E501 line too long (126 &gt; 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:294:121: E501 line too long (152 &gt; 120 characters)\ntests\\unit\\agents\\test_pattern_detective.py:254:121: E501 line too long (126 &gt; 120 characters)\ntests\\unit\\agents\\test_pattern_detective.py:266:121: E501 line too long (123 &gt; 120 characters)\n&quot;,
     &quot;stderr_tail&quot;: &quot;&quot;,
-    &quot;exit_code&quot;: 0
+    &quot;exit_code&quot;: 1
   },
   &quot;mypy&quot;: {
     &quot;issues&quot;: 0,
     &quot;fixable&quot;: 0,
     &quot;rules&quot;: {},
     &quot;files&quot;: [],
-    &quot;stdout_tail&quot;: &quot;Success: no issues found in 10 source files\n&quot;,
+    &quot;stdout_tail&quot;: &quot;Success: no issues found in 23 source files\n&quot;,
     &quot;stderr_tail&quot;: &quot;&quot;,
     &quot;exit_code&quot;: 0
   }
 }
 ```
-
-### deterministic_access [PASS]
-- **Duration:** 68 ms
-- **Severity:** ERROR
-```json
-{
-  &quot;violations&quot;: []
-}
-```
-
-### security_and_privacy [FAIL]
-- **Duration:** 287 ms
-- **Severity:** ERROR
-```json
-{
-  &quot;secret_hits&quot;: [
-    {
-      &quot;file&quot;: &quot;src/qnwis/docs/audit/readiness_report.json&quot;,
-      &quot;pattern&quot;: &quot;aws_secret&quot;,
-      &quot;snippet&quot;: &quot;aws_secret&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/docs/audit/READINESS_REPORT_1_25.md&quot;,
-      &quot;pattern&quot;: &quot;aws_secret&quot;,
-      &quot;snippet&quot;: &quot;aws_secret&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/scripts/qa/readiness_gate.py&quot;,
-      &quot;pattern&quot;: &quot;aws_secret&quot;,
-      &quot;snippet&quot;: &quot;aws_secret&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/docs/audit/readiness_report.json&quot;,
-      &quot;pattern&quot;: &quot;aws_secret&quot;,
-      &quot;snippet&quot;: &quot;aws_secret&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/docs/audit/READINESS_REPORT_1_25.md&quot;,
-      &quot;pattern&quot;: &quot;aws_secret&quot;,
-      &quot;snippet&quot;: &quot;aws_secret&quot;
-    }
-  ],
-  &quot;pii_hits&quot;: [
-    {
-      &quot;file&quot;: &quot;src/qnwis/docs/audit/readiness_report.json&quot;,
-      &quot;pattern&quot;: &quot;email&quot;,
-      &quot;snippet&quot;: &quot;analyst@mol.gov.qa&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/docs/audit/READINESS_REPORT_1_25.md&quot;,
-      &quot;pattern&quot;: &quot;email&quot;,
-      &quot;snippet&quot;: &quot;analyst@mol.gov.qa&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/docs/orchestration/step15_routing.md&quot;,
-      &quot;pattern&quot;: &quot;email&quot;,
-      &quot;snippet&quot;: &quot;analyst@mol.gov.qa&quot;
-    },
-    {
-      &quot;file&quot;: &quot;docs/orchestration/step14_workflow.md&quot;,
-      &quot;pattern&quot;: &quot;email&quot;,
-      &quot;snippet&quot;: &quot;analyst@mol.qa&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/docs/audit/readiness_report.json&quot;,
-      &quot;pattern&quot;: &quot;email&quot;,
-      &quot;snippet&quot;: &quot;analyst@mol.gov.qa&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/docs/audit/READINESS_REPORT_1_25.md&quot;,
-      &quot;pattern&quot;: &quot;email&quot;,
-      &quot;snippet&quot;: &quot;analyst@mol.gov.qa&quot;
-    }
-  ],
-  &quot;rbac_schema&quot;: true,
-  &quot;rbac_tests&quot;: true
-}
-```
-**Evidence:**
-- `src/qnwis/verification/schemas.py`
 </pre>

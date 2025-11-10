@@ -8,7 +8,7 @@ fields are present before materialization.
 from __future__ import annotations
 
 import pathlib
-from typing import Any, Dict, List
+from typing import Any
 
 import yaml
 
@@ -38,7 +38,7 @@ class MaterializedRegistry:
         self.path = path
         self.specs = self._load()
 
-    def _load(self) -> List[Dict[str, Any]]:
+    def _load(self) -> list[dict[str, Any]]:
         """
         Load and validate MV specifications from YAML.
 
@@ -75,7 +75,7 @@ class MaterializedRegistry:
                     )
         return data
 
-    def by_name(self, name: str) -> Dict[str, Any]:
+    def by_name(self, name: str) -> dict[str, Any]:
         """
         Get specification by MV name.
 

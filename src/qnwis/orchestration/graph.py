@@ -8,19 +8,18 @@ The graph routes tasks to agents, validates outputs, and formats results consist
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Iterable, Literal, List, cast
+from collections.abc import Iterable
+from typing import Any, Literal, cast
 
 from langgraph.graph import END, StateGraph
 
+from ..agents.base import DataClient
+from .metrics import MetricsObserver, ensure_observer
 from .nodes import error_handler, format_report, invoke_agent, route_intent, verify_structure
+from .prefetch import Prefetcher
 from .registry import AgentRegistry
 from .schemas import OrchestrationResult, OrchestrationTask, WorkflowState
-from .metrics import MetricsObserver, ensure_observer
-from .prefetch import Prefetcher
-from .coordination import Coordinator
-from .policies import get_policy_for_complexity, DEFAULT_POLICY
 from .types import PrefetchSpec
-from ..agents.base import DataClient
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +42,7 @@ class QNWISGraph:
     def __init__(
         self,
         registry: AgentRegistry,
-        config: Dict[str, Any] | None = None,
+        config: dict[str, Any] | None = None,
         observer: MetricsObserver | None = None,
         data_client: DataClient | None = None,
         cache: Any | None = None,
@@ -71,7 +70,7 @@ class QNWISGraph:
         )
 
     @staticmethod
-    def _default_config() -> Dict[str, Any]:
+    def _default_config() -> dict[str, Any]:
         """
         Get default configuration.
 
@@ -113,7 +112,7 @@ class QNWISGraph:
         logger.info("Building LangGraph workflow")
 
         # Create graph with WorkflowState type
-        workflow = StateGraph(Dict[str, Any])
+        workflow = StateGraph(dict[str, Any])
 
         # Add nodes
         workflow.add_node("router", self._router_node)
@@ -174,11 +173,11 @@ class QNWISGraph:
 
         return self._graph
 
-    def _router_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
+    def _router_node(self, state: dict[str, Any]) -> dict[str, Any]:
         """Router node wrapper."""
         return route_intent(state, self.registry)
 
-    def _prefetch_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
+    def _prefetch_node(self, state: dict[str, Any]) -> dict[str, Any]:
         """Prefetch node wrapper - executes declarative prefetch specs."""
         workflow_state = WorkflowState(**state)
 
@@ -208,7 +207,7 @@ class QNWISGraph:
 
             logger.info("Running prefetch with %d specs", len(prefetch_specs))
             # Cast to satisfy type checker - validated by Pydantic
-            typed_specs = cast(List[PrefetchSpec], prefetch_specs)
+            typed_specs = cast(list[PrefetchSpec], prefetch_specs)
             prefetch_cache = prefetcher.run(typed_specs)
 
             return {
@@ -227,7 +226,7 @@ class QNWISGraph:
                 + [f"WARNING: Prefetch failed: {exc}", "Continuing without prefetch"],
             }
 
-    def _invoke_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
+    def _invoke_node(self, state: dict[str, Any]) -> dict[str, Any]:
         """Invoke node wrapper."""
         timeout_ms = int(self.config.get("timeouts", {}).get("agent_call_ms", 30000))
         retry_cfg = self.config.get("retries", {})
@@ -244,7 +243,7 @@ class QNWISGraph:
             transient_exceptions=transient,
         )
 
-    def _verify_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
+    def _verify_node(self, state: dict[str, Any]) -> dict[str, Any]:
         """Verify node wrapper."""
         validation_cfg = self.config.get("validation", {})
         strict = bool(validation_cfg.get("strict", False))
@@ -256,17 +255,17 @@ class QNWISGraph:
             observer=self.observer,
         )
 
-    def _format_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
+    def _format_node(self, state: dict[str, Any]) -> dict[str, Any]:
         """Format node wrapper."""
         formatting_cfg = self.config.get("formatting", {})
         return format_report(state, formatting_config=formatting_cfg, observer=self.observer)
 
-    def _error_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
+    def _error_node(self, state: dict[str, Any]) -> dict[str, Any]:
         """Error handler node wrapper."""
         return error_handler(state, observer=self.observer)
 
     def _should_proceed(
-        self, state: Dict[str, Any]
+        self, state: dict[str, Any]
     ) -> Literal["prefetch", "invoke", "verify", "format", "error"]:
         """
         Conditional edge function to determine next node.
@@ -344,7 +343,7 @@ class QNWISGraph:
         )
 
         # Initialize state
-        initial_state: Dict[str, Any] = {
+        initial_state: dict[str, Any] = {
             "task": task,
             "route": None,
             "routing_decision": None,
@@ -420,7 +419,7 @@ class QNWISGraph:
 
 def create_graph(
     registry: AgentRegistry,
-    config: Dict[str, Any] | None = None,
+    config: dict[str, Any] | None = None,
     observer: MetricsObserver | None = None,
     data_client: DataClient | None = None,
     cache: Any | None = None,

@@ -1,0 +1,12 @@
+{
+  "dataset_id": "lmis_workforce",
+  "source": "csv",
+  "locator": "/data/workforce.csv",
+  "fields": [
+    "sector",
+    "retention_rate"
+  ],
+  "query_ids": [
+    "qid_abc123"
+  ]
+}

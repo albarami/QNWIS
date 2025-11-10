@@ -10,11 +10,11 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from typing import Any, Dict, List
+from typing import Any
 
+from ..data.deterministic.registry import DEFAULT_QUERY_ROOT, QueryRegistry
 from ..data.materialized.postgres import PostgresMaterializer
 from ..data.materialized.registry import MaterializedRegistry
-from ..data.deterministic.registry import QueryRegistry, DEFAULT_QUERY_ROOT
 
 
 def _resolve_query_registry(db: Any) -> Any:
@@ -45,7 +45,7 @@ def main(db: Any, registry_path: str) -> None:
             "Query registry must expose a 'render_select(sql_id, params)' method."
         )
 
-    created: List[Dict[str, str]] = []
+    created: list[dict[str, str]] = []
     for spec in reg.specs:
         # Validate the query exists in the registry
         query_registry.get(spec["sql_id"])

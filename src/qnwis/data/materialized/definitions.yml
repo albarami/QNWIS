@@ -1,0 +1,18 @@
+# Materialized view definitions for hot LMIS queries
+# Each MV is backed by a registered SQL query with fixed parameters
+
+- name: mv_retention_by_company_36m
+  sql_id: retention_by_company_agg
+  params:
+    time_period_months: 36
+    min_employees: 50
+  indexes:
+    - idx_mv_ret_comp_sector_company ON mv_retention_by_company_36m(sector, company_id)
+  refresh_cron: "0 */12 * * *"  # every 12 hours
+
+- name: mv_salary_stats_sector
+  sql_id: salary_statistics_sector
+  params: {}
+  indexes:
+    - idx_mv_sal_sector ON mv_salary_stats_sector(sector)
+  refresh_cron: "0 1 * * *"  # daily 01:00

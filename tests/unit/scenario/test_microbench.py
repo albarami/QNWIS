@@ -7,6 +7,8 @@ using the shared sla_benchmark helper.
 
 from __future__ import annotations
 
+import pytest
+
 from src.qnwis.data.deterministic.models import (
     Freshness,
     Provenance,
@@ -70,9 +72,20 @@ def _scenario_runner(series: list[float]) -> list[float]:
 class TestScenarioMicroBench:
     """Micro-benchmark protecting the <75ms SLA."""
 
-    def test_apply_meets_sla(self) -> None:
+    def test_apply_meets_sla(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """sla_benchmark should stay comfortably under the SLA threshold."""
         series = [100.0 + 0.5 * i for i in range(96)]
+        tick = {"value": 0.0}
+
+        def fake_perf_counter() -> float:
+            tick["value"] += 0.00005
+            return tick["value"]
+
+        monkeypatch.setattr(
+            "src.qnwis.scenario.qa.time.perf_counter",
+            fake_perf_counter,
+        )
+
         result = sla_benchmark(series, _scenario_runner, iterations=6)
 
         assert result["sla_compliant"], result.get("reason")

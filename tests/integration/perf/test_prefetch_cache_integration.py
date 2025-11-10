@@ -212,10 +212,10 @@ class TestPrefetchCacheIntegration:
         redis_cache: DeterministicRedisCache,
     ) -> None:
         """Prefetch raises PrefetchError when timeout is exceeded."""
-        from src.qnwis.orchestration.prefetch import PrefetchError
-
         # Create a slow method
         import time
+
+        from src.qnwis.orchestration.prefetch import PrefetchError
 
         def slow_method(**kwargs):  # type: ignore[no-untyped-def]
             time.sleep(0.1)  # 100ms

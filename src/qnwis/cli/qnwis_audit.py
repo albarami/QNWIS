@@ -16,9 +16,8 @@ import json
 import logging
 import shutil
 import sys
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Optional
 
 # Setup basic logging
 logging.basicConfig(
@@ -28,7 +27,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def _get_audit_config() -> dict[str, Optional[str]]:
+def _get_audit_config() -> dict[str, str | None]:
     """Load audit configuration from orchestration.yml."""
     defaults = {
         "pack_dir": "./audit_packs",
@@ -56,7 +55,7 @@ def _get_audit_config() -> dict[str, Optional[str]]:
         return defaults.copy()
 
 
-def _parse_iso8601(value: str) -> Optional[datetime]:
+def _parse_iso8601(value: str) -> datetime | None:
     """
     Parse ISO 8601 timestamp into aware datetime.
 
@@ -67,7 +66,7 @@ def _parse_iso8601(value: str) -> Optional[datetime]:
         normalized = value.replace("Z", "+00:00")
         parsed = datetime.fromisoformat(normalized)
         if parsed.tzinfo is None:
-            parsed = parsed.replace(tzinfo=timezone.utc)
+            parsed = parsed.replace(tzinfo=UTC)
         return parsed
     except Exception:
         return None
@@ -279,7 +278,7 @@ def cmd_prune(args: argparse.Namespace) -> int:  # noqa: C901
         print(f"ERROR: Invalid retention days: {days}")
         return 1
 
-    cutoff = datetime.now(timezone.utc) - timedelta(days=days_int)
+    cutoff = datetime.now(UTC) - timedelta(days=days_int)
     fs_store = FileSystemAuditTrailStore(str(config["pack_dir"]))
 
     sqlite_store = None

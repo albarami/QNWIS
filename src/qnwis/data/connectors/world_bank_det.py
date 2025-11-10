@@ -1,9 +1,16 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from ....data.apis.world_bank import UDCGlobalDataIntegrator  # type: ignore[import-not-found]
+if TYPE_CHECKING:
+    from data.apis.world_bank import UDCGlobalDataIntegrator  # type: ignore[import-not-found]
+else:
+    try:
+        from data.apis.world_bank import UDCGlobalDataIntegrator  # type: ignore[import-not-found]
+    except ImportError:
+        UDCGlobalDataIntegrator = None  # type: ignore[misc,assignment]
+
 from ..deterministic.models import Freshness, Provenance, QueryResult, QuerySpec, Row
 
 GCC_DEFAULT_COUNTRIES = ["QAT", "SAU", "ARE", "KWT", "BHR", "OMN"]
@@ -77,6 +84,12 @@ def run_world_bank_query(spec: QuerySpec) -> QueryResult:
     max_rows = 10000
     if "max_rows" in params:
         max_rows = _validate_positive_int(params["max_rows"], "max_rows")
+
+    if UDCGlobalDataIntegrator is None:
+        raise ImportError(
+            "World Bank connector requires 'data.apis.world_bank' module. "
+            "Please install the required external dependency."
+        )
 
     integ = UDCGlobalDataIntegrator()
     dataframe = integ.get_indicator(

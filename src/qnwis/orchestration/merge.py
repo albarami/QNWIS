@@ -10,7 +10,7 @@ from __future__ import annotations
 import logging
 import re
 from datetime import datetime
-from typing import Any, Dict, List, Set, Tuple
+from typing import Any
 
 from ..orchestration.schemas import (
     Citation,
@@ -90,7 +90,7 @@ def normalize_section_title(title: str) -> str:
     return title.strip().lower()
 
 
-def dedupe_sections(sections: List[ReportSection]) -> List[ReportSection]:
+def dedupe_sections(sections: list[ReportSection]) -> list[ReportSection]:
     """
     Deduplicate sections by (title, first 40 chars of body).
 
@@ -100,8 +100,8 @@ def dedupe_sections(sections: List[ReportSection]) -> List[ReportSection]:
     Returns:
         Deduplicated list maintaining first occurrence
     """
-    seen: Set[Tuple[str, str]] = set()
-    unique: List[ReportSection] = []
+    seen: set[tuple[str, str]] = set()
+    unique: list[ReportSection] = []
 
     for section in sections:
         normalized_title = normalize_section_title(section.title)
@@ -117,7 +117,7 @@ def dedupe_sections(sections: List[ReportSection]) -> List[ReportSection]:
     return unique
 
 
-def sort_sections(sections: List[ReportSection]) -> List[ReportSection]:
+def sort_sections(sections: list[ReportSection]) -> list[ReportSection]:
     """
     Sort sections according to canonical order.
 
@@ -138,7 +138,7 @@ def sort_sections(sections: List[ReportSection]) -> List[ReportSection]:
     return sorted(sections, key=section_sort_key)
 
 
-def merge_citations(results: List[OrchestrationResult]) -> List[Citation]:
+def merge_citations(results: list[OrchestrationResult]) -> list[Citation]:
     """
     Merge citations with deduplication by (query_id, dataset_id).
 
@@ -148,8 +148,8 @@ def merge_citations(results: List[OrchestrationResult]) -> List[Citation]:
     Returns:
         Deduplicated and sorted list of Citation objects
     """
-    seen: Set[Tuple[str, str]] = set()
-    citations: List[Citation] = []
+    seen: set[tuple[str, str]] = set()
+    citations: list[Citation] = []
 
     for result in results:
         for citation in result.citations:
@@ -163,7 +163,7 @@ def merge_citations(results: List[OrchestrationResult]) -> List[Citation]:
     return citations
 
 
-def merge_freshness(results: List[OrchestrationResult]) -> Dict[str, Freshness]:
+def merge_freshness(results: list[OrchestrationResult]) -> dict[str, Freshness]:
     """
     Merge freshness metadata, keeping track of minimum and maximum timestamps.
 
@@ -173,7 +173,7 @@ def merge_freshness(results: List[OrchestrationResult]) -> Dict[str, Freshness]:
     Returns:
         Dictionary of source -> Freshness with timestamp ranges
     """
-    ranges: Dict[str, Dict[str, Any]] = {}
+    ranges: dict[str, dict[str, Any]] = {}
 
     for result in results:
         for source, fresh in result.freshness.items():
@@ -214,7 +214,7 @@ def merge_freshness(results: List[OrchestrationResult]) -> Dict[str, Freshness]:
             if info["age_days"] is None and fresh.age_days is not None:
                 info["age_days"] = fresh.age_days
 
-    merged: Dict[str, Freshness] = {}
+    merged: dict[str, Freshness] = {}
     for source, info in ranges.items():
         min_ts = info["min_str"] or info["fallback"]
         max_ts = info["max_str"] or info["fallback"]
@@ -231,7 +231,7 @@ def merge_freshness(results: List[OrchestrationResult]) -> Dict[str, Freshness]:
     return merged
 
 
-def merge_reproducibility(results: List[OrchestrationResult]) -> List[Reproducibility]:
+def merge_reproducibility(results: list[OrchestrationResult]) -> list[Reproducibility]:
     """
     Merge reproducibility metadata from all results.
 
@@ -241,8 +241,8 @@ def merge_reproducibility(results: List[OrchestrationResult]) -> List[Reproducib
     Returns:
         List of unique Reproducibility objects
     """
-    seen: Set[Tuple[str, str]] = set()
-    repro_list: List[Reproducibility] = []
+    seen: set[tuple[str, str]] = set()
+    repro_list: list[Reproducibility] = []
 
     for result in results:
         repro = result.reproducibility
@@ -257,7 +257,7 @@ def merge_reproducibility(results: List[OrchestrationResult]) -> List[Reproducib
     return repro_list
 
 
-def merge_warnings(results: List[OrchestrationResult]) -> List[str]:
+def merge_warnings(results: list[OrchestrationResult]) -> list[str]:
     """
     Merge and deduplicate warnings.
 
@@ -267,8 +267,8 @@ def merge_warnings(results: List[OrchestrationResult]) -> List[str]:
     Returns:
         Deduplicated list of warnings
     """
-    seen: Set[str] = set()
-    warnings: List[str] = []
+    seen: set[str] = set()
+    warnings: list[str] = []
 
     for result in results:
         for warning in result.warnings:
@@ -280,7 +280,7 @@ def merge_warnings(results: List[OrchestrationResult]) -> List[str]:
     return warnings
 
 
-def merge_agent_traces(results: List[OrchestrationResult]) -> List[Dict[str, Any]]:
+def merge_agent_traces(results: list[OrchestrationResult]) -> list[dict[str, Any]]:
     """
     Merge agent execution traces with deduplication and deterministic ordering.
 
@@ -290,8 +290,8 @@ def merge_agent_traces(results: List[OrchestrationResult]) -> List[Dict[str, Any
     Returns:
         Sorted list of unique execution trace dictionaries
     """
-    seen: Set[Tuple[str, str, str, int]] = set()
-    traces: List[Dict[str, Any]] = []
+    seen: set[tuple[str, str, str, int]] = set()
+    traces: list[dict[str, Any]] = []
 
     for result in results:
         for trace in result.agent_traces:
@@ -316,7 +316,7 @@ def merge_agent_traces(results: List[OrchestrationResult]) -> List[Dict[str, Any
     return traces
 
 
-def merge_results(results: List[OrchestrationResult]) -> OrchestrationResult:
+def merge_results(results: list[OrchestrationResult]) -> OrchestrationResult:
     """
     Deterministically merge multiple OrchestrationResult objects.
 
@@ -345,7 +345,7 @@ def merge_results(results: List[OrchestrationResult]) -> OrchestrationResult:
     logger.info("Merging %d OrchestrationResult objects", len(results))
 
     # Aggregate sections
-    all_sections: List[ReportSection] = []
+    all_sections: list[ReportSection] = []
     for result in results:
         all_sections.extend(result.sections)
 

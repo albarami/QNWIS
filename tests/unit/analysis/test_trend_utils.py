@@ -234,7 +234,7 @@ class TestWindowSlopes:
         result = window_slopes(series, windows=(3, 5))
 
         # Both slopes should be None or near zero
-        for window, slope in result:
+        for _window, slope in result:
             if slope is not None:
                 assert abs(slope) < 0.001
 

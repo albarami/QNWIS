@@ -1,0 +1,21 @@
+{
+  "ok": false,
+  "total_numbers": 1,
+  "cited_numbers": 0,
+  "uncited": [
+    {
+      "code": "UNCITED_NUMBER",
+      "message": "Numeric claim '85%' lacks required citation source",
+      "severity": "error",
+      "value_text": "85%",
+      "span": [
+        51,
+        54
+      ]
+    }
+  ],
+  "malformed": [],
+  "missing_qid": [],
+  "sources_used": {},
+  "runtime_ms": 0.22839999292045832
+}

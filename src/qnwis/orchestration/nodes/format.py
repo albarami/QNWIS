@@ -10,8 +10,8 @@ from __future__ import annotations
 import hashlib
 import logging
 import re
-from datetime import datetime, timezone
-from typing import Any, Dict, List
+from datetime import UTC, datetime
+from typing import Any
 
 from ...agents.base import AgentReport, Evidence
 from ..metrics import MetricsObserver, ensure_observer
@@ -83,7 +83,7 @@ def _parse_iso(value: str) -> datetime | None:
         normalized = value.replace("Z", "+00:00")
         parsed = datetime.fromisoformat(normalized)
         if parsed.tzinfo is None:
-            parsed = parsed.replace(tzinfo=timezone.utc)
+            parsed = parsed.replace(tzinfo=UTC)
         return parsed
     except (ValueError, TypeError, AttributeError):
         return None
@@ -167,7 +167,7 @@ def _format_evidence(report: AgentReport, top_n: int) -> ReportSection:
     Returns:
         Formatted section
     """
-    all_evidence: List[Evidence] = []
+    all_evidence: list[Evidence] = []
     for finding in report.findings:
         all_evidence.extend(finding.evidence)
 
@@ -201,7 +201,7 @@ def _format_evidence(report: AgentReport, top_n: int) -> ReportSection:
     return ReportSection(title="Evidence (Top Sources)", body_md=body.strip())
 
 
-def _format_citations(report: AgentReport, max_items: int) -> List[Citation]:
+def _format_citations(report: AgentReport, max_items: int) -> list[Citation]:
     """
     Extract citations from agent report.
 
@@ -240,7 +240,7 @@ def _format_citations(report: AgentReport, max_items: int) -> List[Citation]:
     return citations[:max_items]
 
 
-def _format_freshness(report: AgentReport) -> Dict[str, Freshness]:
+def _format_freshness(report: AgentReport) -> dict[str, Freshness]:
     """
     Extract freshness metadata from report warnings.
 
@@ -250,8 +250,8 @@ def _format_freshness(report: AgentReport) -> Dict[str, Freshness]:
     Returns:
         Freshness metadata by source
     """
-    now = datetime.now(timezone.utc)
-    freshness: Dict[str, Freshness] = {}
+    now = datetime.now(UTC)
+    freshness: dict[str, Freshness] = {}
 
     for finding in report.findings:
         for ev in finding.evidence:
@@ -279,7 +279,7 @@ def _format_freshness(report: AgentReport) -> Dict[str, Freshness]:
     return freshness
 
 
-def _format_citations_summary(citation_report: Dict[str, Any]) -> ReportSection:
+def _format_citations_summary(citation_report: dict[str, Any]) -> ReportSection:
     """Create citations summary section from citation report."""
     total = citation_report.get("total_numbers", 0)
     cited = citation_report.get("cited_numbers", 0)
@@ -308,7 +308,7 @@ def _format_citations_summary(citation_report: Dict[str, Any]) -> ReportSection:
             lines.append(f"- {source} ({count} citation{suffix})")
         lines.append("")
 
-    def _add_issue_examples(title: str, issues: list[Dict[str, Any]], fallback: str) -> None:
+    def _add_issue_examples(title: str, issues: list[dict[str, Any]], fallback: str) -> None:
         if not issues:
             return
         lines.append(f"**{title}** ({len(issues)}):")
@@ -343,7 +343,7 @@ def _format_citations_summary(citation_report: Dict[str, Any]) -> ReportSection:
 
 
 def _format_result_verification_summary(
-    result_report: Dict[str, Any]
+    result_report: dict[str, Any]
 ) -> ReportSection:
     """Create result verification summary section from result verification report."""
     claims_total = result_report.get("claims_total", 0)
@@ -422,7 +422,7 @@ def _format_result_verification_summary(
     return ReportSection(title="Result Verification Summary", body_md=body.strip())
 
 
-def _format_audit_summary(audit_manifest: Dict[str, Any]) -> ReportSection:
+def _format_audit_summary(audit_manifest: dict[str, Any]) -> ReportSection:
     """Create audit summary section from audit manifest."""
     audit_id = audit_manifest.get("audit_id", "unknown")
     created_at = audit_manifest.get("created_at", "unknown")
@@ -541,11 +541,11 @@ def _format_confidence_summary(confidence: ConfidenceBreakdown) -> ReportSection
 
 
 def format_report(
-    state: Dict[str, Any],
-    formatting_config: Dict[str, Any] | None = None,
+    state: dict[str, Any],
+    formatting_config: dict[str, Any] | None = None,
     *,
     observer: MetricsObserver | None = None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Format agent output into standardized OrchestrationResult.
 
@@ -646,13 +646,12 @@ def format_report(
             redacted_narrative = workflow_state.metadata.get(
                 "verification_narrative_redacted"
             )
-            if redacted_narrative and redactions_count > 0:
-                # Add a note about redactions to the executive summary
-                if sections:
-                    sections[0].body_md += (
-                        f"\n\n*Note: {redactions_count} PII "
-                        f"redaction{'s' if redactions_count > 1 else ''} applied.*"
-                    )
+            # Add a note about redactions to the executive summary
+            if redacted_narrative and redactions_count > 0 and sections:
+                sections[0].body_md += (
+                    f"\n\n*Note: {redactions_count} PII "
+                    f"redaction{'s' if redactions_count > 1 else ''} applied.*"
+                )
 
         if verification_summary_md:
             sections.append(

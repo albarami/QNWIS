@@ -290,16 +290,38 @@
               "tests": [],
               "smoke": []
             }
+          },
+          "step_28": {
+            "name": "Alert Center Hardening",
+            "code_ok": true,
+            "tests_ok": true,
+            "smoke_ok": true,
+            "missing": {
+              "code": [],
+              "tests": [],
+              "smoke": []
+            }
+          },
+          "step_29": {
+            "name": "Notifications Ops Hardening",
+            "code_ok": true,
+            "tests_ok": true,
+            "smoke_ok": true,
+            "missing": {
+              "code": [],
+              "tests": [],
+              "smoke": []
+            }
           }
         },
         "missing": {}
       },
-      "duration_ms": 8.067607879638672,
+      "duration_ms": 13.679027557373047,
       "severity": "ERROR",
       "evidence_paths": [
         "docs/IMPLEMENTATION_ROADMAP.md"
       ],
-      "timestamp": "2025-11-09T18:27:27.648064"
+      "timestamp": "2025-11-10T19:36:19.301405"
     },
     {
       "name": "no_placeholders",
@@ -316,16 +338,16 @@
         ],
         "violations": []
       },
-      "duration_ms": 155.33804893493652,
+      "duration_ms": 2211.909770965576,
       "severity": "ERROR",
       "evidence_paths": [
         "src/qnwis/scripts/qa/grep_rules.yml"
       ],
-      "timestamp": "2025-11-09T18:27:27.805402"
+      "timestamp": "2025-11-10T19:36:21.513315"
     },
     {
       "name": "linters_and_types",
-      "ok": true,
+      "ok": false,
       "details": {
         "ruff": {
           "issues": 0,
@@ -337,127 +359,58 @@
           "exit_code": 0
         },
         "flake8": {
-          "issues": 0,
+          "issues": 41,
           "fixable": 0,
-          "rules": {},
-          "files": [],
-          "stdout_tail": "",
+          "rules": {
+            "E501": 32,
+            "E203": 9
+          },
+          "files": [
+            "src/qnwis\\agents\\pattern_miner.py",
+            "src/qnwis\\agents\\predictor.py",
+            "src/qnwis\\agents\\prompts\\national_strategy_prompts.py",
+            "src/qnwis\\api\\server.py",
+            "src/qnwis\\cli\\qnwis_alerts.py",
+            "src/qnwis\\cli\\qnwis_predict.py",
+            "src/qnwis\\forecast\\backtest.py",
+            "src/qnwis\\forecast\\early_warning.py",
+            "src/qnwis\\orchestration\\coordination.py",
+            "src/qnwis\\orchestration\\nodes\\verify.py"
+          ],
+          "stdout_tail": "space before ':'\nsrc/qnwis\\orchestration\\coordination.py:506:58: E203 whitespace before ':'\nsrc/qnwis\\orchestration\\coordination.py:514:63: E203 whitespace before ':'\nsrc/qnwis\\orchestration\\nodes\\verify.py:289:121: E501 line too long (125 > 120 characters)\nsrc/qnwis\\patterns\\metrics.py:217:30: E203 whitespace before ':'\nsrc/qnwis\\scenario\\qa.py:199:34: E203 whitespace before ':'\nsrc/qnwis\\scripts\\qa\\readiness_gate.py:895:121: E501 line too long (130 > 120 characters)\nsrc/qnwis\\security\\auth.py:299:121: E501 line too long (126 > 120 characters)\nsrc/qnwis\\security\\auth.py:321:121: E501 line too long (138 > 120 characters)\nsrc/qnwis\\ui\\svg.py:38:121: E501 line too long (128 > 120 characters)\nsrc/qnwis\\ui\\svg.py:41:121: E501 line too long (129 > 120 characters)\nsrc/qnwis\\ui\\svg.py:93:121: E501 line too long (124 > 120 characters)\nsrc/qnwis\\ui\\svg.py:147:121: E501 line too long (124 > 120 characters)\ntests\\conftest.py:117:121: E501 line too long (127 > 120 characters)\ntests\\conftest.py:130:121: E501 line too long (121 > 120 characters)\ntests\\integration\\agents\\test_predictor_agent.py:27:121: E501 line too long (135 > 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:79:121: E501 line too long (130 > 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:96:121: E501 line too long (127 > 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:111:121: E501 line too long (150 > 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:222:121: E501 line too long (124 > 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:245:121: E501 line too long (123 > 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:268:121: E501 line too long (126 > 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:294:121: E501 line too long (152 > 120 characters)\ntests\\unit\\agents\\test_pattern_detective.py:254:121: E501 line too long (126 > 120 characters)\ntests\\unit\\agents\\test_pattern_detective.py:266:121: E501 line too long (123 > 120 characters)\n",
           "stderr_tail": "",
-          "exit_code": 0
+          "exit_code": 1
         },
         "mypy": {
           "issues": 0,
           "fixable": 0,
           "rules": {},
           "files": [],
-          "stdout_tail": "Success: no issues found in 10 source files\n",
+          "stdout_tail": "Success: no issues found in 23 source files\n",
           "stderr_tail": "",
           "exit_code": 0
         }
       },
-      "duration_ms": 4407.299041748047,
+      "duration_ms": 12679.405927658081,
       "severity": "ERROR",
       "evidence_paths": [],
-      "timestamp": "2025-11-09T18:27:32.212702"
-    },
-    {
-      "name": "deterministic_access",
-      "ok": true,
-      "details": {
-        "violations": []
-      },
-      "duration_ms": 67.76142120361328,
-      "severity": "ERROR",
-      "evidence_paths": [],
-      "timestamp": "2025-11-09T18:27:32.280463"
-    },
-    {
-      "name": "security_and_privacy",
-      "ok": false,
-      "details": {
-        "secret_hits": [
-          {
-            "file": "src/qnwis/docs/audit/readiness_report.json",
-            "pattern": "aws_secret",
-            "snippet": "aws_secret"
-          },
-          {
-            "file": "src/qnwis/docs/audit/READINESS_REPORT_1_25.md",
-            "pattern": "aws_secret",
-            "snippet": "aws_secret"
-          },
-          {
-            "file": "src/qnwis/scripts/qa/readiness_gate.py",
-            "pattern": "aws_secret",
-            "snippet": "aws_secret"
-          },
-          {
-            "file": "src/qnwis/docs/audit/readiness_report.json",
-            "pattern": "aws_secret",
-            "snippet": "aws_secret"
-          },
-          {
-            "file": "src/qnwis/docs/audit/READINESS_REPORT_1_25.md",
-            "pattern": "aws_secret",
-            "snippet": "aws_secret"
-          }
-        ],
-        "pii_hits": [
-          {
-            "file": "src/qnwis/docs/audit/readiness_report.json",
-            "pattern": "email",
-            "snippet": "analyst@mol.gov.qa"
-          },
-          {
-            "file": "src/qnwis/docs/audit/READINESS_REPORT_1_25.md",
-            "pattern": "email",
-            "snippet": "analyst@mol.gov.qa"
-          },
-          {
-            "file": "src/qnwis/docs/orchestration/step15_routing.md",
-            "pattern": "email",
-            "snippet": "analyst@mol.gov.qa"
-          },
-          {
-            "file": "docs/orchestration/step14_workflow.md",
-            "pattern": "email",
-            "snippet": "analyst@mol.qa"
-          },
-          {
-            "file": "src/qnwis/docs/audit/readiness_report.json",
-            "pattern": "email",
-            "snippet": "analyst@mol.gov.qa"
-          },
-          {
-            "file": "src/qnwis/docs/audit/READINESS_REPORT_1_25.md",
-            "pattern": "email",
-            "snippet": "analyst@mol.gov.qa"
-          }
-        ],
-        "rbac_schema": true,
-        "rbac_tests": true
-      },
-      "duration_ms": 286.6363525390625,
-      "severity": "ERROR",
-      "evidence_paths": [
-        "src/qnwis/verification/schemas.py"
-      ],
-      "timestamp": "2025-11-09T18:27:32.568098"
+      "timestamp": "2025-11-10T19:36:34.192721"
     }
   ],
   "overall_pass": false,
-  "execution_time_ms": 4928.100824356079,
-  "timestamp": "2025-11-09T18:27:32.568098",
+  "execution_time_ms": 14905.052661895752,
+  "timestamp": "2025-11-10T19:36:34.192779",
   "summary": {
-    "total_gates": 5,
-    "passed": 4,
+    "total_gates": 3,
+    "total": 3,
+    "passed": 2,
     "failed": 1
   },
   "artifacts": {
-    "coverage.xml": "729fc28c8bbf76651db2fd899da56600dad1b4e8d4e689f9fa5f92ac090022a7",
-    "junit.xml": "eaf59b6ed8cbc9997e784126f24d7227f0c2dfd3dab4cdd17018b219b9dd6e3c",
-    "src/qnwis/docs/audit/READINESS_REPORT_1_25.md": "2b4c8e3dbe8f44c0500f172aa41056abdb7f7501eb95554786dd0c74d3d8364e",
-    "src/qnwis/docs/audit/READINESS_SUMMARY.html": "ec8a97d1c5700415755a6611373b956c1f5179a1b6a5b5fdbeceb466aadb831a",
+    "coverage.xml": "a983cdf5fa5911a848b72fb3c0e1873dc544bc88697bf45abf0d4bbfd5223104",
+    "junit.xml": "1936cb6760d2944a3e93d625ce6d9911b24758cee616d5db7eb8eb0f3abf7270",
+    "src/qnwis/docs/audit/READINESS_REPORT_1_25.md": "85132492520d3138c931293ec4f6bfe8dfc7b1198866c51a9d735d339d77c235",
+    "src/qnwis/docs/audit/READINESS_SUMMARY.html": "c11cb4fd0dc2739404802d46ab5b259cb9a72a18e0d71f303f3aea3dcb758700",
     "src/qnwis/docs/audit/badges/rg1_pass.svg": "9995f7f48c4cb371d7db73a0cb755b09a43f686d6f82bb85a81eb9d7b1b857d8"
   },
   "fixed_gates": []

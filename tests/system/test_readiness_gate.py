@@ -56,7 +56,7 @@ def readiness_report(run_gate):
     run_gate()
     report_path = AUDIT_ROOT / "readiness_report.json"
     assert report_path.exists(), "readiness_report.json not generated"
-    with open(report_path, "r", encoding="utf-8") as handle:
+    with report_path.open(encoding="utf-8") as handle:
         return json.load(handle)
 
 
@@ -66,7 +66,7 @@ def artifact_index(run_gate):
     run_gate()
     index_path = AUDIT_ROOT / "ARTIFACT_INDEX.json"
     assert index_path.exists(), "ARTIFACT_INDEX.json missing"
-    with open(index_path, "r", encoding="utf-8") as handle:
+    with index_path.open(encoding="utf-8") as handle:
         return json.load(handle)
 
 
@@ -269,7 +269,7 @@ class TestOrchestrationGate:
         run_gate()
         json_report = AUDIT_ROOT / "readiness_report.json"
 
-        with open(json_report, "r", encoding="utf-8") as f:
+        with json_report.open(encoding="utf-8") as f:
             report = json.load(f)
 
         gates = {g["name"]: g for g in report["gates"]}
@@ -374,6 +374,25 @@ class TestSecurityAndStability:
         assert all(stability["details"]["env"].values())
 
 
+class TestLintersAndTypesGate:
+    """Regression tests for lint/type coverage."""
+
+    def test_linters_gate_reports_fixable_counts(self, readiness_report):
+        gates = {g["name"]: g for g in readiness_report["gates"]}
+        lint_gate = gates["linters_and_types"]
+        ruff_details = lint_gate["details"]["ruff"]
+        assert "fixable" in ruff_details
+        assert isinstance(ruff_details["fixable"], int)
+        assert ruff_details["fixable"] >= 0
+
+    def test_no_sim102_regressions(self, readiness_report):
+        gates = {g["name"]: g for g in readiness_report["gates"]}
+        lint_gate = gates["linters_and_types"]
+        ruff_rules = lint_gate["details"]["ruff"]["rules"]
+        sim102_hits = ruff_rules.get("SIM102", 0)
+        assert sim102_hits == 0, f"SIM102 violations detected: {sim102_hits}"
+
+
 class TestFailFastBehavior:
     """Test fail-fast behavior on errors."""
 
@@ -382,6 +401,14 @@ class TestFailFastBehavior:
         failed_critical = [g for g in readiness_report["gates"] if not g["ok"] and g["severity"] == "ERROR"]
         if failed_critical:
             assert not readiness_report["overall_pass"], "Should fail on ERROR severity gates"
+
+
+class TestPlaceholderGate:
+    """Validate placeholder scanning results."""
+
+    def test_no_placeholder_hits(self, readiness_report):
+        gates = {g["name"]: g for g in readiness_report["gates"]}
+        assert gates["no_placeholders"]["details"]["violations"] == []
 
 
 class TestSmokeMatrix:
@@ -400,7 +427,7 @@ class TestSmokeMatrix:
 
         import yaml
 
-        with open(smoke_matrix, "r") as f:
+        with smoke_matrix.open(encoding="utf-8") as f:
             matrix = yaml.safe_load(f)
 
         required_sections = [
@@ -437,7 +464,7 @@ class TestGrepRules:
 
         import yaml
 
-        with open(grep_rules, "r") as f:
+        with grep_rules.open(encoding="utf-8") as f:
             rules = yaml.safe_load(f)
 
         assert "disallow" in rules
@@ -451,7 +478,7 @@ class TestGrepRules:
         if not grep_rules.exists():
             pytest.skip("Grep rules not found")
 
-        with open(grep_rules, "r") as f:
+        with grep_rules.open(encoding="utf-8") as f:
             rules = yaml.safe_load(f)
 
         patterns = rules["disallow"]["placeholders"]["patterns"]
