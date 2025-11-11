@@ -1,7 +1,14 @@
 {
   "permissions": {
     "allow": [
-      "Bash(\".\\.venv\\Scripts\\python.exe\":*)"
+      "Bash(\".\\.venv\\Scripts\\python.exe\":*)",
+      "Bash(\".\\.venv\\Scripts\\python.exe\" -m pytest -q tests/unit/slo)",
+      "Bash(\".\\.venv\\Scripts\\python.exe\" -m pytest -q tests/integration/slo)",
+      "Bash(\".\\.venv\\Scripts\\python.exe\" src/qnwis/scripts/qa/rg6_resilience_gate.py)",
+      "Bash(\".\\.venv\\Scripts\\python.exe\" src/qnwis/scripts/qa/readiness_gate.py)",
+      "Bash(\".\\.venv\\Scripts\\python.exe\" -m ruff check:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nStep 31: SLO/SLI & Error Budgets (RG-6) — models/loader/budget/burn, alerts, CLI+API, gate, tests, docs\n\nImplements comprehensive SLO/SLI framework with error budgets and burn rate monitoring:\n\nCore Features:\n- SLO models: targets, windows, thresholds (src/qnwis/slo/models.py)\n- YAML loader with validation (src/qnwis/slo/loader.py)\n- Error budget tracking: remaining %, minutes left (src/qnwis/slo/budget.py)\n- Burn rate calculator: fast (5min) & slow (60min) windows (src/qnwis/slo/burn_rate.py)\n- SLI snapshot: live metrics capture (src/qnwis/observability/metrics.py)\n\nAlerting & Integration:\n- Burn rate trigger in alert engine (src/qnwis/alerts/engine.py)\n- Budget exhaustion rules (src/qnwis/alerts/rules.py)\n- Notify integration (src/qnwis/agents/alert_center_notify.py)\n\nCLI & API:\n- qnwis-slo: validate, show, budget, burn (src/qnwis/cli/qnwis_slo.py)\n- /api/slo endpoints: list, detail, budgets (src/qnwis/api/routers/slo.py)\n\nQuality Assurance:\n- RG-6 gate: 5/5 checks PASS (src/qnwis/scripts/qa/rg6_resilience_gate.py)\n- Unit tests: 11 passed (tests/unit/slo/)\n- Integration tests: 1 passed (tests/integration/slo/)\n- SLO slice coverage script (src/qnwis/scripts/qa/step31_slo_slice.py)\n\nArtifacts:\n- docs/audit/rg6/rg6_report.json\n- docs/audit/rg6/SLO_SUMMARY.md\n- docs/audit/rg6/sli_snapshot.json\n- docs/audit/badges/rg6_pass.svg\n- docs/ops/step31_slo_error_budgets.md\n- STEP31_SLO_IMPLEMENTATION_COMPLETE.md\n\nConfiguration:\n- Added SLO examples in slo/ directory\n- Updated CI/CD workflow for RG-6 validation\n- Enhanced readiness gate with Step-31 tracking\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
     ],
     "deny": [],
     "ask": []

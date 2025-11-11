@@ -19,6 +19,7 @@ class TriggerType(str, Enum):
     YOY_DELTA_PCT = "yoy_delta_pct"
     SLOPE_WINDOW = "slope_window"
     BREAK_EVENT = "break_event"
+    BURN_RATE = "burn_rate"
 
 
 class TriggerOperator(str, Enum):
@@ -92,7 +93,13 @@ class TriggerConfig(BaseModel):
 
     type: TriggerType = Field(..., description="Trigger type")
     op: TriggerOperator | None = Field(None, description="Comparison operator")
-    value: float = Field(..., description="Threshold or comparison value")
+    value: float = Field(0.0, description="Threshold or comparison value")
+    fast_threshold: float | None = Field(
+        None, description="Fast-window burn-rate threshold (burn_rate)"
+    )
+    slow_threshold: float | None = Field(
+        None, description="Slow-window burn-rate threshold (burn_rate)"
+    )
 
     @field_validator("value")
     @classmethod
@@ -102,11 +109,33 @@ class TriggerConfig(BaseModel):
             raise ValueError("Trigger value cannot be NaN or Inf")
         return v
 
+    @field_validator("fast_threshold", "slow_threshold")
+    @classmethod
+    def validate_burn_thresholds(cls, v: float | None) -> float | None:
+        """Reject NaN/Inf values for burn thresholds if provided."""
+        if v is None:
+            return v
+        if math.isnan(v) or math.isinf(v):
+            raise ValueError("Burn threshold cannot be NaN or Inf")
+        return v
+
     @model_validator(mode="after")
     def validate_operator(self) -> TriggerConfig:
         """Ensure operator is provided for threshold-based triggers."""
         if self.type == TriggerType.THRESHOLD and self.op is None:
             raise ValueError("Operator required for threshold trigger")
+        return self
+
+    @model_validator(mode="after")
+    def validate_burn_rate(self) -> TriggerConfig:
+        """Ensure required fields for burn-rate triggers are present."""
+        if self.type == TriggerType.BURN_RATE:
+            if self.fast_threshold is None or self.slow_threshold is None:
+                raise ValueError(
+                    "fast_threshold and slow_threshold are required for burn_rate trigger"
+                )
+            if self.fast_threshold < 0 or self.slow_threshold < 0:
+                raise ValueError("Burn thresholds must be non-negative")
         return self
 
 

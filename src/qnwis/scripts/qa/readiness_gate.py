@@ -57,6 +57,9 @@ from qnwis.scripts.qa.determinism_scan import (
     DEFAULT_BANNED_PATTERNS as ALERT_DETERMINISM_PATTERNS,
 )  # noqa: E402
 from qnwis.scripts.qa.determinism_scan import (
+    NETWORK_BANNED_PATTERNS as ALERT_NETWORK_PATTERNS,
+)
+from qnwis.scripts.qa.determinism_scan import (
     scan_for_banned_calls,
 )
 
@@ -85,6 +88,10 @@ _placeholder_scan_module = _load_placeholder_scan_module()
 serialize_placeholder_matches = _placeholder_scan_module.as_dict
 load_placeholder_patterns = _placeholder_scan_module.load_placeholder_patterns
 scan_placeholders = _placeholder_scan_module.scan_placeholders
+
+
+def _fmt_latency(value: Any) -> str:
+    return f"{value:.2f}" if isinstance(value, (int, float)) else "n/a"
 
 TEXT_FILE_SUFFIXES = {
     ".py",
@@ -438,6 +445,23 @@ STEP_REQUIREMENTS: tuple[StepRequirement, ...] = (
             "STEP29_NOTIFICATIONS_IMPLEMENTATION_COMPLETE.md",
         ),
     ),
+    StepRequirement(
+        step=31,
+        name="SLO Resilience & RG-6",
+        code_paths=(
+            "src/qnwis/slo",
+            "src/qnwis/scripts/qa/rg6_resilience_gate.py",
+        ),
+        test_paths=(
+            "tests/unit/slo",
+            "tests/integration/slo",
+        ),
+        smoke_targets=(
+            "docs/ops/step31_slo_error_budgets.md",
+            "docs/audit/rg6/rg6_report.json",
+            "docs/audit/rg6/SLO_SUMMARY.md",
+        ),
+    ),
 )
 
 NARRATIVE_SAMPLE_PATHS = (
@@ -475,6 +499,15 @@ STEP29_NOTIFY_PATHS = (
     SRC_ROOT / "qnwis" / "notify",
     SRC_ROOT / "qnwis" / "api" / "routers" / "notifications.py",
     SRC_ROOT / "qnwis" / "scripts" / "qa" / "ops_notify_gate.py",
+)
+RG6_REPORT_PATH = ROOT / "docs" / "audit" / "rg6" / "rg6_report.json"
+RG6_SUMMARY_MD = ROOT / "docs" / "audit" / "rg6" / "SLO_SUMMARY.md"
+RG6_SNAPSHOT_PATH = ROOT / "docs" / "audit" / "rg6" / "sli_snapshot.json"
+RG6_BADGE_PATH = ROOT / "docs" / "audit" / "badges" / "rg6_pass.svg"
+STEP31_SLO_PATHS = (
+    SRC_ROOT / "qnwis" / "slo",
+    SRC_ROOT / "qnwis" / "scripts" / "qa" / "rg6_resilience_gate.py",
+    SRC_ROOT / "qnwis" / "scripts" / "qa" / "step31_slo_slice.py",
 )
 
 
@@ -980,6 +1013,16 @@ def _load_ops_ui_metrics() -> dict[str, Any] | None:
         return json.loads(OPS_UI_METRICS_PATH.read_text(encoding="utf-8"))
     except Exception as exc:  # pragma: no cover
         logger.warning("Failed to parse Ops UI metrics: %s", exc)
+        return None
+
+
+def _load_rg6_report() -> dict[str, Any] | None:
+    if not RG6_REPORT_PATH.exists():
+        return None
+    try:
+        return json.loads(RG6_REPORT_PATH.read_text(encoding="utf-8"))
+    except Exception as exc:  # pragma: no cover
+        logger.warning("Failed to parse RG-6 report: %s", exc)
         return None
 
 
@@ -1910,9 +1953,93 @@ def gate_ops_console_step30() -> GateResult:
     )
 
 
+def gate_slo_ops_step31() -> GateResult:
+    """Step 31: Validate RG-6 SLO artifacts, badge, and determinism."""
+    start = time.time()
+    report = _load_rg6_report() or {}
+    metrics = report.get("metrics") or {}
+    checks = report.get("checks") or {}
+    rg6_passed = bool(report) and all(item.get("pass", False) for item in checks.values())
+
+    slo_defs: list[Any] = []
+    slo_load_error: str | None = None
+    try:
+        from qnwis.slo.loader import load_directory as _load_slos
+
+        slo_defs = _load_slos(ROOT / "slo")
+    except Exception as exc:  # pragma: no cover
+        slo_load_error = str(exc)
+
+    slo_objectives = metrics.get("slos")
+    if slo_objectives is None and slo_defs:
+        slo_objectives = [
+            {
+                "id": slo_def.slo_id,
+                "sli": slo_def.target.sli.value,
+                "objective": float(slo_def.target.objective),
+                "window_days": int(slo_def.target.window_days),
+            }
+            for slo_def in slo_defs
+        ]
+
+    slo_count = metrics.get("slo_count")
+    if slo_count is None:
+        slo_count = len(slo_defs)
+
+    budget_summary = metrics.get("budget_summary") or {}
+    burn_summary = metrics.get("burn_summary") or {}
+
+    badge_present = RG6_BADGE_PATH.exists()
+    summary_present = RG6_SUMMARY_MD.exists()
+    report_present = RG6_REPORT_PATH.exists()
+
+    artifacts = {
+        "report": _rel(RG6_REPORT_PATH) if report_present else None,
+        "summary": _rel(RG6_SUMMARY_MD) if summary_present else None,
+        "snapshot": _rel(RG6_SNAPSHOT_PATH) if RG6_SNAPSHOT_PATH.exists() else None,
+        "badge": _rel(RG6_BADGE_PATH) if badge_present else None,
+    }
+
+    determinism_hits = scan_for_banned_calls(STEP31_SLO_PATHS, ALERT_DETERMINISM_PATTERNS)
+    network_hits = scan_for_banned_calls(STEP31_SLO_PATHS, ALERT_NETWORK_PATTERNS)
+
+    evidence = [path for path in artifacts.values() if path]
+
+    details = {
+        "rg6_passed": rg6_passed,
+        "slo_count": slo_count,
+        "objectives": slo_objectives or [],
+        "remaining_budget": budget_summary,
+        "burn_summary": burn_summary,
+        "budget_source": metrics.get("budget_source"),
+        "badge_present": badge_present,
+        "summary_present": summary_present,
+        "determinism_hits": determinism_hits,
+        "network_hits": network_hits,
+        "artifacts": artifacts,
+        "slo_load_error": slo_load_error,
+    }
+
+    ok = (
+        rg6_passed
+        and badge_present
+        and summary_present
+        and slo_count > 0
+        and not determinism_hits
+        and not network_hits
+    )
+    return GateResult(
+        name="slo_ops_step31",
+        ok=ok,
+        details=details,
+        duration_ms=(time.time() - start) * 1000,
+        evidence_paths=evidence,
+    )
+
+
 def generate_markdown_report(report: ReadinessReport) -> str:
     lines = [
-        "# Readiness Report: Steps 1-29",
+        "# Readiness Report: Steps 1-31",
         "",
         f"**Generated:** {report.timestamp}",
         f"**Overall Status:** {'PASS' if report.overall_pass else 'FAIL'}",
@@ -1987,6 +2114,29 @@ def generate_markdown_report(report: ReadinessReport) -> str:
                 f"- **SSE p95 (ms):** {_fmt_latency(metrics.get('sse_p95_ms'))}",
                 f"- **CSRF verify p95 (ms):** {_fmt_latency(metrics.get('csrf_p95_ms'))}",
                 f"- **Determinism Violations:** {len(step30_info.get('determinism_hits', []))}",
+                f"- **Artifacts:** report=`{artifacts.get('report', 'n/a')}`, summary=`{artifacts.get('summary', 'n/a')}`, badge=`{artifacts.get('badge', 'n/a')}`",
+                "",
+            ]
+        )
+    step31_info = report.summary.get("step31")
+    if step31_info:
+        budget = step31_info.get("remaining_budget") or {}
+        burn = step31_info.get("burn_summary") or {}
+        artifacts = step31_info.get("artifacts") or {}
+        rg6_status = step31_info.get("rg6_passed")
+        rg6_status_str = "n/a" if rg6_status is None else ("PASS" if rg6_status else "FAIL")
+        lines.extend(
+            [
+                "## Step 31 - SLO Resilience",
+                "",
+                f"- **RG-6 Status:** {rg6_status_str}",
+                f"- **SLO Count:** {step31_info.get('slo_count', 'n/a')}",
+                f"- **Badge Present:** {'yes' if step31_info.get('badge_present') else 'no'}",
+                f"- **Avg Remaining %:** {_fmt_latency(budget.get('avg_remaining_pct'))}",
+                f"- **Avg Minutes Left:** {_fmt_latency(budget.get('avg_minutes_left'))}",
+                f"- **Burn p95 (fast/slow):** {_fmt_latency(burn.get('p95_fast'))} / {_fmt_latency(burn.get('p95_slow'))}",
+                f"- **Determinism Violations:** {len(step31_info.get('determinism_hits', []))}",
+                f"- **Network Import Violations:** {len(step31_info.get('network_hits', []))}",
                 f"- **Artifacts:** report=`{artifacts.get('report', 'n/a')}`, summary=`{artifacts.get('summary', 'n/a')}`, badge=`{artifacts.get('badge', 'n/a')}`",
                 "",
             ]
@@ -2114,6 +2264,7 @@ def write_readiness_review(report: ReadinessReport) -> Path:
     step28_info = report.summary.get("step28", {})
     step29_info = report.summary.get("step29", {})
     step30_info = report.summary.get("step30", {})
+    step31_info = report.summary.get("step31", {})
     ops_gate_passed = step28_info.get("ops_gate_passed")
     ops_gate_status = "n/a" if ops_gate_passed is None else ("PASS" if ops_gate_passed else "FAIL")
     ops_summary_present = "yes" if step28_info.get("ops_summary_present") else "no"
@@ -2130,9 +2281,6 @@ def write_readiness_review(report: ReadinessReport) -> Path:
     rg5_status_str = "n/a" if rg5_status is None else ("PASS" if rg5_status else "FAIL")
     rg5_metrics = step30_info.get("metrics") or {}
 
-    def _fmt_latency(value: Any) -> str:
-        return f"{value:.2f}" if isinstance(value, (int, float)) else "n/a"
-
     lines = [
         "# Readiness Gate Review (RG-1)",
         "",
@@ -2147,11 +2295,12 @@ def write_readiness_review(report: ReadinessReport) -> Path:
         "2. Coverage map enforces >=90% on critical modules with actionable diffs.",
         "3. Narrative sampling cross-checks derived/original QIDs with query registry.",
         "4. Performance guards benchmark deterministic layers to prevent regressions.",
-        "5. Security scans ensure no secrets/PII and RBAC policies stay enforced.",
-        "6. Step 28 Ops Gate artifacts capture p50/p95 latency with determinism enforcement.",
-        "7. Step 29 RG-4 notify gate reports latency + incident readiness with determinism guard.",
-        "8. Step 30 RG-5 ops console badge, gate report, and metrics snapshot are persisted.",
-        "",
+          "5. Security scans ensure no secrets/PII and RBAC policies stay enforced.",
+          "6. Step 28 Ops Gate artifacts capture p50/p95 latency with determinism enforcement.",
+          "7. Step 29 RG-4 notify gate reports latency + incident readiness with determinism guard.",
+          "8. Step 30 RG-5 ops console badge, gate report, and metrics snapshot are persisted.",
+          "9. Step 31 RG-6 SLO badge and error-budget summaries land with determinism/network scans.",
+          "",
         "## Step 28 - Alert Center Hardening",
         "",
         f"- Ops Gate Summary: {ops_gate_status}",
@@ -2183,14 +2332,27 @@ def write_readiness_review(report: ReadinessReport) -> Path:
         f"| Badge Present | {'yes' if step30_info.get('badge_present') else 'no'} |",
         f"| Metrics File | `{(step30_info.get('artifacts') or {}).get('metrics', 'n/a')}` |",
         f"| Incidents p50/p95 (ms) | {_fmt_latency(rg5_metrics.get('incidents_p50_ms'))} / {_fmt_latency(rg5_metrics.get('incidents_p95_ms'))} |",
-        f"| Detail p50/p95 (ms) | {_fmt_latency(rg5_metrics.get('detail_p50_ms'))} / {_fmt_latency(rg5_metrics.get('detail_p95_ms'))} |",
-        f"| SSE p95 (ms) | {_fmt_latency(rg5_metrics.get('sse_p95_ms'))} |",
-        f"| CSRF Verify p95 (ms) | {_fmt_latency(rg5_metrics.get('csrf_p95_ms'))} |",
-        f"| Determinism Violations | {len(step30_info.get('determinism_hits', []))} |",
-        "",
-        "## Gate Evidence",
-        "",
-        "| Gate | Status | Severity | Evidence |",
+          f"| Detail p50/p95 (ms) | {_fmt_latency(rg5_metrics.get('detail_p50_ms'))} / {_fmt_latency(rg5_metrics.get('detail_p95_ms'))} |",
+          f"| SSE p95 (ms) | {_fmt_latency(rg5_metrics.get('sse_p95_ms'))} |",
+          f"| CSRF Verify p95 (ms) | {_fmt_latency(rg5_metrics.get('csrf_p95_ms'))} |",
+          f"| Determinism Violations | {len(step30_info.get('determinism_hits', []))} |",
+          "",
+          "## Step 31 - SLO Resilience",
+          "",
+          "| Metric | Value |",
+          "| --- | --- |",
+          f"| RG-6 Status | {('n/a' if step31_info.get('rg6_passed') is None else ('PASS' if step31_info.get('rg6_passed') else 'FAIL'))} |",
+          f"| Badge Present | {'yes' if step31_info.get('badge_present') else 'no'} |",
+          f"| SLO Count | {step31_info.get('slo_count', 'n/a')} |",
+          f"| Avg Remaining % | {_fmt_latency((step31_info.get('remaining_budget') or {}).get('avg_remaining_pct'))} |",
+          f"| Avg Minutes Left | {_fmt_latency((step31_info.get('remaining_budget') or {}).get('avg_minutes_left'))} |",
+          f"| Burn p95 (fast/slow) | {_fmt_latency((step31_info.get('burn_summary') or {}).get('p95_fast'))} / {_fmt_latency((step31_info.get('burn_summary') or {}).get('p95_slow'))} |",
+          f"| Determinism Violations | {len(step31_info.get('determinism_hits', []))} |",
+          f"| Network Import Violations | {len(step31_info.get('network_hits', []))} |",
+          "",
+          "## Gate Evidence",
+          "",
+          "| Gate | Status | Severity | Evidence |",
         "| --- | --- | --- | --- |",
     ]
     for gate in report.gates:
@@ -2229,14 +2391,15 @@ def main() -> int:
         gate_orchestration_flow,
         gate_agents_end_to_end,
         gate_performance_guards,
-        gate_alerts_ops_step28,
-        gate_notify_ops_step29,
-        gate_ops_console_step30,
-        gate_stability_controls,
-        gate_api_endpoints,
-        gate_api_security,
-        gate_api_performance,
-        gate_api_verification,
+          gate_alerts_ops_step28,
+          gate_notify_ops_step29,
+          gate_ops_console_step30,
+          gate_slo_ops_step31,
+          gate_stability_controls,
+          gate_api_endpoints,
+          gate_api_security,
+          gate_api_performance,
+          gate_api_verification,
     ]
 
     for gate_fn in gate_functions:
@@ -2306,6 +2469,19 @@ def main() -> int:
                 "badge": step30_gate.details.get("badge_path"),
             },
         }
+    step31_gate = next((g for g in gates if g.name == "slo_ops_step31"), None)
+    if step31_gate is not None:
+        summary_data["step31"] = {
+            "passed": step31_gate.ok,
+            "rg6_passed": step31_gate.details.get("rg6_passed"),
+            "slo_count": step31_gate.details.get("slo_count"),
+            "remaining_budget": step31_gate.details.get("remaining_budget", {}),
+            "burn_summary": step31_gate.details.get("burn_summary", {}),
+            "badge_present": step31_gate.details.get("badge_present"),
+            "determinism_hits": step31_gate.details.get("determinism_hits", []),
+            "network_hits": step31_gate.details.get("network_hits", []),
+            "artifacts": step31_gate.details.get("artifacts", {}),
+        }
 
     report = ReadinessReport(
         gates=gates,
@@ -2337,6 +2513,10 @@ def main() -> int:
         OPS_UI_SUMMARY_MD,
         OPS_UI_METRICS_PATH,
         RG5_BADGE_PATH,
+        RG6_REPORT_PATH,
+        RG6_SUMMARY_MD,
+        RG6_SNAPSHOT_PATH,
+        RG6_BADGE_PATH,
     ]
     report.artifacts = _hash_artifacts(artifact_inputs)
 

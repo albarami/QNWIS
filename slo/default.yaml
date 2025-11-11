@@ -1,0 +1,25 @@
+# Production SLO catalog (deterministic ordering)
+slos:
+  - id: api_availability
+    sli: availability_pct
+    objective: 99.9
+    window_days: 14
+    windows:
+      fast_minutes: 5
+      slow_minutes: 60
+
+  - id: api_error_rate
+    sli: error_rate_pct
+    objective: 1.0
+    window_days: 14
+    windows:
+      fast_minutes: 5
+      slow_minutes: 60
+
+  - id: api_latency_p95
+    sli: latency_ms_p95
+    objective: 200
+    window_days: 7
+    windows:
+      fast_minutes: 5
+      slow_minutes: 60

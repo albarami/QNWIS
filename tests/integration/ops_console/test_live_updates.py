@@ -7,6 +7,7 @@ Tests SSE stream, event delivery, and HTMX integration.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 from datetime import UTC, datetime
 
 import pytest
@@ -150,10 +151,8 @@ class TestSSEStream:
                     break
 
         # Run with timeout
-        try:
+        with contextlib.suppress(TimeoutError):
             await asyncio.wait_for(collect(), timeout=3.0)
-        except TimeoutError:
-            pass
 
         # Should have received heartbeat
         assert len(output) >= 1
@@ -348,7 +347,7 @@ class TestSSEPerformance:
         # Measure format time
         start = time.perf_counter()
         for _ in range(1000):
-            formatted = event.format()
+            event.format()
         elapsed_ms = (time.perf_counter() - start) * 1000
 
         # Average should be very fast (< 1ms per format for 1000 iterations)

@@ -54,6 +54,7 @@ class AlertEngine:
             TriggerType.YOY_DELTA_PCT: self._eval_yoy_delta_pct,
             TriggerType.SLOPE_WINDOW: self._eval_slope_window,
             TriggerType.BREAK_EVENT: self._eval_break_event,
+            TriggerType.BURN_RATE: self._eval_burn_rate,
         }
 
     def evaluate(
@@ -312,6 +313,75 @@ class AlertEngine:
                 "break_indices": breaks,
                 "window_months": window_size,
                 "cusum_h": h_threshold,
+            },
+            message=message,
+        )
+
+    def _eval_burn_rate(
+        self,
+        rule: AlertRule,
+        series: list[float],
+        timestamps: list[str],
+    ) -> AlertDecision:
+        """
+        Evaluate multi-window SLO burn-rate trigger.
+
+        Expects `series` to contain two values: [fast_burn, slow_burn].
+        Uses rule.trigger.fast_threshold and slow_threshold for comparisons.
+        Trigger condition: fast >= fast_threshold AND slow >= slow_threshold.
+        """
+        if not series:
+            return AlertDecision(
+                rule_id=rule.rule_id,
+                triggered=False,
+                message="Empty series provided",
+            )
+
+        if any(math.isnan(v) or math.isinf(v) for v in series):
+            return AlertDecision(
+                rule_id=rule.rule_id,
+                triggered=False,
+                message="Series contains NaN or Inf values",
+            )
+
+        if len(series) == 1:
+            # Single value interpreted as slow burn, fast equals slow
+            fast_burn = float(series[-1])
+            slow_burn = float(series[-1])
+        else:
+            fast_burn = float(series[-2])
+            slow_burn = float(series[-1])
+
+        fast_th = (rule.trigger.fast_threshold or 0.0)
+        slow_th = (rule.trigger.slow_threshold or 0.0)
+
+        triggered = (fast_burn >= fast_th) and (slow_burn >= slow_th)
+
+        # Derive tier for evidence
+        tier = "none"
+        if fast_burn >= 2.0 and slow_burn >= 1.0:
+            tier = "critical"
+        elif fast_burn >= 1.0 and slow_burn >= 1.0:
+            tier = "high"
+        elif fast_burn >= 1.0:
+            tier = "medium"
+        elif slow_burn >= 1.0:
+            tier = "low"
+
+        message = (
+            f"BurnRate fast={fast_burn:.3f} slow={slow_burn:.3f} "
+            f"vs thresholds fast>={fast_th:.3f} slow>={slow_th:.3f}"
+        )
+
+        return AlertDecision(
+            rule_id=rule.rule_id,
+            triggered=triggered,
+            evidence={
+                "fast_burn": fast_burn,
+                "slow_burn": slow_burn,
+                "fast_threshold": fast_th,
+                "slow_threshold": slow_th,
+                "tier": tier,
             },
             message=message,
         )

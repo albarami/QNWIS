@@ -71,3 +71,8 @@ repos:
         entry: python src/qnwis/scripts/qa/step30_ops_console_slice.py --files
         language: system
         pass_filenames: true
+      - id: step31-slo-slice
+        name: Step 31 SLO Slice
+        entry: python src/qnwis/scripts/qa/step31_slo_slice.py --files
+        language: system
+        pass_filenames: true

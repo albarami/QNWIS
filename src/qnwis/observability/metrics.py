@@ -246,6 +246,89 @@ class MetricsCollector:
         }
 
 
+def _percentile(values: list[float], p: float) -> float:
+    """Compute percentile p in [0,100] deterministically.
+
+    Uses nearest-rank on sorted values. Returns 0.0 if empty.
+    """
+    if not values:
+        return 0.0
+    if p <= 0:
+        return float(sorted(values)[0])
+    if p >= 100:
+        return float(sorted(values)[-1])
+    ordered = sorted(values)
+    rank = int(round((p / 100.0) * (len(ordered) - 1)))
+    return float(ordered[rank])
+
+
+def compute_sli_snapshot() -> dict[str, float]:
+    """Compute process-level SLI snapshot from MetricsCollector.
+
+    - latency_ms_p95: p95 of HTTP request durations (seconds * 1000)
+    - availability_pct: 1 - (5xx / total) expressed in percent [0,100]
+    - error_rate_pct: 5xx / total expressed in percent [0,100]
+    """
+    mc = get_metrics_collector()
+
+    # Gather HTTP durations
+    durations_s = [v for _, v in mc.request_duration_seconds]
+    p95_ms = _percentile(durations_s, 95.0) * 1000.0
+
+    # Gather HTTP status counts
+    total = 0
+    err5xx = 0
+    for labels, count in mc.request_total.items():
+        label_dict = dict(labels)
+        try:
+            status = int(label_dict.get("status", "0"))
+        except ValueError:
+            status = 0
+        total += count
+        if status >= 500:
+            err5xx += count
+
+    if total <= 0:
+        availability_pct = 100.0
+        error_rate_pct = 0.0
+    else:
+        error_rate = err5xx / float(total)
+        error_rate_pct = max(0.0, min(100.0, 100.0 * error_rate))
+        availability_pct = max(0.0, min(100.0, 100.0 * (1.0 - error_rate)))
+
+    return {
+        "latency_ms_p95": round(float(p95_ms), 6),
+        "availability_pct": round(float(availability_pct), 6),
+        "error_rate_pct": round(float(error_rate_pct), 6),
+    }
+
+
+def write_sli_snapshot_json(path: str = "docs/audit/rg6/sli_snapshot.json", *, clock=None) -> str:
+    """Write deterministic SLI snapshot JSON to path and return path.
+
+    Args:
+        path: Output file path
+        clock: Optional Clock with now_iso(); if None, avoids timestamp.
+
+    Returns:
+        The output path as a string
+    """
+    import json
+    from pathlib import Path
+
+    payload: dict[str, Any] = {
+        "sli": compute_sli_snapshot(),
+    }
+    if clock is not None and hasattr(clock, "now_iso"):
+        payload["timestamp"] = clock.now_iso()
+
+    out_path = Path(path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    # Deterministic key ordering
+    out_path.write_text(json.dumps(payload, sort_keys=True, separators=(",", ":")), encoding="utf-8")
+    return str(out_path)
+
+
 # Global metrics collector
 _metrics_collector: MetricsCollector | None = None
 

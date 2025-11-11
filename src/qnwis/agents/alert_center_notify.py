@@ -54,6 +54,19 @@ def emit_notifications(
             }
             severity = severity_map.get(rule.severity.value, Severity.WARNING)
 
+            # If burn-rate tier is present, map to severity tiers per RG-6
+            tier = (decision.evidence or {}).get("tier")
+            if isinstance(tier, str):
+                tier_lower = tier.lower()
+                if tier_lower == "critical":
+                    severity = Severity.CRITICAL
+                elif tier_lower == "high":
+                    severity = Severity.ERROR
+                elif tier_lower == "medium":
+                    severity = Severity.WARNING
+                elif tier_lower == "low":
+                    severity = Severity.INFO
+
             # Compute idempotency key
             scope_dict = {"level": rule.scope.level, "code": rule.scope.code or ""}
             idempotency_key = dispatcher.compute_idempotency_key(

@@ -20,6 +20,10 @@ NETWORK_BANNED_PATTERNS: dict[str, Pattern[str]] = {
     "import socket": re.compile(r"\bfrom\s+socket\b|\bimport\s+socket\b"),
     "import requests": re.compile(r"\bfrom\s+requests\b|\bimport\s+requests\b"),
     "import httpx": re.compile(r"\bfrom\s+httpx\b|\bimport\s+httpx\b"),
+    "import urllib": re.compile(r"\bfrom\s+urllib(\.\w+)?\b|\bimport\s+urllib(\.\w+)?\b"),
+    "import ssl": re.compile(r"\bfrom\s+ssl\b|\bimport\s+ssl\b"),
+    "import webbrowser": re.compile(r"\bfrom\s+webbrowser\b|\bimport\s+webbrowser\b"),
+    "import aiohttp": re.compile(r"\bfrom\s+aiohttp\b|\bimport\s+aiohttp\b"),
 }
 
 

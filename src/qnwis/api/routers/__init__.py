@@ -7,6 +7,7 @@ from . import (
     agents_strategy,
     agents_time,
     notifications,
+    slo,
 )
 
 ROUTERS = [
@@ -15,6 +16,7 @@ ROUTERS = [
     agents_predictor.router,
     agents_scenario.router,
     agents_strategy.router,
+    slo.router,
     notifications.router,
 ]
 

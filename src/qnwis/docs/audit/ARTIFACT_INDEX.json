@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-11-11T03:22:22.408431",
+  "generated_at": "2025-11-11T07:30:42.198507",
   "artifacts": [
     {
       "path": "coverage.xml",
@@ -13,13 +13,13 @@
     },
     {
       "path": "src/qnwis/docs/audit/readiness_report.json",
-      "sha256": "35c41774782fe7c8e8afbecbe7af60504c0fc97ecc10d7f276d1d6e0809728c1",
-      "size_bytes": 17331
+      "sha256": "184eb4a5d773fbbed22b4016bacaa0afda77d49a3e929053961e02dd60ccd16a",
+      "size_bytes": 15383
     },
     {
       "path": "src/qnwis/docs/audit/READINESS_REPORT_1_25.md",
-      "sha256": "3f670094acb3f1a842fdbfbc697168794bad88920c34e6cb354dedc98ca613a6",
-      "size_bytes": 13223
+      "sha256": "2eb536f6b07ca401bbbe9fe88d28e2c58d074d27eadc37bb0fec258fb544a1cb",
+      "size_bytes": 10839
     },
     {
       "path": "OPS_GATE_SUMMARY.json",
@@ -43,8 +43,8 @@
     },
     {
       "path": "src/qnwis/docs/audit/READINESS_SUMMARY.html",
-      "sha256": "4a1dd389cf772c2248cce0c4239c0ec38aa90ac83fbe550ea89a0fdab3d697b8",
-      "size_bytes": 17460
+      "sha256": "c51f37b29aa0187f5614bc8627bb78070d8734d14e5cb3968796c67e2f260cab",
+      "size_bytes": 14381
     },
     {
       "path": "src/qnwis/docs/audit/badges/rg1_pass.svg",
@@ -80,6 +80,26 @@
       "path": "src/qnwis/docs/audit/badges/rg5_ops_console.svg",
       "sha256": "0d69483e6211b77e16ed636dd623fd5e8c4a9202faf5db71cabe6f404948abeb",
       "size_bytes": 397
+    },
+    {
+      "path": "docs/audit/rg6/rg6_report.json",
+      "sha256": "a2dd20f64ed0891ad4c87af6ab954263c533ad5b4f6c5859ecb94e1ccf0a9b58",
+      "size_bytes": 1086
+    },
+    {
+      "path": "docs/audit/rg6/SLO_SUMMARY.md",
+      "sha256": "26eb8ffa8ef6f573231a0b693a64b88145bf6861955fa8793aad7026af641ab3",
+      "size_bytes": 928
+    },
+    {
+      "path": "docs/audit/rg6/sli_snapshot.json",
+      "sha256": "71b845d5e939dc4d9a649458491ed4434658512fcb4273b10a7e4d01ad2cc225",
+      "size_bytes": 116
+    },
+    {
+      "path": "docs/audit/badges/rg6_pass.svg",
+      "sha256": "9834af26e535962f48cc9a5b66a536b431175878573ca4462877cc51fc157a44",
+      "size_bytes": 819
     }
   ]
 }

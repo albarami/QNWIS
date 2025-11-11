@@ -1,13 +1,13 @@
 # Readiness Gate Review (RG-1)
 
-- Generated: 2025-11-11T03:22:22.355838
+- Generated: 2025-11-11T07:30:42.152061
 - Overall outcome: FAIL
 - Evidence index: `src/qnwis/docs/audit/ARTIFACT_INDEX.json`
 - Badge: `src/qnwis/docs/audit/badges/rg1_pass.svg`
 
 ## Highlights
 
-1. Step completeness: 28/28 steps have code, tests, and smoke artifacts.
+1. Step completeness: 29/29 steps have code, tests, and smoke artifacts.
 2. Coverage map enforces >=90% on critical modules with actionable diffs.
 3. Narrative sampling cross-checks derived/original QIDs with query registry.
 4. Performance guards benchmark deterministic layers to prevent regressions.
@@ -15,6 +15,7 @@
 6. Step 28 Ops Gate artifacts capture p50/p95 latency with determinism enforcement.
 7. Step 29 RG-4 notify gate reports latency + incident readiness with determinism guard.
 8. Step 30 RG-5 ops console badge, gate report, and metrics snapshot are persisted.
+9. Step 31 RG-6 SLO badge and error-budget summaries land with determinism/network scans.
 
 ## Step 28 - Alert Center Hardening
 
@@ -49,6 +50,19 @@
 | SSE p95 (ms) | n/a |
 | CSRF Verify p95 (ms) | n/a |
 | Determinism Violations | 0 |
+
+## Step 31 - SLO Resilience
+
+| Metric | Value |
+| --- | --- |
+| RG-6 Status | n/a |
+| Badge Present | no |
+| SLO Count | n/a |
+| Avg Remaining % | n/a |
+| Avg Minutes Left | n/a |
+| Burn p95 (fast/slow) | n/a / n/a |
+| Determinism Violations | 0 |
+| Network Import Violations | 0 |
 
 ## Gate Evidence
 

@@ -1,8 +1,8 @@
-# Readiness Report: Steps 1-29
+# Readiness Report: Steps 1-31
 
-**Generated:** 2025-11-11T03:22:22.355838
+**Generated:** 2025-11-11T07:30:42.152061
 **Overall Status:** FAIL
-**Execution Time:** 7543 ms
+**Execution Time:** 6891 ms
 
 ## Summary
 
@@ -17,7 +17,7 @@
 ## Gate Results
 
 ### step_completeness [PASS]
-- **Duration:** 13 ms
+- **Duration:** 14 ms
 - **Severity:** ERROR
 ```json
 {
@@ -329,6 +329,17 @@
         "tests": [],
         "smoke": []
       }
+    },
+    "step_31": {
+      "name": "SLO Resilience & RG-6",
+      "code_ok": true,
+      "tests_ok": true,
+      "smoke_ok": true,
+      "missing": {
+        "code": [],
+        "tests": [],
+        "smoke": []
+      }
     }
   },
   "missing": {}
@@ -338,7 +349,7 @@
 - `docs/IMPLEMENTATION_ROADMAP.md`
 
 ### no_placeholders [PASS]
-- **Duration:** 216 ms
+- **Duration:** 218 ms
 - **Severity:** ERROR
 ```json
 {
@@ -358,37 +369,27 @@
 - `src/qnwis/scripts/qa/grep_rules.yml`
 
 ### linters_and_types [FAIL]
-- **Duration:** 7314 ms
+- **Duration:** 6659 ms
 - **Severity:** ERROR
 ```json
 {
   "ruff": {
-    "issues": 13,
-    "fixable": 7,
-    "rules": {
-      "F821": 6,
-      "SIM105": 2,
-      "F841": 4,
-      "B007": 1
-    },
-    "files": [
-      "D:\\lmis_int\\src\\qnwis\\scripts\\qa\\readiness_gate.py",
-      "D:\\lmis_int\\tests\\integration\\ops_console\\test_live_updates.py",
-      "D:\\lmis_int\\tests\\unit\\ops_console\\test_perf_render.py",
-      "D:\\lmis_int\\tests\\unit\\ops_console\\test_sse.py"
-    ],
-    "stdout_tail": "w\": 202\n    },\n    \"filename\": \"D:\\\\lmis_int\\\\tests\\\\unit\\\\ops_console\\\\test_sse.py\",\n    \"fix\": {\n      \"applicability\": \"unsafe\",\n      \"edits\": [\n        {\n          \"content\": \"import contextlib\\n\",\n          \"end_location\": {\n            \"column\": 1,\n            \"row\": 19\n          },\n          \"location\": {\n            \"column\": 1,\n            \"row\": 19\n          }\n        },\n        {\n          \"content\": \"with contextlib.suppress(TimeoutError)\",\n          \"end_location\": {\n            \"column\": 12,\n            \"row\": 199\n          },\n          \"location\": {\n            \"column\": 9,\n            \"row\": 199\n          }\n        },\n        {\n          \"content\": \"\",\n          \"end_location\": {\n            \"column\": 1,\n            \"row\": 203\n          },\n          \"location\": {\n            \"column\": 1,\n            \"row\": 201\n          }\n        }\n      ],\n      \"message\": \"Replace `try`-`except`-`pass` with `with contextlib.suppress(TimeoutError): ...`\"\n    },\n    \"location\": {\n      \"column\": 9,\n      \"row\": 199\n    },\n    \"message\": \"Use `contextlib.suppress(TimeoutError)` instead of `try`-`except`-`pass`\",\n    \"noqa_row\": 199,\n    \"url\": \"https://docs.astral.sh/ruff/rules/suppressible-exception\"\n  },\n  {\n    \"cell\": null,\n    \"code\": \"B007\",\n    \"end_location\": {\n      \"column\": 28,\n      \"row\": 214\n    },\n    \"filename\": \"D:\\\\lmis_int\\\\tests\\\\unit\\\\ops_console\\\\test_sse.py\",\n    \"fix\": {\n      \"applicability\": \"unsafe\",\n      \"edits\": [\n        {\n          \"content\": \"_chunk\",\n          \"end_location\": {\n            \"column\": 28,\n            \"row\": 214\n          },\n          \"location\": {\n            \"column\": 23,\n            \"row\": 214\n          }\n        }\n      ],\n      \"message\": \"Rename unused `chunk` to `_chunk`\"\n    },\n    \"location\": {\n      \"column\": 23,\n      \"row\": 214\n    },\n    \"message\": \"Loop control variable `chunk` not used within loop body\",\n    \"noqa_row\": 214,\n    \"url\": \"https://docs.astral.sh/ruff/rules/unused-loop-control-variable\"\n  }\n]",
+    "issues": 0,
+    "fixable": 0,
+    "rules": {},
+    "files": [],
+    "stdout_tail": "[]",
     "stderr_tail": "",
-    "exit_code": 1
+    "exit_code": 0
   },
   "flake8": {
-    "issues": 56,
+    "issues": 77,
     "fixable": 0,
     "rules": {
-      "E501": 40,
+      "E501": 56,
       "E203": 9,
-      "F821": 6,
-      "E131": 1
+      "E305": 1,
+      "E131": 11
     },
     "files": [
       "src/qnwis\\agents\\pattern_miner.py",
@@ -397,12 +398,12 @@
       "src/qnwis\\api\\server.py",
       "src/qnwis\\cli\\qnwis_alerts.py",
       "src/qnwis\\cli\\qnwis_predict.py",
+      "src/qnwis\\cli\\qnwis_slo.py",
       "src/qnwis\\forecast\\backtest.py",
       "src/qnwis\\forecast\\early_warning.py",
-      "src/qnwis\\ops_console\\views.py",
-      "src/qnwis\\orchestration\\coordination.py"
+      "src/qnwis\\ops_console\\views.py"
     ],
-    "stdout_tail": "e '_fmt_latency'\nsrc/qnwis\\scripts\\qa\\readiness_gate.py:1988:48: F821 undefined name '_fmt_latency'\nsrc/qnwis\\scripts\\qa\\readiness_gate.py:1990:121: E501 line too long (164 > 120 characters)\nsrc/qnwis\\scripts\\qa\\readiness_gate.py:2185:121: E501 line too long (146 > 120 characters)\nsrc/qnwis\\scripts\\qa\\readiness_gate.py:2186:121: E501 line too long (137 > 120 characters)\nsrc/qnwis\\scripts\\qa\\readiness_gate.py:2283:14: E131 continuation line unaligned for hanging indent\nsrc/qnwis\\security\\auth.py:316:121: E501 line too long (126 > 120 characters)\nsrc/qnwis\\security\\auth.py:338:121: E501 line too long (138 > 120 characters)\nsrc/qnwis\\ui\\svg.py:38:121: E501 line too long (128 > 120 characters)\nsrc/qnwis\\ui\\svg.py:41:121: E501 line too long (129 > 120 characters)\nsrc/qnwis\\ui\\svg.py:93:121: E501 line too long (124 > 120 characters)\nsrc/qnwis\\ui\\svg.py:147:121: E501 line too long (124 > 120 characters)\ntests\\conftest.py:117:121: E501 line too long (127 > 120 characters)\ntests\\conftest.py:130:121: E501 line too long (121 > 120 characters)\ntests\\integration\\agents\\test_predictor_agent.py:27:121: E501 line too long (135 > 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:79:121: E501 line too long (130 > 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:96:121: E501 line too long (127 > 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:111:121: E501 line too long (150 > 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:222:121: E501 line too long (124 > 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:245:121: E501 line too long (123 > 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:268:121: E501 line too long (126 > 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:294:121: E501 line too long (152 > 120 characters)\ntests\\unit\\agents\\test_pattern_detective.py:254:121: E501 line too long (126 > 120 characters)\ntests\\unit\\agents\\test_pattern_detective.py:266:121: E501 line too long (123 > 120 characters)\n",
+    "stdout_tail": "s)\nsrc/qnwis\\security\\auth.py:316:121: E501 line too long (126 > 120 characters)\nsrc/qnwis\\security\\auth.py:338:121: E501 line too long (138 > 120 characters)\nsrc/qnwis\\ui\\svg.py:38:121: E501 line too long (128 > 120 characters)\nsrc/qnwis\\ui\\svg.py:41:121: E501 line too long (129 > 120 characters)\nsrc/qnwis\\ui\\svg.py:93:121: E501 line too long (124 > 120 characters)\nsrc/qnwis\\ui\\svg.py:147:121: E501 line too long (124 > 120 characters)\ntests\\conftest.py:117:121: E501 line too long (127 > 120 characters)\ntests\\conftest.py:130:121: E501 line too long (121 > 120 characters)\ntests\\integration\\agents\\test_predictor_agent.py:27:121: E501 line too long (135 > 120 characters)\ntests\\integration\\api\\test_slo_endpoints.py:15:121: E501 line too long (147 > 120 characters)\ntests\\integration\\api\\test_slo_endpoints.py:43:121: E501 line too long (156 > 120 characters)\ntests\\integration\\api\\test_slo_endpoints.py:58:121: E501 line too long (121 > 120 characters)\ntests\\integration\\api\\test_slo_endpoints.py:70:121: E501 line too long (156 > 120 characters)\ntests\\integration\\api\\test_slo_endpoints.py:79:121: E501 line too long (121 > 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:79:121: E501 line too long (130 > 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:96:121: E501 line too long (127 > 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:111:121: E501 line too long (150 > 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:222:121: E501 line too long (124 > 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:245:121: E501 line too long (123 > 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:268:121: E501 line too long (126 > 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:294:121: E501 line too long (152 > 120 characters)\ntests\\unit\\agents\\test_pattern_detective.py:254:121: E501 line too long (126 > 120 characters)\ntests\\unit\\agents\\test_pattern_detective.py:266:121: E501 line too long (123 > 120 characters)\n",
     "stderr_tail": "",
     "exit_code": 1
   },

@@ -7,6 +7,7 @@ Tests event formatting, streaming, heartbeats, and event helpers.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 
 import pytest
 
@@ -196,10 +197,8 @@ class TestSSEStream:
                     break
 
         # Run with timeout
-        try:
+        with contextlib.suppress(TimeoutError):
             await asyncio.wait_for(collect_output(), timeout=3.0)
-        except TimeoutError:
-            pass
 
         # Should have at least one heartbeat
         assert len(output) >= 1
@@ -211,7 +210,7 @@ class TestSSEStream:
         stream = SSEStream(heartbeat_interval=100)
 
         async def run_stream():
-            async for chunk in stream.stream():
+            async for _chunk in stream.stream():
                 pass
 
         task = asyncio.create_task(run_stream())

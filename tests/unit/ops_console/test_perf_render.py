@@ -215,7 +215,7 @@ class TestSSEEnqueuePerformance:
         format_times = []
         for _ in range(1000):
             start = time.perf_counter()
-            formatted = event.format()
+            event.format()
             elapsed_ms = (time.perf_counter() - start) * 1000
             format_times.append(elapsed_ms)
 
@@ -305,7 +305,7 @@ class TestBenchmarkMetrics:
         render_times = []
         for _ in range(100):
             start = time.perf_counter()
-            response = client.get("/incidents")
+            client.get("/incidents")
             elapsed_ms = (time.perf_counter() - start) * 1000
             render_times.append(elapsed_ms)
 
@@ -339,7 +339,7 @@ class TestBenchmarkMetrics:
         for i in range(100):
             incident_id = f"inc_{i % 96:03d}"
             start = time.perf_counter()
-            response = client.get(f"/incidents/{incident_id}")
+            client.get(f"/incidents/{incident_id}")
             elapsed_ms = (time.perf_counter() - start) * 1000
             render_times.append(elapsed_ms)
 

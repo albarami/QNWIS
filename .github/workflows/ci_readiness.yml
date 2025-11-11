@@ -250,8 +250,49 @@ jobs:
             OPS_UI_SUMMARY.md
           retention-days: 30
 
+  step31-slice:
+    name: "Step 31 SLO Slice"
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: pre-commit
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run SLO slice
+        run: |
+          python src/qnwis/scripts/qa/step31_slo_slice.py
+
+      - name: Run RG-6 gate
+        run: |
+          python src/qnwis/scripts/qa/rg6_resilience_gate.py
+
+      - name: Upload RG-6 artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: step31-rg6-artifacts
+          path: |
+            docs/audit/rg6/rg6_report.json
+            docs/audit/rg6/SLO_SUMMARY.md
+            docs/audit/rg6/sli_snapshot.json
+            docs/audit/badges/rg6_pass.svg
+          retention-days: 30
+
   readiness-gate:
-    name: "Readiness Gate - Steps 1-30"
+    name: "Readiness Gate - Steps 1-31"
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs:
@@ -259,6 +300,7 @@ jobs:
       - step28-slice
       - step29-slice
       - step30-slice
+      - step31-slice
 
     steps:
       - name: Checkout code

@@ -150,6 +150,7 @@ exclude = [
   "build",
   "dist",
   "references",  # treat as read-only examples
+  "grafana/dashboards/**/*.json",
 ]
 extend-include = [
   "src/qnwis/alerts/**/*.py",
@@ -163,6 +164,9 @@ extend-include = [
   "src/qnwis/scripts/qa/ops_notify_gate.py",
   "src/qnwis/ops_console/**/*.py",
   "grafana/dashboards/**/*.py",  # dashboards lint coverage (JSON ignored)
+  "src/qnwis/slo/**/*.py",
+  "src/qnwis/scripts/qa/rg6_resilience_gate.py",
+  "src/qnwis/scripts/qa/step31_slo_slice.py",
 ]
 
 [tool.ruff.lint]
