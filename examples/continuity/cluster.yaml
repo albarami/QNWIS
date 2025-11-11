@@ -1,0 +1,82 @@
+# Example Cluster Configuration for Business Continuity
+# 
+# This file defines the topology of a QNWIS cluster with nodes
+# distributed across multiple regions and sites for high availability.
+
+cluster_id: prod-cluster-001
+name: Production QNWIS Cluster
+
+# Quorum size (optional, defaults to N/2 + 1)
+# For 3 nodes: quorum_size = 2
+# For 5 nodes: quorum_size = 3
+quorum_size: 2
+
+# Geographic regions
+regions:
+  - region-1  # Primary region (e.g., Doha)
+  - region-2  # Secondary region (e.g., Al Rayyan)
+
+# Cluster nodes
+nodes:
+  # Primary node in region-1
+  - node_id: node-1
+    hostname: 10.0.1.10
+    role: primary
+    region: region-1
+    site: site-a
+    status: healthy
+    priority: 100
+    capacity: 100.0
+    metadata:
+      datacenter: dc1
+      rack: rack-a1
+      environment: production
+
+  # Secondary node in region-1 (different site for site-level HA)
+  - node_id: node-2
+    hostname: 10.0.1.11
+    role: secondary
+    region: region-1
+    site: site-b
+    status: healthy
+    priority: 90
+    capacity: 95.0
+    metadata:
+      datacenter: dc1
+      rack: rack-b1
+      environment: production
+
+  # Secondary node in region-2 (cross-region HA)
+  - node_id: node-3
+    hostname: 10.0.2.10
+    role: secondary
+    region: region-2
+    site: site-c
+    status: healthy
+    priority: 80
+    capacity: 90.0
+    metadata:
+      datacenter: dc2
+      rack: rack-a1
+      environment: production
+
+# Node Configuration Guide:
+#
+# node_id: Unique identifier for the node
+# hostname: IP address or hostname
+# role: primary | secondary | witness
+#   - primary: Active node serving requests
+#   - secondary: Standby node ready for failover
+#   - witness: Quorum participant (no data)
+#
+# region: Geographic region identifier
+# site: Site identifier within region
+# status: healthy | degraded | failed | unknown
+#   - healthy: Operational and available
+#   - degraded: Operational with reduced capacity
+#   - failed: Not operational
+#   - unknown: Status not determined
+#
+# priority: Failover priority (0-1000, higher = preferred)
+# capacity: Node capacity percentage (0-100)
+# metadata: Additional node metadata (optional)

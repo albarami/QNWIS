@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import functools
 import logging
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
@@ -52,12 +53,22 @@ def _principal_from_request(request: Request) -> Principal:
     return principal
 
 
-def require_roles(*roles: str):
+def require_roles(*roles: str | Iterable[str]):
     """
     FastAPI dependency enforcing that caller holds any of the provided roles.
     """
 
-    normalized = {role.lower() for role in roles if role}
+    normalized: set[str] = set()
+    for role in roles:
+        if not role:
+            continue
+        if isinstance(role, str):
+            normalized.add(role.lower())
+            continue
+        if isinstance(role, Iterable):
+            normalized.update(
+                nested.lower() for nested in role if isinstance(nested, str)
+            )
 
     def dependency(principal: Principal = Depends(_principal_from_request)) -> Principal:
         if not normalized:

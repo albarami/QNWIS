@@ -37,6 +37,15 @@ DR_SECURITY_PATTERNS.update(
 for pattern_key in ("import smtplib", "import requests", "import httpx", "import aiohttp"):
     DR_SECURITY_PATTERNS[pattern_key] = NETWORK_BANNED_PATTERNS[pattern_key]
 
+CONTINUITY_SECURITY_PATTERNS: dict[str, Pattern[str]] = dict(DR_SECURITY_PATTERNS)
+CONTINUITY_SECURITY_PATTERNS.update(
+    {
+        "datetime.utcnow": re.compile(r"datetime\s*\.\s*utcnow\s*\("),
+        "time.perf_counter": re.compile(r"time\s*\.\s*perf_counter\s*\("),
+        "time.sleep": re.compile(r"time\s*\.\s*sleep\s*\("),
+    }
+)
+
 
 def _iter_python_files(target: Path) -> Iterable[Path]:
     if target.is_file() and target.suffix == ".py":

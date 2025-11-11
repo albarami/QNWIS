@@ -332,8 +332,50 @@ jobs:
             src/qnwis/docs/audit/badges/rg7_pass.svg
           retention-days: 30
 
+  step33-continuity-slice:
+    name: "Step 33 Continuity Slice"
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: pre-commit
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run continuity slice
+        run: |
+          python src/qnwis/scripts/qa/step33_continuity_slice.py
+
+      - name: Run RG-8 gate
+        run: |
+          python src/qnwis/scripts/qa/rg8_continuity_gate.py
+
+      - name: Upload RG-8 artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: step33-rg8-artifacts
+          path: |
+            docs/audit/rg8/rg8_report.json
+            docs/audit/rg8/CONTINUITY_SUMMARY.md
+            docs/audit/rg8/sample_plan.yaml
+            docs/audit/badges/rg8_pass.svg
+            src/qnwis/docs/audit/badges/rg8_pass.svg
+          retention-days: 30
+
   readiness-gate:
-    name: "Readiness Gate - Steps 1-32"
+    name: "Readiness Gate - Steps 1-33"
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs:
@@ -343,6 +385,7 @@ jobs:
       - step30-slice
       - step31-slice
       - step32-dr-slice
+      - step33-continuity-slice
 
     steps:
       - name: Checkout code

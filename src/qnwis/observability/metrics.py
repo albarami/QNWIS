@@ -42,12 +42,19 @@ class MetricsCollector:
         self.dr_restore_total = defaultdict(int)  # {(status): count}
         self.dr_verify_failures_total = defaultdict(int)  # {(snapshot_id): count}
 
+        # Continuity/Failover counters
+        self.failover_executions_total = defaultdict(int)  # {(cluster, status): count}
+        self.failover_success_total = defaultdict(int)  # {(cluster): count}
+        self.failover_failures_total = defaultdict(int)  # {(cluster, reason): count}
+
         # Histograms (simplified - store all observations for percentile calculation)
         self.request_duration_seconds: list[tuple[dict[str, str], float]] = []
         self.agent_execution_duration_seconds: list[tuple[dict[str, str], float]] = []
         self.cache_latency_seconds: list[tuple[dict[str, str], float]] = []
         self.dr_backup_duration_seconds: list[tuple[dict[str, str], float]] = []
         self.dr_restore_duration_seconds: list[tuple[dict[str, str], float]] = []
+        self.failover_execution_ms: list[tuple[dict[str, str], float]] = []
+        self.failover_validation_ms: list[tuple[dict[str, str], float]] = []
 
         # Gauges
         self.active_requests = 0
@@ -55,6 +62,8 @@ class MetricsCollector:
         self.dr_snapshots_total = 0
         self.dr_retained_total = 0
         self.dr_backup_bytes = 0
+        self.continuity_nodes_healthy = 0
+        self.continuity_quorum_reached = 0
 
         # Metadata
         self.start_time = time.time()
@@ -85,6 +94,12 @@ class MetricsCollector:
             self.dr_restore_total[key] += value
         elif metric == "qnwis_dr_verify_failures_total":
             self.dr_verify_failures_total[key] += value
+        elif metric == "qnwis_failover_executions_total":
+            self.failover_executions_total[key] += value
+        elif metric == "qnwis_failover_success_total":
+            self.failover_success_total[key] += value
+        elif metric == "qnwis_failover_failures_total":
+            self.failover_failures_total[key] += value
 
     def observe_histogram(
         self, metric: str, labels: dict[str, str], value: float
@@ -107,6 +122,10 @@ class MetricsCollector:
             self.dr_backup_duration_seconds.append((labels, value))
         elif metric == "qnwis_dr_restore_duration_seconds":
             self.dr_restore_duration_seconds.append((labels, value))
+        elif metric == "qnwis_failover_execution_ms":
+            self.failover_execution_ms.append((labels, value))
+        elif metric == "qnwis_failover_validation_ms":
+            self.failover_validation_ms.append((labels, value))
 
     def set_gauge(self, metric: str, value: int) -> None:
         """
@@ -126,6 +145,10 @@ class MetricsCollector:
             self.dr_retained_total = value
         elif metric == "qnwis_dr_backup_bytes":
             self.dr_backup_bytes = value
+        elif metric == "qnwis_continuity_nodes_healthy":
+            self.continuity_nodes_healthy = value
+        elif metric == "qnwis_continuity_quorum_reached":
+            self.continuity_quorum_reached = value
 
     def increment_gauge(self, metric: str, delta: int = 1) -> None:
         """
@@ -544,3 +567,52 @@ def record_rate_limit_event(principal: str, reason: str) -> None:
     collector = get_metrics_collector()
     labels = {"principal": principal, "reason": reason}
     collector.increment_counter("qnwis_rate_limit_events_total", labels)
+
+
+def record_failover_execution(
+    cluster_id: str, status: str, duration_ms: float
+) -> None:
+    """
+    Record failover execution metrics.
+
+    Args:
+        cluster_id: Cluster identifier
+        status: Execution status (success, failure)
+        duration_ms: Execution duration in milliseconds
+    """
+    collector = get_metrics_collector()
+    labels = {"cluster": cluster_id, "status": status}
+    collector.increment_counter("qnwis_failover_executions_total", labels)
+    
+    if status == "success":
+        collector.increment_counter("qnwis_failover_success_total", {"cluster": cluster_id})
+    else:
+        collector.increment_counter("qnwis_failover_failures_total", {"cluster": cluster_id, "reason": "execution_failed"})
+    
+    collector.observe_histogram("qnwis_failover_execution_ms", labels, duration_ms)
+
+
+def record_failover_validation(cluster_id: str, duration_ms: float) -> None:
+    """
+    Record failover validation metrics.
+
+    Args:
+        cluster_id: Cluster identifier
+        duration_ms: Validation duration in milliseconds
+    """
+    collector = get_metrics_collector()
+    labels = {"cluster": cluster_id}
+    collector.observe_histogram("qnwis_failover_validation_ms", labels, duration_ms)
+
+
+def update_continuity_status(healthy_nodes: int, has_quorum: bool) -> None:
+    """
+    Update continuity status gauges.
+
+    Args:
+        healthy_nodes: Number of healthy nodes
+        has_quorum: Whether quorum is achieved
+    """
+    collector = get_metrics_collector()
+    collector.set_gauge("qnwis_continuity_nodes_healthy", healthy_nodes)
+    collector.set_gauge("qnwis_continuity_quorum_reached", 1 if has_quorum else 0)

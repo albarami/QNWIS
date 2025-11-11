@@ -120,6 +120,31 @@
       "path": "src/qnwis/docs/audit/badges/rg7_pass.svg",
       "sha256": "4b179dc9aa67e5dc0a76eac73c7c4c285662ee8fd575b9a6babf5413bd0a14af",
       "size_bytes": 846
+    },
+    {
+      "path": "docs/audit/rg8/rg8_report.json",
+      "sha256": "a961435ded692ff20235e8bf4f0275872b4d25c105995a8a76788e1d4c3faa39",
+      "size_bytes": 1149
+    },
+    {
+      "path": "docs/audit/rg8/CONTINUITY_SUMMARY.md",
+      "sha256": "7baf3f961363b2dc79c05a02976bdd6fb2ca905e3747fe6de069603d66e942b5",
+      "size_bytes": 496
+    },
+    {
+      "path": "docs/audit/rg8/sample_plan.yaml",
+      "sha256": "c4ad9cbef9dbde3389329c3a56e4158575709f2186c10709d0a95cdaa98cf094",
+      "size_bytes": 1256
+    },
+    {
+      "path": "docs/audit/badges/rg8_pass.svg",
+      "sha256": "dd7d6c73ea33703864a5044faa10e6654ead7bedc00a14fe36774d78139926d6",
+      "size_bytes": 852
+    },
+    {
+      "path": "src/qnwis/docs/audit/badges/rg8_pass.svg",
+      "sha256": "dd7d6c73ea33703864a5044faa10e6654ead7bedc00a14fe36774d78139926d6",
+      "size_bytes": 852
     }
   ]
 }

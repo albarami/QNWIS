@@ -1,0 +1,73 @@
+# Example Failover Policy Configuration
+#
+# This file defines the failover policy including strategy, timing,
+# and priority rules for automatic failover orchestration.
+
+policy_id: auto-failover-policy-001
+name: Automatic Failover Policy
+
+# Failover strategy
+# Options: automatic | manual | quorum_based
+#   - automatic: Immediate failover on primary failure
+#   - manual: Requires operator approval
+#   - quorum_based: Failover only if quorum maintained
+strategy: automatic
+
+# Maximum allowed failover time (seconds)
+# Failover must complete within this time or be considered failed
+max_failover_time_s: 60
+
+# Require quorum for failover
+# If true, failover will not proceed if quorum would be lost
+require_quorum: true
+
+# Region priority (ordered list)
+# Failover will prefer nodes in higher-priority regions
+region_priority:
+  - region-1  # Primary region (highest priority)
+  - region-2  # Secondary region
+
+# Site priority (ordered list)
+# Within a region, failover will prefer nodes in higher-priority sites
+site_priority:
+  - site-a  # Highest priority site
+  - site-b  # Medium priority site
+  - site-c  # Lower priority site
+
+# Minimum healthy nodes required
+# Failover will not proceed if this would reduce healthy nodes below threshold
+min_healthy_nodes: 2
+
+# Additional metadata
+metadata:
+  owner: ops-team
+  environment: production
+  version: "1.0"
+  last_updated: "2024-01-01"
+
+# Policy Configuration Guide:
+#
+# strategy:
+#   - automatic: Best for production with monitoring
+#   - manual: Best for testing or high-risk environments
+#   - quorum_based: Best for distributed systems requiring consensus
+#
+# max_failover_time_s:
+#   - Typical range: 30-120 seconds
+#   - Consider: DNS TTL, connection draining, health check intervals
+#
+# require_quorum:
+#   - true: Safer, prevents split-brain scenarios
+#   - false: Allows failover even if quorum lost (risky)
+#
+# region_priority:
+#   - Order matters: first region has highest priority
+#   - Consider: latency, cost, compliance requirements
+#
+# site_priority:
+#   - Order matters: first site has highest priority
+#   - Consider: power, network, physical separation
+#
+# min_healthy_nodes:
+#   - Should be >= quorum_size
+#   - Consider: workload capacity, redundancy requirements

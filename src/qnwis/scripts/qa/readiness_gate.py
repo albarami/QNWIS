@@ -60,9 +60,8 @@ from qnwis.scripts.qa.determinism_scan import (
     NETWORK_BANNED_PATTERNS as ALERT_NETWORK_PATTERNS,
 )
 from qnwis.scripts.qa.determinism_scan import (
+    CONTINUITY_SECURITY_PATTERNS,
     DR_SECURITY_PATTERNS,
-)
-from qnwis.scripts.qa.determinism_scan import (
     scan_for_banned_calls,
 )
 
@@ -539,6 +538,15 @@ RG7_REPORT_PATH = ROOT / "docs" / "audit" / "rg7" / "rg7_report.json"
 RG7_SUMMARY_MD = ROOT / "docs" / "audit" / "rg7" / "DR_SUMMARY.md"
 RG7_MANIFEST_PATH = ROOT / "docs" / "audit" / "rg7" / "sample_manifest.json"
 RG7_BADGE_PATH = SRC_ROOT / "qnwis" / "docs" / "audit" / "badges" / "rg7_pass.svg"
+STEP33_CONTINUITY_PATHS = (
+    SRC_ROOT / "qnwis" / "continuity",
+    SRC_ROOT / "qnwis" / "scripts" / "qa" / "rg8_continuity_gate.py",
+)
+RG8_REPORT_PATH = ROOT / "docs" / "audit" / "rg8" / "rg8_report.json"
+RG8_SUMMARY_MD = ROOT / "docs" / "audit" / "rg8" / "CONTINUITY_SUMMARY.md"
+RG8_SAMPLE_PLAN_PATH = ROOT / "docs" / "audit" / "rg8" / "sample_plan.yaml"
+RG8_BADGE_PATH = SRC_ROOT / "qnwis" / "docs" / "audit" / "badges" / "rg8_pass.svg"
+RG8_BADGE_DOCS_PATH = ROOT / "docs" / "audit" / "badges" / "rg8_pass.svg"
 
 
 @dataclass
@@ -1063,6 +1071,16 @@ def _load_rg7_report() -> dict[str, Any] | None:
         return json.loads(RG7_REPORT_PATH.read_text(encoding="utf-8"))
     except Exception as exc:  # pragma: no cover
         logger.warning("Failed to parse RG-7 report: %s", exc)
+        return None
+
+
+def _load_rg8_report() -> dict[str, Any] | None:
+    if not RG8_REPORT_PATH.exists():
+        return None
+    try:
+        return json.loads(RG8_REPORT_PATH.read_text(encoding="utf-8"))
+    except Exception as exc:  # pragma: no cover
+        logger.warning("Failed to parse RG-8 report: %s", exc)
         return None
 
 
@@ -2140,9 +2158,76 @@ def gate_dr_recovery_step32() -> GateResult:
     )
 
 
+def gate_continuity_step33() -> GateResult:
+    """Step 33: Validate RG-8 continuity artifacts and determinism."""
+    start = time.time()
+    report = _load_rg8_report() or {}
+    checks = report.get("checks") or {}
+    metrics = report.get("metrics") or {}
+    rg8_passed = bool(report) and all((entry or {}).get("status") == "PASS" for entry in checks.values())
+
+    badge_src_present = RG8_BADGE_PATH.exists()
+    badge_docs_present = RG8_BADGE_DOCS_PATH.exists()
+    badge_present = badge_src_present and badge_docs_present
+    summary_present = RG8_SUMMARY_MD.exists()
+    report_present = RG8_REPORT_PATH.exists()
+    sample_plan_present = RG8_SAMPLE_PLAN_PATH.exists()
+
+    perf_check = checks.get("continuity_perf") or {}
+    failover_check = checks.get("continuity_failover_validity") or {}
+
+    determinism_hits = scan_for_banned_calls(STEP33_CONTINUITY_PATHS, CONTINUITY_SECURITY_PATTERNS)
+
+    artifacts = {
+        "report": _rel(RG8_REPORT_PATH) if report_present else None,
+        "summary": _rel(RG8_SUMMARY_MD) if summary_present else None,
+        "sample_plan": _rel(RG8_SAMPLE_PLAN_PATH) if sample_plan_present else None,
+        "badge_src": _rel(RG8_BADGE_PATH) if badge_src_present else None,
+        "badge_docs": _rel(RG8_BADGE_DOCS_PATH) if badge_docs_present else None,
+    }
+
+    details = {
+        "rg8_passed": rg8_passed,
+        "badge_present": badge_present,
+        "badge_src_present": badge_src_present,
+        "badge_docs_present": badge_docs_present,
+        "summary_present": summary_present,
+        "sample_plan_present": sample_plan_present,
+        "report_present": report_present,
+        "checks": checks,
+        "metrics": metrics,
+        "p50_ms": perf_check.get("p50_ms"),
+        "p95_ms": perf_check.get("p95_ms"),
+        "quorum_rate": failover_check.get("quorum_rate"),
+        "healthy_nodes": failover_check.get("healthy_nodes"),
+        "quorum_size": failover_check.get("quorum_size"),
+        "total_nodes": failover_check.get("total_nodes"),
+        "determinism_hits": determinism_hits,
+        "artifacts": artifacts,
+    }
+
+    ok = (
+        rg8_passed
+        and badge_present
+        and summary_present
+        and sample_plan_present
+        and report_present
+        and not determinism_hits
+    )
+
+    evidence = [path for path in artifacts.values() if path]
+    return GateResult(
+        name="continuity_step33",
+        ok=ok,
+        details=details,
+        duration_ms=(time.time() - start) * 1000,
+        evidence_paths=evidence,
+    )
+
+
 def generate_markdown_report(report: ReadinessReport) -> str:
     lines = [
-        "# Readiness Report: Steps 1-32",
+        "# Readiness Report: Steps 1-33",
         "",
         f"**Generated:** {report.timestamp}",
         f"**Overall Status:** {'PASS' if report.overall_pass else 'FAIL'}",
@@ -2263,6 +2348,27 @@ def generate_markdown_report(report: ReadinessReport) -> str:
                 f"{step32_info.get('rto_target', 'n/a')}",
                 f"- **Test Corpus Files:** {step32_info.get('test_corpus_files', 'n/a')}",
                 f"- **Determinism Violations:** {len(step32_info.get('determinism_hits', []))}",
+                "",
+            ]
+        )
+    step33_info = report.summary.get("step33")
+    if step33_info:
+        rg8_status = step33_info.get("rg8_passed")
+        rg8_status_str = "n/a" if rg8_status is None else ("PASS" if rg8_status else "FAIL")
+        artifacts = step33_info.get("artifacts") or {}
+        lines.extend(
+            [
+                "## Step 33 - Continuity & Failover",
+                "",
+                f"- **RG-8 Status:** {rg8_status_str}",
+                f"- **Badge Present:** {'yes' if step33_info.get('badge_present') else 'no'}",
+                f"- **Summary Present:** {'yes' if step33_info.get('summary_present') else 'no'}",
+                f"- **Sample Plan Present:** {'yes' if step33_info.get('sample_plan_present') else 'no'}",
+                f"- **Latency p50/p95 (ms):** {_fmt_latency(step33_info.get('p50_ms'))} / {_fmt_latency(step33_info.get('p95_ms'))}",
+                f"- **Quorum Rate:** {_fmt_latency(step33_info.get('quorum_rate'))}",
+                f"- **Healthy Nodes / Quorum Size:** {step33_info.get('healthy_nodes', 'n/a')} / {step33_info.get('quorum_size', 'n/a')}",
+                f"- **Determinism Violations:** {len(step33_info.get('determinism_hits', []))}",
+                f"- **Artifacts:** report=`{artifacts.get('report', 'n/a')}`, summary=`{artifacts.get('summary', 'n/a')}`, badge=`{artifacts.get('badge_src', 'n/a')}`",
                 "",
             ]
         )
@@ -2391,6 +2497,7 @@ def write_readiness_review(report: ReadinessReport) -> Path:
     step30_info = report.summary.get("step30", {})
     step31_info = report.summary.get("step31", {})
     step32_info = report.summary.get("step32", {})
+    step33_info = report.summary.get("step33", {})
     ops_gate_passed = step28_info.get("ops_gate_passed")
     ops_gate_status = "n/a" if ops_gate_passed is None else ("PASS" if ops_gate_passed else "FAIL")
     ops_summary_present = "yes" if step28_info.get("ops_summary_present") else "no"
@@ -2427,6 +2534,7 @@ def write_readiness_review(report: ReadinessReport) -> Path:
           "8. Step 30 RG-5 ops console badge, gate report, and metrics snapshot are persisted.",
           "9. Step 31 RG-6 SLO badge and error-budget summaries land with determinism/network scans.",
           "10. Step 32 RG-7 DR badge, summary, and manifest verify RPO/RTO with deterministic scans.",
+          "11. Step 33 RG-8 continuity badge, plan, and quorum metrics validate HA readiness.",
           "",
         "## Step 28 - Alert Center Hardening",
         "",
@@ -2490,6 +2598,19 @@ def write_readiness_review(report: ReadinessReport) -> Path:
           f"| Test Corpus Files | {step32_info.get('test_corpus_files', 'n/a')} |",
           f"| Determinism Violations | {len(step32_info.get('determinism_hits', []))} |",
           "",
+          "## Step 33 - Continuity & Failover",
+          "",
+          "| Metric | Value |",
+          "| --- | --- |",
+          f"| RG-8 Status | {('n/a' if step33_info.get('rg8_passed') is None else ('PASS' if step33_info.get('rg8_passed') else 'FAIL'))} |",
+          f"| Badge Present | {'yes' if step33_info.get('badge_present') else 'no'} |",
+          f"| Summary Present | {'yes' if step33_info.get('summary_present') else 'no'} |",
+          f"| Sample Plan Present | {'yes' if step33_info.get('sample_plan_present') else 'no'} |",
+          f"| Latency p50/p95 (ms) | {_fmt_latency(step33_info.get('p50_ms'))} / {_fmt_latency(step33_info.get('p95_ms'))} |",
+          f"| Quorum Rate | {_fmt_latency(step33_info.get('quorum_rate'))} |",
+          f"| Healthy Nodes / Quorum Size | {step33_info.get('healthy_nodes', 'n/a')} / {step33_info.get('quorum_size', 'n/a')} |",
+          f"| Determinism Violations | {len(step33_info.get('determinism_hits', []))} |",
+          "",
           "## Gate Evidence",
           "",
           "| Gate | Status | Severity | Evidence |",
@@ -2536,6 +2657,7 @@ def main() -> int:
           gate_ops_console_step30,
           gate_slo_ops_step31,
           gate_dr_recovery_step32,
+          gate_continuity_step33,
           gate_stability_controls,
           gate_api_endpoints,
           gate_api_security,
@@ -2643,6 +2765,23 @@ def main() -> int:
             "artifacts": artifacts,
             "badge_path": artifacts.get("badge"),
         }
+    step33_gate = next((g for g in gates if g.name == "continuity_step33"), None)
+    if step33_gate is not None:
+        artifacts = step33_gate.details.get("artifacts") or {}
+        summary_data["step33"] = {
+            "passed": step33_gate.ok,
+            "rg8_passed": step33_gate.details.get("rg8_passed"),
+            "badge_present": step33_gate.details.get("badge_present"),
+            "summary_present": step33_gate.details.get("summary_present"),
+            "sample_plan_present": step33_gate.details.get("sample_plan_present"),
+            "p50_ms": step33_gate.details.get("p50_ms"),
+            "p95_ms": step33_gate.details.get("p95_ms"),
+            "quorum_rate": step33_gate.details.get("quorum_rate"),
+            "healthy_nodes": step33_gate.details.get("healthy_nodes"),
+            "quorum_size": step33_gate.details.get("quorum_size"),
+            "determinism_hits": step33_gate.details.get("determinism_hits", []),
+            "artifacts": artifacts,
+        }
 
     report = ReadinessReport(
         gates=gates,
@@ -2682,6 +2821,11 @@ def main() -> int:
         RG7_SUMMARY_MD,
         RG7_MANIFEST_PATH,
         RG7_BADGE_PATH,
+        RG8_REPORT_PATH,
+        RG8_SUMMARY_MD,
+        RG8_SAMPLE_PLAN_PATH,
+        RG8_BADGE_PATH,
+        RG8_BADGE_DOCS_PATH,
     ]
     report.artifacts = _hash_artifacts(artifact_inputs)
 

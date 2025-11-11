@@ -81,3 +81,8 @@ repos:
         entry: python src/qnwis/scripts/qa/step32_dr_slice.py --files
         language: system
         pass_filenames: true
+      - id: step33-continuity-slice
+        name: Step 33 Continuity Slice
+        entry: python src/qnwis/scripts/qa/step33_continuity_slice.py --files
+        language: system
+        pass_filenames: true

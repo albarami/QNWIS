@@ -161,6 +161,7 @@ extend-include = [
   "src/qnwis/scripts/qa/rg7_recovery_gate.py",
   "src/qnwis/notify/**/*.py",
   "src/qnwis/incidents/**/*.py",
+  "src/qnwis/continuity/**/*.py",
   "src/qnwis/api/routers/**/*.py",
   "src/qnwis/scripts/qa/ops_notify_gate.py",
   "src/qnwis/ops_console/**/*.py",
@@ -169,6 +170,7 @@ extend-include = [
   "src/qnwis/scripts/qa/rg6_resilience_gate.py",
   "src/qnwis/scripts/qa/step31_slo_slice.py",
   "src/qnwis/scripts/qa/step32_dr_slice.py",
+  "src/qnwis/scripts/qa/rg8_continuity_gate.py",
   "src/qnwis/dr/**/*.py",
 ]
 
