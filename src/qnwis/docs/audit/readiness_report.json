@@ -316,12 +316,12 @@
         },
         "missing": {}
       },
-      "duration_ms": 13.679027557373047,
+      "duration_ms": 13.421773910522461,
       "severity": "ERROR",
       "evidence_paths": [
         "docs/IMPLEMENTATION_ROADMAP.md"
       ],
-      "timestamp": "2025-11-10T19:36:19.301405"
+      "timestamp": "2025-11-11T03:22:14.825849"
     },
     {
       "name": "no_placeholders",
@@ -338,32 +338,44 @@
         ],
         "violations": []
       },
-      "duration_ms": 2211.909770965576,
+      "duration_ms": 215.7294750213623,
       "severity": "ERROR",
       "evidence_paths": [
         "src/qnwis/scripts/qa/grep_rules.yml"
       ],
-      "timestamp": "2025-11-10T19:36:21.513315"
+      "timestamp": "2025-11-11T03:22:15.041578"
     },
     {
       "name": "linters_and_types",
       "ok": false,
       "details": {
         "ruff": {
-          "issues": 0,
-          "fixable": 0,
-          "rules": {},
-          "files": [],
-          "stdout_tail": "[]",
+          "issues": 13,
+          "fixable": 7,
+          "rules": {
+            "F821": 6,
+            "SIM105": 2,
+            "F841": 4,
+            "B007": 1
+          },
+          "files": [
+            "D:\\lmis_int\\src\\qnwis\\scripts\\qa\\readiness_gate.py",
+            "D:\\lmis_int\\tests\\integration\\ops_console\\test_live_updates.py",
+            "D:\\lmis_int\\tests\\unit\\ops_console\\test_perf_render.py",
+            "D:\\lmis_int\\tests\\unit\\ops_console\\test_sse.py"
+          ],
+          "stdout_tail": "w\": 202\n    },\n    \"filename\": \"D:\\\\lmis_int\\\\tests\\\\unit\\\\ops_console\\\\test_sse.py\",\n    \"fix\": {\n      \"applicability\": \"unsafe\",\n      \"edits\": [\n        {\n          \"content\": \"import contextlib\\n\",\n          \"end_location\": {\n            \"column\": 1,\n            \"row\": 19\n          },\n          \"location\": {\n            \"column\": 1,\n            \"row\": 19\n          }\n        },\n        {\n          \"content\": \"with contextlib.suppress(TimeoutError)\",\n          \"end_location\": {\n            \"column\": 12,\n            \"row\": 199\n          },\n          \"location\": {\n            \"column\": 9,\n            \"row\": 199\n          }\n        },\n        {\n          \"content\": \"\",\n          \"end_location\": {\n            \"column\": 1,\n            \"row\": 203\n          },\n          \"location\": {\n            \"column\": 1,\n            \"row\": 201\n          }\n        }\n      ],\n      \"message\": \"Replace `try`-`except`-`pass` with `with contextlib.suppress(TimeoutError): ...`\"\n    },\n    \"location\": {\n      \"column\": 9,\n      \"row\": 199\n    },\n    \"message\": \"Use `contextlib.suppress(TimeoutError)` instead of `try`-`except`-`pass`\",\n    \"noqa_row\": 199,\n    \"url\": \"https://docs.astral.sh/ruff/rules/suppressible-exception\"\n  },\n  {\n    \"cell\": null,\n    \"code\": \"B007\",\n    \"end_location\": {\n      \"column\": 28,\n      \"row\": 214\n    },\n    \"filename\": \"D:\\\\lmis_int\\\\tests\\\\unit\\\\ops_console\\\\test_sse.py\",\n    \"fix\": {\n      \"applicability\": \"unsafe\",\n      \"edits\": [\n        {\n          \"content\": \"_chunk\",\n          \"end_location\": {\n            \"column\": 28,\n            \"row\": 214\n          },\n          \"location\": {\n            \"column\": 23,\n            \"row\": 214\n          }\n        }\n      ],\n      \"message\": \"Rename unused `chunk` to `_chunk`\"\n    },\n    \"location\": {\n      \"column\": 23,\n      \"row\": 214\n    },\n    \"message\": \"Loop control variable `chunk` not used within loop body\",\n    \"noqa_row\": 214,\n    \"url\": \"https://docs.astral.sh/ruff/rules/unused-loop-control-variable\"\n  }\n]",
           "stderr_tail": "",
-          "exit_code": 0
+          "exit_code": 1
         },
         "flake8": {
-          "issues": 41,
+          "issues": 56,
           "fixable": 0,
           "rules": {
-            "E501": 32,
-            "E203": 9
+            "E501": 40,
+            "E203": 9,
+            "F821": 6,
+            "E131": 1
           },
           "files": [
             "src/qnwis\\agents\\pattern_miner.py",
@@ -374,10 +386,10 @@
             "src/qnwis\\cli\\qnwis_predict.py",
             "src/qnwis\\forecast\\backtest.py",
             "src/qnwis\\forecast\\early_warning.py",
-            "src/qnwis\\orchestration\\coordination.py",
-            "src/qnwis\\orchestration\\nodes\\verify.py"
+            "src/qnwis\\ops_console\\views.py",
+            "src/qnwis\\orchestration\\coordination.py"
           ],
-          "stdout_tail": "space before ':'\nsrc/qnwis\\orchestration\\coordination.py:506:58: E203 whitespace before ':'\nsrc/qnwis\\orchestration\\coordination.py:514:63: E203 whitespace before ':'\nsrc/qnwis\\orchestration\\nodes\\verify.py:289:121: E501 line too long (125 > 120 characters)\nsrc/qnwis\\patterns\\metrics.py:217:30: E203 whitespace before ':'\nsrc/qnwis\\scenario\\qa.py:199:34: E203 whitespace before ':'\nsrc/qnwis\\scripts\\qa\\readiness_gate.py:895:121: E501 line too long (130 > 120 characters)\nsrc/qnwis\\security\\auth.py:299:121: E501 line too long (126 > 120 characters)\nsrc/qnwis\\security\\auth.py:321:121: E501 line too long (138 > 120 characters)\nsrc/qnwis\\ui\\svg.py:38:121: E501 line too long (128 > 120 characters)\nsrc/qnwis\\ui\\svg.py:41:121: E501 line too long (129 > 120 characters)\nsrc/qnwis\\ui\\svg.py:93:121: E501 line too long (124 > 120 characters)\nsrc/qnwis\\ui\\svg.py:147:121: E501 line too long (124 > 120 characters)\ntests\\conftest.py:117:121: E501 line too long (127 > 120 characters)\ntests\\conftest.py:130:121: E501 line too long (121 > 120 characters)\ntests\\integration\\agents\\test_predictor_agent.py:27:121: E501 line too long (135 > 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:79:121: E501 line too long (130 > 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:96:121: E501 line too long (127 > 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:111:121: E501 line too long (150 > 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:222:121: E501 line too long (124 > 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:245:121: E501 line too long (123 > 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:268:121: E501 line too long (126 > 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:294:121: E501 line too long (152 > 120 characters)\ntests\\unit\\agents\\test_pattern_detective.py:254:121: E501 line too long (126 > 120 characters)\ntests\\unit\\agents\\test_pattern_detective.py:266:121: E501 line too long (123 > 120 characters)\n",
+          "stdout_tail": "e '_fmt_latency'\nsrc/qnwis\\scripts\\qa\\readiness_gate.py:1988:48: F821 undefined name '_fmt_latency'\nsrc/qnwis\\scripts\\qa\\readiness_gate.py:1990:121: E501 line too long (164 > 120 characters)\nsrc/qnwis\\scripts\\qa\\readiness_gate.py:2185:121: E501 line too long (146 > 120 characters)\nsrc/qnwis\\scripts\\qa\\readiness_gate.py:2186:121: E501 line too long (137 > 120 characters)\nsrc/qnwis\\scripts\\qa\\readiness_gate.py:2283:14: E131 continuation line unaligned for hanging indent\nsrc/qnwis\\security\\auth.py:316:121: E501 line too long (126 > 120 characters)\nsrc/qnwis\\security\\auth.py:338:121: E501 line too long (138 > 120 characters)\nsrc/qnwis\\ui\\svg.py:38:121: E501 line too long (128 > 120 characters)\nsrc/qnwis\\ui\\svg.py:41:121: E501 line too long (129 > 120 characters)\nsrc/qnwis\\ui\\svg.py:93:121: E501 line too long (124 > 120 characters)\nsrc/qnwis\\ui\\svg.py:147:121: E501 line too long (124 > 120 characters)\ntests\\conftest.py:117:121: E501 line too long (127 > 120 characters)\ntests\\conftest.py:130:121: E501 line too long (121 > 120 characters)\ntests\\integration\\agents\\test_predictor_agent.py:27:121: E501 line too long (135 > 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:79:121: E501 line too long (130 > 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:96:121: E501 line too long (127 > 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:111:121: E501 line too long (150 > 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:222:121: E501 line too long (124 > 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:245:121: E501 line too long (123 > 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:268:121: E501 line too long (126 > 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:294:121: E501 line too long (152 > 120 characters)\ntests\\unit\\agents\\test_pattern_detective.py:254:121: E501 line too long (126 > 120 characters)\ntests\\unit\\agents\\test_pattern_detective.py:266:121: E501 line too long (123 > 120 characters)\n",
           "stderr_tail": "",
           "exit_code": 1
         },
@@ -391,15 +403,15 @@
           "exit_code": 0
         }
       },
-      "duration_ms": 12679.405927658081,
+      "duration_ms": 7314.260244369507,
       "severity": "ERROR",
       "evidence_paths": [],
-      "timestamp": "2025-11-10T19:36:34.192721"
+      "timestamp": "2025-11-11T03:22:22.355838"
     }
   ],
   "overall_pass": false,
-  "execution_time_ms": 14905.052661895752,
-  "timestamp": "2025-11-10T19:36:34.192779",
+  "execution_time_ms": 7543.411493301392,
+  "timestamp": "2025-11-11T03:22:22.355838",
   "summary": {
     "total_gates": 3,
     "total": 3,
@@ -409,9 +421,17 @@
   "artifacts": {
     "coverage.xml": "a983cdf5fa5911a848b72fb3c0e1873dc544bc88697bf45abf0d4bbfd5223104",
     "junit.xml": "1936cb6760d2944a3e93d625ce6d9911b24758cee616d5db7eb8eb0f3abf7270",
-    "src/qnwis/docs/audit/READINESS_REPORT_1_25.md": "85132492520d3138c931293ec4f6bfe8dfc7b1198866c51a9d735d339d77c235",
-    "src/qnwis/docs/audit/READINESS_SUMMARY.html": "c11cb4fd0dc2739404802d46ab5b259cb9a72a18e0d71f303f3aea3dcb758700",
-    "src/qnwis/docs/audit/badges/rg1_pass.svg": "9995f7f48c4cb371d7db73a0cb755b09a43f686d6f82bb85a81eb9d7b1b857d8"
+    "src/qnwis/docs/audit/READINESS_REPORT_1_25.md": "3f670094acb3f1a842fdbfbc697168794bad88920c34e6cb354dedc98ca613a6",
+    "src/qnwis/docs/audit/READINESS_SUMMARY.html": "4a1dd389cf772c2248cce0c4239c0ec38aa90ac83fbe550ea89a0fdab3d697b8",
+    "src/qnwis/docs/audit/badges/rg1_pass.svg": "9995f7f48c4cb371d7db73a0cb755b09a43f686d6f82bb85a81eb9d7b1b857d8",
+    "ops_notify_report.json": "eeeb7a4be860d00f103c927d235181ddb91dc12b888dfe0f08284ff29cf686ce",
+    "OPS_NOTIFY_SUMMARY.md": "292aa2e89f94f28714ca7fed8a86fc45c48d896c936d714c36b877f7c918673f",
+    "docs/audit/ops/RG4_SUMMARY.json": "cf0c970a4502838a0a89fa2512b51a43b24576a1533cacaf00747ddf72e175d5",
+    "src/qnwis/docs/audit/badges/rg4_notify.svg": "a821bf992adc5fcbc7868a01ccaae577b71d24d41439d53b980c60a1be9013b0",
+    "src/qnwis/docs/audit/ops/ui_gate_report.json": "b0b530fe56539a0424447f567fcc8456a4e43447e72c9a8fc7096eba0b5d6321",
+    "OPS_UI_SUMMARY.md": "3fee20cbb95c7adf2bf3bad56a9580b024a039ff6a17e694b8eddc534b7fc581",
+    "src/qnwis/docs/audit/ops/ui_metrics.json": "a787406c964f9e578b3dd6855185f66015accae4b4b39ef53e50015829a23b15",
+    "src/qnwis/docs/audit/badges/rg5_ops_console.svg": "0d69483e6211b77e16ed636dd623fd5e8c4a9202faf5db71cabe6f404948abeb"
   },
   "fixed_gates": []
 }

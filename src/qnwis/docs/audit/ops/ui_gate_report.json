@@ -1,0 +1,93 @@
+{
+  "gate": "RG-5 Ops Console",
+  "timestamp": "2025-11-11T03:20:38Z",
+  "passed": true,
+  "checks": {
+    "ui_completeness": {
+      "passed": true,
+      "checks": {
+        "template_layout.html": true,
+        "a11y_labels_layout.html": true,
+        "semantic_html_layout.html": true,
+        "template_ops_index.html": true,
+        "a11y_labels_ops_index.html": true,
+        "semantic_html_ops_index.html": true,
+        "template_incidents_list.html": true,
+        "a11y_labels_incidents_list.html": true,
+        "semantic_html_incidents_list.html": true,
+        "template_incident_detail.html": true,
+        "a11y_labels_incident_detail.html": true,
+        "semantic_html_incident_detail.html": false,
+        "template_alerts_list.html": true,
+        "a11y_labels_alerts_list.html": true,
+        "semantic_html_alerts_list.html": false,
+        "route_/": true,
+        "route_/incidents": true,
+        "route_/incidents/{incident_id}": true,
+        "route_/incidents/{incident_id}/ack": true,
+        "route_/incidents/{incident_id}/resolve": true,
+        "route_/incidents/{incident_id}/silence": true,
+        "route_/alerts": true,
+        "route_/stream/incidents": true,
+        "css_assets": true
+      },
+      "errors": []
+    },
+    "ui_performance": {
+      "passed": true,
+      "checks": {
+        "perf_tests_passed": true,
+        "incidents_p95_ms_budget": true,
+        "detail_p95_ms_budget": true,
+        "sse_p95_ms_budget": true,
+        "csrf_p95_ms_budget": true,
+        "ui_metrics_saved": true
+      },
+      "metrics": {
+        "incidents_p50_ms": 6.281,
+        "incidents_p95_ms": 24.989,
+        "detail_p50_ms": 4.041,
+        "detail_p95_ms": 4.813,
+        "sse_p95_ms": 0.0014,
+        "csrf_p95_ms": 0.0097,
+        "metrics_file": "D:\\lmis_int\\src\\qnwis\\docs\\audit\\ops\\ui_metrics.json"
+      },
+      "errors": []
+    },
+    "ui_security": {
+      "passed": true,
+      "checks": {
+        "csrf_module_exists": true,
+        "csrf_protection_class": true,
+        "csrf_verify_function": true,
+        "csrf_generate_function": true,
+        "csrf_in_incident_detail.html": true,
+        "csrf_dependency_imported": true,
+        "csrf_dependency_used": true
+      },
+      "errors": []
+    },
+    "ui_determinism": {
+      "passed": true,
+      "checks": {
+        "no_banned_calls": true,
+        "no_network_imports": true,
+        "tests_use_manual_clock": true
+      },
+      "errors": []
+    },
+    "ui_audit": {
+      "passed": true,
+      "checks": {
+        "logging_imported": true,
+        "logger_configured": true,
+        "audit_logging_present": true,
+        "request_id_in_logs": true,
+        "principal_in_actions": true,
+        "middleware_present": false,
+        "request_id_middleware": true
+      },
+      "errors": []
+    }
+  }
+}

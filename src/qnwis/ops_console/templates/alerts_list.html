@@ -1,0 +1,28 @@
+{% extends "layout.html" %}
+
+{% block title %}Alerts - QNWIS Ops Console{% endblock %}
+
+{% block content %}
+<h1>Alert History</h1>
+
+<section class="alerts-section" aria-labelledby="alerts-heading">
+    <h2 id="alerts-heading" class="visually-hidden">Alert Evaluations</h2>
+    
+    <p class="info-message">
+        Alert history feature is coming soon. This page will display recent alert rule evaluations,
+        including both triggered and non-triggered assessments.
+    </p>
+    
+    <div class="placeholder-content">
+        <p>In the future, this page will show:</p>
+        <ul>
+            <li>Alert rule evaluation history</li>
+            <li>Trigger conditions and thresholds</li>
+            <li>Time series data for each evaluation</li>
+            <li>Filter by rule, severity, and time range</li>
+        </ul>
+    </div>
+    
+    <a href="/ops" class="btn btn-secondary" aria-label="Return to dashboard">← Back to Dashboard</a>
+</section>
+{% endblock %}

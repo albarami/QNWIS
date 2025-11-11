@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="request-id" content="{{ request_id }}">
+    <title>{% block title %}QNWIS Ops Console{% endblock %}</title>
+    <link rel="stylesheet" href="/ops/assets/style.css">
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+</head>
+<body>
+    <nav class="navbar" role="navigation" aria-label="Main navigation">
+        <div class="container">
+            <a href="/ops" class="brand">QNWIS Ops Console</a>
+            <ul class="nav-links">
+                <li><a href="/ops" aria-label="Dashboard">Dashboard</a></li>
+                <li><a href="/ops/incidents" aria-label="Incidents">Incidents</a></li>
+                <li><a href="/ops/alerts" aria-label="Alerts">Alerts</a></li>
+                <li class="user-info" aria-label="User information">
+                    <span>{{ principal.user_id }}</span>
+                    <span class="role">{{ principal.roles|join(', ') }}</span>
+                </li>
+            </ul>
+        </div>
+    </nav>
+    
+    <main class="main-content container" role="main">
+        {% block content %}{% endblock %}
+    </main>
+    
+    <footer class="audit-footer" role="contentinfo">
+        <div class="container">
+            <span>Request ID: <code>{{ request_id }}</code></span>
+            <span>User: <code>{{ principal.user_id }}</code></span>
+            <span>Roles: <code>{{ principal.roles|join(', ') }}</code></span>
+            <span>Time: <code>{{ render_start }}</code></span>
+        </div>
+    </footer>
+    
+    <!-- Render timing comment for performance tracking -->
+    <!-- Render started: {{ render_start }} -->
+</body>
+</html>

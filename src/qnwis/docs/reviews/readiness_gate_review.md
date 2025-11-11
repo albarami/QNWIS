@@ -1,10 +1,9 @@
 # Readiness Gate Review (RG-1)
 
-- Generated: 2025-11-10T19:36:34.192779
+- Generated: 2025-11-11T03:22:22.355838
 - Overall outcome: FAIL
 - Evidence index: `src/qnwis/docs/audit/ARTIFACT_INDEX.json`
 - Badge: `src/qnwis/docs/audit/badges/rg1_pass.svg`
-- RG-4 Badge: `src/qnwis/docs/audit/badges/rg4_notify.svg`
 
 ## Highlights
 
@@ -15,6 +14,7 @@
 5. Security scans ensure no secrets/PII and RBAC policies stay enforced.
 6. Step 28 Ops Gate artifacts capture p50/p95 latency with determinism enforcement.
 7. Step 29 RG-4 notify gate reports latency + incident readiness with determinism guard.
+8. Step 30 RG-5 ops console badge, gate report, and metrics snapshot are persisted.
 
 ## Step 28 - Alert Center Hardening
 
@@ -30,11 +30,25 @@
 | RG-4 Status | n/a |
 | Ops Summary Present | no |
 | RG-4 Perf Snapshot | no |
-| RG-4 Badge | no (`src/qnwis/docs/audit/badges/rg4_notify.svg`) |
+| RG-4 Badge | no (n/a) |
 | p50 / p95 (ms) | n/a / n/a |
 | Incidents (open/ack/resolved) | n/a / n/a / n/a |
 | Determinism Violations | 0 |
 | Network Import Violations | 0 |
+
+## Step 30 - Ops Console
+
+| Metric | Value |
+| --- | --- |
+| RG-5 Status | n/a |
+| Summary Present | no |
+| Badge Present | no |
+| Metrics File | `n/a` |
+| Incidents p50/p95 (ms) | n/a / n/a |
+| Detail p50/p95 (ms) | n/a / n/a |
+| SSE p95 (ms) | n/a |
+| CSRF Verify p95 (ms) | n/a |
+| Determinism Violations | 0 |
 
 ## Gate Evidence
 

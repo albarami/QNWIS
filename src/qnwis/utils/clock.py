@@ -34,6 +34,13 @@ class Clock:
         """Return ISO 8601 timestamp."""
         return self.now().isoformat()
 
+    def utcnow(self) -> str:
+        """Return ISO 8601 timestamp with UTC suffix."""
+        iso_value = self.iso()
+        if iso_value.endswith("+00:00"):
+            return iso_value[:-6] + "Z"
+        return iso_value
+
     def now_iso(self) -> str:
         """Return ISO 8601 timestamp (alias for iso)."""
         return self.iso()

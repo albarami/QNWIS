@@ -1,0 +1,36 @@
+{
+  "generated_at": "2025-01-01T00:00:00Z",
+  "render": {
+    "incidents": {
+      "p50_ms": 6.281,
+      "p95_ms": 24.989,
+      "p99_ms": 25.3,
+      "max_ms": 25.3,
+      "avg_ms": 7.279
+    },
+    "incident_detail": {
+      "p50_ms": 4.041,
+      "p95_ms": 4.813,
+      "p99_ms": 13.42,
+      "max_ms": 13.42,
+      "avg_ms": 4.329
+    }
+  },
+  "sse": {
+    "p50_ms": 0.0009,
+    "p95_ms": 0.0014,
+    "max_ms": 0.0084,
+    "avg_ms": 0.0011,
+    "samples": 200
+  },
+  "csrf": {
+    "verify": {
+      "p50_ms": 0.0084,
+      "p95_ms": 0.0097,
+      "max_ms": 0.0211,
+      "avg_ms": 0.0087,
+      "samples": 200
+    },
+    "verify_p95_ms": 0.0097
+  }
+}

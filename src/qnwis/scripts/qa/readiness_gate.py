@@ -460,6 +460,10 @@ OPS_NOTIFY_SUMMARY_JSON = ROOT / "ops_notify_report.json"
 OPS_NOTIFY_SUMMARY_MD = ROOT / "OPS_NOTIFY_SUMMARY.md"
 RG4_SUMMARY_JSON = ROOT / "docs" / "audit" / "ops" / "RG4_SUMMARY.json"
 RG4_BADGE_PATH = SRC_ROOT / "qnwis" / "docs" / "audit" / "badges" / "rg4_notify.svg"
+OPS_UI_GATE_REPORT = SRC_ROOT / "qnwis" / "docs" / "audit" / "ops" / "ui_gate_report.json"
+OPS_UI_METRICS_PATH = SRC_ROOT / "qnwis" / "docs" / "audit" / "ops" / "ui_metrics.json"
+OPS_UI_SUMMARY_MD = ROOT / "OPS_UI_SUMMARY.md"
+RG5_BADGE_PATH = SRC_ROOT / "qnwis" / "docs" / "audit" / "badges" / "rg5_ops_console.svg"
 STEP28_ALERT_PATHS = (
     SRC_ROOT / "qnwis" / "alerts",
     SRC_ROOT / "qnwis" / "monitoring",
@@ -956,6 +960,26 @@ def _load_rg4_perf_summary() -> dict[str, Any] | None:
         return json.loads(RG4_SUMMARY_JSON.read_text(encoding="utf-8"))
     except Exception as exc:  # pragma: no cover
         logger.warning("Failed to parse RG-4 perf summary: %s", exc)
+        return None
+
+
+def _load_ops_ui_gate_report() -> dict[str, Any] | None:
+    if not OPS_UI_GATE_REPORT.exists():
+        return None
+    try:
+        return json.loads(OPS_UI_GATE_REPORT.read_text(encoding="utf-8"))
+    except Exception as exc:  # pragma: no cover
+        logger.warning("Failed to parse Ops UI gate report: %s", exc)
+        return None
+
+
+def _load_ops_ui_metrics() -> dict[str, Any] | None:
+    if not OPS_UI_METRICS_PATH.exists():
+        return None
+    try:
+        return json.loads(OPS_UI_METRICS_PATH.read_text(encoding="utf-8"))
+    except Exception as exc:  # pragma: no cover
+        logger.warning("Failed to parse Ops UI metrics: %s", exc)
         return None
 
 
@@ -1811,6 +1835,81 @@ def gate_notify_ops_step29() -> GateResult:
     )
 
 
+def gate_ops_console_step30() -> GateResult:
+    """Step 30: Validate RG-5 ops console artifacts and metrics."""
+    start = time.time()
+    report = _load_ops_ui_gate_report()
+    metrics = _load_ops_ui_metrics()
+
+    evidence: list[str] = []
+    if OPS_UI_SUMMARY_MD.exists():
+        evidence.append(_rel(OPS_UI_SUMMARY_MD))
+    if OPS_UI_GATE_REPORT.exists():
+        evidence.append(_rel(OPS_UI_GATE_REPORT))
+    if OPS_UI_METRICS_PATH.exists():
+        evidence.append(_rel(OPS_UI_METRICS_PATH))
+    if RG5_BADGE_PATH.exists():
+        evidence.append(_rel(RG5_BADGE_PATH))
+
+    determinism_hits = (
+        ((report or {}).get("checks", {}).get("ui_determinism") or {}).get("errors", [])
+        if report
+        else []
+    )
+
+    render_metrics = (metrics or {}).get("render") or {}
+    incidents_render = render_metrics.get("incidents") or {}
+    detail_render = render_metrics.get("incident_detail") or {}
+    sse_metrics = (metrics or {}).get("sse") or {}
+    csrf_metrics = (metrics or {}).get("csrf") or {}
+
+    perf_snapshot = {
+        "incidents_p50_ms": incidents_render.get("p50_ms"),
+        "incidents_p95_ms": incidents_render.get("p95_ms"),
+        "detail_p50_ms": detail_render.get("p50_ms"),
+        "detail_p95_ms": detail_render.get("p95_ms"),
+        "sse_p95_ms": sse_metrics.get("enqueue_p95_ms"),
+        "csrf_p95_ms": csrf_metrics.get("verify_p95_ms"),
+    }
+
+    metrics_ok = all(
+        value is not None and value < threshold
+        for value, threshold in [
+            (perf_snapshot["incidents_p95_ms"], 150.0),
+            (perf_snapshot["detail_p95_ms"], 150.0),
+            (perf_snapshot["sse_p95_ms"], 5.0),
+            (perf_snapshot["csrf_p95_ms"], 1.0),
+        ]
+    )
+
+    badge_present = RG5_BADGE_PATH.exists()
+    summary_present = OPS_UI_SUMMARY_MD.exists()
+    report_passed = bool(report and report.get("passed"))
+    metrics_present = metrics is not None
+
+    details = {
+        "ui_gate_passed": report_passed,
+        "summary_present": summary_present,
+        "badge_present": badge_present,
+        "metrics_present": metrics_present,
+        "metrics": perf_snapshot,
+        "determinism_hits": determinism_hits,
+        "report_path": _rel(OPS_UI_GATE_REPORT) if OPS_UI_GATE_REPORT.exists() else None,
+        "summary_path": _rel(OPS_UI_SUMMARY_MD) if OPS_UI_SUMMARY_MD.exists() else None,
+        "metrics_path": _rel(OPS_UI_METRICS_PATH) if OPS_UI_METRICS_PATH.exists() else None,
+        "badge_path": _rel(RG5_BADGE_PATH) if badge_present else None,
+    }
+
+    ok = report_passed and summary_present and badge_present and metrics_ok and not determinism_hits
+    return GateResult(
+        name="ops_console_step30",
+        ok=ok,
+        details=details,
+        duration_ms=(time.time() - start) * 1000,
+        evidence_paths=evidence,
+    )
+
+
 def generate_markdown_report(report: ReadinessReport) -> str:
     lines = [
         "# Readiness Report: Steps 1-29",
@@ -1866,6 +1965,29 @@ def generate_markdown_report(report: ReadinessReport) -> str:
                 f"{incidents.get('open', 'n/a')} / {incidents.get('ack', 'n/a')} / {incidents.get('resolved', 'n/a')}",
                 f"- **Determinism Violations:** {len(step29_info.get('determinism_hits', []))}",
                 f"- **Network Import Violations:** {len(step29_info.get('network_determinism_hits', []))}",
+                "",
+            ]
+        )
+    step30_info = report.summary.get("step30")
+    if step30_info:
+        metrics = step30_info.get("metrics") or {}
+        artifacts = step30_info.get("artifacts") or {}
+        rg5_status = step30_info.get("ui_gate_passed")
+        rg5_status_str = "n/a" if rg5_status is None else ("PASS" if rg5_status else "FAIL")
+        lines.extend(
+            [
+                "## Step 30 - Ops Console",
+                "",
+                f"- **RG-5 Status:** {rg5_status_str}",
+                f"- **Summary Present:** {'yes' if step30_info.get('summary_present') else 'no'}",
+                f"- **Badge Present:** {'yes' if step30_info.get('badge_present') else 'no'}",
+                f"- **Metrics File:** `{artifacts.get('metrics', 'n/a')}`",
+                f"- **Incidents p50/p95 (ms):** {_fmt_latency(metrics.get('incidents_p50_ms'))} / {_fmt_latency(metrics.get('incidents_p95_ms'))}",
+                f"- **Detail p50/p95 (ms):** {_fmt_latency(metrics.get('detail_p50_ms'))} / {_fmt_latency(metrics.get('detail_p95_ms'))}",
+                f"- **SSE p95 (ms):** {_fmt_latency(metrics.get('sse_p95_ms'))}",
+                f"- **CSRF verify p95 (ms):** {_fmt_latency(metrics.get('csrf_p95_ms'))}",
+                f"- **Determinism Violations:** {len(step30_info.get('determinism_hits', []))}",
+                f"- **Artifacts:** report=`{artifacts.get('report', 'n/a')}`, summary=`{artifacts.get('summary', 'n/a')}`, badge=`{artifacts.get('badge', 'n/a')}`",
                 "",
             ]
         )
@@ -1991,6 +2113,7 @@ def write_readiness_review(report: ReadinessReport) -> Path:
     total_steps = len(STEP_REQUIREMENTS)
     step28_info = report.summary.get("step28", {})
     step29_info = report.summary.get("step29", {})
+    step30_info = report.summary.get("step30", {})
     ops_gate_passed = step28_info.get("ops_gate_passed")
     ops_gate_status = "n/a" if ops_gate_passed is None else ("PASS" if ops_gate_passed else "FAIL")
     ops_summary_present = "yes" if step28_info.get("ops_summary_present") else "no"
@@ -2003,6 +2126,9 @@ def write_readiness_review(report: ReadinessReport) -> Path:
     notify_snapshot = step29_info.get("rg4_perf_snapshot_present")
     notify_badge = step29_info.get("rg4_badge_present")
     notify_badge_path = step29_info.get("badge_path") or "n/a"
+    rg5_status = step30_info.get("ui_gate_passed")
+    rg5_status_str = "n/a" if rg5_status is None else ("PASS" if rg5_status else "FAIL")
+    rg5_metrics = step30_info.get("metrics") or {}
 
     def _fmt_latency(value: Any) -> str:
         return f"{value:.2f}" if isinstance(value, (int, float)) else "n/a"
@@ -2024,6 +2150,7 @@ def write_readiness_review(report: ReadinessReport) -> Path:
         "5. Security scans ensure no secrets/PII and RBAC policies stay enforced.",
         "6. Step 28 Ops Gate artifacts capture p50/p95 latency with determinism enforcement.",
         "7. Step 29 RG-4 notify gate reports latency + incident readiness with determinism guard.",
+        "8. Step 30 RG-5 ops console badge, gate report, and metrics snapshot are persisted.",
         "",
         "## Step 28 - Alert Center Hardening",
         "",
@@ -2046,6 +2173,20 @@ def write_readiness_review(report: ReadinessReport) -> Path:
         f"{notify_incidents.get('resolved', 'n/a')} |",
         f"| Determinism Violations | {len(step29_info.get('determinism_hits', []))} |",
         f"| Network Import Violations | {len(step29_info.get('network_determinism_hits', []))} |",
+        "",
+        "## Step 30 - Ops Console",
+        "",
+        "| Metric | Value |",
+        "| --- | --- |",
+        f"| RG-5 Status | {rg5_status_str} |",
+        f"| Summary Present | {'yes' if step30_info.get('summary_present') else 'no'} |",
+        f"| Badge Present | {'yes' if step30_info.get('badge_present') else 'no'} |",
+        f"| Metrics File | `{(step30_info.get('artifacts') or {}).get('metrics', 'n/a')}` |",
+        f"| Incidents p50/p95 (ms) | {_fmt_latency(rg5_metrics.get('incidents_p50_ms'))} / {_fmt_latency(rg5_metrics.get('incidents_p95_ms'))} |",
+        f"| Detail p50/p95 (ms) | {_fmt_latency(rg5_metrics.get('detail_p50_ms'))} / {_fmt_latency(rg5_metrics.get('detail_p95_ms'))} |",
+        f"| SSE p95 (ms) | {_fmt_latency(rg5_metrics.get('sse_p95_ms'))} |",
+        f"| CSRF Verify p95 (ms) | {_fmt_latency(rg5_metrics.get('csrf_p95_ms'))} |",
+        f"| Determinism Violations | {len(step30_info.get('determinism_hits', []))} |",
         "",
         "## Gate Evidence",
         "",
@@ -2090,6 +2231,7 @@ def main() -> int:
         gate_performance_guards,
         gate_alerts_ops_step28,
         gate_notify_ops_step29,
+        gate_ops_console_step30,
         gate_stability_controls,
         gate_api_endpoints,
         gate_api_security,
@@ -2147,6 +2289,23 @@ def main() -> int:
              "network_determinism_hits": step29_gate.details.get("network_determinism_hits", []),
              "perf_snapshot": step29_gate.details.get("perf_snapshot", {}),
         }
+    step30_gate = next((g for g in gates if g.name == "ops_console_step30"), None)
+    if step30_gate is not None:
+        summary_data["step30"] = {
+            "passed": step30_gate.ok,
+            "ui_gate_passed": step30_gate.details.get("ui_gate_passed"),
+            "summary_present": step30_gate.details.get("summary_present"),
+            "badge_present": step30_gate.details.get("badge_present"),
+            "metrics_present": step30_gate.details.get("metrics_present"),
+            "metrics": step30_gate.details.get("metrics", {}),
+            "determinism_hits": step30_gate.details.get("determinism_hits", []),
+            "artifacts": {
+                "report": step30_gate.details.get("report_path"),
+                "summary": step30_gate.details.get("summary_path"),
+                "metrics": step30_gate.details.get("metrics_path"),
+                "badge": step30_gate.details.get("badge_path"),
+            },
+        }
 
     report = ReadinessReport(
         gates=gates,
@@ -2174,6 +2333,10 @@ def main() -> int:
         OPS_NOTIFY_SUMMARY_MD,
         RG4_SUMMARY_JSON,
         RG4_BADGE_PATH,
+        OPS_UI_GATE_REPORT,
+        OPS_UI_SUMMARY_MD,
+        OPS_UI_METRICS_PATH,
+        RG5_BADGE_PATH,
     ]
     report.artifacts = _hash_artifacts(artifact_inputs)
 

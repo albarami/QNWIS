@@ -53,6 +53,23 @@ class Principal:
     subject: str
     roles: tuple[str, ...]
     ratelimit_id: str
+    user_id: str
+
+    def __init__(
+        self,
+        subject: str | None = None,
+        roles: Sequence[str] | None = None,
+        ratelimit_id: str | None = None,
+        user_id: str | None = None,
+    ) -> None:
+        resolved_subject = subject or user_id or "anonymous"
+        resolved_roles = tuple(roles or ())
+        resolved_ratelimit = ratelimit_id or resolved_subject
+        resolved_user = user_id or resolved_subject
+        object.__setattr__(self, "subject", resolved_subject)
+        object.__setattr__(self, "roles", resolved_roles)
+        object.__setattr__(self, "ratelimit_id", resolved_ratelimit)
+        object.__setattr__(self, "user_id", resolved_user)
 
 
 @dataclass

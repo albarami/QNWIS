@@ -1,0 +1,67 @@
+{% extends "layout.html" %}
+
+{% block title %}Dashboard - QNWIS Ops Console{% endblock %}
+
+{% block content %}
+<h1>Operations Dashboard</h1>
+
+<div class="dashboard-grid">
+    <section class="stats-card" aria-labelledby="stats-heading">
+        <h2 id="stats-heading">Incident Statistics</h2>
+        <div class="stats-grid">
+            <div class="stat-item">
+                <span class="stat-value">{{ stats.total }}</span>
+                <span class="stat-label">Total Incidents</span>
+            </div>
+            {% for state, count in stats.by_state.items() %}
+            <div class="stat-item stat-{{ state }}">
+                <span class="stat-value">{{ count }}</span>
+                <span class="stat-label">{{ state|upper }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    
+    <section class="stats-card" aria-labelledby="severity-heading">
+        <h2 id="severity-heading">By Severity</h2>
+        <div class="severity-grid">
+            {% for severity, count in stats.by_severity.items() %}
+            <div class="severity-item severity-{{ severity }}">
+                <span class="severity-badge">{{ severity|upper }}</span>
+                <span class="severity-count">{{ count }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    
+    <section class="quick-actions" aria-labelledby="actions-heading">
+        <h2 id="actions-heading">Quick Actions</h2>
+        <nav class="action-links" aria-label="Quick actions">
+            <a href="/ops/incidents" class="btn btn-primary" aria-label="View all incidents">
+                View All Incidents
+            </a>
+            <a href="/ops/incidents?state=open" class="btn btn-warning" aria-label="View open incidents">
+                Open Incidents
+            </a>
+            <a href="/ops/alerts" class="btn btn-info" aria-label="View alerts">
+                Alert History
+            </a>
+        </nav>
+    </section>
+</div>
+
+<!-- Live updates area (HTMX + SSE) -->
+<section class="live-updates" aria-labelledby="live-heading">
+    <h2 id="live-heading">Live Updates</h2>
+    <div 
+        id="live-feed" 
+        hx-ext="sse" 
+        sse-connect="/ops/stream/incidents"
+        sse-swap="incident_update"
+        hx-swap="afterbegin"
+        aria-live="polite"
+        aria-atomic="false">
+        <p class="live-status">Connected. Waiting for updates...</p>
+    </div>
+</section>
+{% endblock %}

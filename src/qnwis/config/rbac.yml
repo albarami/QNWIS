@@ -39,3 +39,12 @@ routes:
   cache_admin:
     allow:
       - admin
+  ops_console_read:
+    allow:
+      - analyst
+      - admin
+      - auditor
+  ops_console_write:
+    allow:
+      - analyst
+      - admin

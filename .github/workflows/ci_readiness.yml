@@ -204,18 +204,61 @@ jobs:
           path: |
             OPS_NOTIFY_SUMMARY.md
             ops_notify_report.json
-            docs/audit/ops/RG4_SUMMARY.json
-            src/qnwis/docs/audit/badges/rg4_notify.svg
+          docs/audit/ops/RG4_SUMMARY.json
+          src/qnwis/docs/audit/badges/rg4_notify.svg
+          retention-days: 30
+
+  step30-slice:
+    name: "Step 30 Ops Console Slice"
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: pre-commit
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+          pip install pre-commit
+
+      - name: Run ops console pre-commit slice
+        run: |
+          pre-commit run step30-ops-console-slice --all-files --show-diff-on-failure
+
+      - name: Run Ops Console Gate
+        run: |
+          python src/qnwis/scripts/qa/ops_console_gate.py
+
+      - name: Upload ops console artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: step30-ops-console-artifacts
+          path: |
+            src/qnwis/docs/audit/ops/ui_gate_report.json
+            src/qnwis/docs/audit/ops/ui_metrics.json
+            src/qnwis/docs/audit/badges/rg5_ops_console.svg
+            OPS_UI_SUMMARY.md
           retention-days: 30
 
   readiness-gate:
-    name: "Readiness Gate - Steps 1-29"
+    name: "Readiness Gate - Steps 1-30"
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs:
       - pre-commit
       - step28-slice
       - step29-slice
+      - step30-slice
 
     steps:
       - name: Checkout code

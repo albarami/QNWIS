@@ -1,0 +1,121 @@
+{% extends "layout.html" %}
+
+{% block title %}Incident {{ incident.incident_id[:8] }} - QNWIS Ops Console{% endblock %}
+
+{% block content %}
+<div class="incident-header">
+    <h1>Incident Details</h1>
+    <a href="/ops/incidents" class="btn btn-secondary" aria-label="Back to incidents list">← Back to List</a>
+</div>
+
+<div class="incident-detail">
+    <section class="detail-card" aria-labelledby="overview-heading">
+        <h2 id="overview-heading">Overview</h2>
+        <dl class="detail-list">
+            <dt>Incident ID:</dt>
+            <dd><code>{{ incident.incident_id }}</code></dd>
+            
+            <dt>Rule ID:</dt>
+            <dd>{{ incident.rule_id }}</dd>
+            
+            <dt>Severity:</dt>
+            <dd>
+                <span class="severity-badge severity-{{ incident.severity.value }}" aria-label="Severity {{ incident.severity.value }}">
+                    {{ incident.severity.value|upper }}
+                </span>
+            </dd>
+            
+            <dt>State:</dt>
+            <dd>
+                <span class="state-badge state-{{ incident.state.value }}" aria-label="State {{ incident.state.value }}">
+                    {{ incident.state.value|upper }}
+                </span>
+            </dd>
+            
+            <dt>Message:</dt>
+            <dd>{{ incident.message }}</dd>
+            
+            <dt>Alert Window:</dt>
+            <dd>
+                <time datetime="{{ incident.window_start }}">{{ incident.window_start }}</time>
+                to
+                <time datetime="{{ incident.window_end }}">{{ incident.window_end }}</time>
+            </dd>
+            
+            <dt>Created:</dt>
+            <dd><time datetime="{{ incident.created_at }}">{{ incident.created_at }}</time></dd>
+            
+            <dt>Last Updated:</dt>
+            <dd><time datetime="{{ incident.updated_at }}">{{ incident.updated_at }}</time></dd>
+            
+            {% if audit_pack_path %}
+            <dt>Audit Pack:</dt>
+            <dd><a href="{{ audit_pack_path }}" aria-label="View audit pack">View Audit Pack</a></dd>
+            {% endif %}
+        </dl>
+    </section>
+    
+    <section class="detail-card" aria-labelledby="timeline-heading">
+        <h2 id="timeline-heading">Timeline</h2>
+        <ol class="timeline" aria-label="Incident timeline">
+            {% for entry in timeline %}
+            <li class="timeline-entry">
+                <span class="timeline-event">{{ entry.event }}</span>
+                <time datetime="{{ entry.timestamp }}">{{ entry.timestamp }}</time>
+                <span class="timeline-actor">by {{ entry.actor }}</span>
+            </li>
+            {% endfor %}
+        </ol>
+    </section>
+    
+    <!-- Actions (only for non-resolved incidents) -->
+    {% if incident.state.value != 'resolved' %}
+    <section class="actions-card" aria-labelledby="actions-heading">
+        <h2 id="actions-heading">Actions</h2>
+        
+        {% if incident.state.value == 'open' %}
+        <form method="post" action="/ops/incidents/{{ incident.incident_id }}/ack" class="action-form">
+            {{ csrf_field(csrf_token)|safe }}
+            <button type="submit" class="btn btn-primary" aria-label="Acknowledge this incident">
+                Acknowledge Incident
+            </button>
+        </form>
+        {% endif %}
+        
+        <form method="post" action="/ops/incidents/{{ incident.incident_id }}/resolve" class="action-form">
+            {{ csrf_field(csrf_token)|safe }}
+            <div class="form-group">
+                <label for="note">Resolution Note:</label>
+                <textarea name="note" id="note" rows="3" placeholder="Optional resolution note" aria-label="Resolution note"></textarea>
+            </div>
+            <button type="submit" class="btn btn-success" aria-label="Resolve this incident">
+                Resolve Incident
+            </button>
+        </form>
+        
+        <form method="post" action="/ops/incidents/{{ incident.incident_id }}/silence" class="action-form">
+            {{ csrf_field(csrf_token)|safe }}
+            <div class="form-group">
+                <label for="until">Silence Until:</label>
+                <input type="datetime-local" name="until" id="until" required aria-label="Silence until date and time">
+            </div>
+            <div class="form-group">
+                <label for="reason">Reason:</label>
+                <input type="text" name="reason" id="reason" placeholder="Optional reason" aria-label="Reason for silencing">
+            </div>
+            <button type="submit" class="btn btn-warning" aria-label="Silence this incident">
+                Silence Incident
+            </button>
+        </form>
+    </section>
+    {% endif %}
+    
+    <!-- Metadata -->
+    {% if incident.metadata %}
+    <section class="detail-card" aria-labelledby="metadata-heading">
+        <h2 id="metadata-heading">Metadata</h2>
+        <pre><code>{{ incident.metadata|tojson(indent=2) }}</code></pre>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}

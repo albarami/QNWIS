@@ -11,12 +11,14 @@ repos:
         entry: >
           python -m ruff check
           src/qnwis
+          src/qnwis/ops_console
           tests
           src/qnwis/alerts
           src/qnwis/monitoring
           src/qnwis/agents/alert_center.py
           src/qnwis/scripts/qa/ops_gate.py
           src/qnwis/scripts/qa/determinism_scan.py
+          grafana/dashboards
         language: system
         pass_filenames: false
       - id: flake8-lint
@@ -24,12 +26,14 @@ repos:
         entry: >
           python -m flake8
           src/qnwis
+          src/qnwis/ops_console
           tests
           src/qnwis/alerts
           src/qnwis/monitoring
           src/qnwis/agents/alert_center.py
           src/qnwis/scripts/qa/ops_gate.py
           src/qnwis/scripts/qa/determinism_scan.py
+          grafana/dashboards
         language: system
         pass_filenames: false
       - id: mypy-fast
@@ -44,6 +48,7 @@ repos:
           src/qnwis/monitoring
           src/qnwis/agents/alert_center.py
           src/qnwis/scripts/qa/ops_gate.py
+          src/qnwis/scripts/qa/ops_console_gate.py
           src/qnwis/scripts/qa/determinism_scan.py
         language: system
         pass_filenames: false
@@ -61,3 +66,8 @@ repos:
         entry: python src/qnwis/scripts/qa/notify_slice.py
         language: system
         pass_filenames: false
+      - id: step30-ops-console-slice
+        name: Step 30 Ops Console Slice
+        entry: python src/qnwis/scripts/qa/step30_ops_console_slice.py --files
+        language: system
+        pass_filenames: true

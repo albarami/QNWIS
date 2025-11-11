@@ -52,6 +52,7 @@ class IncidentResolver:
 
         # In-memory incident cache (would use database in production)
         self._incidents: dict[str, Incident] = {}
+        self._store: dict[str, Incident] = self._incidents
         self._ledger_offset = 0
         self._load_incidents()
 

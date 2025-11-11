@@ -34,6 +34,7 @@ dev = [
     "types-redis>=4.6.0",
     "types-requests>=2.31.0",
     "types-PyYAML>=6.0.12.20240917",
+    "jinja2-stubs>=0.2.0",
     "black>=24.0.0",
     "isort>=5.13.0",
 ]
@@ -160,6 +161,8 @@ extend-include = [
   "src/qnwis/incidents/**/*.py",
   "src/qnwis/api/routers/**/*.py",
   "src/qnwis/scripts/qa/ops_notify_gate.py",
+  "src/qnwis/ops_console/**/*.py",
+  "grafana/dashboards/**/*.py",  # dashboards lint coverage (JSON ignored)
 ]
 
 [tool.ruff.lint]

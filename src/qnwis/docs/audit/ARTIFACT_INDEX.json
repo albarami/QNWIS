@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-11-10T19:36:34.315399",
+  "generated_at": "2025-11-11T03:22:22.408431",
   "artifacts": [
     {
       "path": "coverage.xml",
@@ -13,13 +13,13 @@
     },
     {
       "path": "src/qnwis/docs/audit/readiness_report.json",
-      "sha256": "638a7447e6e1ca333f5f65d9522c507e8219d4fa9b37c795d1d418ba78f8df74",
-      "size_bytes": 13750
+      "sha256": "35c41774782fe7c8e8afbecbe7af60504c0fc97ecc10d7f276d1d6e0809728c1",
+      "size_bytes": 17331
     },
     {
       "path": "src/qnwis/docs/audit/READINESS_REPORT_1_25.md",
-      "sha256": "85132492520d3138c931293ec4f6bfe8dfc7b1198866c51a9d735d339d77c235",
-      "size_bytes": 10595
+      "sha256": "3f670094acb3f1a842fdbfbc697168794bad88920c34e6cb354dedc98ca613a6",
+      "size_bytes": 13223
     },
     {
       "path": "OPS_GATE_SUMMARY.json",
@@ -33,18 +33,18 @@
     },
     {
       "path": "ops_notify_report.json",
-      "sha256": "0bea310d167c5764c160e6955d659a06a3a30f877caa9ea53d46bcc6b41b0a1d",
-      "size_bytes": 1682
+      "sha256": "eeeb7a4be860d00f103c927d235181ddb91dc12b888dfe0f08284ff29cf686ce",
+      "size_bytes": 1713
     },
     {
       "path": "OPS_NOTIFY_SUMMARY.md",
-      "sha256": "d3a19307d42043e9323f648f2b72d34ac8c85f404b659bd6be3cb7b5f76f4a2e",
-      "size_bytes": 647
+      "sha256": "292aa2e89f94f28714ca7fed8a86fc45c48d896c936d714c36b877f7c918673f",
+      "size_bytes": 754
     },
     {
       "path": "src/qnwis/docs/audit/READINESS_SUMMARY.html",
-      "sha256": "c11cb4fd0dc2739404802d46ab5b259cb9a72a18e0d71f303f3aea3dcb758700",
-      "size_bytes": 14054
+      "sha256": "4a1dd389cf772c2248cce0c4239c0ec38aa90ac83fbe550ea89a0fdab3d697b8",
+      "size_bytes": 17460
     },
     {
       "path": "src/qnwis/docs/audit/badges/rg1_pass.svg",
@@ -53,13 +53,33 @@
     },
     {
       "path": "docs/audit/ops/RG4_SUMMARY.json",
-      "sha256": "2db97884a6d3204fc5aadb402fbcdf719d19be002280a2e5ee96735bf83a40ed",
-      "size_bytes": 213
+      "sha256": "cf0c970a4502838a0a89fa2512b51a43b24576a1533cacaf00747ddf72e175d5",
+      "size_bytes": 212
     },
     {
       "path": "src/qnwis/docs/audit/badges/rg4_notify.svg",
       "sha256": "a821bf992adc5fcbc7868a01ccaae577b71d24d41439d53b980c60a1be9013b0",
       "size_bytes": 615
+    },
+    {
+      "path": "src/qnwis/docs/audit/ops/ui_gate_report.json",
+      "sha256": "b0b530fe56539a0424447f567fcc8456a4e43447e72c9a8fc7096eba0b5d6321",
+      "size_bytes": 2914
+    },
+    {
+      "path": "OPS_UI_SUMMARY.md",
+      "sha256": "3fee20cbb95c7adf2bf3bad56a9580b024a039ff6a17e694b8eddc534b7fc581",
+      "size_bytes": 875
+    },
+    {
+      "path": "src/qnwis/docs/audit/ops/ui_metrics.json",
+      "sha256": "a787406c964f9e578b3dd6855185f66015accae4b4b39ef53e50015829a23b15",
+      "size_bytes": 690
+    },
+    {
+      "path": "src/qnwis/docs/audit/badges/rg5_ops_console.svg",
+      "sha256": "0d69483e6211b77e16ed636dd623fd5e8c4a9202faf5db71cabe6f404948abeb",
+      "size_bytes": 397
     }
   ]
 }

@@ -1,0 +1,106 @@
+{% extends "layout.html" %}
+
+{% block title %}Incidents - QNWIS Ops Console{% endblock %}
+
+{% block content %}
+<h1>Incidents</h1>
+
+<!-- Filters -->
+<section class="filters" aria-labelledby="filters-heading">
+    <h2 id="filters-heading" class="visually-hidden">Filter Incidents</h2>
+    <form method="get" action="/ops/incidents" class="filter-form">
+        <div class="form-group">
+            <label for="state">State:</label>
+            <select name="state" id="state" aria-label="Filter by state">
+                <option value="">All</option>
+                <option value="open" {% if filters.state == 'open' %}selected{% endif %}>Open</option>
+                <option value="ack" {% if filters.state == 'ack' %}selected{% endif %}>Acknowledged</option>
+                <option value="silenced" {% if filters.state == 'silenced' %}selected{% endif %}>Silenced</option>
+                <option value="resolved" {% if filters.state == 'resolved' %}selected{% endif %}>Resolved</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="severity">Severity:</label>
+            <select name="severity" id="severity" aria-label="Filter by severity">
+                <option value="">All</option>
+                <option value="info" {% if filters.severity == 'info' %}selected{% endif %}>Info</option>
+                <option value="warning" {% if filters.severity == 'warning' %}selected{% endif %}>Warning</option>
+                <option value="error" {% if filters.severity == 'error' %}selected{% endif %}>Error</option>
+                <option value="critical" {% if filters.severity == 'critical' %}selected{% endif %}>Critical</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="rule_id">Rule ID:</label>
+            <input type="text" name="rule_id" id="rule_id" value="{{ filters.rule_id or '' }}" placeholder="Filter by rule" aria-label="Filter by rule ID">
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Apply Filters</button>
+    </form>
+</section>
+
+<!-- Incidents Table -->
+<section class="incidents-table" aria-labelledby="incidents-heading">
+    <h2 id="incidents-heading" class="visually-hidden">Incidents List</h2>
+    {% if incidents %}
+    <table role="table" aria-label="Incidents">
+        <thead>
+            <tr>
+                <th scope="col">ID</th>
+                <th scope="col">Rule</th>
+                <th scope="col">Severity</th>
+                <th scope="col">State</th>
+                <th scope="col">Message</th>
+                <th scope="col">Window</th>
+                <th scope="col">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for incident in incidents %}
+            <tr class="incident-row severity-{{ incident.severity.value }} state-{{ incident.state.value }}">
+                <td><code>{{ incident.incident_id[:8] }}</code></td>
+                <td>{{ incident.rule_id }}</td>
+                <td>
+                    <span class="severity-badge severity-{{ incident.severity.value }}" aria-label="Severity {{ incident.severity.value }}">
+                        {{ incident.severity.value|upper }}
+                    </span>
+                </td>
+                <td>
+                    <span class="state-badge state-{{ incident.state.value }}" aria-label="State {{ incident.state.value }}">
+                        {{ incident.state.value|upper }}
+                    </span>
+                </td>
+                <td class="message-cell">{{ incident.message }}</td>
+                <td>
+                    <time datetime="{{ incident.window_start }}">{{ incident.window_start[:10] }}</time>
+                    to
+                    <time datetime="{{ incident.window_end }}">{{ incident.window_end[:10] }}</time>
+                </td>
+                <td>
+                    <a href="/ops/incidents/{{ incident.incident_id }}" class="btn btn-sm btn-info" aria-label="View details for incident {{ incident.incident_id[:8] }}">
+                        Details
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="no-results">No incidents match the current filters.</p>
+    {% endif %}
+</section>
+
+<!-- Live update region (HTMX + SSE) -->
+<div 
+    id="incident-updates" 
+    hx-ext="sse" 
+    sse-connect="/ops/stream/incidents"
+    sse-swap="incident_update"
+    hx-target="#incidents-table"
+    hx-swap="outerHTML"
+    aria-live="polite"
+    aria-atomic="false"
+    class="visually-hidden">
+</div>
+{% endblock %}
