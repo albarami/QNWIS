@@ -6,39 +6,205 @@ The Business Continuity & Failover Orchestration system provides deterministic, 
 
 ## Architecture
 
+### High-Level Design
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Continuity System                         │
+├─────────────────────────────────────────────────────────────┤
+│                                                               │
+│  ┌──────────────┐      ┌──────────────┐     ┌─────────────┐│
+│  │   Cluster    │◄────►│  Heartbeat   │────►│   Quorum    ││
+│  │   Manager    │      │   Monitor    │     │   Engine    ││
+│  └──────┬───────┘      └──────────────┘     └─────────────┘│
+│         │                                                     │
+│         │                                                     │
+│  ┌──────▼──────────────────────────────────────────────────┐│
+│  │              Failover Orchestrator                       ││
+│  │  • Policy Engine  • Leader Election  • Health Checks    ││
+│  └──────┬──────────────────────────────────────────────────┘│
+│         │                                                     │
+│  ┌──────▼───────────────────────────────────────────────┐  │
+│  │           Integration Layer                           │  │
+│  │  • DR/Backup (Step 32)  • Alerts (Step 29)           │  │
+│  │  • SLO/SLI (Step 31)     • Ops Console (Step 30)     │  │
+│  └───────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+```
+
 ### Components
 
 1. **Heartbeat Monitor** (`heartbeat.py`)
    - Deterministic heartbeat simulation
    - Quorum detection (N/2 + 1 formula)
    - Node health tracking
+   - Configurable intervals (default: 5s)
+   - Failure threshold tracking (consecutive misses)
 
 2. **Continuity Planner** (`planner.py`)
    - Generates failover plans from topology + policy
-   - Selects optimal failover targets
-   - Estimates execution time
+   - Selects optimal failover targets based on priority
+   - Estimates execution time (planning + execution)
+   - Region/site affinity enforcement
 
 3. **Failover Executor** (`executor.py`)
    - Executes failover actions deterministically
    - Simulates DNS flips, service promotion/demotion
-   - Audit logging
+   - Audit logging with L19-L22 compliance
+   - Dry-run mode for validation
 
 4. **Failover Verifier** (`verifier.py`)
    - Post-failover validation
    - Consistency, policy, quorum, freshness checks
-   - Verification reporting
+   - Verification reporting with confidence scoring
+   - Integration with observability metrics
 
 5. **Failover Simulator** (`simulate.py`)
    - What-if scenario testing
    - Seeded random fault injection
-   - Deterministic simulation
+   - Deterministic simulation for repeatability
+   - Chaos engineering scenarios
 
 6. **Continuity Auditor** (`audit.py`)
    - L19-L22 audit trail generation
    - SHA-256 manifest verification
-   - Confidence scoring
+   - Confidence scoring (0-100)
+   - Immutable audit log
+
+## Heartbeat Logic & Quorum Model
+
+### Heartbeat Protocol
+
+The heartbeat monitor tracks node liveness using periodic health checks with configurable intervals and thresholds:
+
+```python
+# Heartbeat configuration
+heartbeat_config = {
+    "interval_sec": 5,           # Check every 5 seconds
+    "timeout_sec": 2,            # 2-second timeout per check
+    "failure_threshold": 3,      # Mark unhealthy after 3 consecutive failures
+    "recovery_threshold": 2,     # Mark healthy after 2 consecutive successes
+    "jitter_percent": 10         # Randomize interval ±10% to prevent thundering herd
+}
+```
+
+### Health Check Sequence
+
+1. **Liveness Check** (HTTP GET `/health/live`)
+   - Basic process health
+   - Expected response: < 100ms
+
+2. **Readiness Check** (HTTP GET `/health/ready`)
+   - Can serve traffic
+   - Database connectivity verified
+   - Expected response: < 200ms
+
+3. **Deep Health Check** (HTTP GET `/health/deep`)
+   - Full system validation
+   - DR backup accessibility
+   - SLO budget status
+   - Expected response: < 500ms
+
+### Failure Detection Flow
+
+```
+Time: 0s          5s          10s         15s
+      |-----------|-----------|-----------|
+Node  OK          MISS        MISS        MISS → FAILED
+
+Actions:
+- 0s:  Heartbeat sent, response OK
+- 5s:  Heartbeat sent, no response (failure count = 1)
+- 10s: Heartbeat sent, no response (failure count = 2)
+- 15s: Heartbeat sent, no response (failure count = 3) → Mark as FAILED
+- 15s: Trigger failover evaluation
+```
+
+### Quorum Calculation
+
+QNWIS uses a **majority quorum** model to prevent split-brain scenarios:
+
+```
+Quorum = floor(N / 2) + 1
+
+Examples:
+- 3 nodes → quorum = 2 (can tolerate 1 failure)
+- 5 nodes → quorum = 3 (can tolerate 2 failures)
+- 7 nodes → quorum = 4 (can tolerate 3 failures)
+```
+
+### Cluster State Machine
+
+```
+           ┌─────────────┐
+           │   HEALTHY   │
+           │ (Has Quorum)│
+           └──────┬──────┘
+                  │
+         Node     │     Recovery
+       Failures   │
+                  ▼
+           ┌─────────────┐
+           │  DEGRADED   │◄──────┐
+           │ (Has Quorum)│       │
+           └──────┬──────┘       │
+                  │               │
+       More       │        Nodes  │
+       Failures   │        Recover│
+                  ▼               │
+           ┌─────────────┐       │
+           │  CRITICAL   │       │
+           │(No Quorum)  │       │
+           │ READ-ONLY   │───────┘
+           └─────────────┘
+```
+
+### Metrics Tracked
+
+- `continuity_heartbeat_latency_ms`: P50, P95, P99 latency per node
+- `continuity_node_status`: Up/down status per node (gauge: 0 or 1)
+- `continuity_consecutive_failures`: Failure streak counter per node
+- `continuity_health_check_errors`: Error count by type (timeout, connection_refused, etc.)
+- `continuity_cluster_quorum`: Current quorum ratio (gauge: 0.0-1.0)
 
 ## Cluster Topology Configuration
+
+### Supported Deployment Models
+
+#### 1. Active/Passive (2-Region)
+**Recommended for**: Production workloads requiring strong consistency
+
+```
+Region us-east-1 (Active)          Region us-west-2 (Passive)
+┌─────────────────────┐           ┌─────────────────────┐
+│  node-1 (Primary)   │           │  node-3 (Secondary) │
+│  Priority: 100      │───sync───►│  Priority: 80       │
+└─────────────────────┘           └─────────────────────┘
+          │                                   │
+          │                                   │
+┌─────────────────────┐           ┌─────────────────────┐
+│  node-2 (Secondary) │           │  node-4 (Secondary) │
+│  Priority: 90       │───sync───►│  Priority: 70       │
+└─────────────────────┘           └─────────────────────┘
+
+All traffic → us-east-1
+On failure → Promote node-3 in us-west-2
+RPO: 5s | RTO: 3s (inherited from DR)
+```
+
+#### 2. Active/Active (Multi-Region)
+**Recommended for**: Global deployments requiring low latency
+
+```
+Region us-east-1 (Active)          Region eu-central-1 (Active)
+┌─────────────────────┐           ┌─────────────────────┐
+│  node-1 (Primary)   │◄─repl────►│  node-3 (Primary)   │
+│  Weight: 50%        │           │  Weight: 50%        │
+└─────────────────────┘           └─────────────────────┘
+
+Traffic distribution: Geo-routing based on client location
+Conflict resolution: Last-write-wins with vector clocks
+```
 
 ### cluster.yaml
 
@@ -366,11 +532,145 @@ Import `grafana/dashboards/continuity_ops.json` for:
 
 ## Security
 
-- All API endpoints require RBAC (admin/service roles)
-- Audit trails for all failover operations
-- SHA-256 manifest verification
-- No hardcoded credentials
-- Encrypted communication between nodes (production)
+### Access Control & RBAC
+
+Continuity operations require elevated privileges following the principle of least privilege:
+
+```yaml
+# RBAC policy (config/rbac/continuity.yaml)
+rbac:
+  roles:
+    - name: continuity_viewer
+      permissions:
+        - continuity:read_status
+        - continuity:view_audit
+        - continuity:list_plans
+      description: "Read-only access to continuity system"
+
+    - name: continuity_operator
+      permissions:
+        - continuity:read_status
+        - continuity:generate_plan
+        - continuity:simulate
+        - continuity:trigger_manual_failover
+        - continuity:view_audit
+      description: "Execute manual failovers and simulations"
+
+    - name: continuity_admin
+      permissions:
+        - continuity:*
+        - continuity:configure_policy
+        - continuity:override_constraints
+        - continuity:manage_cluster
+        - continuity:emergency_override
+      description: "Full control over continuity system"
+
+  approval_workflows:
+    manual_failover:
+      required_approvers: 1
+      allowed_roles:
+        - continuity_admin
+        - sre_oncall
+      timeout_sec: 600  # 10-minute approval window
+
+    emergency_override:
+      required_approvers: 2
+      allowed_roles:
+        - continuity_admin
+      timeout_sec: 300  # 5-minute approval window
+```
+
+### Allowlist & Network Security
+
+Cluster nodes must be pre-registered and validated:
+
+```yaml
+# config/continuity/allowlist.yaml
+allowed_nodes:
+  - node_id: node-1
+    endpoint: https://qnwis-1a.prod.example.com:8443
+    fingerprint: sha256:abcd1234567890ef...
+    region: us-east-1
+    certificate_dn: "CN=node-1.qnwis.prod,O=QNWIS,C=US"
+
+  - node_id: node-2
+    endpoint: https://qnwis-2a.prod.example.com:8443
+    fingerprint: sha256:efgh5678901234ab...
+    region: us-west-2
+    certificate_dn: "CN=node-2.qnwis.prod,O=QNWIS,C=US"
+
+security_settings:
+  require_tls: true
+  min_tls_version: "1.3"
+  validate_certificates: true
+  mutual_auth: true
+  cipher_suites:
+    - TLS_AES_256_GCM_SHA384
+    - TLS_CHACHA20_POLY1305_SHA256
+  certificate_pinning: true
+```
+
+### Threat Model & Mitigation
+
+| Threat | Risk | Mitigation |
+|--------|------|------------|
+| **Node Spoofing** | High | TLS certificates + SHA-256 fingerprint validation |
+| **Man-in-the-Middle** | High | Mutual TLS authentication + certificate pinning |
+| **Unauthorized Failover** | Critical | RBAC + approval workflow + audit trail |
+| **Split-Brain Attack** | Critical | Quorum enforcement + network partition detection |
+| **Replay Attacks** | Medium | Timestamped requests + nonce validation |
+| **Data Tampering** | High | SHA-256 manifest verification + immutable audit log |
+| **Denial of Service** | Medium | Rate limiting + cooldown periods + max_failovers_per_hour |
+| **Insider Threat** | Medium | Separation of duties + approval workflow + audit logging |
+
+### Encryption Inheritance from DR (Step 32)
+
+Continuity leverages the encryption mechanisms from the DR/Backup system:
+
+- **In-Transit Encryption**: TLS 1.3 for all cluster communication (heartbeats, failover coordination)
+- **At-Rest Encryption**: Inherit DR backup encryption (AES-256-GCM with unique keys per backup)
+- **Key Management**: Same KMS integration as DR system (AWS KMS, HashiCorp Vault, or Azure Key Vault)
+- **Key Rotation**: Automated 90-day rotation aligned with DR policies
+
+### Audit Trail & Compliance
+
+All continuity operations generate immutable audit logs:
+
+```json
+{
+  "audit_id": "audit-cont-20250111-123456",
+  "timestamp": "2025-01-11T12:34:56Z",
+  "operation": "failover_execute",
+  "cluster_id": "prod-cluster",
+  "initiated_by": "john.doe@example.com",
+  "role": "continuity_operator",
+  "source_node": "node-1",
+  "target_node": "node-3",
+  "reason": "Primary node health degradation",
+  "approval": {
+    "required": true,
+    "approved_by": "jane.admin@example.com",
+    "approved_at": "2025-01-11T12:33:45Z"
+  },
+  "result": {
+    "success": true,
+    "duration_ms": 3450,
+    "actions_executed": 5
+  },
+  "manifest_hash": "sha256:98765fedcba43210...",
+  "signature": "..."
+}
+```
+
+### Security Best Practices
+
+1. **Principle of Least Privilege**: Assign minimal required permissions
+2. **Separation of Duties**: Operators cannot approve their own failovers
+3. **Defense in Depth**: Multiple security layers (TLS, RBAC, allowlist, audit)
+4. **Zero Trust**: Verify every node on every heartbeat
+5. **Immutable Audit**: No modification or deletion of audit logs
+6. **Regular Reviews**: Quarterly access audits and policy reviews
+7. **Incident Response**: Automated alerts on suspicious activities
 
 ## Testing
 

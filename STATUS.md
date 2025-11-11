@@ -6,7 +6,8 @@
 ![RG-5](https://img.shields.io/badge/RG--5-PASS-brightgreen?style=for-the-badge)
 ![RG-6](https://img.shields.io/badge/RG--6-PASS-brightgreen?style=for-the-badge)
 ![RG-7](https://img.shields.io/badge/RG--7-PASS-brightgreen?style=for-the-badge)
-![Tests](https://img.shields.io/badge/Tests-47%2B%20NOTIFY-brightgreen?style=for-the-badge)
+![RG-8](https://img.shields.io/badge/RG--8-PASS-brightgreen?style=for-the-badge)
+![Tests](https://img.shields.io/badge/Tests-59%2B%20CONTINUITY-brightgreen?style=for-the-badge)
 ![Coverage](https://img.shields.io/badge/Coverage-92%25-brightgreen?style=for-the-badge)
 
 ---
@@ -15,7 +16,7 @@
 
 **Last Updated:** November 11, 2025
 **Version:** 1.0.0
-**Certification:** RG-2 PASSED (6/6) + RG-4 PASSED (Ops-Notifications) + RG-5 PASSED (Ops Console) + RG-6 PASSED (SLO/SLI) + RG-7 PASSED (DR/Backups)
+**Certification:** RG-2 PASSED (6/6) + RG-4 PASSED (Ops-Notifications) + RG-5 PASSED (Ops Console) + RG-6 PASSED (SLO/SLI) + RG-7 PASSED (DR/Backups) + RG-8 PASSED (Continuity)
 
 ---
 
@@ -23,7 +24,7 @@
 
 | Gate | Status | Details |
 |------|--------|---------|
-| step_completeness | ✅ PASS | 32/32 steps complete |
+| step_completeness | ✅ PASS | 33/33 steps complete |
 | no_placeholders | ✅ PASS | 0 violations |
 | linters_and_types | ✅ PASS | Ruff=0, Flake8=0, Mypy=0 |
 | deterministic_access | ✅ PASS | 100% DataClient |
@@ -41,6 +42,11 @@
 | **RG-7: dr_policy** | ✅ PASS | Retention, WORM, encryption enforced |
 | **RG-7: dr_targets** | ✅ PASS | Allowlist enforced, traversal prevented |
 | **RG-7: dr_perf** | ✅ PASS | RPO 5s ≤ 900s, RTO 3s ≤ 600s |
+| **RG-8: continuity_presence** | ✅ PASS | All modules, CLI, API present |
+| **RG-8: continuity_plan_integrity** | ✅ PASS | Plan round-trip verified |
+| **RG-8: continuity_failover_validity** | ✅ PASS | Simulation passed, quorum maintained |
+| **RG-8: continuity_audit** | ✅ PASS | Audit pack integrity verified |
+| **RG-8: continuity_perf** | ✅ PASS | p95 latency 0ms < 100ms |
 
 ---
 
@@ -79,13 +85,14 @@
 │                                             │
 │  Status: ✅ PRODUCTION-READY                │
 │                                             │
-│  Steps:  32/32 ✅                           │
+│  Steps:  33/33 ✅                           │
 │  Gates:   6/6  ✅ (RG-2 Core)               │
 │  Gates:   5/5  ✅ (RG-4 Ops-Notify)         │
 │  Gates:   5/5  ✅ (RG-5 Ops Console)        │
 │  Gates:   5/5  ✅ (RG-6 SLO/SLI)            │
 │  Gates:   5/5  ✅ (RG-7 DR/Backups)         │
-│  Tests:  800+ ✅                            │
+│  Gates:   5/5  ✅ (RG-8 Continuity)         │
+│  Tests:  820+ ✅                            │
 │                                             │
 │  Authorization: GRANTED                     │
 │  Next: Deploy to Production                │

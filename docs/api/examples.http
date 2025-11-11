@@ -362,3 +362,344 @@ X-API-Key: {{apiKey}}
   "storage_target_id": "worm-storage",
   "key_id": "key-compliance-001"
 }
+
+###############################################################################
+# Business Continuity & Failover (Step 33)
+###############################################################################
+
+### Continuity - Get Cluster Status
+POST {{baseUrl}}/api/v1/continuity/status
+Content-Type: application/json
+X-API-Key: {{apiKey}}
+
+{
+  "cluster": {
+    "cluster_id": "prod-cluster",
+    "name": "Production Cluster",
+    "quorum_size": 2,
+    "regions": ["region-1", "region-2"],
+    "nodes": [
+      {
+        "node_id": "node-1",
+        "hostname": "10.0.1.10",
+        "role": "primary",
+        "region": "region-1",
+        "site": "site-a",
+        "status": "healthy",
+        "priority": 100,
+        "capacity": 100.0
+      },
+      {
+        "node_id": "node-2",
+        "hostname": "10.0.1.11",
+        "role": "secondary",
+        "region": "region-1",
+        "site": "site-b",
+        "status": "healthy",
+        "priority": 90,
+        "capacity": 95.0
+      },
+      {
+        "node_id": "node-3",
+        "hostname": "10.0.2.10",
+        "role": "secondary",
+        "region": "region-2",
+        "site": "site-c",
+        "status": "healthy",
+        "priority": 80,
+        "capacity": 90.0
+      }
+    ]
+  }
+}
+
+### Continuity - Generate Failover Plan
+POST {{baseUrl}}/api/v1/continuity/plan
+Content-Type: application/json
+X-API-Key: {{apiKey}}
+
+{
+  "cluster": {
+    "cluster_id": "prod-cluster",
+    "name": "Production Cluster",
+    "quorum_size": 2,
+    "regions": ["region-1", "region-2"],
+    "nodes": [
+      {
+        "node_id": "node-1",
+        "hostname": "10.0.1.10",
+        "role": "primary",
+        "region": "region-1",
+        "site": "site-a",
+        "status": "failed",
+        "priority": 100,
+        "capacity": 100.0
+      },
+      {
+        "node_id": "node-2",
+        "hostname": "10.0.1.11",
+        "role": "secondary",
+        "region": "region-1",
+        "site": "site-b",
+        "status": "healthy",
+        "priority": 90,
+        "capacity": 95.0
+      },
+      {
+        "node_id": "node-3",
+        "hostname": "10.0.2.10",
+        "role": "secondary",
+        "region": "region-2",
+        "site": "site-c",
+        "status": "healthy",
+        "priority": 80,
+        "capacity": 90.0
+      }
+    ]
+  },
+  "policy": {
+    "policy_id": "auto-failover-policy",
+    "name": "Automatic Failover Policy",
+    "strategy": "automatic",
+    "max_failover_time_s": 60,
+    "require_quorum": true,
+    "region_priority": ["region-1", "region-2"],
+    "site_priority": ["site-a", "site-b", "site-c"],
+    "min_healthy_nodes": 2
+  },
+  "trigger_reason": "Primary node health check failed"
+}
+
+### Continuity - Execute Failover Plan (Dry Run)
+POST {{baseUrl}}/api/v1/continuity/execute
+Content-Type: application/json
+X-API-Key: {{apiKey}}
+
+{
+  "plan": {
+    "plan_id": "plan-20250111-123456",
+    "cluster_id": "prod-cluster",
+    "policy_id": "auto-failover-policy",
+    "primary_node_id": "node-1",
+    "failover_target_id": "node-2",
+    "estimated_total_ms": 40000,
+    "actions": [
+      {
+        "action_id": "demote-primary",
+        "action_type": "demote_primary",
+        "target_node_id": "node-1",
+        "estimated_ms": 5000,
+        "order": 1
+      },
+      {
+        "action_id": "promote-secondary",
+        "action_type": "promote_secondary",
+        "target_node_id": "node-2",
+        "estimated_ms": 10000,
+        "order": 2
+      },
+      {
+        "action_id": "update-dns",
+        "action_type": "update_dns",
+        "target_node_id": "node-2",
+        "estimated_ms": 15000,
+        "order": 3
+      },
+      {
+        "action_id": "verify-quorum",
+        "action_type": "verify_quorum",
+        "target_node_id": null,
+        "estimated_ms": 5000,
+        "order": 4
+      },
+      {
+        "action_id": "sync-state",
+        "action_type": "sync_cluster_state",
+        "target_node_id": null,
+        "estimated_ms": 5000,
+        "order": 5
+      }
+    ],
+    "metadata": {
+      "created_at": "2025-01-11T12:34:56Z",
+      "created_by": "continuity-system",
+      "trigger_reason": "Primary node health check failed"
+    }
+  },
+  "dry_run": true
+}
+
+### Continuity - Execute Failover Plan (Actual)
+POST {{baseUrl}}/api/v1/continuity/execute
+Content-Type: application/json
+X-API-Key: {{apiKey}}
+
+{
+  "plan": {
+    "plan_id": "plan-20250111-123456",
+    "cluster_id": "prod-cluster",
+    "policy_id": "auto-failover-policy",
+    "primary_node_id": "node-1",
+    "failover_target_id": "node-2",
+    "estimated_total_ms": 40000,
+    "actions": [
+      {
+        "action_id": "demote-primary",
+        "action_type": "demote_primary",
+        "target_node_id": "node-1",
+        "estimated_ms": 5000,
+        "order": 1
+      },
+      {
+        "action_id": "promote-secondary",
+        "action_type": "promote_secondary",
+        "target_node_id": "node-2",
+        "estimated_ms": 10000,
+        "order": 2
+      },
+      {
+        "action_id": "update-dns",
+        "action_type": "update_dns",
+        "target_node_id": "node-2",
+        "estimated_ms": 15000,
+        "order": 3
+      },
+      {
+        "action_id": "verify-quorum",
+        "action_type": "verify_quorum",
+        "target_node_id": null,
+        "estimated_ms": 5000,
+        "order": 4
+      },
+      {
+        "action_id": "sync-state",
+        "action_type": "sync_cluster_state",
+        "target_node_id": null,
+        "estimated_ms": 5000,
+        "order": 5
+      }
+    ],
+    "metadata": {
+      "created_at": "2025-01-11T12:34:56Z",
+      "created_by": "continuity-system",
+      "trigger_reason": "Primary node health check failed"
+    }
+  },
+  "dry_run": false
+}
+
+### Continuity - Simulate Failover Scenario
+POST {{baseUrl}}/api/v1/continuity/simulate
+Content-Type: application/json
+X-API-Key: {{apiKey}}
+
+{
+  "cluster": {
+    "cluster_id": "prod-cluster",
+    "name": "Production Cluster",
+    "quorum_size": 2,
+    "regions": ["region-1", "region-2"],
+    "nodes": [
+      {
+        "node_id": "node-1",
+        "hostname": "10.0.1.10",
+        "role": "primary",
+        "region": "region-1",
+        "site": "site-a",
+        "status": "healthy",
+        "priority": 100,
+        "capacity": 100.0
+      },
+      {
+        "node_id": "node-2",
+        "hostname": "10.0.1.11",
+        "role": "secondary",
+        "region": "region-1",
+        "site": "site-b",
+        "status": "healthy",
+        "priority": 90,
+        "capacity": 95.0
+      },
+      {
+        "node_id": "node-3",
+        "hostname": "10.0.2.10",
+        "role": "secondary",
+        "region": "region-2",
+        "site": "site-c",
+        "status": "healthy",
+        "priority": 80,
+        "capacity": 90.0
+      }
+    ]
+  },
+  "policy": {
+    "policy_id": "auto-failover-policy",
+    "name": "Automatic Failover Policy",
+    "strategy": "automatic",
+    "max_failover_time_s": 60,
+    "require_quorum": true,
+    "region_priority": ["region-1", "region-2"],
+    "site_priority": ["site-a", "site-b", "site-c"],
+    "min_healthy_nodes": 2
+  },
+  "scenario": "primary_failure",
+  "seed": 42
+}
+
+### Continuity - Simulate Region Failure
+POST {{baseUrl}}/api/v1/continuity/simulate
+Content-Type: application/json
+X-API-Key: {{apiKey}}
+
+{
+  "cluster": {
+    "cluster_id": "prod-cluster",
+    "name": "Production Cluster",
+    "quorum_size": 2,
+    "regions": ["region-1", "region-2"],
+    "nodes": [
+      {
+        "node_id": "node-1",
+        "hostname": "10.0.1.10",
+        "role": "primary",
+        "region": "region-1",
+        "site": "site-a",
+        "status": "healthy",
+        "priority": 100,
+        "capacity": 100.0
+      },
+      {
+        "node_id": "node-2",
+        "hostname": "10.0.1.11",
+        "role": "secondary",
+        "region": "region-1",
+        "site": "site-b",
+        "status": "healthy",
+        "priority": 90,
+        "capacity": 95.0
+      },
+      {
+        "node_id": "node-3",
+        "hostname": "10.0.2.10",
+        "role": "secondary",
+        "region": "region-2",
+        "site": "site-c",
+        "status": "healthy",
+        "priority": 80,
+        "capacity": 90.0
+      }
+    ]
+  },
+  "policy": {
+    "policy_id": "auto-failover-policy",
+    "name": "Automatic Failover Policy",
+    "strategy": "automatic",
+    "max_failover_time_s": 60,
+    "require_quorum": true,
+    "region_priority": ["region-1", "region-2"],
+    "site_priority": ["site-a", "site-b", "site-c"],
+    "min_healthy_nodes": 2
+  },
+  "scenario": "region_failure",
+  "seed": 123
+}
