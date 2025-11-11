@@ -26,6 +26,17 @@ NETWORK_BANNED_PATTERNS: dict[str, Pattern[str]] = {
     "import aiohttp": re.compile(r"\bfrom\s+aiohttp\b|\bimport\s+aiohttp\b"),
 }
 
+DR_SECURITY_PATTERNS: dict[str, Pattern[str]] = dict(DEFAULT_BANNED_PATTERNS)
+DR_SECURITY_PATTERNS.update(
+    {
+        "subprocess_call": re.compile(
+            r"\bsubprocess\.(run|popen|call|check_call|check_output)\s*\("
+        ),
+    }
+)
+for pattern_key in ("import smtplib", "import requests", "import httpx", "import aiohttp"):
+    DR_SECURITY_PATTERNS[pattern_key] = NETWORK_BANNED_PATTERNS[pattern_key]
+
 
 def _iter_python_files(target: Path) -> Iterable[Path]:
     if target.is_file() and target.suffix == ".py":

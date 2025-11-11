@@ -76,3 +76,8 @@ repos:
         entry: python src/qnwis/scripts/qa/step31_slo_slice.py --files
         language: system
         pass_filenames: true
+      - id: step32-dr-slice
+        name: Step 32 DR Slice
+        entry: python src/qnwis/scripts/qa/step32_dr_slice.py --files
+        language: system
+        pass_filenames: true

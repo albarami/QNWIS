@@ -21,6 +21,7 @@ from .csrf import CSRFProtection
 from .sse import SSEStream
 from .views import (
     alerts_list,
+    dr_overview,
     incident_ack,
     incident_detail,
     incident_resolve,
@@ -159,6 +160,13 @@ def create_ops_app(
         methods=["GET"],
         response_class=None,
         name="alerts_list",
+    )
+    router.add_api_route(
+        "/dr",
+        dr_overview,
+        methods=["GET"],
+        response_class=None,
+        name="dr_overview",
     )
 
     # SSE stream

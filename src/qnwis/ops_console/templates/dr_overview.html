@@ -1,0 +1,132 @@
+{% extends "layout.html" %}
+
+{% block title %}DR Overview - QNWIS Ops Console{% endblock %}
+
+{% block content %}
+<h1>Disaster Recovery & Backups</h1>
+<p class="lead">
+    Audit snapshot of RG-7 disaster recovery readiness. All metrics are generated offline and served read-only.
+</p>
+
+<section class="stats-card dr-detail" aria-labelledby="dr-status-heading">
+    <h2 id="dr-status-heading">RG-7 Status</h2>
+    {% if dr_summary %}
+    <div class="dr-status-panel">
+        <span class="status-badge {{ dr_summary.status|lower }}">{{ dr_summary.status }}</span>
+        {% if dr_summary.timestamp %}
+        <span class="timestamp">Last run: {{ dr_summary.timestamp }}</span>
+        {% endif %}
+    </div>
+    <dl class="dr-summary-grid">
+        <div>
+            <dt>RPO (s)</dt>
+            <dd>{{ dr_summary.rpo_actual or "n/a" }} / {{ dr_summary.rpo_target or "n/a" }}</dd>
+        </div>
+        <div>
+            <dt>RTO (s)</dt>
+            <dd>{{ dr_summary.rto_actual or "n/a" }} / {{ dr_summary.rto_target or "n/a" }}</dd>
+        </div>
+        <div>
+            <dt>Corpus Files</dt>
+            <dd>{{ dr_summary.test_corpus_files or "n/a" }}</dd>
+        </div>
+    </dl>
+    {% else %}
+    <p class="info-message">RG-7 report not detected. Run `python src/qnwis/scripts/qa/rg7_recovery_gate.py`.</p>
+    {% endif %}
+</section>
+
+<section class="stats-card" aria-labelledby="dr-artifacts-heading">
+    <h2 id="dr-artifacts-heading">Artifacts</h2>
+    <ul class="artifact-list">
+        {% for label, path in artifacts.items() %}
+        <li>
+            <strong>{{ label|capitalize }}:</strong>
+            {% if path %}
+                <code>{{ path }}</code>
+            {% else %}
+                <em>missing</em>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+</section>
+
+<section class="stats-card" aria-labelledby="dr-checks-heading">
+    <h2 id="dr-checks-heading">Gate Checks</h2>
+    {% if dr_checks %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Check</th>
+                <th>Status</th>
+                <th>Notes</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for name, data in dr_checks.items() %}
+            <tr>
+                <td>{{ name }}</td>
+                <td>
+                    <span class="status-badge {{ (data.status or 'unknown')|lower }}">
+                        {{ data.status or "UNKNOWN" }}
+                    </span>
+                </td>
+                <td>
+                    {% if data.error %}
+                        {{ data.error }}
+                    {% else %}
+                        {% if data.get('allowlist_enforced') %}
+                            Allowlist enforced; traversal blocked.
+                        {% elif data.get('worm_enforced') %}
+                            WORM policy verified.
+                        {% else %}
+                            —
+                        {% endif %}
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="info-message">No check data available.</p>
+    {% endif %}
+</section>
+
+<section class="stats-card" aria-labelledby="dr-manifest-heading">
+    <h2 id="dr-manifest-heading">Sample Manifest</h2>
+    {% if dr_manifest %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Path</th>
+                <th>Size (bytes)</th>
+                <th>SHA-256</th>
+                <th>Encrypted</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in dr_manifest %}
+            <tr>
+                <td>{{ entry.get('path') }}</td>
+                <td>{{ entry.get('size_bytes') }}</td>
+                <td><code>{{ entry.get('sha256') }}</code></td>
+                <td>{{ entry.get('encrypted') }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="info-message">Manifest sample not available.</p>
+    {% endif %}
+</section>
+
+{% if summary_md %}
+<section class="stats-card" aria-labelledby="dr-summary-md">
+    <h2 id="dr-summary-md">RG-7 Summary Snippet</h2>
+    <pre class="summary-preview">{{ summary_md }}</pre>
+    <p class="small">See markdown file above for the complete write-up.</p>
+</section>
+{% endif %}
+{% endblock %}

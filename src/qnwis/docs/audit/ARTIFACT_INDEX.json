@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-11-11T07:30:42.198507",
+  "generated_at": "2025-11-11T08:39:21.834500",
   "artifacts": [
     {
       "path": "coverage.xml",
@@ -100,6 +100,26 @@
       "path": "docs/audit/badges/rg6_pass.svg",
       "sha256": "9834af26e535962f48cc9a5b66a536b431175878573ca4462877cc51fc157a44",
       "size_bytes": 819
+    },
+    {
+      "path": "docs/audit/rg7/rg7_report.json",
+      "sha256": "c1e1f645f589a86959703214bf58392b80de73838c7b38fef90e52a2fa790c18",
+      "size_bytes": 1023
+    },
+    {
+      "path": "docs/audit/rg7/DR_SUMMARY.md",
+      "sha256": "9ae905e6286676f0d3902004400824e35fadc37d8b4ed7047cb6d65491af0ac2",
+      "size_bytes": 344
+    },
+    {
+      "path": "docs/audit/rg7/sample_manifest.json",
+      "sha256": "e82044c7b2b79ee54143bc65bf2e4a57472f568a9ef18fdc5d671a1aa5745916",
+      "size_bytes": 591
+    },
+    {
+      "path": "src/qnwis/docs/audit/badges/rg7_pass.svg",
+      "sha256": "4b179dc9aa67e5dc0a76eac73c7c4c285662ee8fd575b9a6babf5413bd0a14af",
+      "size_bytes": 846
     }
   ]
 }

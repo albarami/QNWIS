@@ -48,3 +48,26 @@ routes:
     allow:
       - analyst
       - admin
+  ops_console_dr_view:
+    allow:
+      - analyst
+      - admin
+      - auditor
+  dr.backup:
+    allow:
+      - admin
+      - service
+  dr.restore:
+    allow:
+      - admin
+      - service
+  dr.verify:
+    allow:
+      - admin
+      - service
+  dr.list:
+    allow:
+      - analyst
+      - admin
+      - service
+      - auditor

@@ -11,6 +11,8 @@ filename =
     src/qnwis/scripts/qa/ops_notify_gate.py,
     src/qnwis/scripts/qa/rg6_resilience_gate.py,
     src/qnwis/scripts/qa/step31_slo_slice.py,
+    src/qnwis/scripts/qa/rg7_recovery_gate.py,
+    src/qnwis/scripts/qa/step32_dr_slice.py,
     src/qnwis/ops_console/*.py,
     src/qnwis/ops_console/*/*.py,
     src/qnwis/slo/*.py,
@@ -20,7 +22,9 @@ filename =
     src/qnwis/notify/*/*.py,
     src/qnwis/incidents/*.py,
     src/qnwis/incidents/*/*.py,
-    src/qnwis/api/routers/*.py
+    src/qnwis/api/routers/*.py,
+    src/qnwis/dr/*.py,
+    src/qnwis/dr/*/*.py
 exclude = .venv,build,dist,docs,src/qnwis/docs,grafana/dashboards/*.json,grafana/dashboards/**/*.json
 per-file-ignores =
     __init__.py:F401

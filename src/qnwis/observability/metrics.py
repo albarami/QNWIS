@@ -37,14 +37,24 @@ class MetricsCollector:
         self.auth_attempts_total = defaultdict(int)  # {(method, result): count}
         self.rate_limit_events_total = defaultdict(int)  # {(principal, reason): count}
 
+        # DR/Backup counters
+        self.dr_backup_total = defaultdict(int)  # {(tag, status): count}
+        self.dr_restore_total = defaultdict(int)  # {(status): count}
+        self.dr_verify_failures_total = defaultdict(int)  # {(snapshot_id): count}
+
         # Histograms (simplified - store all observations for percentile calculation)
         self.request_duration_seconds: list[tuple[dict[str, str], float]] = []
         self.agent_execution_duration_seconds: list[tuple[dict[str, str], float]] = []
         self.cache_latency_seconds: list[tuple[dict[str, str], float]] = []
+        self.dr_backup_duration_seconds: list[tuple[dict[str, str], float]] = []
+        self.dr_restore_duration_seconds: list[tuple[dict[str, str], float]] = []
 
         # Gauges
         self.active_requests = 0
         self.agent_queue_depth = 0
+        self.dr_snapshots_total = 0
+        self.dr_retained_total = 0
+        self.dr_backup_bytes = 0
 
         # Metadata
         self.start_time = time.time()
@@ -69,6 +79,12 @@ class MetricsCollector:
             self.auth_attempts_total[key] += value
         elif metric == "qnwis_rate_limit_events_total":
             self.rate_limit_events_total[key] += value
+        elif metric == "qnwis_dr_backup_total":
+            self.dr_backup_total[key] += value
+        elif metric == "qnwis_dr_restore_total":
+            self.dr_restore_total[key] += value
+        elif metric == "qnwis_dr_verify_failures_total":
+            self.dr_verify_failures_total[key] += value
 
     def observe_histogram(
         self, metric: str, labels: dict[str, str], value: float
@@ -87,6 +103,10 @@ class MetricsCollector:
             self.agent_execution_duration_seconds.append((labels, value))
         elif metric == "qnwis_cache_latency_seconds":
             self.cache_latency_seconds.append((labels, value))
+        elif metric == "qnwis_dr_backup_duration_seconds":
+            self.dr_backup_duration_seconds.append((labels, value))
+        elif metric == "qnwis_dr_restore_duration_seconds":
+            self.dr_restore_duration_seconds.append((labels, value))
 
     def set_gauge(self, metric: str, value: int) -> None:
         """
@@ -100,6 +120,12 @@ class MetricsCollector:
             self.active_requests = value
         elif metric == "qnwis_agent_queue_depth":
             self.agent_queue_depth = value
+        elif metric == "qnwis_dr_snapshots_total":
+            self.dr_snapshots_total = value
+        elif metric == "qnwis_dr_retained_total":
+            self.dr_retained_total = value
+        elif metric == "qnwis_dr_backup_bytes":
+            self.dr_backup_bytes = value
 
     def increment_gauge(self, metric: str, delta: int = 1) -> None:
         """
@@ -185,6 +211,49 @@ class MetricsCollector:
         lines.append(f"qnwis_active_requests {self.active_requests}")
         lines.append("")
 
+        # DR backup counter
+        lines.append("# HELP qnwis_dr_backup_total Total DR backup operations")
+        lines.append("# TYPE qnwis_dr_backup_total counter")
+        for labels, count in self.dr_backup_total.items():
+            label_dict = dict(labels)
+            label_str = self._format_labels(label_dict)
+            lines.append(f"qnwis_dr_backup_total{label_str} {count}")
+        lines.append("")
+
+        # DR restore counter
+        lines.append("# HELP qnwis_dr_restore_total Total DR restore operations")
+        lines.append("# TYPE qnwis_dr_restore_total counter")
+        for labels, count in self.dr_restore_total.items():
+            label_dict = dict(labels)
+            label_str = self._format_labels(label_dict)
+            lines.append(f"qnwis_dr_restore_total{label_str} {count}")
+        lines.append("")
+
+        # DR verify failures counter
+        lines.append("# HELP qnwis_dr_verify_failures_total Total DR verification failures")
+        lines.append("# TYPE qnwis_dr_verify_failures_total counter")
+        for labels, count in self.dr_verify_failures_total.items():
+            label_dict = dict(labels)
+            label_str = self._format_labels(label_dict)
+            lines.append(f"qnwis_dr_verify_failures_total{label_str} {count}")
+        lines.append("")
+
+        # DR gauges
+        lines.append("# HELP qnwis_dr_snapshots_total Total number of DR snapshots")
+        lines.append("# TYPE qnwis_dr_snapshots_total gauge")
+        lines.append(f"qnwis_dr_snapshots_total {self.dr_snapshots_total}")
+        lines.append("")
+
+        lines.append("# HELP qnwis_dr_retained_total Number of retained DR snapshots")
+        lines.append("# TYPE qnwis_dr_retained_total gauge")
+        lines.append(f"qnwis_dr_retained_total {self.dr_retained_total}")
+        lines.append("")
+
+        lines.append("# HELP qnwis_dr_backup_bytes Total bytes in DR backups")
+        lines.append("# TYPE qnwis_dr_backup_bytes gauge")
+        lines.append(f"qnwis_dr_backup_bytes {self.dr_backup_bytes}")
+        lines.append("")
+
         # HTTP request duration histogram
         lines.append(
             "# HELP qnwis_http_request_duration_seconds HTTP request latency"
@@ -213,6 +282,60 @@ class MetricsCollector:
             )
             lines.append(
                 f"qnwis_http_request_duration_seconds_count{label_str} {len(observations)}"
+            )
+        lines.append("")
+
+        # DR backup duration histogram
+        lines.append("# HELP qnwis_dr_backup_duration_seconds DR backup operation duration")
+        lines.append("# TYPE qnwis_dr_backup_duration_seconds histogram")
+        backup_duration_by_labels: dict[tuple, list[float]] = defaultdict(list)
+        for labels, value in self.dr_backup_duration_seconds:
+            key = tuple(sorted(labels.items()))
+            backup_duration_by_labels[key].append(value)
+
+        for label_key, observations in backup_duration_by_labels.items():
+            label_dict = dict(label_key)
+            bucket_counts = self._calculate_histogram_buckets(observations, buckets)
+
+            for bucket, count in bucket_counts.items():
+                label_str = self._format_labels({**label_dict, "le": bucket})
+                lines.append(
+                    f"qnwis_dr_backup_duration_seconds_bucket{label_str} {count}"
+                )
+
+            label_str = self._format_labels(label_dict)
+            lines.append(
+                f"qnwis_dr_backup_duration_seconds_sum{label_str} {sum(observations)}"
+            )
+            lines.append(
+                f"qnwis_dr_backup_duration_seconds_count{label_str} {len(observations)}"
+            )
+        lines.append("")
+
+        # DR restore duration histogram
+        lines.append("# HELP qnwis_dr_restore_duration_seconds DR restore operation duration")
+        lines.append("# TYPE qnwis_dr_restore_duration_seconds histogram")
+        restore_duration_by_labels: dict[tuple, list[float]] = defaultdict(list)
+        for labels, value in self.dr_restore_duration_seconds:
+            key = tuple(sorted(labels.items()))
+            restore_duration_by_labels[key].append(value)
+
+        for label_key, observations in restore_duration_by_labels.items():
+            label_dict = dict(label_key)
+            bucket_counts = self._calculate_histogram_buckets(observations, buckets)
+
+            for bucket, count in bucket_counts.items():
+                label_str = self._format_labels({**label_dict, "le": bucket})
+                lines.append(
+                    f"qnwis_dr_restore_duration_seconds_bucket{label_str} {count}"
+                )
+
+            label_str = self._format_labels(label_dict)
+            lines.append(
+                f"qnwis_dr_restore_duration_seconds_sum{label_str} {sum(observations)}"
+            )
+            lines.append(
+                f"qnwis_dr_restore_duration_seconds_count{label_str} {len(observations)}"
             )
         lines.append("")
 

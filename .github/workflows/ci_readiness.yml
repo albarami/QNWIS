@@ -291,8 +291,49 @@ jobs:
             docs/audit/badges/rg6_pass.svg
           retention-days: 30
 
+  step32-dr-slice:
+    name: "Step 32 DR Slice"
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: pre-commit
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run DR slice
+        run: |
+          python src/qnwis/scripts/qa/step32_dr_slice.py
+
+      - name: Run RG-7 gate
+        run: |
+          python -m src.qnwis.scripts.qa.rg7_recovery_gate
+
+      - name: Upload RG-7 artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: step32-rg7-artifacts
+          path: |
+            docs/audit/rg7/rg7_report.json
+            docs/audit/rg7/DR_SUMMARY.md
+            docs/audit/rg7/sample_manifest.json
+            src/qnwis/docs/audit/badges/rg7_pass.svg
+          retention-days: 30
+
   readiness-gate:
-    name: "Readiness Gate - Steps 1-31"
+    name: "Readiness Gate - Steps 1-32"
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs:
@@ -301,6 +342,7 @@ jobs:
       - step29-slice
       - step30-slice
       - step31-slice
+      - step32-dr-slice
 
     steps:
       - name: Checkout code

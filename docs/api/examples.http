@@ -245,3 +245,120 @@ X-API-Key: {{apiKey}}
   "intent": "scenario.apply",
   "params": {}
 }
+
+###############################################################################
+# Disaster Recovery & Backups (RG-7)
+###############################################################################
+
+### DR - Create Backup
+# RBAC: admin, service
+POST {{baseUrl}}/api/v1/dr/backup
+Content-Type: application/json
+X-API-Key: {{apiKey}}
+
+{
+  "spec": {
+    "spec_id": "daily-backup-001",
+    "tag": "daily",
+    "datasets": ["LMIS_RETENTION_TS", "LMIS_SALARY_TS"],
+    "audit_packs": true,
+    "config": true,
+    "storage_target": "local-prod",
+    "encryption": "aes_256_gcm",
+    "retention_days": 30
+  },
+  "storage_target_id": "local-prod",
+  "key_id": "key-abc123"
+}
+
+### DR - List Snapshots
+# RBAC: analyst, admin, service
+GET {{baseUrl}}/api/v1/dr/snapshots?storage_target_id=local-prod&tag=daily
+X-API-Key: {{apiKey}}
+
+### DR - List Snapshots (Filter by Tag)
+GET {{baseUrl}}/api/v1/dr/snapshots?storage_target_id=local-prod&tag=weekly
+X-API-Key: {{apiKey}}
+
+### DR - Verify Snapshot
+# RBAC: admin, service
+POST {{baseUrl}}/api/v1/dr/verify/snap-abc123
+Content-Type: application/json
+X-API-Key: {{apiKey}}
+
+{
+  "storage_target_id": "local-prod",
+  "key_id": "key-abc123",
+  "sample_count": 10
+}
+
+### DR - Restore Snapshot (Dry Run)
+# RBAC: admin, service
+POST {{baseUrl}}/api/v1/dr/restore
+Content-Type: application/json
+X-API-Key: {{apiKey}}
+
+{
+  "snapshot_id": "snap-abc123",
+  "target_path": "/mnt/restore",
+  "storage_target_id": "local-prod",
+  "key_id": "key-abc123",
+  "dry_run": true,
+  "overwrite": false
+}
+
+### DR - Restore Snapshot (Execute)
+# RBAC: admin, service
+# WARNING: This will overwrite files in target_path if overwrite=true
+POST {{baseUrl}}/api/v1/dr/restore
+Content-Type: application/json
+X-API-Key: {{apiKey}}
+
+{
+  "snapshot_id": "snap-abc123",
+  "target_path": "/mnt/restore",
+  "storage_target_id": "local-prod",
+  "key_id": "key-abc123",
+  "dry_run": false,
+  "overwrite": true
+}
+
+### DR - Create Weekly Backup
+POST {{baseUrl}}/api/v1/dr/backup
+Content-Type: application/json
+X-API-Key: {{apiKey}}
+
+{
+  "spec": {
+    "spec_id": "weekly-backup-001",
+    "tag": "weekly",
+    "datasets": ["LMIS_RETENTION_TS", "LMIS_SALARY_TS", "LMIS_TURNOVER_TS"],
+    "audit_packs": true,
+    "config": true,
+    "storage_target": "archive-storage",
+    "encryption": "aes_256_gcm",
+    "retention_days": 90
+  },
+  "storage_target_id": "archive-storage",
+  "key_id": null
+}
+
+### DR - Create Monthly Compliance Backup (WORM)
+POST {{baseUrl}}/api/v1/dr/backup
+Content-Type: application/json
+X-API-Key: {{apiKey}}
+
+{
+  "spec": {
+    "spec_id": "monthly-compliance-001",
+    "tag": "monthly",
+    "datasets": ["LMIS_RETENTION_TS", "LMIS_SALARY_TS", "LMIS_TURNOVER_TS", "LMIS_SECTOR_STATS"],
+    "audit_packs": true,
+    "config": true,
+    "storage_target": "worm-storage",
+    "encryption": "aes_256_gcm",
+    "retention_days": 365
+  },
+  "storage_target_id": "worm-storage",
+  "key_id": "key-compliance-001"
+}

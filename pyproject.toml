@@ -158,6 +158,7 @@ extend-include = [
   "src/qnwis/agents/alert_center.py",
   "src/qnwis/scripts/qa/ops_gate.py",
   "src/qnwis/scripts/qa/determinism_scan.py",
+  "src/qnwis/scripts/qa/rg7_recovery_gate.py",
   "src/qnwis/notify/**/*.py",
   "src/qnwis/incidents/**/*.py",
   "src/qnwis/api/routers/**/*.py",
@@ -167,6 +168,8 @@ extend-include = [
   "src/qnwis/slo/**/*.py",
   "src/qnwis/scripts/qa/rg6_resilience_gate.py",
   "src/qnwis/scripts/qa/step31_slo_slice.py",
+  "src/qnwis/scripts/qa/step32_dr_slice.py",
+  "src/qnwis/dr/**/*.py",
 ]
 
 [tool.ruff.lint]

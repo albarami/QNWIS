@@ -60,6 +60,9 @@ from qnwis.scripts.qa.determinism_scan import (
     NETWORK_BANNED_PATTERNS as ALERT_NETWORK_PATTERNS,
 )
 from qnwis.scripts.qa.determinism_scan import (
+    DR_SECURITY_PATTERNS,
+)
+from qnwis.scripts.qa.determinism_scan import (
     scan_for_banned_calls,
 )
 
@@ -462,6 +465,25 @@ STEP_REQUIREMENTS: tuple[StepRequirement, ...] = (
             "docs/audit/rg6/SLO_SUMMARY.md",
         ),
     ),
+    StepRequirement(
+        step=32,
+        name="Disaster Recovery & RG-7",
+        code_paths=(
+            "src/qnwis/dr",
+            "src/qnwis/api/routers/backups.py",
+            "src/qnwis/cli/qnwis_dr.py",
+            "src/qnwis/scripts/qa/rg7_recovery_gate.py",
+        ),
+        test_paths=(
+            "tests/unit/dr",
+            "tests/integration/dr",
+        ),
+        smoke_targets=(
+            "docs/ops/step32_dr_backups.md",
+            "docs/audit/rg7/rg7_report.json",
+            "docs/audit/rg7/DR_SUMMARY.md",
+        ),
+    ),
 )
 
 NARRATIVE_SAMPLE_PATHS = (
@@ -509,6 +531,14 @@ STEP31_SLO_PATHS = (
     SRC_ROOT / "qnwis" / "scripts" / "qa" / "rg6_resilience_gate.py",
     SRC_ROOT / "qnwis" / "scripts" / "qa" / "step31_slo_slice.py",
 )
+STEP32_DR_PATHS = (
+    SRC_ROOT / "qnwis" / "dr",
+    SRC_ROOT / "qnwis" / "scripts" / "qa" / "rg7_recovery_gate.py",
+)
+RG7_REPORT_PATH = ROOT / "docs" / "audit" / "rg7" / "rg7_report.json"
+RG7_SUMMARY_MD = ROOT / "docs" / "audit" / "rg7" / "DR_SUMMARY.md"
+RG7_MANIFEST_PATH = ROOT / "docs" / "audit" / "rg7" / "sample_manifest.json"
+RG7_BADGE_PATH = SRC_ROOT / "qnwis" / "docs" / "audit" / "badges" / "rg7_pass.svg"
 
 
 @dataclass
@@ -1023,6 +1053,16 @@ def _load_rg6_report() -> dict[str, Any] | None:
         return json.loads(RG6_REPORT_PATH.read_text(encoding="utf-8"))
     except Exception as exc:  # pragma: no cover
         logger.warning("Failed to parse RG-6 report: %s", exc)
+        return None
+
+
+def _load_rg7_report() -> dict[str, Any] | None:
+    if not RG7_REPORT_PATH.exists():
+        return None
+    try:
+        return json.loads(RG7_REPORT_PATH.read_text(encoding="utf-8"))
+    except Exception as exc:  # pragma: no cover
+        logger.warning("Failed to parse RG-7 report: %s", exc)
         return None
 
 
@@ -2037,9 +2077,72 @@ def gate_slo_ops_step31() -> GateResult:
     )
 
 
+def gate_dr_recovery_step32() -> GateResult:
+    """Step 32: Validate RG-7 DR artifacts, badge, and determinism."""
+    start = time.time()
+    report = _load_rg7_report() or {}
+    checks = report.get("checks") or {}
+    metrics = report.get("metrics") or {}
+    perf = checks.get("dr_perf") or {}
+    rg7_passed = bool(report) and all((entry or {}).get("status") == "PASS" for entry in checks.values())
+
+    badge_present = RG7_BADGE_PATH.exists()
+    summary_present = RG7_SUMMARY_MD.exists()
+    report_present = RG7_REPORT_PATH.exists()
+    manifest_present = RG7_MANIFEST_PATH.exists()
+
+    artifacts = {
+        "report": _rel(RG7_REPORT_PATH) if report_present else None,
+        "summary": _rel(RG7_SUMMARY_MD) if summary_present else None,
+        "manifest": _rel(RG7_MANIFEST_PATH) if manifest_present else None,
+        "badge": _rel(RG7_BADGE_PATH) if badge_present else None,
+    }
+
+    determinism_hits = scan_for_banned_calls(STEP32_DR_PATHS, DR_SECURITY_PATTERNS)
+
+    dr_metrics = {
+        "rpo_target_seconds": perf.get("rpo_target_seconds"),
+        "rpo_actual_seconds": perf.get("rpo_actual_seconds"),
+        "rto_target_seconds": perf.get("rto_target_seconds"),
+        "rto_actual_seconds": perf.get("rto_actual_seconds"),
+        "test_corpus_files": perf.get("test_corpus_files"),
+    }
+
+    details = {
+        "rg7_passed": rg7_passed,
+        "badge_present": badge_present,
+        "summary_present": summary_present,
+        "manifest_present": manifest_present,
+        "report_present": report_present,
+        "checks": checks,
+        "metrics": metrics,
+        "determinism_hits": determinism_hits,
+        "dr_metrics": dr_metrics,
+        "artifacts": artifacts,
+    }
+
+    ok = (
+        rg7_passed
+        and badge_present
+        and summary_present
+        and report_present
+        and manifest_present
+        and not determinism_hits
+    )
+
+    evidence = [path for path in artifacts.values() if path]
+    return GateResult(
+        name="dr_recovery_step32",
+        ok=ok,
+        details=details,
+        duration_ms=(time.time() - start) * 1000,
+        evidence_paths=evidence,
+    )
+
+
 def generate_markdown_report(report: ReadinessReport) -> str:
     lines = [
-        "# Readiness Report: Steps 1-31",
+        "# Readiness Report: Steps 1-32",
         "",
         f"**Generated:** {report.timestamp}",
         f"**Overall Status:** {'PASS' if report.overall_pass else 'FAIL'}",
@@ -2138,6 +2241,28 @@ def generate_markdown_report(report: ReadinessReport) -> str:
                 f"- **Determinism Violations:** {len(step31_info.get('determinism_hits', []))}",
                 f"- **Network Import Violations:** {len(step31_info.get('network_hits', []))}",
                 f"- **Artifacts:** report=`{artifacts.get('report', 'n/a')}`, summary=`{artifacts.get('summary', 'n/a')}`, badge=`{artifacts.get('badge', 'n/a')}`",
+                "",
+            ]
+        )
+    step32_info = report.summary.get("step32")
+    if step32_info:
+        rg7_status = step32_info.get("rg7_passed")
+        rg7_status_str = "n/a" if rg7_status is None else ("PASS" if rg7_status else "FAIL")
+        lines.extend(
+            [
+                "## Step 32 - DR & Backups",
+                "",
+                f"- **RG-7 Status:** {rg7_status_str}",
+                f"- **Badge Present:** {'yes' if step32_info.get('badge_present') else 'no'} "
+                f"({step32_info.get('badge_path', 'n/a')})",
+                f"- **Summary Present:** {'yes' if step32_info.get('summary_present') else 'no'}",
+                f"- **Manifest Present:** {'yes' if step32_info.get('manifest_present') else 'no'}",
+                f"- **RPO (actual/target s):** {step32_info.get('rpo_seconds', 'n/a')} / "
+                f"{step32_info.get('rpo_target', 'n/a')}",
+                f"- **RTO (actual/target s):** {step32_info.get('rto_seconds', 'n/a')} / "
+                f"{step32_info.get('rto_target', 'n/a')}",
+                f"- **Test Corpus Files:** {step32_info.get('test_corpus_files', 'n/a')}",
+                f"- **Determinism Violations:** {len(step32_info.get('determinism_hits', []))}",
                 "",
             ]
         )
@@ -2265,6 +2390,7 @@ def write_readiness_review(report: ReadinessReport) -> Path:
     step29_info = report.summary.get("step29", {})
     step30_info = report.summary.get("step30", {})
     step31_info = report.summary.get("step31", {})
+    step32_info = report.summary.get("step32", {})
     ops_gate_passed = step28_info.get("ops_gate_passed")
     ops_gate_status = "n/a" if ops_gate_passed is None else ("PASS" if ops_gate_passed else "FAIL")
     ops_summary_present = "yes" if step28_info.get("ops_summary_present") else "no"
@@ -2300,6 +2426,7 @@ def write_readiness_review(report: ReadinessReport) -> Path:
           "7. Step 29 RG-4 notify gate reports latency + incident readiness with determinism guard.",
           "8. Step 30 RG-5 ops console badge, gate report, and metrics snapshot are persisted.",
           "9. Step 31 RG-6 SLO badge and error-budget summaries land with determinism/network scans.",
+          "10. Step 32 RG-7 DR badge, summary, and manifest verify RPO/RTO with deterministic scans.",
           "",
         "## Step 28 - Alert Center Hardening",
         "",
@@ -2350,6 +2477,19 @@ def write_readiness_review(report: ReadinessReport) -> Path:
           f"| Determinism Violations | {len(step31_info.get('determinism_hits', []))} |",
           f"| Network Import Violations | {len(step31_info.get('network_hits', []))} |",
           "",
+          "## Step 32 - DR & Backups",
+          "",
+          "| Metric | Value |",
+          "| --- | --- |",
+          f"| RG-7 Status | {('n/a' if step32_info.get('rg7_passed') is None else ('PASS' if step32_info.get('rg7_passed') else 'FAIL'))} |",
+          f"| Badge Present | {'yes' if step32_info.get('badge_present') else 'no'} |",
+          f"| Summary Present | {'yes' if step32_info.get('summary_present') else 'no'} |",
+          f"| Manifest Present | {'yes' if step32_info.get('manifest_present') else 'no'} |",
+          f"| RPO (s) | {step32_info.get('rpo_seconds', 'n/a')} / {step32_info.get('rpo_target', 'n/a')} |",
+          f"| RTO (s) | {step32_info.get('rto_seconds', 'n/a')} / {step32_info.get('rto_target', 'n/a')} |",
+          f"| Test Corpus Files | {step32_info.get('test_corpus_files', 'n/a')} |",
+          f"| Determinism Violations | {len(step32_info.get('determinism_hits', []))} |",
+          "",
           "## Gate Evidence",
           "",
           "| Gate | Status | Severity | Evidence |",
@@ -2395,6 +2535,7 @@ def main() -> int:
           gate_notify_ops_step29,
           gate_ops_console_step30,
           gate_slo_ops_step31,
+          gate_dr_recovery_step32,
           gate_stability_controls,
           gate_api_endpoints,
           gate_api_security,
@@ -2482,6 +2623,26 @@ def main() -> int:
             "network_hits": step31_gate.details.get("network_hits", []),
             "artifacts": step31_gate.details.get("artifacts", {}),
         }
+    step32_gate = next((g for g in gates if g.name == "dr_recovery_step32"), None)
+    if step32_gate is not None:
+        dr_metrics = step32_gate.details.get("dr_metrics") or {}
+        artifacts = step32_gate.details.get("artifacts") or {}
+        summary_data["step32"] = {
+            "passed": step32_gate.ok,
+            "rg7_passed": step32_gate.details.get("rg7_passed"),
+            "badge_present": step32_gate.details.get("badge_present"),
+            "summary_present": step32_gate.details.get("summary_present"),
+            "manifest_present": step32_gate.details.get("manifest_present"),
+            "report_present": step32_gate.details.get("report_present"),
+            "rpo_seconds": dr_metrics.get("rpo_actual_seconds"),
+            "rpo_target": dr_metrics.get("rpo_target_seconds"),
+            "rto_seconds": dr_metrics.get("rto_actual_seconds"),
+            "rto_target": dr_metrics.get("rto_target_seconds"),
+            "test_corpus_files": dr_metrics.get("test_corpus_files"),
+            "determinism_hits": step32_gate.details.get("determinism_hits", []),
+            "artifacts": artifacts,
+            "badge_path": artifacts.get("badge"),
+        }
 
     report = ReadinessReport(
         gates=gates,
@@ -2517,6 +2678,10 @@ def main() -> int:
         RG6_SUMMARY_MD,
         RG6_SNAPSHOT_PATH,
         RG6_BADGE_PATH,
+        RG7_REPORT_PATH,
+        RG7_SUMMARY_MD,
+        RG7_MANIFEST_PATH,
+        RG7_BADGE_PATH,
     ]
     report.artifacts = _hash_artifacts(artifact_inputs)
 

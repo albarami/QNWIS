@@ -48,6 +48,44 @@
             </a>
         </nav>
     </section>
+    
+    <section class="stats-card dr-card" aria-labelledby="dr-heading">
+        <div class="section-header">
+            <h2 id="dr-heading">DR Readiness (RG-7)</h2>
+        </div>
+        {% if dr_summary %}
+        <p class="dr-status">
+            <span class="status-badge {{ dr_summary.status|lower }}">
+                Status: {{ dr_summary.status }}
+            </span>
+            {% if dr_summary.timestamp %}
+            <span class="timestamp">Last Run: {{ dr_summary.timestamp }}</span>
+            {% endif %}
+        </p>
+        <dl class="dr-summary-grid">
+            <div>
+                <dt>RPO (s)</dt>
+                <dd>{{ dr_summary.rpo_actual or "n/a" }} / {{ dr_summary.rpo_target or "n/a" }}</dd>
+            </div>
+            <div>
+                <dt>RTO (s)</dt>
+                <dd>{{ dr_summary.rto_actual or "n/a" }} / {{ dr_summary.rto_target or "n/a" }}</dd>
+            </div>
+            <div>
+                <dt>Corpus Files</dt>
+                <dd>{{ dr_summary.test_corpus_files or "n/a" }}</dd>
+            </div>
+        </dl>
+        <div class="dr-links">
+            <a href="/ops/dr" class="btn btn-secondary" aria-label="View DR overview">View DR Overview</a>
+            {% if dr_summary.report_path %}
+            <span class="artifact-tip">Report: <code>{{ dr_summary.report_path }}</code></span>
+            {% endif %}
+        </div>
+        {% else %}
+        <p class="info-message">RG-7 artifacts not found. Run the recovery gate to populate this panel.</p>
+        {% endif %}
+    </section>
 </div>
 
 <!-- Live updates area (HTMX + SSE) -->

@@ -7,7 +7,9 @@ All views use server-side rendering with Jinja2 and HTMX for interactivity.
 
 from __future__ import annotations
 
+import json
 import logging
+from pathlib import Path
 from typing import Any, cast
 
 from fastapi import Depends, Form, HTTPException, Request, status
@@ -17,11 +19,75 @@ from fastapi.templating import Jinja2Templates
 from ..notify.models import IncidentState, Severity
 from ..notify.resolver import IncidentResolver
 from ..security import Principal, require_roles
+from ..security.rbac import allowed_roles
 from ..utils.clock import Clock
 from .csrf import get_csrf_protection, verify_csrf_token
 from .sse import SSEStream, create_incident_update_event
 
 logger = logging.getLogger(__name__)
+REPO_ROOT = Path(__file__).resolve().parents[3]
+RG7_DIR = REPO_ROOT / "docs" / "audit" / "rg7"
+RG7_REPORT_PATH = RG7_DIR / "rg7_report.json"
+RG7_SUMMARY_PATH = RG7_DIR / "DR_SUMMARY.md"
+RG7_MANIFEST_PATH = RG7_DIR / "sample_manifest.json"
+DOCS_BADGE_ROOT = Path(__file__).resolve().parents[1] / "docs" / "audit" / "badges"
+RG7_BADGE_PATH = DOCS_BADGE_ROOT / "rg7_pass.svg"
+
+
+def _rel_path(path: Path) -> str:
+    try:
+        return path.relative_to(REPO_ROOT).as_posix()
+    except ValueError:
+        return str(path)
+
+
+def _load_rg7_report() -> dict[str, Any] | None:
+    if not RG7_REPORT_PATH.exists():
+        return None
+    try:
+        return json.loads(RG7_REPORT_PATH.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        logger.warning("Invalid RG-7 report JSON: %s", exc)
+        return None
+
+
+def _load_rg7_manifest_entries(limit: int = 5) -> list[dict[str, Any]]:
+    if not RG7_MANIFEST_PATH.exists():
+        return []
+    try:
+        manifest = json.loads(RG7_MANIFEST_PATH.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        logger.warning("Invalid RG-7 manifest JSON: %s", exc)
+        return []
+    entries = manifest.get("entries")
+    if isinstance(entries, list):
+        return entries[:limit]
+    if isinstance(manifest, list):
+        return manifest[:limit]
+    return []
+
+
+def _build_dr_summary() -> dict[str, Any] | None:
+    report = _load_rg7_report()
+    if not report:
+        return None
+    checks = report.get("checks") or {}
+    metrics = report.get("metrics") or {}
+    perf = checks.get("dr_perf") or {}
+    status_flag = all((entry or {}).get("status") == "PASS" for entry in checks.values())
+    status = "PASS" if status_flag else "FAIL"
+    return {
+        "status": status,
+        "timestamp": metrics.get("timestamp"),
+        "rpo_actual": perf.get("rpo_actual_seconds"),
+        "rpo_target": perf.get("rpo_target_seconds"),
+        "rto_actual": perf.get("rto_actual_seconds"),
+        "rto_target": perf.get("rto_target_seconds"),
+        "test_corpus_files": perf.get("test_corpus_files"),
+        "badge_path": _rel_path(RG7_BADGE_PATH) if RG7_BADGE_PATH.exists() else None,
+        "report_path": _rel_path(RG7_REPORT_PATH) if RG7_REPORT_PATH.exists() else None,
+        "summary_path": _rel_path(RG7_SUMMARY_PATH) if RG7_SUMMARY_PATH.exists() else None,
+    }
 
 
 def get_templates(request: Request) -> Jinja2Templates:
@@ -79,6 +145,7 @@ async def ops_index(
 
     # Generate CSRF token
     csrf_token = csrf.generate_token(clock.utcnow())
+    dr_summary = _build_dr_summary()
 
     # Render template
     context = {
@@ -88,6 +155,7 @@ async def ops_index(
         "csrf_token": csrf_token,
         "request_id": getattr(request.state, "request_id", "unknown"),
         "render_start": clock.utcnow(),
+        "dr_summary": dr_summary,
     }
 
     return templates.TemplateResponse("ops_index.html", context)
@@ -460,6 +528,41 @@ async def alerts_list(
     return templates.TemplateResponse("alerts_list.html", context)
 
 
+async def dr_overview(
+    request: Request,
+    principal: Principal = Depends(require_roles(*allowed_roles("ops_console_dr_view"))),
+) -> HTMLResponse:
+    """Read-only Disaster Recovery overview page."""
+    templates = get_templates(request)
+    clock = get_clock(request)
+    summary = _build_dr_summary()
+    report = _load_rg7_report()
+    manifest_entries = _load_rg7_manifest_entries(limit=10)
+    summary_md = RG7_SUMMARY_PATH.read_text(encoding="utf-8") if RG7_SUMMARY_PATH.exists() else None
+    artifacts = {
+        "report": _rel_path(RG7_REPORT_PATH) if RG7_REPORT_PATH.exists() else None,
+        "summary": _rel_path(RG7_SUMMARY_PATH) if RG7_SUMMARY_PATH.exists() else None,
+        "manifest": _rel_path(RG7_MANIFEST_PATH) if RG7_MANIFEST_PATH.exists() else None,
+        "badge": _rel_path(RG7_BADGE_PATH) if RG7_BADGE_PATH.exists() else None,
+    }
+
+    context = {
+        "request": request,
+        "principal": principal,
+        "dr_summary": summary,
+        "dr_report": report or {},
+        "dr_checks": (report or {}).get("checks") or {},
+        "dr_metrics": (report or {}).get("metrics") or {},
+        "dr_manifest": manifest_entries,
+        "summary_md": summary_md,
+        "artifacts": artifacts,
+        "request_id": getattr(request.state, "request_id", "unknown"),
+        "render_start": clock.utcnow(),
+    }
+
+    return templates.TemplateResponse("dr_overview.html", context)
+
+
 async def incidents_stream(
     request: Request,
     _principal: Principal = Depends(require_roles("analyst", "admin", "auditor")),
@@ -489,5 +592,6 @@ __all__ = [
     "incident_resolve",
     "incident_silence",
     "alerts_list",
+    "dr_overview",
     "incidents_stream",
 ]
