@@ -121,6 +121,8 @@ def search_papers(
             f"{BASE_URL}/paper/search",
             params=params,
             headers={"x-api-key": api_key},
+            timeout=client.timeout,
+            max_retries=3,
         )
         data = response.json()
         result_metadata: dict[str, Any] = {
@@ -177,6 +179,8 @@ def get_paper_recommendations(
             params=params,
             json=payload,
             headers={"x-api-key": api_key},
+            timeout=client.timeout,
+            max_retries=3,
         )
         result = response.json()
         result_metadata: dict[str, Any] = {
@@ -226,6 +230,8 @@ def get_paper_by_id(
             params=params,
             headers={"x-api-key": api_key},
             expected_statuses={404},
+            timeout=client.timeout,
+            max_retries=3,
         )
         if response.status_code == 404:
             not_found_metadata: dict[str, Any] = {

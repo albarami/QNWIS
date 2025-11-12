@@ -8,6 +8,7 @@ deterministic, reproducible caching of query results.
 from __future__ import annotations
 
 import json
+import logging
 import os
 from datetime import date, datetime
 from typing import Any
@@ -15,6 +16,8 @@ from typing import Any
 import redis
 
 from ..data.deterministic.models import QueryResult
+
+logger = logging.getLogger(__name__)
 
 
 def _json_default(value: Any) -> str:
@@ -46,6 +49,10 @@ class DeterministicRedisCache:
             url or os.getenv("QNWIS_REDIS_URL", "redis://localhost:6379/0")
         )
         self.ns = namespace
+        
+        # Performance metrics (in-memory counters)
+        self._hits = 0
+        self._misses = 0
 
     def _ns(self, key: str) -> str:
         """Add namespace prefix to key."""
@@ -63,7 +70,10 @@ class DeterministicRedisCache:
         """
         raw = self.r.get(self._ns(key))
         if not raw:
+            self._misses += 1
             return None
+        
+        self._hits += 1
         payload = json.loads(raw if isinstance(raw, str) else raw.decode("utf-8"))
         try:
             return QueryResult.model_validate(payload)
@@ -112,3 +122,25 @@ class DeterministicRedisCache:
             Redis INFO command output as dictionary
         """
         return self.r.info()  # type: ignore[no-any-return]
+    
+    def get_metrics(self) -> dict[str, Any]:
+        """
+        Get cache performance metrics.
+        
+        Returns:
+            Dictionary with hits, misses, and hit rate
+        """
+        total = self._hits + self._misses
+        hit_rate = self._hits / total if total > 0 else 0.0
+        
+        return {
+            "hits": self._hits,
+            "misses": self._misses,
+            "total_requests": total,
+            "hit_rate": round(hit_rate, 4),
+        }
+    
+    def reset_metrics(self) -> None:
+        """Reset performance metrics counters."""
+        self._hits = 0
+        self._misses = 0

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, cast
 
 from ..agents.base import AgentReport
@@ -343,6 +344,121 @@ class Coordinator:
 
         raise ValueError(f"Unknown execution mode: {mode}")
 
+    def _execute_wave_parallel(
+        self,
+        wave: list[AgentCallSpec],
+        prefetch_cache: dict[str, Any],
+        alias_status: dict[str, bool],
+        mode: str,
+    ) -> list[OrchestrationResult]:
+        """
+        Execute a wave of agent calls in parallel using ThreadPoolExecutor.
+        
+        Args:
+            wave: List of agent specs to execute in parallel
+            prefetch_cache: Read-only cache from prefetcher
+            alias_status: Map tracking alias success/failure
+            mode: Execution mode (for dependency checking)
+            
+        Returns:
+            List of OrchestrationResult instances from the wave
+        """
+        wave_results: list[OrchestrationResult] = []
+        
+        # For sequential mode or single-spec waves, use serial execution
+        if mode == "sequential" or len(wave) == 1:
+            for spec in wave:
+                alias = spec.get("alias", spec["intent"])
+                dependencies = spec.get("depends_on", [])
+                
+                # Check dependencies for sequential mode
+                unmet_dependencies = [
+                    dep for dep in dependencies if alias_status.get(dep) is False
+                ]
+                if mode == "sequential" and unmet_dependencies:
+                    warning = (
+                        f"Skipped alias '{alias}' because dependency "
+                        f"{', '.join(unmet_dependencies)} returned ok=False."
+                    )
+                    logger.warning(warning)
+                    placeholder = self._build_placeholder_result(
+                        spec=spec,
+                        warning=warning,
+                        attempt=0,
+                        success=False,
+                        elapsed_ms=0.0,
+                    )
+                    alias_status[alias] = False
+                    wave_results.append(placeholder)
+                    continue
+                
+                try:
+                    result, _ = self._execute_single(spec, prefetch_cache)
+                    alias_status[alias] = result.ok
+                    wave_results.append(result)
+                except Exception as exc:
+                    error_message = (
+                        f"Execution failed for alias '{alias}' (intent={spec['intent']}): {exc}"
+                    )
+                    logger.exception(error_message)
+                    placeholder = self._build_placeholder_result(
+                        spec=spec,
+                        warning=error_message,
+                        attempt=1,
+                        success=False,
+                        elapsed_ms=0.0,
+                        error=str(exc),
+                    )
+                    alias_status[alias] = False
+                    wave_results.append(placeholder)
+            
+            return wave_results
+        
+        # Parallel execution for multi-spec waves
+        max_workers = min(len(wave), self.policy.max_parallel)
+        
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            # Submit all specs in the wave
+            future_to_spec = {
+                executor.submit(self._execute_single, spec, prefetch_cache): spec
+                for spec in wave
+            }
+            
+            # Collect results as they complete
+            for future in as_completed(future_to_spec):
+                spec = future_to_spec[future]
+                alias = spec.get("alias", spec["intent"])
+                
+                try:
+                    result, _ = future.result()
+                    alias_status[alias] = result.ok
+                    wave_results.append(result)
+                    
+                    if not result.ok:
+                        logger.warning(
+                            "Agent returned ok=False for alias '%s' (intent=%s, method=%s)",
+                            alias,
+                            spec["intent"],
+                            spec["method"],
+                        )
+                except Exception as exc:
+                    error_message = (
+                        f"Execution failed for alias '{alias}' (intent={spec['intent']}): {exc}"
+                    )
+                    logger.exception(error_message)
+                    placeholder = self._build_placeholder_result(
+                        spec=spec,
+                        warning=error_message,
+                        attempt=1,
+                        success=False,
+                        elapsed_ms=0.0,
+                        error=str(exc),
+                    )
+                    alias_status[alias] = False
+                    wave_results.append(placeholder)
+        
+        return wave_results
+
     def execute(
         self,
         waves: list[list[AgentCallSpec]],
@@ -397,138 +513,42 @@ class Coordinator:
                 wave_number,
                 len(waves),
                 len(wave),
-                len(wave),
+                min(len(wave), self.policy.max_parallel),
             )
             wave_start = time.perf_counter()
-            wave_results: list[OrchestrationResult] = []
+            
+            # Execute wave in parallel
+            wave_results = self._execute_wave_parallel(wave, prefetch_cache, alias_status, mode)
+            results.extend(wave_results)
+            
+            # Check for timeout after wave completion
+            total_elapsed_ms = (time.perf_counter() - total_start) * 1000
             wave_aborted = False
-
-            for spec_index, spec in enumerate(wave):
-                alias = spec.get("alias", spec["intent"])
-                dependencies = spec.get("depends_on", [])
-
-                unmet_dependencies = [
-                    dep for dep in dependencies if alias_status.get(dep) is False
-                ]
-                if mode == "sequential" and unmet_dependencies:
-                    warning = (
-                        f"Skipped alias '{alias}' because dependency "
-                        f"{', '.join(unmet_dependencies)} returned ok=False."
+            
+            if total_elapsed_ms >= total_timeout_ms:
+                timeout_warning = (
+                    f"Total execution timeout {total_timeout_ms}ms exceeded after wave "
+                    f"{wave_number} ({total_elapsed_ms:.0f}ms). Remaining waves skipped."
+                )
+                logger.warning(timeout_warning)
+                
+                for remaining_wave in waves[wave_index + 1 :]:
+                    skipped_remaining = self._record_wave_skip(
+                        remaining_wave,
+                        "Skipped due to total timeout breach",
+                        alias_status,
                     )
-                    logger.warning(warning)
-                    placeholder = self._build_placeholder_result(
-                        spec=spec,
-                        warning=warning,
-                        attempt=0,
-                        success=False,
-                        elapsed_ms=0.0,
-                    )
-                    alias_status[alias] = False
-                    wave_results.append(placeholder)
-                    results.append(placeholder)
-                    continue
-
-                unseen_dependencies = [
-                    dep for dep in dependencies if dep not in alias_status
-                ]
-                if mode == "sequential" and unseen_dependencies:
-                    raise CoordinationError(
-                        f"Dependency '{unseen_dependencies[0]}' for alias '{alias}' "
-                        "has not executed yet. Ensure plan order matches dependencies."
-                    )
-
-                try:
-                    result, _ = self._execute_single(spec, prefetch_cache)
-                except Exception as exc:
-                    error_message = (
-                        f"Execution failed for alias '{alias}' (intent={spec['intent']}): {exc}"
-                    )
-                    logger.exception(error_message)
-                    placeholder = self._build_placeholder_result(
-                        spec=spec,
-                        warning=error_message,
-                        attempt=1,
-                        success=False,
-                        elapsed_ms=0.0,
-                        error=str(exc),
-                    )
-                    alias_status[alias] = False
-                    wave_results.append(placeholder)
-                    results.append(placeholder)
-                else:
-                    alias_status[alias] = result.ok
-                    wave_results.append(result)
-                    results.append(result)
-                    if not result.ok:
-                        logger.warning(
-                            "Agent returned ok=False for alias '%s' (intent=%s, method=%s)",
-                            alias,
-                            spec["intent"],
-                            spec["method"],
-                        )
-
-                total_elapsed_ms = (time.perf_counter() - total_start) * 1000
-                if total_elapsed_ms >= total_timeout_ms:
-                    timeout_warning = (
-                        f"Total execution timeout {total_timeout_ms}ms exceeded after alias "
-                        f"'{alias}' ({total_elapsed_ms:.0f}ms). Remaining specifications skipped."
-                    )
-                    logger.warning(timeout_warning)
-
-                    if wave_results:
-                        last_result = wave_results[-1]
-                        last_result.ok = False
-                        alias_status[alias] = False
-                        last_result.warnings.append(timeout_warning)
-                        warnings_section = next(
-                            (section for section in last_result.sections if section.title == "Warnings"),
-                            None,
-                        )
-                        if warnings_section:
-                            warnings_section.body_md = (
-                                warnings_section.body_md + f"\n- {timeout_warning}"
-                            )
-                        else:
-                            last_result.sections.append(
-                                ReportSection(
-                                    title="Warnings",
-                                    body_md=f"- {timeout_warning}",
-                                )
-                            )
-                        if last_result.agent_traces:
-                            last_trace = last_result.agent_traces[0]
-                            updated_warnings = list(last_trace["warnings"])
-                            updated_warnings.append(timeout_warning)
-                            last_trace["warnings"] = updated_warnings
-                            last_trace["success"] = False
-                            last_trace["error"] = timeout_warning
-
-                    remaining_specs = wave[spec_index + 1 :]
-                    if remaining_specs:
-                        skipped_wave = self._record_wave_skip(
-                            remaining_specs, timeout_warning, alias_status
-                        )
-                        wave_results.extend(skipped_wave)
-                        results.extend(skipped_wave)
-
-                    for remaining_wave in waves[wave_index + 1 :]:
-                        skipped_remaining = self._record_wave_skip(
-                            remaining_wave,
-                            "Skipped due to total timeout breach",
-                            alias_status,
-                        )
-                        results.extend(skipped_remaining)
-
-                    wave_aborted = True
-                    break
-
+                    results.extend(skipped_remaining)
+                
+                wave_aborted = True
+            
             wave_elapsed_ms = (time.perf_counter() - wave_start) * 1000
             success_count = sum(1 for res in wave_results if res.ok)
             logger.info(
                 "Wave %d completed in %.0fms (parallelism=%d, success=%d/%d)",
                 wave_number,
                 wave_elapsed_ms,
-                len(wave),
+                min(len(wave), self.policy.max_parallel),
                 success_count,
                 len(wave_results) or len(wave),
             )

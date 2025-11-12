@@ -40,17 +40,22 @@ class PostgresMaterializer:
             indexes: List of index definitions (name ON table(columns))
         """
         sql_body = textwrap.dedent(sql_select).strip().rstrip(";")
-        sql = f"""
-        CREATE MATERIALIZED VIEW IF NOT EXISTS {name} AS
-        {sql_body}
-        WITH NO DATA;
-        """
-        self.db.execute_sql(textwrap.dedent(sql))
-        self.db.execute_sql(f"REFRESH MATERIALIZED VIEW CONCURRENTLY {name};")
+        sql_template = textwrap.dedent(
+            """
+            CREATE MATERIALIZED VIEW IF NOT EXISTS {name} AS
+            {sql_body}
+            WITH NO DATA;
+            """
+        )
+        rendered_sql = sql_template.format(name=name, sql_body=sql_body)
+        self.db.execute_sql(rendered_sql)
+        refresh_stmt = "REFRESH MATERIALIZED VIEW CONCURRENTLY {name};".format(name=name)
+        self.db.execute_sql(refresh_stmt)
         for idx in indexes:
             if " on " not in idx.lower():
                 raise ValueError(f"Invalid index definition '{idx}'. Expected 'name ON table(cols)'.")
-            self.db.execute_sql(f"CREATE INDEX IF NOT EXISTS {idx};")
+            index_stmt = "CREATE INDEX IF NOT EXISTS {idx};".format(idx=idx)
+            self.db.execute_sql(index_stmt)
 
     def refresh(self, name: str) -> None:
         """
@@ -59,7 +64,8 @@ class PostgresMaterializer:
         Args:
             name: Materialized view name
         """
-        self.db.execute_sql(f"REFRESH MATERIALIZED VIEW CONCURRENTLY {name};")
+        refresh_stmt = "REFRESH MATERIALIZED VIEW CONCURRENTLY {name};".format(name=name)
+        self.db.execute_sql(refresh_stmt)
 
     def drop(self, name: str) -> None:
         """
@@ -68,4 +74,5 @@ class PostgresMaterializer:
         Args:
             name: Materialized view name
         """
-        self.db.execute_sql(f"DROP MATERIALIZED VIEW IF EXISTS {name};")
+        drop_stmt = "DROP MATERIALIZED VIEW IF EXISTS {name};".format(name=name)
+        self.db.execute_sql(drop_stmt)

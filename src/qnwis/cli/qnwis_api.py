@@ -94,7 +94,11 @@ def build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command")
 
     serve = sub.add_parser("serve", help="Start API server")
-    serve.add_argument("--host", default="0.0.0.0")
+    serve.add_argument(
+        "--host",
+        default="127.0.0.1",
+        help="Bind address (override to 0.0.0.0 explicitly if required)",
+    )
     serve.add_argument("--port", type=int, default=8000)
     serve.add_argument("--workers", type=int, default=1)
     serve.add_argument("--reload", action="store_true")

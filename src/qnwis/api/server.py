@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 import uuid
@@ -10,9 +11,11 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 import jwt
+from brotli_asgi import BrotliMiddleware
 from fastapi import FastAPI, HTTPException, Request, Response, status
 from fastapi.exception_handlers import http_exception_handler
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse
 
 from ..agents.base import DataClient
@@ -28,9 +31,23 @@ from ..observability import (
 from ..security import AuthProvider, Principal, RateLimiter
 from ..utils.clock import Clock
 from .routers import ROUTERS
+from .deps import attach_security
+from ..perf.cache_warming import warm_queries
 
 PUBLIC_EXACT = {"/", "/health", "/health/live", "/health/ready", "/metrics", "/openapi.json"}
 PUBLIC_PREFIXES = ("/docs", "/redoc")
+DEFAULT_WARM_QUERIES = tuple(
+    qid.strip()
+    for qid in os.getenv(
+        "QNWIS_DEFAULT_WARM_QUERIES",
+        "syn_employment_latest_total,syn_attrition_hotspots_latest,syn_qatarization_gap_latest",
+    ).split(",")
+    if qid.strip()
+)
+GZIP_MIN_BYTES = int(os.getenv("QNWIS_GZIP_MIN_BYTES", "1024"))
+BROTLI_QUALITY = int(os.getenv("QNWIS_BROTLI_QUALITY", "5"))
+BROTLI_MIN_BYTES = int(os.getenv("QNWIS_BROTLI_MIN_BYTES", "512"))
+API_PREFIX = os.getenv("QNWIS_API_PREFIX", "/api/v1")
 logger = logging.getLogger(__name__)
 
 
@@ -38,6 +55,20 @@ def _is_public(path: str) -> bool:
     if path in PUBLIC_EXACT:
         return True
     return any(path.startswith(prefix) for prefix in PUBLIC_PREFIXES)
+
+
+def _env_flag(name: str, default: bool = False) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.lower() in {"1", "true", "yes", "on"}
+
+
+def _warm_targets() -> tuple[str, ...]:
+    raw = os.getenv("QNWIS_WARM_QUERIES")
+    if raw:
+        return tuple(qid.strip() for qid in raw.split(",") if qid.strip())
+    return DEFAULT_WARM_QUERIES
 
 
 @asynccontextmanager
@@ -52,6 +83,22 @@ async def lifespan(app: FastAPI):
         return DataClient(queries_dir=settings.queries_dir, ttl_s=settings.default_cache_ttl_s)
 
     app.state.data_client_factory = factory
+
+    if _env_flag("QNWIS_WARM_CACHE", False):
+        warm_ids = _warm_targets()
+        if warm_ids:
+            max_workers = int(os.getenv("QNWIS_WARM_MAX_WORKERS", "4"))
+            loop = asyncio.get_running_loop()
+            logger.info("Scheduling cache warming for %s", ", ".join(warm_ids))
+            loop.run_in_executor(
+                None,
+                lambda: warm_queries(
+                    factory=factory,
+                    query_ids=warm_ids,
+                    max_workers=max_workers,
+                ),
+            )
+
     yield
 
 
@@ -86,6 +133,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_headers=["*"],
         allow_credentials=True,
     )
+    attach_security(app)
+    app.add_middleware(GZipMiddleware, minimum_size=GZIP_MIN_BYTES)
+    if _env_flag("QNWIS_ENABLE_BROTLI", True):
+        app.add_middleware(
+            BrotliMiddleware,
+            quality=BROTLI_QUALITY,
+            minimum_size=BROTLI_MIN_BYTES,
+        )
 
     @app.middleware("http")
     async def context_middleware(request: Request, call_next: Callable[[Request], Any]):
@@ -211,6 +266,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/metrics", response_class=PlainTextResponse, tags=["observability"])
     async def metrics():
+        """
+        Prometheus metrics endpoint.
+        
+        Exposes application metrics in Prometheus text format including:
+        - HTTP request/response metrics (qnwis_requests_total, qnwis_latency_seconds)
+        - Database operation metrics (qnwis_db_latency_seconds)
+        - Cache metrics (qnwis_cache_hits_total, qnwis_cache_misses_total)
+        - Agent execution metrics (qnwis_agent_latency_seconds)
+        
+        Additional Prometheus metrics from perf module can be scraped here.
+        """
         collector = get_metrics_collector()
         return collector.export_prometheus_text()
 
@@ -243,7 +309,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return app.openapi()
 
     for router in ROUTERS:
-        app.include_router(router, prefix="/api/v1")
+        app.include_router(router, prefix=API_PREFIX)
 
     return app
 

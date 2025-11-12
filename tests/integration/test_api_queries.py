@@ -1,5 +1,6 @@
 """Integration tests for deterministic query API endpoints."""
 
+import json
 import textwrap
 from pathlib import Path
 
@@ -8,6 +9,7 @@ from fastapi.testclient import TestClient
 
 import src.qnwis.api.routers.queries as queries_router
 from src.qnwis.app import app
+from src.qnwis.observability.health import HealthCheck, HealthStatus
 
 
 def _write_query(tmpdir: Path) -> tuple[str, str]:
@@ -99,6 +101,7 @@ def test_run_query_basic(test_env):
     assert js["query_id"] == "q_demo"
     assert js["unit"] == "percent"
     assert len(js["rows"]) > 0
+    assert js["row_count"] == len(js["rows"])
     assert "provenance" in js
     assert "freshness" in js
     assert "warnings" in js
@@ -111,6 +114,7 @@ def test_run_query_with_ttl(test_env):
     assert r.status_code == 200
     js = r.json()
     assert js["query_id"] == "q_demo"
+    assert js["row_count"] >= 1
 
 
 def test_run_query_with_param_overrides(test_env):
@@ -148,7 +152,14 @@ def test_run_query_ttl_bounds(test_env, monkeypatch):
 
     original_execute = queries_router.execute_cached
 
-    def wrapped_execute(query_id, registry, ttl_s=None, invalidate=False, spec_override=None):
+    def wrapped_execute(
+        query_id,
+        registry,
+        ttl_s=None,
+        invalidate=False,
+        spec_override=None,
+        **kwargs,
+    ):
         captured.append(ttl_s)
         return original_execute(
             query_id,
@@ -156,6 +167,7 @@ def test_run_query_ttl_bounds(test_env, monkeypatch):
             ttl_s=ttl_s,
             invalidate=invalidate,
             spec_override=spec_override,
+            **kwargs,
         )
 
     monkeypatch.setattr(queries_router, "execute_cached", wrapped_execute)
@@ -271,6 +283,47 @@ def test_run_query_no_sum_to_one_warnings(test_env):
     assert isinstance(warnings, list)
 
 
+def test_run_query_with_explicit_pagination(test_env):
+    """Paging parameters should clamp rows and include metadata."""
+    c = TestClient(app)
+    r = c.post("/v1/queries/q_demo/run?page=1&page_size=1", json={})
+    assert r.status_code == 200
+    js = r.json()
+    assert js["row_count"] >= 1
+    assert len(js["rows"]) <= 1
+    assert js["pagination"]["page_size"] == 1
+
+
+def test_stream_query_returns_json(test_env):
+    """Streaming endpoint should emit JSON envelope with rows."""
+    c = TestClient(app)
+    with c.stream("POST", "/v1/queries/q_demo/stream", json={}) as r:
+        assert r.status_code == 200
+        payload = b"".join(r.iter_bytes())
+    doc = json.loads(payload.decode("utf-8"))
+    assert doc["query_id"] == "q_demo"
+    assert doc["row_count"] == len(doc["rows"])
+
+
+def test_batch_query_execution(test_env):
+    """Batch endpoint should return per-query status payloads."""
+    c = TestClient(app)
+    body = {
+        "queries": [
+            {"query_id": "q_demo", "payload": {}},
+            {"query_id": "missing_query", "payload": {}},
+        ]
+    }
+    r = c.post("/v1/queries:batch", json=body)
+    assert r.status_code == 200
+    data = r.json()
+    assert len(data["results"]) == 2
+    ok_entry = next(item for item in data["results"] if item["query_id"] == "q_demo")
+    fail_entry = next(item for item in data["results"] if item["query_id"] == "missing_query")
+    assert ok_entry["ok"] is True
+    assert fail_entry["ok"] is False
+
+
 def test_invalidate_cache(test_env):
     """Test cache invalidation endpoint."""
     c = TestClient(app)
@@ -308,17 +361,30 @@ def test_request_id_header(test_env):
     assert r.headers.get("X-Request-ID") == "test-req-123"
 
 
-def test_health_endpoints():
-    """Test health and readiness endpoints."""
+def test_health_endpoints(monkeypatch):
+    """Test health and readiness endpoints with patched checker."""
+    healthy = HealthCheck(
+        status=HealthStatus.HEALTHY,
+        timestamp="2024-01-01T00:00:00Z",
+        uptime_seconds=1.0,
+        version="test",
+        components=[],
+    )
+
+    def fake_check_health(readiness: bool = False) -> HealthCheck:
+        return healthy
+
+    monkeypatch.setattr("src.qnwis.api.server.check_health", fake_check_health)
+
     c = TestClient(app)
 
     r = c.get("/health")
     assert r.status_code == 200
     assert r.json()["status"] == "healthy"
 
-    r = c.get("/ready")
+    r = c.get("/health/ready")
     assert r.status_code == 200
-    assert r.json()["status"] == "ready"
+    assert r.json()["status"] == "healthy"
 
 
 def test_queries_dir_fallback(monkeypatch, tmp_path):

@@ -323,20 +323,31 @@
               "tests": [],
               "smoke": []
             }
+          },
+          "step_32": {
+            "name": "Disaster Recovery & RG-7",
+            "code_ok": true,
+            "tests_ok": true,
+            "smoke_ok": true,
+            "missing": {
+              "code": [],
+              "tests": [],
+              "smoke": []
+            }
           }
         },
         "missing": {}
       },
-      "duration_ms": 13.617992401123047,
+      "duration_ms": 14.349937438964844,
       "severity": "ERROR",
       "evidence_paths": [
         "docs/IMPLEMENTATION_ROADMAP.md"
       ],
-      "timestamp": "2025-11-11T07:30:35.274270"
+      "timestamp": "2025-11-12T02:24:57.407908"
     },
     {
       "name": "no_placeholders",
-      "ok": true,
+      "ok": false,
       "details": {
         "patterns": [
           "^\\s*(?:#\\s*)?TODO\\b.*$",
@@ -347,83 +358,121 @@
           "^\\s*NotImplemented\\b.*$",
           "^\\s*raise\\s+NotImplementedError\\b.*$"
         ],
-        "violations": []
+        "violations": [
+          {
+            "file": "src/qnwis/api/routers/backups.py",
+            "line": 133,
+            "pattern": "^\\s*(?:#\\s*)?TODO\\b.*$",
+            "snippet": "# TODO: Load from configuration/database"
+          },
+          {
+            "file": "src/qnwis/api/routers/backups.py",
+            "line": 153,
+            "pattern": "^\\s*(?:#\\s*)?TODO\\b.*$",
+            "snippet": ""
+          },
+          {
+            "file": "src/qnwis/cli/qnwis_continuity.py",
+            "line": 37,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/cli/qnwis_dr.py",
+            "line": 436,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/continuity/executor.py",
+            "line": 148,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/continuity/executor.py",
+            "line": 165,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/continuity/executor.py",
+            "line": 182,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/continuity/executor.py",
+            "line": 199,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/continuity/executor.py",
+            "line": 212,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/continuity/executor.py",
+            "line": 229,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/dr/storage.py",
+            "line": 47,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/dr/storage.py",
+            "line": 63,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/dr/storage.py",
+            "line": 76,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/dr/storage.py",
+            "line": 89,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/dr/storage.py",
+            "line": 102,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          }
+        ]
       },
-      "duration_ms": 218.17564964294434,
+      "duration_ms": 265.1693820953369,
       "severity": "ERROR",
       "evidence_paths": [
         "src/qnwis/scripts/qa/grep_rules.yml"
       ],
-      "timestamp": "2025-11-11T07:30:35.492445"
-    },
-    {
-      "name": "linters_and_types",
-      "ok": false,
-      "details": {
-        "ruff": {
-          "issues": 0,
-          "fixable": 0,
-          "rules": {},
-          "files": [],
-          "stdout_tail": "[]",
-          "stderr_tail": "",
-          "exit_code": 0
-        },
-        "flake8": {
-          "issues": 77,
-          "fixable": 0,
-          "rules": {
-            "E501": 56,
-            "E203": 9,
-            "E305": 1,
-            "E131": 11
-          },
-          "files": [
-            "src/qnwis\\agents\\pattern_miner.py",
-            "src/qnwis\\agents\\predictor.py",
-            "src/qnwis\\agents\\prompts\\national_strategy_prompts.py",
-            "src/qnwis\\api\\server.py",
-            "src/qnwis\\cli\\qnwis_alerts.py",
-            "src/qnwis\\cli\\qnwis_predict.py",
-            "src/qnwis\\cli\\qnwis_slo.py",
-            "src/qnwis\\forecast\\backtest.py",
-            "src/qnwis\\forecast\\early_warning.py",
-            "src/qnwis\\ops_console\\views.py"
-          ],
-          "stdout_tail": "s)\nsrc/qnwis\\security\\auth.py:316:121: E501 line too long (126 > 120 characters)\nsrc/qnwis\\security\\auth.py:338:121: E501 line too long (138 > 120 characters)\nsrc/qnwis\\ui\\svg.py:38:121: E501 line too long (128 > 120 characters)\nsrc/qnwis\\ui\\svg.py:41:121: E501 line too long (129 > 120 characters)\nsrc/qnwis\\ui\\svg.py:93:121: E501 line too long (124 > 120 characters)\nsrc/qnwis\\ui\\svg.py:147:121: E501 line too long (124 > 120 characters)\ntests\\conftest.py:117:121: E501 line too long (127 > 120 characters)\ntests\\conftest.py:130:121: E501 line too long (121 > 120 characters)\ntests\\integration\\agents\\test_predictor_agent.py:27:121: E501 line too long (135 > 120 characters)\ntests\\integration\\api\\test_slo_endpoints.py:15:121: E501 line too long (147 > 120 characters)\ntests\\integration\\api\\test_slo_endpoints.py:43:121: E501 line too long (156 > 120 characters)\ntests\\integration\\api\\test_slo_endpoints.py:58:121: E501 line too long (121 > 120 characters)\ntests\\integration\\api\\test_slo_endpoints.py:70:121: E501 line too long (156 > 120 characters)\ntests\\integration\\api\\test_slo_endpoints.py:79:121: E501 line too long (121 > 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:79:121: E501 line too long (130 > 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:96:121: E501 line too long (127 > 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:111:121: E501 line too long (150 > 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:222:121: E501 line too long (124 > 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:245:121: E501 line too long (123 > 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:268:121: E501 line too long (126 > 120 characters)\ntests\\unit\\agents\\test_national_strategy.py:294:121: E501 line too long (152 > 120 characters)\ntests\\unit\\agents\\test_pattern_detective.py:254:121: E501 line too long (126 > 120 characters)\ntests\\unit\\agents\\test_pattern_detective.py:266:121: E501 line too long (123 > 120 characters)\n",
-          "stderr_tail": "",
-          "exit_code": 1
-        },
-        "mypy": {
-          "issues": 0,
-          "fixable": 0,
-          "rules": {},
-          "files": [],
-          "stdout_tail": "Success: no issues found in 23 source files\n",
-          "stderr_tail": "",
-          "exit_code": 0
-        }
-      },
-      "duration_ms": 6658.796787261963,
-      "severity": "ERROR",
-      "evidence_paths": [],
-      "timestamp": "2025-11-11T07:30:42.151242"
+      "timestamp": "2025-11-12T02:24:57.674077"
     }
   ],
   "overall_pass": false,
-  "execution_time_ms": 6891.408920288086,
-  "timestamp": "2025-11-11T07:30:42.152061",
+  "execution_time_ms": 283.4615707397461,
+  "timestamp": "2025-11-12T02:24:57.677020",
   "summary": {
-    "total_gates": 3,
-    "total": 3,
-    "passed": 2,
+    "total_gates": 2,
+    "total": 2,
+    "passed": 1,
     "failed": 1
   },
   "artifacts": {
     "coverage.xml": "a983cdf5fa5911a848b72fb3c0e1873dc544bc88697bf45abf0d4bbfd5223104",
     "junit.xml": "1936cb6760d2944a3e93d625ce6d9911b24758cee616d5db7eb8eb0f3abf7270",
-    "src/qnwis/docs/audit/READINESS_REPORT_1_25.md": "2eb536f6b07ca401bbbe9fe88d28e2c58d074d27eadc37bb0fec258fb544a1cb",
-    "src/qnwis/docs/audit/READINESS_SUMMARY.html": "c51f37b29aa0187f5614bc8627bb78070d8734d14e5cb3968796c67e2f260cab",
+    "src/qnwis/docs/audit/READINESS_REPORT_1_25.md": "80170b40797ba74fd341d39b0665159d985a0f431709bf9917fe9bc46838dc38",
+    "src/qnwis/docs/audit/READINESS_SUMMARY.html": "08bf6b99676d58aee9758f37b32366a997167ea2cc50dc8d4f17a52ec908b206",
     "src/qnwis/docs/audit/badges/rg1_pass.svg": "9995f7f48c4cb371d7db73a0cb755b09a43f686d6f82bb85a81eb9d7b1b857d8",
     "ops_notify_report.json": "eeeb7a4be860d00f103c927d235181ddb91dc12b888dfe0f08284ff29cf686ce",
     "OPS_NOTIFY_SUMMARY.md": "292aa2e89f94f28714ca7fed8a86fc45c48d896c936d714c36b877f7c918673f",
@@ -436,7 +485,16 @@
     "docs/audit/rg6/rg6_report.json": "a2dd20f64ed0891ad4c87af6ab954263c533ad5b4f6c5859ecb94e1ccf0a9b58",
     "docs/audit/rg6/SLO_SUMMARY.md": "26eb8ffa8ef6f573231a0b693a64b88145bf6861955fa8793aad7026af641ab3",
     "docs/audit/rg6/sli_snapshot.json": "71b845d5e939dc4d9a649458491ed4434658512fcb4273b10a7e4d01ad2cc225",
-    "docs/audit/badges/rg6_pass.svg": "9834af26e535962f48cc9a5b66a536b431175878573ca4462877cc51fc157a44"
+    "docs/audit/badges/rg6_pass.svg": "9834af26e535962f48cc9a5b66a536b431175878573ca4462877cc51fc157a44",
+    "docs/audit/rg7/rg7_report.json": "d01412902ad3b62bfbb1c71e2ac56c012175e896ac5cea99c426b9917a95e004",
+    "docs/audit/rg7/DR_SUMMARY.md": "9ae905e6286676f0d3902004400824e35fadc37d8b4ed7047cb6d65491af0ac2",
+    "docs/audit/rg7/sample_manifest.json": "d04382655812b537b43247d53653cc47421b2b4d0c0910ae482ed4c70df9be84",
+    "src/qnwis/docs/audit/badges/rg7_pass.svg": "4b179dc9aa67e5dc0a76eac73c7c4c285662ee8fd575b9a6babf5413bd0a14af",
+    "docs/audit/rg8/rg8_report.json": "0a1a39752a389e6bf0c30bcbff602e1d5739eb2e6963038ae47f636e9b39339b",
+    "docs/audit/rg8/CONTINUITY_SUMMARY.md": "7baf3f961363b2dc79c05a02976bdd6fb2ca905e3747fe6de069603d66e942b5",
+    "docs/audit/rg8/sample_plan.yaml": "09cfd74bc3024e04d25b0d216cf6eb9d989d45d55b1e9c564e17c0ecf1104666",
+    "src/qnwis/docs/audit/badges/rg8_pass.svg": "dd7d6c73ea33703864a5044faa10e6654ead7bedc00a14fe36774d78139926d6",
+    "docs/audit/badges/rg8_pass.svg": "dd7d6c73ea33703864a5044faa10e6654ead7bedc00a14fe36774d78139926d6"
   },
   "fixed_gates": []
 }

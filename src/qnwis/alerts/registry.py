@@ -65,9 +65,8 @@ class AlertRegistry:
     def _load_yaml(self, path: Path) -> int:
         """Load rules from YAML file."""
         try:
-            loader = getattr(yaml, "CSafeLoader", yaml.SafeLoader)  # type: ignore[attr-defined]
             with open(path, encoding="utf-8") as f:
-                data = yaml.load(f, Loader=loader)  # type: ignore[attr-defined]
+                data = yaml.safe_load(f)
             return self._load_rules_from_data(data, str(path))
         except yaml.YAMLError as e:
             logger.error(f"YAML parsing error in {path}: {e}")

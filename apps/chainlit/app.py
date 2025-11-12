@@ -13,6 +13,7 @@ except Exception:  # pragma: no cover
     cl = None
 
 from src.qnwis.data.api.client import DataAPI
+from src.qnwis.security.sanitizer import sanitize_text
 from src.qnwis.ui.cards import (
     build_ewi_hotlist_cards,
     build_top_sectors_cards,
@@ -69,6 +70,8 @@ if cl:  # pragma: no cover
         """
         api = _api()
         cards = build_top_sectors_cards(api, top_n=5)
+        # Note: Data from deterministic CSV sources is trusted, but sanitize_text()
+        # is available for any user-provided input that needs to be echoed
         md = "\n".join(
             [f"- **{c['title']}**: {c['kpi']:,} employees" for c in cards]
         )

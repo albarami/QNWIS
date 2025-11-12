@@ -18,10 +18,21 @@ class QueryRunRequest(BaseModel):
     ttl_s: int | None = Field(
         default=None, description="Override cache TTL (seconds)"
     )
-    override_params: dict[str, Any] = Field(
+    override_params: Any = Field(
         default_factory=dict,
         description="Whitelisted parameter overrides (year, timeout_s, max_rows, to_percent)",
     )
+
+
+class PaginationMeta(BaseModel):
+    """Metadata describing paginated deterministic query results."""
+
+    page: int
+    page_size: int
+    total_items: int
+    total_pages: int
+    has_prev: bool
+    has_next: bool
 
 
 class QueryRunResponse(BaseModel):
@@ -30,9 +41,12 @@ class QueryRunResponse(BaseModel):
     query_id: str
     unit: str
     rows: list[dict[str, Any]]
+    row_count: int
     provenance: dict[str, Any]
     freshness: dict[str, Any]
     warnings: list[str] = Field(default_factory=list)
+    pagination: PaginationMeta | None = None
+    auto_paginated: bool = False
     request_id: str | None = None
 
 
@@ -262,3 +276,34 @@ class AgentResponse(BaseModel):
     citations: list[Citation] = Field(default_factory=list, description="Citation references")
     timings_ms: TimingsMs = Field(..., description="Execution timings")
     warnings: list[str] = Field(default_factory=list, description="Warning messages")
+
+
+class BatchQueryItem(BaseModel):
+    """Single entry in a batch query request."""
+
+    query_id: str = Field(..., description="Registered query identifier")
+    payload: QueryRunRequest | None = Field(
+        default=None,
+        description="Optional payload matching QueryRunRequest (ttl + override_params).",
+    )
+
+
+class BatchQueryRequest(BaseModel):
+    """Batch request envelope containing multiple deterministic queries."""
+
+    queries: list[BatchQueryItem] = Field(..., min_length=1, max_length=20)
+
+
+class BatchQueryResult(BaseModel):
+    """Result entry for a batch query execution."""
+
+    query_id: str
+    ok: bool
+    response: QueryRunResponse | None = None
+    error: str | None = None
+
+
+class BatchQueryResponse(BaseModel):
+    """Response model for batch deterministic query execution."""
+
+    results: list[BatchQueryResult] = Field(default_factory=list)

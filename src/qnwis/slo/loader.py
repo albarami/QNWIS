@@ -88,8 +88,7 @@ def load_file(path: str | Path) -> list[SLODefinition]:
     if not p.exists():
         raise FileNotFoundError(f"SLO file not found: {path}")
     if p.suffix.lower() in {".yaml", ".yml"}:
-        loader = getattr(yaml, "CSafeLoader", yaml.SafeLoader)  # type: ignore[attr-defined]
-        data = yaml.load(p.read_text(encoding="utf-8"), Loader=loader)  # type: ignore[attr-defined]
+        data = yaml.safe_load(p.read_text(encoding="utf-8"))
         return _load_from_dict(data, str(path))
     if p.suffix.lower() == ".json":
         data = json.loads(p.read_text(encoding="utf-8"))

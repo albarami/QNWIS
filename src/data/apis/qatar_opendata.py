@@ -115,6 +115,8 @@ class QatarOpenDataScraperV2:
                     client,
                     "GET",
                     f"{self.base_url}/catalog/datasets",
+                    timeout=client.timeout,
+                    max_retries=3,
                 )
                 self._last_request_metadata["ping"] = {
                     "rate_limited": metadata.rate_limited,
@@ -169,6 +171,8 @@ class QatarOpenDataScraperV2:
                     "GET",
                     f"{self.base_url}/catalog/datasets",
                     params=params,
+                    timeout=client.timeout,
+                    max_retries=3,
                 )
                 rate_limited = rate_limited or metadata.rate_limited
                 max_retries_used = max(max_retries_used, metadata.retries)
@@ -292,7 +296,13 @@ class QatarOpenDataScraperV2:
             export_url = f"{self.base_url}/catalog/datasets/{dataset_id}/exports/{format_type}"
 
             with _client(timeout=60.0) as client:
-                response, metadata = send_with_retry(client, "GET", export_url)
+                response, metadata = send_with_retry(
+                    client,
+                    "GET",
+                    export_url,
+                    timeout=client.timeout,
+                    max_retries=3,
+                )
                 filename = f"{dataset_id}.{format_type}"
                 filepath = self.base_dir / "raw" / category / filename
                 filepath.parent.mkdir(parents=True, exist_ok=True)

@@ -1,13 +1,13 @@
 # Readiness Gate Review (RG-1)
 
-- Generated: 2025-11-11T07:30:42.152061
+- Generated: 2025-11-12T02:24:57.677020
 - Overall outcome: FAIL
 - Evidence index: `src/qnwis/docs/audit/ARTIFACT_INDEX.json`
 - Badge: `src/qnwis/docs/audit/badges/rg1_pass.svg`
 
 ## Highlights
 
-1. Step completeness: 29/29 steps have code, tests, and smoke artifacts.
+1. Step completeness: 30/30 steps have code, tests, and smoke artifacts.
 2. Coverage map enforces >=90% on critical modules with actionable diffs.
 3. Narrative sampling cross-checks derived/original QIDs with query registry.
 4. Performance guards benchmark deterministic layers to prevent regressions.
@@ -16,6 +16,8 @@
 7. Step 29 RG-4 notify gate reports latency + incident readiness with determinism guard.
 8. Step 30 RG-5 ops console badge, gate report, and metrics snapshot are persisted.
 9. Step 31 RG-6 SLO badge and error-budget summaries land with determinism/network scans.
+10. Step 32 RG-7 DR badge, summary, and manifest verify RPO/RTO with deterministic scans.
+11. Step 33 RG-8 continuity badge, plan, and quorum metrics validate HA readiness.
 
 ## Step 28 - Alert Center Hardening
 
@@ -64,10 +66,35 @@
 | Determinism Violations | 0 |
 | Network Import Violations | 0 |
 
+## Step 32 - DR & Backups
+
+| Metric | Value |
+| --- | --- |
+| RG-7 Status | n/a |
+| Badge Present | no |
+| Summary Present | no |
+| Manifest Present | no |
+| RPO (s) | n/a / n/a |
+| RTO (s) | n/a / n/a |
+| Test Corpus Files | n/a |
+| Determinism Violations | 0 |
+
+## Step 33 - Continuity & Failover
+
+| Metric | Value |
+| --- | --- |
+| RG-8 Status | n/a |
+| Badge Present | no |
+| Summary Present | no |
+| Sample Plan Present | no |
+| Latency p50/p95 (ms) | n/a / n/a |
+| Quorum Rate | n/a |
+| Healthy Nodes / Quorum Size | n/a / n/a |
+| Determinism Violations | 0 |
+
 ## Gate Evidence
 
 | Gate | Status | Severity | Evidence |
 | --- | --- | --- | --- |
 | step_completeness | PASS | ERROR | docs/IMPLEMENTATION_ROADMAP.md |
-| no_placeholders | PASS | ERROR | src/qnwis/scripts/qa/grep_rules.yml |
-| linters_and_types | FAIL | ERROR | n/a |
+| no_placeholders | FAIL | ERROR | src/qnwis/scripts/qa/grep_rules.yml |

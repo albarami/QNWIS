@@ -168,6 +168,7 @@ class UDCGlobalDataIntegrator:
                     url,
                     params=params,
                     timeout=client_timeout,
+                    max_retries=3,
                 )
                 rate_limited = rate_limited or metadata.rate_limited
                 max_retries_used = max(max_retries_used, metadata.retries)

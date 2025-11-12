@@ -1199,7 +1199,7 @@ def parse_coverage() -> tuple[dict[str, float], str]:
         return coverage_map, "coverage.xml missing"
 
     try:
-        import xml.etree.ElementTree as ET
+        from defusedxml import ElementTree as ET
 
         tree = ET.parse(coverage_file)
         for cls in tree.findall(".//class"):

@@ -6,6 +6,8 @@ import base64
 import hashlib
 import json
 import logging
+import os
+import time
 import zlib
 from collections.abc import Mapping, MutableMapping
 from pathlib import Path
@@ -17,6 +19,7 @@ from ..freshness.verifier import verify_freshness
 from .access import execute as execute_uncached
 from .models import QueryResult, QuerySpec
 from .registry import QueryRegistry
+from qnwis.perf.cache_tuning import should_cache, ttl_for
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +27,59 @@ MAX_CACHE_TTL_S = 24 * 60 * 60  # 24 hours
 COMPRESS_THRESHOLD_BYTES = 8 * 1024  # 8KB
 
 COUNTERS: MutableMapping[str, int] = {"hits": 0, "misses": 0, "invalidations": 0}
+
+_ADAPTIVE_CACHE_ENABLED = os.getenv("QNWIS_CACHE_TTL_MODE", "adaptive").lower() not in {
+    "off",
+    "legacy",
+}
+_SENSITIVE_HINTS = tuple(
+    hint.strip().lower()
+    for hint in os.getenv("QNWIS_SENSITIVE_QUERY_HINTS", "live,latest,hotlist,ewi").split(",")
+    if hint.strip()
+)
+_SENSITIVE_MAX_TTL = int(os.getenv("QNWIS_SENSITIVE_MAX_TTL_S", "180"))
+_DEFAULT_TTL_BASE = int(os.getenv("QNWIS_DEFAULT_TTL_BASE_S", "600"))
+
+
+def _is_sensitive_query(query_id: str) -> bool:
+    """Return True when query id hints that the data is highly volatile."""
+    lowered = query_id.lower()
+    return any(hint in lowered for hint in _SENSITIVE_HINTS)
+
+
+def _compute_adaptive_ttl(
+    query_id: str,
+    requested_ttl: int | None,
+    row_count: int,
+    duration_ms: float,
+) -> int | None:
+    """
+    Determine TTL after applying adaptive heuristics.
+
+    Args:
+        query_id: Deterministic query identifier
+        requested_ttl: Explicit TTL request (seconds) or None
+        row_count: Result row count
+        duration_ms: Execution time in milliseconds
+
+    Returns:
+        TTL (seconds) or None for no expiration
+    """
+    if requested_ttl == 0:
+        return 0
+
+    base_ttl = requested_ttl if requested_ttl and requested_ttl > 0 else _DEFAULT_TTL_BASE
+    adaptive_ttl = ttl_for(query_id, row_count, base=base_ttl)
+    ttl_candidate = max(base_ttl, adaptive_ttl)
+
+    if _is_sensitive_query(query_id):
+        ttl_candidate = min(ttl_candidate, _SENSITIVE_MAX_TTL)
+
+    # Fast queries with tiny payloads are cheap enough to skip caching altogether.
+    if not should_cache(query_id, row_count, duration_ms):
+        return 0
+
+    return ttl_candidate
 
 
 class CacheDecodingError(RuntimeError):
@@ -182,6 +238,7 @@ def execute_cached(
     ttl_s: int | None = 300,
     invalidate: bool = False,
     spec_override: QuerySpec | None = None,
+    adaptive_ttl: bool = True,
 ) -> QueryResult:
     """
     Execute a deterministic query with caching and freshness verification.
@@ -195,10 +252,14 @@ def execute_cached(
         spec_override: Optional QuerySpec to use for execution and cache key
             generation. Allows per-request parameter overrides without
             mutating the global registry state.
+        adaptive_ttl: Enable adaptive TTL heuristics (default: True). Set to
+            False to respect the requested TTL exactly.
 
     Returns:
         QueryResult with enriched provenance and freshness warnings
     """
+    start_time = time.perf_counter()
+    
     source_spec = spec_override or registry.get(query_id)
     spec = source_spec.model_copy(deep=True)
     if spec.id != query_id:
@@ -220,21 +281,49 @@ def execute_cached(
             cache.delete(key)
         else:
             COUNTERS["hits"] = COUNTERS.get("hits", 0) + 1
+            duration_ms = (time.perf_counter() - start_time) * 1000
+            logger.debug(f"Cache HIT for {query_id} in {duration_ms:.2f}ms")
             _enrich_provenance(res)
             res.warnings.extend(verify_freshness(spec, res))
             return res
 
     COUNTERS["misses"] = COUNTERS.get("misses", 0) + 1
+    logger.debug(f"Cache MISS for {query_id}, executing query")
 
+    exec_start = time.perf_counter()
     res = execute_uncached(query_id, registry, spec_override=spec)
+    exec_duration_ms = (time.perf_counter() - exec_start) * 1000
+    
     _enrich_provenance(res)
     res.warnings.extend(verify_freshness(spec, res))
 
-    if normalized_ttl == 0:
-        cache.delete(key)
+    cache_value = _encode_for_cache(res)
+    ttl_for_storage = normalized_ttl
+
+    if adaptive_ttl and _ADAPTIVE_CACHE_ENABLED and normalized_ttl is not None:
+        ttl_for_storage = _compute_adaptive_ttl(
+            spec.id,
+            normalized_ttl,
+            len(res.rows),
+            exec_duration_ms,
+        )
+
+    should_store = ttl_for_storage is None or (
+        isinstance(ttl_for_storage, int) and ttl_for_storage > 0
+    )
+    if isinstance(ttl_for_storage, int) and ttl_for_storage <= 0:
+        should_store = False
+
+    if should_store:
+        cache.set(key, cache_value, ttl_for_storage)
     else:
-        cache_value = _encode_for_cache(res)
-        cache.set(key, cache_value, normalized_ttl)
+        cache.delete(key)
+    
+    total_duration_ms = (time.perf_counter() - start_time) * 1000
+    logger.info(
+        f"Query {query_id} executed in {exec_duration_ms:.2f}ms "
+        f"(total: {total_duration_ms:.2f}ms, rows: {len(res.rows)})"
+    )
     return res
 
 

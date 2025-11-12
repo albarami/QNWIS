@@ -33,7 +33,10 @@ class Settings(BaseSettings):
     redis_max_connections: int = Field(default=50, description="Redis connection pool size")
 
     # API Configuration
-    api_host: str = Field(default="0.0.0.0", description="API host")
+    api_host: str = Field(
+        default="127.0.0.1",
+        description="API host (override to 0.0.0.0 intentionally for public exposure)",
+    )
     api_port: int = Field(default=8000, description="API port")
     api_workers: int = Field(default=4, description="Number of API workers")
     api_reload: bool = Field(default=False, description="Enable auto-reload")

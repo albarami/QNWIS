@@ -8,7 +8,7 @@ No network, SQL, or LLM dependencies. Deterministic and Windows-friendly.
 from __future__ import annotations
 
 import os
-from hashlib import md5
+from hashlib import sha256
 from io import StringIO
 from typing import Any
 
@@ -93,9 +93,9 @@ def _etag(payload: bytes) -> str:
         payload: Binary content to hash
 
     Returns:
-        MD5 hexdigest for use as ETag
+        SHA-256 hexdigest for use as ETag
     """
-    return md5(payload).hexdigest()
+    return sha256(payload).hexdigest()
 
 
 def _match_etag(request: Request | None, etag_value: str) -> bool:

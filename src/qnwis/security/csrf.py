@@ -38,6 +38,9 @@ class CSRFMiddleware(BaseHTTPMiddleware):
         Returns:
             Response with CSRF cookie or 403 if validation fails
         """
+        if getattr(request.app.state, "auth_bypass", False):
+            return await call_next(request)
+
         # Ensure token cookie exists on all safe requests
         token = request.cookies.get(self.cfg.csrf_cookie_name)
         if request.method in SAFE_METHODS:

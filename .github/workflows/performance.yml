@@ -1,0 +1,167 @@
+name: Performance Benchmarks
+
+on:
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+    inputs:
+      scenario:
+        description: 'Benchmark scenario to run'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - simple
+          - medium
+          - complex
+          - dashboard
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: qnwis_test
+          POSTGRES_USER: qnwis
+          POSTGRES_PASSWORD: test_password
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -e .[dev]
+      
+      - name: Set up test environment
+        env:
+          QNWIS_DB_URL: postgresql://qnwis:test_password@localhost:5432/qnwis_test
+          QNWIS_REDIS_URL: redis://localhost:6379/0
+        run: |
+          # Initialize test database
+          python -m qnwis.db.init_schema
+          
+          # Seed minimal test data
+          python -m qnwis.data.synthetic.seed_lmis --minimal
+      
+      - name: Start QNWIS API server
+        env:
+          QNWIS_DB_URL: postgresql://qnwis:test_password@localhost:5432/qnwis_test
+          QNWIS_REDIS_URL: redis://localhost:6379/0
+          QNWIS_ENV: test`n          QNWIS_BYPASS_AUTH: "true"
+          QNWIS_BYPASS_AUTH: "true"
+        run: |
+          # Start server in background
+          python -m uvicorn qnwis.api.server:create_app --factory --host 0.0.0.0 --port 8000 &
+          
+          # Wait for server to be ready
+          timeout 30 bash -c 'until curl -f http://localhost:8000/health; do sleep 1; done'
+      
+      - name: Run benchmarks
+        id: benchmark
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            SCENARIO="${{ github.event.inputs.scenario }}"
+          else
+            SCENARIO="all"
+          fi
+          python scripts/benchmark_qnwis.py \
+            --base-url http://localhost:8000 \
+            --scenario "$SCENARIO" \
+            --requests 8 \
+            --users 4 \
+            --output benchmark_results.json \
+            --label ci \
+            --transport http
+        continue-on-error: true
+      
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: benchmark-results
+          path: |
+          benchmark_results.json
+          benchmark_results.csv
+          benchmark_results.png
+          retention-days: 30
+      
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            try {
+              const results = JSON.parse(fs.readFileSync('benchmark_results.json', 'utf8'));
+              
+              let comment = '## 📊 Performance Benchmark Results\n\n';
+              comment += '| Scenario | p50 | p95 | p99 | Target | Status |\n';
+              comment += '|----------|-----|-----|-----|--------|--------|\n';
+              
+              const targets = {
+                simple: 10000,
+                medium: 30000,
+                complex: 90000,
+                dashboard: 3000
+              };
+              
+              for (const scenario of results.scenarios) {
+                const target = targets[scenario.scenario] || 0;
+                const status = scenario.p95_ms <= target ? '✅' : '❌';
+                comment += `| ${scenario.scenario} | ${scenario.p50_ms}ms | ${scenario.p95_ms}ms | ${scenario.p99_ms}ms | ${target}ms | ${status} |\n`;
+              }
+              
+              comment += `\n**Concurrency:** ${results.config.concurrency} users\n`;
+              comment += `**Requests:** ${results.config.requests} per scenario\n`;
+              
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            } catch (error) {
+              console.error('Failed to post comment:', error);
+            }
+      
+      - name: Check benchmark status
+        if: steps.benchmark.outcome == 'failure'
+        run: |
+          echo "⚠️ Benchmarks did not meet performance targets"
+          echo "This is informational only and does not block the PR"
+          exit 0
+
+
+
+
