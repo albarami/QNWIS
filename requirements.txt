@@ -1,0 +1,34 @@
+# QNWIS Production Dependencies
+# Generated from pyproject.toml
+
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+gunicorn>=21.2.0
+psycopg[binary]>=3.1.0
+sqlalchemy>=2.0.0
+alembic>=1.13.0
+redis>=5.0.0
+httpx>=0.26.0
+urllib3>=2.5.0
+brotli>=1.1.0
+brotli-asgi>=1.1.0
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+anthropic>=0.71.0
+openai>=1.100.0
+tiktoken>=0.5.2
+langgraph>=0.0.20
+langchain>=0.1.0
+langchain-core>=0.1.0
+chainlit>=2.9.0
+numpy>=1.24.0
+pandas>=2.0.0
+scipy>=1.11.0
+matplotlib>=3.8,<3.9
+plotly>=5.18.0
+bleach>=6.1.0
+defusedxml>=0.7.1
+cryptography>=41.0.0
+pyyaml>=6.0
+python-dotenv>=1.0.0
+mcp>=0.9.0
