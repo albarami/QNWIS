@@ -1,1 +1,1 @@
-"""Integration test package for audit suite."""
+"""Integration tests for QNWIS."""
