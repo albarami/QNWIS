@@ -471,6 +471,43 @@ RATE_LIMIT_PER_HOUR=100
 RATE_LIMIT_BURST=10
 ```
 
+### Metrics Endpoint Security
+
+The `/metrics` endpoint exposes Prometheus-compatible system metrics for monitoring:
+
+**Access Control:**
+- Authentication required (JWT token or API key)
+- Restricted to `ops` role only
+- Internal network access only (blocked at firewall for external traffic)
+- Rate limited: 10 requests per minute
+
+**Exposed Metrics:**
+```python
+# System metrics (safe to expose internally)
+- request_count_total
+- request_duration_seconds
+- active_connections
+- cache_hit_rate
+- query_execution_count
+
+# Excluded metrics (sensitive data)
+- database_connection_strings
+- api_keys
+- user_credentials
+```
+
+**nginx Configuration:**
+```nginx
+# Restrict /metrics to internal network
+location /metrics {
+    # Only allow from internal monitoring system
+    allow 10.0.0.0/8;
+    deny all;
+
+    proxy_pass http://localhost:8000/metrics;
+}
+```
+
 ## Audit Logging
 
 ### Complete Activity Trail
