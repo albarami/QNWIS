@@ -1,0 +1,60 @@
+{
+  "spec": {
+    "name": "vision_2030_progress",
+    "description": "Track progress toward Vision 2030 Qatarization targets",
+    "endpoint": "/api/v1/query",
+    "method": "POST",
+    "tier": "complex",
+    "timeout": 90,
+    "payload": {
+      "question": "What is Qatar's progress toward Vision 2030 Qatarization targets?",
+      "context": {
+        "strategy": "vision_2030"
+      }
+    },
+    "acceptance": {
+      "max_latency_ms": 90000,
+      "min_citation_coverage": 0.7,
+      "verification_required": true,
+      "freshness_required": true
+    },
+    "expected_response": {
+      "metadata": {
+        "verification": "passed",
+        "freshness": {
+          "LMIS": "recent",
+          "VISION_2030": "1w"
+        },
+        "citations": [
+          "National Qatarization Aggregate",
+          "Vision 2030 Targets"
+        ]
+      }
+    },
+    "__path__": "D:\\lmis_int\\validation\\cases\\04_vision_2030_progress.yaml"
+  },
+  "result": {
+    "case": "vision_2030_progress",
+    "endpoint": "/api/v1/query",
+    "tier": "complex",
+    "status": 200,
+    "latency_ms": 10.41,
+    "citation_coverage": 1.0,
+    "freshness_present": true,
+    "verification_passed": true,
+    "pass": true
+  },
+  "body": {
+    "metadata": {
+      "verification": "passed",
+      "freshness": {
+        "LMIS": "recent",
+        "VISION_2030": "1w"
+      },
+      "citations": [
+        "National Qatarization Aggregate",
+        "Vision 2030 Targets"
+      ]
+    }
+  }
+}

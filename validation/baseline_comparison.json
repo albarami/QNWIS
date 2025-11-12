@@ -1,0 +1,80 @@
+{
+  "total_cases_compared": 6,
+  "avg_throughput_gain_x": 9678.4,
+  "avg_time_saved_pct": 100.0,
+  "quality_improvements": 4,
+  "improvements": [
+    {
+      "case": "dashboard_kpis",
+      "latency_ms_now": 10.25,
+      "latency_ms_then": 8000,
+      "throughput_gain_x": 780.49,
+      "time_saved_pct": 99.9,
+      "quality_now": true,
+      "quality_then": true,
+      "quality_improved": false,
+      "cost_now_qar": 500,
+      "cost_then_qar": 500
+    },
+    {
+      "case": "employment_trend_construction",
+      "latency_ms_now": 10.21,
+      "latency_ms_then": 45000,
+      "throughput_gain_x": 4407.44,
+      "time_saved_pct": 100.0,
+      "quality_now": true,
+      "quality_then": false,
+      "quality_improved": true,
+      "cost_now_qar": 2500,
+      "cost_then_qar": 2500
+    },
+    {
+      "case": "gcc_unemployment_comparison",
+      "latency_ms_now": 10.59,
+      "latency_ms_then": 120000,
+      "throughput_gain_x": 11331.44,
+      "time_saved_pct": 100.0,
+      "quality_now": true,
+      "quality_then": false,
+      "quality_improved": true,
+      "cost_now_qar": 5000,
+      "cost_then_qar": 5000
+    },
+    {
+      "case": "pattern_mining_retention",
+      "latency_ms_now": 10.54,
+      "latency_ms_then": 240000,
+      "throughput_gain_x": 22770.4,
+      "time_saved_pct": 100.0,
+      "quality_now": true,
+      "quality_then": false,
+      "quality_improved": true,
+      "cost_now_qar": 12000,
+      "cost_then_qar": 12000
+    },
+    {
+      "case": "qatarization_rate_banking",
+      "latency_ms_now": 10.07,
+      "latency_ms_then": 15000,
+      "throughput_gain_x": 1489.57,
+      "time_saved_pct": 99.9,
+      "quality_now": true,
+      "quality_then": false,
+      "quality_improved": true,
+      "cost_now_qar": 1200,
+      "cost_then_qar": 1200
+    },
+    {
+      "case": "vision_2030_progress",
+      "latency_ms_now": 10.41,
+      "latency_ms_then": 180000,
+      "throughput_gain_x": 17291.07,
+      "time_saved_pct": 100.0,
+      "quality_now": true,
+      "quality_then": true,
+      "quality_improved": false,
+      "cost_now_qar": 8000,
+      "cost_then_qar": 8000
+    }
+  ]
+}

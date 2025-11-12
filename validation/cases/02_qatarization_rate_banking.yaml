@@ -1,0 +1,26 @@
+name: qatarization_rate_banking
+description: "Current Qatarization rate in banking sector"
+endpoint: /api/v1/query
+method: POST
+tier: simple
+timeout: 15
+payload:
+  question: "What is the current Qatarization rate in the banking sector?"
+  context:
+    sector: banking
+acceptance:
+  max_latency_ms: 10000
+  min_citation_coverage: 0.7
+  verification_required: true
+  freshness_required: true
+redaction:
+  - type: regex
+    pattern: '\b[A-Z]{2}\d{6}\b'
+    replacement: '[REDACTED-EMP]'
+expected_response:
+  metadata:
+    verification: passed
+    freshness:
+      LMIS: "recent"
+    citations:
+      - "LMIS Qatarization Time-Series"

@@ -1,0 +1,8 @@
+{
+  "case": "dashboard_kpis",
+  "latency_ms": 8000,
+  "verified": true,
+  "cost_qar": 500,
+  "method": "Manual dashboard refresh",
+  "notes": "Daily manual update by operations team"
+}

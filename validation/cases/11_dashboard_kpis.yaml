@@ -1,0 +1,18 @@
+name: dashboard_kpis
+description: "Retrieve key performance indicators for executive dashboard"
+endpoint: /api/v1/dashboard/kpis
+method: GET
+tier: dashboard
+timeout: 5
+acceptance:
+  max_latency_ms: 3000
+  min_citation_coverage: 0.8
+  verification_required: true
+  freshness_required: true
+expected_response:
+  metadata:
+    verification: passed
+    freshness:
+      LMIS: "1h"
+    citations:
+      - "LMIS Aggregates"

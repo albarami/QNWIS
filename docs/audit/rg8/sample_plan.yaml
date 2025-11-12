@@ -1,19 +1,19 @@
 actions:
-- action_id: b52b6894-c873-4356-99bc-f2eb2029e118
+- action_id: 681ea229-1510-46b4-bb1f-0f28348d112c
   action_type: demote
   estimated_duration_ms: 5000
   params:
     role: secondary
   sequence: 0
   target_node_id: node-1
-- action_id: 6d99adda-a546-4001-8fd9-e9bfb478985d
+- action_id: 22584133-9dd7-4373-899d-8845a882c1e4
   action_type: promote
   estimated_duration_ms: 10000
   params:
     role: primary
   sequence: 1
   target_node_id: node-2
-- action_id: 10d7cbb5-3a77-4c7c-83cb-8daebe8d6f91
+- action_id: ebdc83de-ea62-4ded-837b-adefc8b0910a
   action_type: dns_flip
   estimated_duration_ms: 15000
   params:
@@ -22,7 +22,7 @@ actions:
     ttl: 60
   sequence: 2
   target_node_id: node-2
-- action_id: 917e8a2f-0f64-49de-a37b-8217f87c3252
+- action_id: 04d74555-6f64-4a6d-b2f9-de90bfb14623
   action_type: notify
   estimated_duration_ms: 2000
   params:
@@ -32,7 +32,7 @@ actions:
     message: Failover from node-1 to node-2
   sequence: 3
   target_node_id: node-2
-- action_id: 2d0eb3cb-3bec-4c1c-89d1-aa9046e706a7
+- action_id: 0ba30ab1-faf2-4328-abef-6988996dd6ed
   action_type: verify
   estimated_duration_ms: 8000
   params:
@@ -46,6 +46,6 @@ cluster_id: test-cluster
 created_at: '2024-01-01T00:00:00Z'
 estimated_total_ms: 40000
 failover_target_id: node-2
-plan_id: 22bbee3b-ab23-47e1-909d-a8a8e82c5f9a
+plan_id: dd9d0798-14da-4cc7-a34d-7d3abbcc2699
 policy_id: test-policy
 primary_node_id: node-1

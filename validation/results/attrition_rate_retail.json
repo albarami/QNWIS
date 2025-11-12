@@ -1,0 +1,56 @@
+{
+  "spec": {
+    "name": "attrition_rate_retail",
+    "description": "Current attrition rate in retail sector",
+    "endpoint": "/api/v1/query",
+    "method": "POST",
+    "tier": "simple",
+    "timeout": 15,
+    "payload": {
+      "question": "What is the attrition rate in the retail sector?",
+      "context": {
+        "sector": "retail"
+      }
+    },
+    "acceptance": {
+      "max_latency_ms": 10000,
+      "min_citation_coverage": 0.6,
+      "verification_required": true,
+      "freshness_required": true
+    },
+    "expected_response": {
+      "metadata": {
+        "verification": "passed",
+        "freshness": {
+          "LMIS": "1d"
+        },
+        "citations": [
+          "LMIS Attrition Time-Series"
+        ]
+      }
+    },
+    "__path__": "D:\\lmis_int\\validation\\cases\\06_attrition_rate_retail.yaml"
+  },
+  "result": {
+    "case": "attrition_rate_retail",
+    "endpoint": "/api/v1/query",
+    "tier": "simple",
+    "status": 200,
+    "latency_ms": 10.81,
+    "citation_coverage": 1.0,
+    "freshness_present": true,
+    "verification_passed": true,
+    "pass": true
+  },
+  "body": {
+    "metadata": {
+      "verification": "passed",
+      "freshness": {
+        "LMIS": "1d"
+      },
+      "citations": [
+        "LMIS Attrition Time-Series"
+      ]
+    }
+  }
+}

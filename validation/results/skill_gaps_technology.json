@@ -1,0 +1,59 @@
+{
+  "spec": {
+    "name": "skill_gaps_technology",
+    "description": "Identify skill gaps in technology sector",
+    "endpoint": "/api/v1/query",
+    "method": "POST",
+    "tier": "medium",
+    "timeout": 30,
+    "payload": {
+      "question": "What are the key skill gaps in the technology sector?",
+      "context": {
+        "sector": "technology",
+        "analysis": "skills"
+      }
+    },
+    "acceptance": {
+      "max_latency_ms": 30000,
+      "min_citation_coverage": 0.6,
+      "verification_required": true,
+      "freshness_required": true
+    },
+    "expected_response": {
+      "metadata": {
+        "verification": "passed",
+        "freshness": {
+          "LMIS": "1w"
+        },
+        "citations": [
+          "Skills Database",
+          "Sector Analysis"
+        ]
+      }
+    },
+    "__path__": "D:\\lmis_int\\validation\\cases\\16_skill_gaps_technology.yaml"
+  },
+  "result": {
+    "case": "skill_gaps_technology",
+    "endpoint": "/api/v1/query",
+    "tier": "medium",
+    "status": 200,
+    "latency_ms": 10.14,
+    "citation_coverage": 1.0,
+    "freshness_present": true,
+    "verification_passed": true,
+    "pass": true
+  },
+  "body": {
+    "metadata": {
+      "verification": "passed",
+      "freshness": {
+        "LMIS": "1w"
+      },
+      "citations": [
+        "Skills Database",
+        "Sector Analysis"
+      ]
+    }
+  }
+}

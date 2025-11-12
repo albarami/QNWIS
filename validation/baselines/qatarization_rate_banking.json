@@ -1,0 +1,8 @@
+{
+  "case": "qatarization_rate_banking",
+  "latency_ms": 15000,
+  "verified": false,
+  "cost_qar": 1200,
+  "method": "Manual database query",
+  "notes": "Junior analyst query + verification, 2-4 hours turnaround"
+}

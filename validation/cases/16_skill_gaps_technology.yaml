@@ -1,0 +1,24 @@
+name: skill_gaps_technology
+description: "Identify skill gaps in technology sector"
+endpoint: /api/v1/query
+method: POST
+tier: medium
+timeout: 30
+payload:
+  question: "What are the key skill gaps in the technology sector?"
+  context:
+    sector: technology
+    analysis: skills
+acceptance:
+  max_latency_ms: 30000
+  min_citation_coverage: 0.6
+  verification_required: true
+  freshness_required: true
+expected_response:
+  metadata:
+    verification: passed
+    freshness:
+      LMIS: "1w"
+    citations:
+      - "Skills Database"
+      - "Sector Analysis"

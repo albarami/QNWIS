@@ -1,0 +1,8 @@
+{
+  "case": "pattern_mining_retention",
+  "latency_ms": 240000,
+  "verified": false,
+  "cost_qar": 12000,
+  "method": "Statistical modeling",
+  "notes": "Data scientist analysis with R/Python, 3-4 weeks including validation"
+}

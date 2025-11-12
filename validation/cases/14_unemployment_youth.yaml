@@ -1,0 +1,23 @@
+name: unemployment_youth
+description: "Youth unemployment rate for Qatari nationals"
+endpoint: /api/v1/query
+method: POST
+tier: simple
+timeout: 15
+payload:
+  question: "What is the youth unemployment rate among Qatari nationals?"
+  context:
+    demographic: youth
+    nationality: qatari
+acceptance:
+  max_latency_ms: 10000
+  min_citation_coverage: 0.6
+  verification_required: true
+  freshness_required: true
+expected_response:
+  metadata:
+    verification: passed
+    freshness:
+      LMIS: "1w"
+    citations:
+      - "Qatar National Unemployment"

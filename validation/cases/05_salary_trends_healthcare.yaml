@@ -1,0 +1,27 @@
+name: salary_trends_healthcare
+description: "Analyze salary trends in healthcare sector"
+endpoint: /api/v1/query
+method: POST
+tier: medium
+timeout: 30
+payload:
+  question: "What are the salary trends in the healthcare sector over the past 12 months?"
+  context:
+    sector: healthcare
+    time_range: "12 months"
+acceptance:
+  max_latency_ms: 30000
+  min_citation_coverage: 0.6
+  verification_required: true
+  freshness_required: true
+redaction:
+  - type: regex
+    pattern: '\b\d{1,3}(?:,\d{3})*\s*QAR\b'
+    replacement: '[REDACTED-SALARY]'
+expected_response:
+  metadata:
+    verification: passed
+    freshness:
+      LMIS: "2h"
+    citations:
+      - "LMIS Salary Time-Series"

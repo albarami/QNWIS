@@ -1,0 +1,8 @@
+{
+  "case": "employment_trend_construction",
+  "latency_ms": 45000,
+  "verified": false,
+  "cost_qar": 2500,
+  "method": "Manual consultant analysis",
+  "notes": "Typical consultant turnaround: 2-3 days, manual data extraction and Excel analysis"
+}

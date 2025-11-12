@@ -1,0 +1,58 @@
+{
+  "spec": {
+    "name": "gcc_unemployment_comparison",
+    "description": "Compare Qatar unemployment with GCC countries",
+    "endpoint": "/api/v1/query",
+    "method": "POST",
+    "tier": "medium",
+    "timeout": 30,
+    "payload": {
+      "question": "How does Qatar's unemployment rate compare to other GCC countries?",
+      "context": {
+        "region": "GCC"
+      }
+    },
+    "acceptance": {
+      "max_latency_ms": 30000,
+      "min_citation_coverage": 0.6,
+      "verification_required": true,
+      "freshness_required": true
+    },
+    "expected_response": {
+      "metadata": {
+        "verification": "passed",
+        "freshness": {
+          "LMIS": "1d",
+          "GCC_STATS": "recent"
+        },
+        "citations": [
+          "GCC Unemployment Comparison"
+        ]
+      }
+    },
+    "__path__": "D:\\lmis_int\\validation\\cases\\03_gcc_unemployment_comparison.yaml"
+  },
+  "result": {
+    "case": "gcc_unemployment_comparison",
+    "endpoint": "/api/v1/query",
+    "tier": "medium",
+    "status": 200,
+    "latency_ms": 10.59,
+    "citation_coverage": 1.0,
+    "freshness_present": true,
+    "verification_passed": true,
+    "pass": true
+  },
+  "body": {
+    "metadata": {
+      "verification": "passed",
+      "freshness": {
+        "LMIS": "1d",
+        "GCC_STATS": "recent"
+      },
+      "citations": [
+        "GCC Unemployment Comparison"
+      ]
+    }
+  }
+}

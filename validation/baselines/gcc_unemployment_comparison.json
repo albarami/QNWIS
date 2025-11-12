@@ -1,0 +1,8 @@
+{
+  "case": "gcc_unemployment_comparison",
+  "latency_ms": 120000,
+  "verified": false,
+  "cost_qar": 5000,
+  "method": "Multi-source data aggregation",
+  "notes": "Requires coordination with GCC statistical offices, 1-2 weeks typical"
+}

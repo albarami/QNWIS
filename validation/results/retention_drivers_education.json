@@ -1,0 +1,60 @@
+{
+  "spec": {
+    "name": "retention_drivers_education",
+    "description": "Key drivers of retention in education sector",
+    "endpoint": "/api/v1/query",
+    "method": "POST",
+    "tier": "complex",
+    "timeout": 90,
+    "payload": {
+      "question": "What are the key drivers of employee retention in the education sector?",
+      "context": {
+        "sector": "education",
+        "metric": "retention",
+        "analysis": "drivers"
+      }
+    },
+    "acceptance": {
+      "max_latency_ms": 90000,
+      "min_citation_coverage": 0.7,
+      "verification_required": true,
+      "freshness_required": true
+    },
+    "expected_response": {
+      "metadata": {
+        "verification": "passed",
+        "freshness": {
+          "LMIS": "2h"
+        },
+        "citations": [
+          "LMIS Retention Time-Series",
+          "Driver Analysis"
+        ]
+      }
+    },
+    "__path__": "D:\\lmis_int\\validation\\cases\\17_retention_drivers_education.yaml"
+  },
+  "result": {
+    "case": "retention_drivers_education",
+    "endpoint": "/api/v1/query",
+    "tier": "complex",
+    "status": 200,
+    "latency_ms": 10.49,
+    "citation_coverage": 1.0,
+    "freshness_present": true,
+    "verification_passed": true,
+    "pass": true
+  },
+  "body": {
+    "metadata": {
+      "verification": "passed",
+      "freshness": {
+        "LMIS": "2h"
+      },
+      "citations": [
+        "LMIS Retention Time-Series",
+        "Driver Analysis"
+      ]
+    }
+  }
+}

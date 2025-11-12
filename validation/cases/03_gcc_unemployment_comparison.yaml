@@ -1,0 +1,23 @@
+name: gcc_unemployment_comparison
+description: "Compare Qatar unemployment with GCC countries"
+endpoint: /api/v1/query
+method: POST
+tier: medium
+timeout: 30
+payload:
+  question: "How does Qatar's unemployment rate compare to other GCC countries?"
+  context:
+    region: GCC
+acceptance:
+  max_latency_ms: 30000
+  min_citation_coverage: 0.6
+  verification_required: true
+  freshness_required: true
+expected_response:
+  metadata:
+    verification: passed
+    freshness:
+      LMIS: "1d"
+      GCC_STATS: "recent"
+    citations:
+      - "GCC Unemployment Comparison"

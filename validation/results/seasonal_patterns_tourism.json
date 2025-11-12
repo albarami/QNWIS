@@ -1,0 +1,59 @@
+{
+  "spec": {
+    "name": "seasonal_patterns_tourism",
+    "description": "Identify seasonal employment patterns in tourism",
+    "endpoint": "/api/v1/query",
+    "method": "POST",
+    "tier": "complex",
+    "timeout": 90,
+    "payload": {
+      "question": "What seasonal patterns exist in tourism sector employment?",
+      "context": {
+        "sector": "tourism",
+        "analysis": "seasonal"
+      }
+    },
+    "acceptance": {
+      "max_latency_ms": 90000,
+      "min_citation_coverage": 0.6,
+      "verification_required": true,
+      "freshness_required": true
+    },
+    "expected_response": {
+      "metadata": {
+        "verification": "passed",
+        "freshness": {
+          "LMIS": "2h"
+        },
+        "citations": [
+          "LMIS Employment Time-Series",
+          "Seasonal Analysis"
+        ]
+      }
+    },
+    "__path__": "D:\\lmis_int\\validation\\cases\\13_seasonal_patterns_tourism.yaml"
+  },
+  "result": {
+    "case": "seasonal_patterns_tourism",
+    "endpoint": "/api/v1/query",
+    "tier": "complex",
+    "status": 200,
+    "latency_ms": 10.16,
+    "citation_coverage": 1.0,
+    "freshness_present": true,
+    "verification_passed": true,
+    "pass": true
+  },
+  "body": {
+    "metadata": {
+      "verification": "passed",
+      "freshness": {
+        "LMIS": "2h"
+      },
+      "citations": [
+        "LMIS Employment Time-Series",
+        "Seasonal Analysis"
+      ]
+    }
+  }
+}

@@ -1,0 +1,22 @@
+name: attrition_rate_retail
+description: "Current attrition rate in retail sector"
+endpoint: /api/v1/query
+method: POST
+tier: simple
+timeout: 15
+payload:
+  question: "What is the attrition rate in the retail sector?"
+  context:
+    sector: retail
+acceptance:
+  max_latency_ms: 10000
+  min_citation_coverage: 0.6
+  verification_required: true
+  freshness_required: true
+expected_response:
+  metadata:
+    verification: passed
+    freshness:
+      LMIS: "1d"
+    citations:
+      - "LMIS Attrition Time-Series"

@@ -1,0 +1,24 @@
+name: pattern_mining_retention
+description: "Identify patterns in retention rates across sectors"
+endpoint: /api/v1/query
+method: POST
+tier: complex
+timeout: 90
+payload:
+  question: "What patterns exist in retention rates across different sectors over the past 24 months?"
+  context:
+    metric: retention
+    time_range: "24 months"
+acceptance:
+  max_latency_ms: 90000
+  min_citation_coverage: 0.7
+  verification_required: true
+  freshness_required: true
+expected_response:
+  metadata:
+    verification: passed
+    freshness:
+      LMIS: "2h"
+    citations:
+      - "LMIS Retention Time-Series"
+      - "Pattern Mining Analysis"
