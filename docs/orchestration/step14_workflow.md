@@ -612,7 +612,7 @@ workflow.add_edge("enrich", "format")
 
 ### Related Documentation
 
-- [Agent Implementation Guide](../AGENTS_V1_IMPLEMENTATION_COMPLETE.md)
+- [Agent Implementation Guide](../../AGENTS_V1_IMPLEMENTATION_COMPLETE.md)
 - [Data Layer Specification](../DETERMINISTIC_DATA_LAYER_SPECIFICATION.md)
 - [API Documentation](../API_REFERENCE.md)
 

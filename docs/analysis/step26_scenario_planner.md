@@ -394,8 +394,8 @@ pytest tests/integration/agents/test_scenario_end_to_end.py::TestScenarioPerform
 
 ## References
 
-- [Complete Implementation Plan](../../Complete_Implementation_Plan_And_Development_Roadmap.md)
-- [API Specification](../../Complete_API_Specification.md)
-- [Testing Strategy](../../Complete_Testing_Strategy_and_Validation.md)
+- [Implementation Roadmap](../IMPLEMENTATION_ROADMAP.md)
+- [Complete API Catalog](../../metadata/complete_api_catalog.md)
+- [Testing Strategy Overview](../DEVELOPER_ONBOARDING.md#testing)
 - Step 23: Time Machine (baseline forecasts)
 - Step 25: Predictor (forecast methods)

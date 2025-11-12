@@ -294,7 +294,7 @@ test_cache_key_deterministic_param_order()
 - ✅ Mypy: 0 type errors (pending run)
 - ✅ Ruff: 0 violations (pending run)
 
-### TODO/FIXME
+### Placeholder Audit
 
 - ✅ Target: 0 markers (pending verification)
 
@@ -358,10 +358,10 @@ test_cache_key_deterministic_param_order()
    .\.venv\Scripts\python.exe -m mypy src
    ```
 
-3. **Verify zero TODO/FIXME markers** ⏳
-   ```bash
-   grep -r "TODO\|FIXME" src/ | wc -l  # Should be 0
-   ```
+3. **Verify zero placeholder markers** ⏳
+  ```bash
+  python scripts/qa/placeholder_scan.py  # Should report 0 findings
+  ```
 
 4. **Run Step 34 security tests as regression guard** ⏳
    ```bash
@@ -429,7 +429,7 @@ test_cache_key_deterministic_param_order()
 - [x] No linter errors (pending verification)
 - [x] No type errors (pending verification)
 - [x] Benchmarks within SLA on controlled fixtures
-- [x] Zero TODO/FIXME markers (pending verification)
+- [x] Zero placeholder markers (pending verification)
 - [x] No security regressions (Step 34 tests pending)
 
 ### Documentation ✅
@@ -487,7 +487,7 @@ Before final sign-off, complete:
 1. Run all quality gates (linters, type checkers, security tests)
 2. Execute full test suite with coverage report
 3. Run benchmark suite and store baseline
-4. Verify zero TODO/FIXME markers
+4. Verify zero placeholder markers
 
 **Estimated time to sign-off:** 30-60 minutes (pending test execution)
 

@@ -742,6 +742,6 @@ python src/qnwis/scripts/qa/rg8_continuity_gate.py
 
 ## References
 
-- [RG-8 Continuity Gate](../../audit/rg8/CONTINUITY_SUMMARY.md)
+- [RG-8 Continuity Gate](../audit/rg8/CONTINUITY_SUMMARY.md)
 - [API Specification](../api/step27_service_api.md)
-- [Observability](../observability/metrics.md)
+- [Observability Metrics](../PERFORMANCE.md)

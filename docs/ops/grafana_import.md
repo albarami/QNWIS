@@ -260,4 +260,4 @@ Recommended alerts:
 
 - [Grafana Documentation](https://grafana.com/docs/)
 - [Prometheus Query Language](https://prometheus.io/docs/prometheus/latest/querying/basics/)
-- [QNWIS Metrics Specification](../monitoring/metrics.md)
+- [Performance Metrics Reference](../PERFORMANCE.md)
