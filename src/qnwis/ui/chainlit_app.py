@@ -7,20 +7,25 @@ shows verification and audit trails, integrates RAG, and handles model fallback.
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import chainlit as cl
 
-from ..agents.base import DataClient
-from ..config.model_select import call_with_model_fallback, resolve_models
-from ..orchestration.workflow_adapter import run_workflow_stream
-from ..verification.ui_bridge import (
+from src.qnwis.agents.base import DataClient
+from src.qnwis.config.model_select import call_with_model_fallback, resolve_models
+from src.qnwis.instrumentation.timing import Stopwatch
+from src.qnwis.orchestration.workflow_adapter import run_workflow_stream
+from src.qnwis.verification.ui_bridge import (
     render_agent_finding_panel,
     render_audit_panel,
-    render_verification_panel,
     render_raw_evidence_panel,
+    render_verification_panel,
 )
-from .components import render_stage_card, render_timeline_widget, sanitize_markdown
+from src.qnwis.ui.components import (
+    render_stage_card,
+    render_stage_timeline_md,
+    sanitize_markdown,
+)
 
 # Configure logging
 logging.basicConfig(
@@ -31,6 +36,14 @@ logger = logging.getLogger(__name__)
 
 RAW_EVIDENCE_MAX_ROWS = 5
 _raw_data_client: Optional[DataClient] = None
+_STAGE_DEFINITIONS: List[Tuple[str, str]] = [
+    ("classify", "Classify"),
+    ("prefetch", "Prefetch"),
+    ("agents", "Agents"),
+    ("verify", "Verify"),
+    ("synthesize", "Synthesize"),
+    ("done", "Done"),
+]
 
 
 def _get_data_client() -> DataClient:
@@ -39,6 +52,44 @@ def _get_data_client() -> DataClient:
     if _raw_data_client is None:
         _raw_data_client = DataClient()
     return _raw_data_client
+
+
+def _build_timeline_rows(
+    stages_completed: List[str],
+    stage_durations: Dict[str, float],
+) -> List[Tuple[str, str, float]]:
+    """
+    Build timeline rows for the renderer.
+
+    Args:
+        stages_completed: Ordered list of completed stage identifiers.
+        stage_durations: Mapping of stage identifier -> duration in milliseconds.
+
+    Returns:
+        List of (label, state, duration_ms) tuples ready for rendering.
+    """
+    completed_set = set(stages_completed)
+    current_stage = _next_pending_stage(completed_set)
+    rows: List[Tuple[str, str, float]] = []
+
+    for stage_id, label in _STAGE_DEFINITIONS:
+        if stage_id in completed_set:
+            state = "done"
+        elif stage_id == current_stage:
+            state = "running"
+        else:
+            state = "pending"
+        rows.append((label, state, stage_durations.get(stage_id, 0.0)))
+
+    return rows
+
+
+def _next_pending_stage(completed: set[str]) -> str:
+    """Return the next stage identifier that has not completed yet."""
+    for stage_id, _ in _STAGE_DEFINITIONS:
+        if stage_id not in completed:
+            return stage_id
+    return "done"
 
 
 @cl.on_chat_start
@@ -128,12 +179,20 @@ async def handle_message(message: cl.Message):
     # Initialize tracking
     stages_completed: List[str] = []
     agent_findings: Dict[str, List[Dict[str, Any]]] = {}
-    timeline_msg = None
+    agents_started = False
+    agents_completed = False
+    stage_durations: Dict[str, float] = {}
+    timeline_msg: Optional[cl.Message] = None
+    sw = Stopwatch.start()
     
     try:
-        # Create initial timeline
+        # Create initial timeline (Markdown only, sanitizer-safe)
         timeline_msg = await cl.Message(
-            content=sanitize_markdown(render_timeline_widget(stages_completed, "classify"))
+            content=sanitize_markdown(
+                render_stage_timeline_md(
+                    _build_timeline_rows(stages_completed, stage_durations)
+                )
+            )
         ).send()
         
         # Stream workflow execution
@@ -144,21 +203,36 @@ async def handle_message(message: cl.Message):
             
             logger.info(f"[{request_id}] Stage completed: {stage} ({latency_ms}ms)")
             
-            # Update timeline
-            if stage.startswith("agent:"):
-                current_stage = "agents"
-            else:
-                current_stage = stage
-            
-            if stage not in ["error"] and not stage.startswith("agent:"):
-                stages_completed.append(stage)
-            
+            normalized_stage = "agents" if stage.startswith("agent:") else stage
+
+            if normalized_stage == "agents":
+                agents_started = True
+                if stage not in ["error"]:
+                    stage_durations["agents"] = stage_durations.get("agents", 0.0) + latency_ms
+            elif stage not in ["error"]:
+                stage_durations[normalized_stage] = latency_ms
+
+            if (
+                stage not in ["error"]
+                and not stage.startswith("agent:")
+                and normalized_stage not in stages_completed
+            ):
+                stages_completed.append(normalized_stage)
+
+            if (
+                normalized_stage == "verify"
+                and agents_started
+                and not agents_completed
+            ):
+                if "agents" not in stages_completed:
+                    stages_completed.append("agents")
+                agents_completed = True
+
             if timeline_msg:
-                await timeline_msg.update(
-                    content=sanitize_markdown(
-                        render_timeline_widget(stages_completed, current_stage)
-                    )
+                timeline_markdown = render_stage_timeline_md(
+                    _build_timeline_rows(stages_completed, stage_durations)
                 )
+                await timeline_msg.update(content=sanitize_markdown(timeline_markdown))
             
             # Render stage card
             if stage == "classify":
@@ -196,23 +270,7 @@ async def handle_message(message: cl.Message):
                             finding,
                             show_full_evidence=False
                         )
-                        evidence_key = _register_raw_evidence_payload(
-                            request_id,
-                            agent_name,
-                            finding
-                        )
-                        message_kwargs: Dict[str, Any] = {
-                            "content": sanitize_markdown(finding_panel)
-                        }
-                        if evidence_key:
-                            message_kwargs["actions"] = [
-                                cl.Action(
-                                    name="view_raw_evidence",
-                                    value=evidence_key,
-                                    label="View raw evidence"
-                                )
-                            ]
-                        await cl.Message(**message_kwargs).send()
+                        await cl.Message(content=sanitize_markdown(finding_panel)).send()
                 else:
                     # Error case
                     card_content = render_stage_card(stage, payload, latency_ms)
@@ -268,13 +326,17 @@ Please try rephrasing your question or contact support if the issue persists.
                 await cl.Message(content=sanitize_markdown(error_msg)).send()
                 return
         
-        # Update final timeline
+        # Final timeline update with cumulative duration
+        elapsed_total_ms, _ = sw.stop_ms()
+        stage_durations["done"] = elapsed_total_ms
+        for stage_id, _ in _STAGE_DEFINITIONS:
+            if stage_id not in stages_completed:
+                stages_completed.append(stage_id)
         if timeline_msg:
-            await timeline_msg.update(
-                content=sanitize_markdown(
-                    render_timeline_widget(stages_completed + ["done"], "done")
-                )
+            final_markdown = render_stage_timeline_md(
+                _build_timeline_rows(stages_completed, stage_durations)
             )
+            await timeline_msg.update(content=sanitize_markdown(final_markdown))
         
         logger.info(f"[{request_id}] Workflow completed successfully")
         

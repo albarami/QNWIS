@@ -399,7 +399,7 @@ class NationalStrategyAgent:
         Returns:
             AgentReport with integrated employment and GCC unemployment metrics
         """
-        queries = ["q_employment_share_by_gender_2023", "q_unemployment_rate_gcc_latest"]
+        queries = ["syn_employment_share_by_gender_latest", "syn_unemployment_gcc_latest"]
         logger.info("run strategic_snapshot queries=%s", queries)
         # Use both queries deterministically
         emp = self.client.run(queries[0])

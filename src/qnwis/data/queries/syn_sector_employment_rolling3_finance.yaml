@@ -4,7 +4,7 @@ description: Rolling 3-year average of employees in Finance sector.
 source: csv
 expected_unit: count
 params:
-  pattern: "aggregates/sector_employment_by_year.csv"
+  pattern: "aggregates/aggregates/sector_employment_by_year.csv"
   select: ["year", "sector", "employees"]
 constraints:
   freshness_sla_days: 3650

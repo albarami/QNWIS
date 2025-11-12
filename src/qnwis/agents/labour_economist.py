@@ -10,7 +10,7 @@ from __future__ import annotations
 from ..data.derived.metrics import yoy_growth
 from .base import AgentReport, DataClient, Insight, evidence_from
 
-EMPLOYMENT_QUERY = "q_employment_share_by_gender_2023"
+EMPLOYMENT_QUERY = "syn_employment_share_by_gender_latest"
 
 
 class LabourEconomistAgent:

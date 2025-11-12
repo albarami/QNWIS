@@ -4,7 +4,7 @@ description: Top 5 sectors by average salary (synthetic).
 source: csv
 expected_unit: qar
 params:
-  pattern: "aggregates/avg_salary_by_sector.csv"
+  pattern: "aggregates/aggregates/avg_salary_by_sector.csv"
   select: ["year", "sector", "avg_salary_qr"]
   year: 2024
 constraints:

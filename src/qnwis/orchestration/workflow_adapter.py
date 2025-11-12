@@ -8,7 +8,7 @@ node in the LangGraph workflow completes.
 import logging
 import time
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, AsyncIterator, Dict, Optional
 
@@ -34,7 +34,7 @@ class StageEvent:
     """
     stage: str
     payload: Dict[str, Any]
-    timestamp: str = field(default_factory=lambda: datetime.utcnow().isoformat() + "Z")
+    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     latency_ms: int = 0
 
 
@@ -73,7 +73,8 @@ async def run_workflow_stream(
     """
     user_ctx = user_ctx or {}
     request_id = user_ctx.get("request_id", f"req_{int(time.time() * 1000)}")
-    workflow_start = time.perf_counter()
+    workflow_start_perf = time.perf_counter()  # For duration measurement
+    workflow_start_utc = datetime.now(timezone.utc)  # For audit timestamps
     
     logger.info(f"[{request_id}] Starting workflow for question: {question[:50]}...")
     
@@ -296,7 +297,7 @@ async def run_workflow_stream(
         # ============================================================
         # STAGE 6: DONE - FINAL RESULTS
         # ============================================================
-        total_latency = int((time.perf_counter() - workflow_start) * 1000)
+        total_latency = int((time.perf_counter() - workflow_start_perf) * 1000)
         
         # Collect all query IDs and sources
         all_query_ids = set()
@@ -336,8 +337,8 @@ async def run_workflow_stream(
                         "invalidations": CACHE_COUNTERS.get("invalidations", 0),
                     },
                     "timestamps": {
-                        "start": datetime.fromtimestamp(workflow_start).isoformat() + "Z",
-                        "end": datetime.utcnow().isoformat() + "Z",
+                        "start": workflow_start_utc.isoformat(),
+                        "end": datetime.now(timezone.utc).isoformat(),
                     },
                     "latency_ms": total_latency,
                 },
@@ -359,5 +360,5 @@ async def run_workflow_stream(
                 "error_type": type(e).__name__,
                 "status": "failed"
             },
-            latency_ms=int((time.perf_counter() - workflow_start) * 1000)
+            latency_ms=int((time.perf_counter() - workflow_start_perf) * 1000)
         )

@@ -4,7 +4,7 @@ description: Energy sector share of all Qatari employees (synthetic).
 source: csv
 expected_unit: percent
 params:
-  pattern: "aggregates/qatarization_by_sector.csv"
+  pattern: "aggregates/aggregates/qatarization_by_sector.csv"
   select: ["year", "sector", "qataris"]
   year: 2024
 constraints:

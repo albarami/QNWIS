@@ -4,7 +4,7 @@ description: Deterministic synthetic employment shares for 2017-2024.
 source: csv
 expected_unit: percent
 params:
-  pattern: "aggregates/employment_share_by_gender.csv"
+  pattern: "aggregates/aggregates/employment_share_by_gender.csv"
   select: ["year", "male_percent", "female_percent", "total_percent"]
   year: 2023
 constraints:

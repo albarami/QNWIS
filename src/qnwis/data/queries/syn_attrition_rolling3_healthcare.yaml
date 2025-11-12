@@ -4,7 +4,7 @@ description: Rolling 3-year average of attrition in Healthcare sector.
 source: csv
 expected_unit: percent
 params:
-  pattern: "aggregates/attrition_by_sector.csv"
+  pattern: "aggregates/aggregates/attrition_by_sector.csv"
   select: ["year", "sector", "attrition_percent"]
 constraints:
   freshness_sla_days: 3650

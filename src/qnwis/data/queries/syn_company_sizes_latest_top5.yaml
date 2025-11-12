@@ -4,7 +4,7 @@ description: Top 5 company size categories by count (synthetic).
 source: csv
 expected_unit: count
 params:
-  pattern: "aggregates/company_size_distribution.csv"
+  pattern: "aggregates/aggregates/company_size_distribution.csv"
   select: ["year", "size_band", "companies"]
   year: 2024
 constraints:

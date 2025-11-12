@@ -4,7 +4,7 @@ description: Sectoral drop percentages (latest).
 source: csv
 expected_unit: percent
 params:
-  pattern: "aggregates/ewi_employment_drop.csv"
+  pattern: "aggregates/aggregates/ewi_employment_drop.csv"
   select: ["year", "sector", "drop_percent"]
   year: 2024
 constraints:

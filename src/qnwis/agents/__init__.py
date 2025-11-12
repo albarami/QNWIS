@@ -13,6 +13,7 @@ from .labour_economist import LabourEconomistAgent
 from .national_strategy import NationalStrategyAgent
 from .nationalization import NationalizationAgent
 from .pattern_detective import PatternDetectiveAgent
+from .pattern_miner import PatternMinerAgent
 from .predictor import PredictorAgent
 from .reporting.jsonl import write_report
 from .scenario_agent import ScenarioAgent
@@ -31,6 +32,7 @@ __all__ = [
     "NationalStrategyAgent",
     "NationalizationAgent",
     "PatternDetectiveAgent",
+    "PatternMinerAgent",
     "PredictorAgent",
     "ScenarioAgent",
     "SkillsAgent",

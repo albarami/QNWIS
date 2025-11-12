@@ -4,7 +4,7 @@ description: Deterministic top-5 sectors by employees (synthetic).
 source: csv
 expected_unit: count
 params:
-  pattern: "aggregates/sector_employment_by_year.csv"
+  pattern: "aggregates/aggregates/sector_employment_by_year.csv"
   select: ["year", "sector", "employees"]
   year: 2024
 constraints:

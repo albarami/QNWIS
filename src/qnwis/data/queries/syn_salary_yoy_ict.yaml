@@ -4,7 +4,7 @@ description: YoY growth of average salary in ICT sector.
 source: csv
 expected_unit: qar
 params:
-  pattern: "aggregates/avg_salary_by_sector.csv"
+  pattern: "aggregates/aggregates/avg_salary_by_sector.csv"
   select: ["year", "sector", "avg_salary_qr"]
 constraints:
   freshness_sla_days: 3650

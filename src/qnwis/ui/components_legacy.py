@@ -22,29 +22,31 @@ def render_timeline_widget(stages_completed: List[str], current_stage: str) -> s
     Returns:
         HTML/markdown string with timeline visualization
     """
+    # Stage definitions with clean ASCII labels (no emoji corruption)
     all_stages = [
-        ("classify", "dYZ_ Classify"),
-        ("prefetch", 'dY"S Prefetch'),
-        ("agents", "dY- Agents"),
-        ("verify", 'dY? Verify'),
-        ("synthesize", 'dY? Synthesize'),
-        ("done", "?o. Done"),
+        ("classify", "🎯 Classify"),
+        ("prefetch", "📊 Prefetch"),
+        ("agents", "🤖 Agents"),
+        ("verify", "🧪 Verify"),
+        ("synthesize", "🧠 Synthesize"),
+        ("done", "✅ Done"),
     ]
 
     rows: List[str] = []
-    effective_current = current_stage if not current_stage.startswith("agent:") else "agents"
+    # Normalize "agent:*" to "agents" for timeline display
+    effective_current = "agents" if current_stage.startswith("agent:") else current_stage
 
     for stage_id, stage_label in all_stages:
         if stage_id in stages_completed:
-            status_badge = "?o."
+            status_badge = "✅"
             detail = "Complete"
             status_class = "qnwis-stage-complete"
         elif stage_id == effective_current:
-            status_badge = "??3"
+            status_badge = "⏳"
             detail = "In progress"
             status_class = "qnwis-stage-active"
         else:
-            status_badge = "??,?,?"
+            status_badge = "⏸️"
             detail = "Pending"
             status_class = "qnwis-stage-pending"
 

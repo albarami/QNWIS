@@ -4,7 +4,7 @@ description: Totals used to cross-check sum-to-one.
 source: csv
 expected_unit: percent
 params:
-  pattern: "aggregates/employment_share_by_gender.csv"
+  pattern: "aggregates/aggregates/employment_share_by_gender.csv"
   select: ["year","total_percent"]
   year: 2023
 constraints:

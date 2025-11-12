@@ -34,7 +34,7 @@ class SkillsAgent:
         Returns:
             AgentReport with gender distribution metrics as skills proxy
         """
-        res = self.client.run("q_employment_share_by_gender_2023")
+        res = self.client.run("syn_employment_share_by_gender_latest")
         latest = res.rows[-1].data if res.rows else {}
         metrics = {}
         for k in ("male_percent", "female_percent", "total_percent"):

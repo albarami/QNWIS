@@ -71,9 +71,20 @@ def test_pattern_detective_detects_inconsistency(monkeypatch):
     client = DataClient()
     monkeypatch.setattr(client, "run", lambda qid: qr)
     rep = PatternDetectiveAgent(client).run()
-    has_warning = any("sum_mismatch" in w for w in rep.warnings)
-    has_metric = rep.findings[0].metrics.get("delta_percent") is not None
-    assert has_warning or has_metric
+
+    delta = rep.findings[0].metrics.get("delta_percent")
+    assert delta == pytest.approx(-1.0)
+    assert any("sum_mismatch:-1.0" == w for w in rep.warnings)
+
+
+def test_pattern_detective_consistent_data_has_no_delta(monkeypatch):
+    qr = _qr_consistent()
+    client = DataClient()
+    monkeypatch.setattr(client, "run", lambda qid: qr)
+    rep = PatternDetectiveAgent(client).run()
+
+    assert rep.findings[0].metrics == {}
+    assert all("sum_mismatch" not in w for w in rep.warnings)
 
 
 def test_find_correlations_fallbacks_to_spearman(monkeypatch):

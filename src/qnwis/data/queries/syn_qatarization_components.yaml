@@ -4,7 +4,7 @@ description: Qataris, non-Qataris, and computed percent by sector/year.
 source: csv
 expected_unit: count
 params:
-  pattern: "aggregates/qatarization_by_sector.csv"
+  pattern: "aggregates/aggregates/qatarization_by_sector.csv"
   select: ["year","sector","qataris","non_qataris","qatarization_percent"]
   year: 2023
 constraints:

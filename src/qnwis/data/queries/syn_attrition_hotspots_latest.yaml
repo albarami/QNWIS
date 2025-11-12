@@ -4,7 +4,7 @@ description: Top 5 sectors by attrition rate (synthetic).
 source: csv
 expected_unit: percent
 params:
-  pattern: "aggregates/attrition_by_sector.csv"
+  pattern: "aggregates/aggregates/attrition_by_sector.csv"
   select: ["year", "sector", "attrition_percent"]
   year: 2024
 constraints:

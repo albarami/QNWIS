@@ -39,6 +39,13 @@ class Freshness(BaseModel):
         datetime.fromisoformat(value)
         return value
 
+    @property
+    def days_old(self) -> int:
+        """Calculate how many days old the data is from asof_date to today."""
+        asof = date.fromisoformat(self.asof_date)
+        today = date.today()
+        return (today - asof).days
+
 
 class TransformStep(BaseModel):
     """Single transform step in postprocess pipeline."""

@@ -4,7 +4,7 @@ description: All sectors sorted by Qatarization rate descending (synthetic).
 source: csv
 expected_unit: percent
 params:
-  pattern: "aggregates/qatarization_by_sector.csv"
+  pattern: "aggregates/aggregates/qatarization_by_sector.csv"
   select: ["year", "sector", "qatarization_percent"]
   year: 2024
 constraints:

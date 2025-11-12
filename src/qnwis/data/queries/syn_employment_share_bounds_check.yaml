@@ -4,7 +4,7 @@ description: Verify employment shares sum to 100% (synthetic).
 source: csv
 expected_unit: percent
 params:
-  pattern: "aggregates/sector_employment_by_year.csv"
+  pattern: "aggregates/aggregates/sector_employment_by_year.csv"
   select: ["year", "sector", "employees"]
   year: 2024
 constraints:

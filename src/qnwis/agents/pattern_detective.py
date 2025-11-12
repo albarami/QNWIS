@@ -570,7 +570,7 @@ class PatternDetectiveAgent:
         Returns:
             AgentReport with consistency findings and warnings for anomalies
         """
-        employment_query = "q_employment_share_by_gender_2023"
+        employment_query = "syn_employment_share_by_gender_latest"
         logger.info("run legacy_consistency queries=%s", [employment_query])
         res = self.client.run(employment_query)
         warnings = list(res.warnings)

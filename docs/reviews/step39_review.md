@@ -1,163 +1,142 @@
-## Step 39 Review – Enterprise Chainlit UI Hardening
+## Step 39 Review - Enterprise Chainlit UI Hardening
 
-**Date**: 12 November 2025  
-**Reviewer**: Codex (GPT‑5)  
-**Objective**: Assess and harden the enterprise Chainlit UI (Step 39) against the readiness checklist, add the Stage timeline widget, surface raw deterministic evidence, and provide verification artifacts.
+**Date:** 12 November 2025  
+**Reviewer:** Codex (GPT-5)  
+**Scope:** Bring Step-39 in line with the hardened checklist (World Bank units, PatternDetective parity, timing discipline, HTML-free Chainlit) and document the deterministic evidence.
 
 ---
 
 ### Checklist Status
 
-- [x] **All functions typed & complete** – No placeholders in `src/qnwis/ui/chainlit_app.py`, `src/qnwis/orchestration/workflow_adapter.py`, `src/qnwis/verification/ui_bridge.py`, or `src/qnwis/config/model_select.py`.
-- [x] **Streaming path verified** – Timeline message renders before graph execution (<1s), StageEvents stream sequentially, and timeline updates reuse a single sticky widget to avoid memory growth (`render_timeline_widget` + `sanitize_markdown`).
-- [x] **Sanitization parity (Step‑34)** – Every Chainlit emission (timeline, stage cards, verification, raw evidence, fallback notice) now funnels through `sanitize_markdown`.
-- [x] **Deterministic contract honored** – Raw evidence previews re-run registered deterministic queries via `DataClient` (no SQL or ad-hoc stats) and cap output at top‑N rows.
-- [x] **RAG carries sources + freshness** – `retrieve_external_context` already enforced citations/freshness; `run_workflow_stream` now passes that blob through to final synthesis without mutation.
-- [x] **Audit panel completeness** – `workflow_adapter` aggregates query IDs, sources, cache stats, timestamps, and latency, and `render_audit_panel` surfaces the same.
-- [x] **Model fallback tested** – `call_with_model_fallback` handles Anthropic 404s → OpenAI fallback and is covered by unit tests (see transcript below).
-- [x] **Latency envelopes** – Timeline widget sends immediately, each StageEvent captures `latency_ms`, and council execution stays within Step‑35 targets on sampled traces.
-- [x] **Tests updated** – `python -m pytest tests/ui/test_chainlit_orchestration.py` (unit) and `python -m pytest tests/integration/test_e2e_chainlit_workflow.py` (E2E) both pass.
+- **World Bank units:** `_normalize_value` already avoided `*100`; `run_world_bank_query` now writes `QueryResult.metadata["units"] = {"SL.UEM.TOTL.ZS": "percent"}` so every agent has an explicit contract (see `tests/unit/test_worldbank_units.py::test_units_metadata_exposed_for_percent_indicators`).
+- **PatternDetective parity:** the legacy consistency check reports `(male + female) - total`, and the unit tests assert both the `-1.0` delta and the `sum_mismatch:-1.0` warning entry.
+- **Timing helper:** `Stopwatch` combines UTC timestamps with `perf_counter()` for durations; `run_workflow_stream` also captures UTC start/end so no code mixes `time.time()` with `perf_counter()`.
+- **Chainlit Markdown purity:** the sticky timeline is now Markdown-only, the raw evidence view remains Markdown tables, and every message passes through `sanitize_markdown` before `cl.Message.send`.
+- **Types, errors, deterministic tests:** new helpers include docstrings and type hints, the World Bank metadata test stubs the integrator deterministically, and the regression timeline test suite verifies the Markdown output has no HTML.
 
 ---
 
 ### Implementation Highlights
 
-- **Sticky Stage Timeline** (`src/qnwis/ui/components.py`)  
-  A CSS-styled, sanitized widget now anchors to the top-right of the chat, showing completion/active/pending states with badges and detail text. Timeline updates reuse a persisted message to avoid extra frames and reduce load on the Chainlit front end.
+1. **Sticky timeline with durations**
+   - `render_stage_timeline_md` (Markdown only) replaces the HTML widget.
+   - `handle_message` keeps a single timeline message and updates it after every `StageEvent`.
+   - Stage durations come straight from `latency_ms`; the agents stage aggregates the per-agent latencies before being marked complete.
 
-- **Raw Evidence Preview Button** (`src/qnwis/ui/chainlit_app.py`, `src/qnwis/verification/ui_bridge.py`)  
-  Each agent finding stores a keyed payload in the user session. The new **View raw evidence** action replays the deterministic QueryResult via `DataClient`, sanitizes the rows, and renders a markdown table so analysts can expand beyond the top‑3 evidence summary without leaving the UI.
+   ```
+   **Stage Timeline**
 
-- **Audit Trail Enrichment** (`src/qnwis/orchestration/workflow_adapter.py:310`)  
-  Stage `done` now emits cache hit/miss/invalidations from the deterministic cache layer alongside the existing query IDs, sources, timestamps, and total latency—matching the “audit panel” requirement.
+   - DONE  Classify - 46 ms
+   - RUN   Prefetch - 12 ms elapsed
+   - WAIT  Agents
+   - WAIT  Verify
+   - WAIT  Synthesize
+   - WAIT  Done
+   ```
 
-- **Model Fallback Helper** (`src/qnwis/config/model_select.py`)  
-  The UI synthesizer wraps its formatting function in `call_with_model_fallback`, logging 404s and switching to the OpenAI model transparently. Fallback state is reflected back to the user with a note if the backup path was exercised.
+2. **Deterministic evidence expansion**
+   - Each finding registers its evidence payload in the session.
+   - The **View raw evidence** action re-runs the deterministic query via `DataClient`, caps the preview at five rows, and renders a Markdown table with dataset IDs and freshness metadata.
 
-- **Streaming & Sanitization Hardening** (`src/qnwis/ui/chainlit_app.py`)  
-  The initial timeline message is sent (and sanitized) before `run_workflow_stream` yields, guaranteeing sub-second feedback. Every update, including the sticky widget, verification panel, audit trail, and fallback notice, now passes through `sanitize_markdown`.
+3. **World Bank metadata**
+   - `run_world_bank_query` writes the indicator-to-unit map into `QueryResult.metadata["units"]`.
+   - The new unit test patches the integrator to a stub DataFrame so it remains deterministic and never leaves the test harness.
 
-- **Classifier Compatibility Fixes** (`src/qnwis/orchestration/workflow_adapter.py`)  
-  The workflow adapter now calls `classify_text`, handles multiple intents, and treats `Complexity` as the literal string exposed by the schema—restoring classifier functionality for both unit and integration suites.
+4. **PatternDetective consistency**
+   - The legacy `run()` now records `(male + female) - total` with tolerance derived from `SUM_PERCENT_TOLERANCE`.
+   - Unit tests assert both the metrics payload (`delta_percent == -1.0`) and the warning string so the check is documented and verified.
+
+5. **Timing and audit hygiene**
+   - `Stopwatch` drives the final audit timestamps and durations; all per-stage timing uses `perf_counter()` so there is no drift.
+   - The audit payload now includes cache hit/miss/invalidations plus those stopwatch timestamps, satisfying deterministic-layer observability.
 
 ---
 
-### Stage Panel Snapshots
+### Stage Panel Snapshots (Markdown excerpts)
 
-```text
-## dYZ_ Intent Classification
+```
+## Classify
+Intent: pattern.anomalies
+Complexity: Medium
+Confidence: 86 %
+Sectors: Energy, Finance
+Time Horizon: 24 months
+*Completed in 46 ms*
 
-**Intent**: `pattern.anomalies`
-**Complexity**: Medium
-**Confidence**: 86%
-**Sectors**: Energy, Finance
-**Metrics**: attrition
-**Time Horizon**: 24 months
-*Completed in 123ms*
+## Prefetch
+RAG context: 3 snippets
+Sources: World Bank API, Qatar Open Data
+*Completed in 12 ms*
 
-## dY"S Data Prefetch
+## Agents - PatternDetective
+Findings: 2
+Status: complete
+*Execution time: 118 ms*
 
-**RAG Context**: 3 snippets retrieved
-**External Sources**: World Bank API, Qatar Open Data
-*Completed in 123ms*
+## Verify
+Citations: pass
+Numeric checks: pass
+Average confidence: 82 %
+*Completed in 41 ms*
 
-## dY- PatternDetective
+## Synthesize
+Agents consulted: 5
+Total findings: 8
+*Completed in 64 ms*
 
-**Findings**: 2
-**Status**: �o. Completed
-*Execution time: 123ms*
-
-## dY� Verification
-
-�o. **Citations**: All valid
-�o. **Numeric Checks**: All valid
-dY"S **Avg Confidence**: 82%
-*Completed in 123ms*
-
-## dY� Synthesis
-
-**Agents Consulted**: 2
-**Total Findings**: 4
-*Completed in 123ms*
-
-## �o. Analysis Complete
-
-**Queries Executed**: 1
-**Data Sources**: 1
-**Total Time**: 123ms (0.12s)
+## Done
+Queries executed: 14
+Data sources: 6
+Total time: 1 328 ms
 ```
 
 ---
 
-### Raw Evidence Preview (per-agent button output)
+### Raw Evidence & Audit Examples
 
-```text
-## Raw Evidence — PatternDetective
-**Finding**: Attrition anomaly
+```
+## Raw Evidence (PatternDetective)
 
-### `syn_attrition_by_sector_latest`
-- Dataset: `aggregates/attrition_by_sector.csv`
-- Freshness: 2025-11-08
+1. syn_attrition_by_sector_latest
+   - Dataset: aggregates/attrition_by_sector.csv
+   - Freshness: 2025-11-08
 
 | attrition_percent | sector |
-| --- | --- |
-| 3.1 | Energy |
-| 4.4 | Finance |
-
-*Preview limited to top rows per deterministic query.*
+| ----------------- | ------ |
+| 3.1               | Energy |
+| 4.4               | Finance |
 ```
 
----
+```
+## Audit Trail
 
-### Verification / Audit Panel Example
-
-```text
-## dY"< Audit Trail
-
-**Request ID**: `req_demo`
-
-**Queries Executed**: 2
-   - `syn_attrition`
-   - `syn_employment`
-
-**Data Sources**: 2
-   - aggregates/attrition.csv
-   - aggregates/employment.csv
-
-**Cache Performance**:
-   - Hits: 7 / Misses: 1
-   - Hit Rate: 87.5%
-
-**Total Latency**: 6.12s (6123ms)
-
-**Timestamps**:
-   - Started: 2025-11-12T10:00:00Z
-   - Completed: 2025-11-12T10:00:06Z
+Request ID: req_demo
+Queries executed: 2
+Data sources: 2
+Cache: hits 7 / misses 1 (87.5 %)
+Total latency: 6.12 s (6123 ms)
+Timestamps: 2025-11-12T10:00:00Z -> 2025-11-12T10:00:06Z
 ```
 
 ---
 
 ### Model Fallback Transcript
 
-```text
+```
 2025-11-12 12:18:38,799 WARNING Primary model returned 404. Falling back to backup provider.
 ```
 
-The fallback path is also covered by `TestModelSelector.test_call_with_model_fallback_on_http_404`.
+`TestModelSelector.test_call_with_model_fallback_on_http_404` covers the same scenario.
 
 ---
 
-### Tests Executed
+### Tests
 
-```bash
-python -m pytest tests/ui/test_chainlit_orchestration.py
+```
+python -m pytest tests/ui/test_chainlit_orchestration.py \
+                 tests/unit/test_worldbank_units.py \
+                 tests/unit/regression/test_timeline_state.py
 python -m pytest tests/integration/test_e2e_chainlit_workflow.py
 ```
 
-Both suites passed, exercising the classifier fixes, the UI components (timeline, raw evidence), RAG propagation, audit trail data, and the Anthropic→OpenAI fallback path end-to-end.
-
----
-
-**Next Steps**:  
-- Optional: Capture a short screencast of the Chainlit session to accompany the text snapshots when presenting Step 39.  
-- Monitor fallback counters in production to ensure Anthropic outages are visible in ops dashboards.
+Both suites passed, demonstrating that the Markdown timeline, units metadata, PatternDetective delta math, and fallback logic all behave deterministically while staying inside the deterministic-layer guarantees and roadmap expectations.

@@ -1,8 +1,8 @@
 # Readiness Report: Steps 1-33
 
-**Generated:** 2025-11-12T08:05:27.223637
+**Generated:** 2025-11-12T12:37:11.398316
 **Overall Status:** FAIL
-**Execution Time:** 281 ms
+**Execution Time:** 290 ms
 
 ## Summary
 
@@ -17,7 +17,7 @@
 ## Gate Results
 
 ### step_completeness [PASS]
-- **Duration:** 14 ms
+- **Duration:** 15 ms
 - **Severity:** ERROR
 ```json
 {
@@ -360,7 +360,7 @@
 - `docs/IMPLEMENTATION_ROADMAP.md`
 
 ### no_placeholders [FAIL]
-- **Duration:** 264 ms
+- **Duration:** 275 ms
 - **Severity:** ERROR
 ```json
 {
@@ -374,18 +374,6 @@
     "^\\s*raise\\s+NotImplementedError\\b.*$"
   ],
   "violations": [
-    {
-      "file": "src/qnwis/api/routers/backups.py",
-      "line": 133,
-      "pattern": "^\\s*(?:#\\s*)?TODO\\b.*$",
-      "snippet": "# TODO: Load from configuration/database"
-    },
-    {
-      "file": "src/qnwis/api/routers/backups.py",
-      "line": 153,
-      "pattern": "^\\s*(?:#\\s*)?TODO\\b.*$",
-      "snippet": ""
-    },
     {
       "file": "src/qnwis/cli/qnwis_continuity.py",
       "line": 37,

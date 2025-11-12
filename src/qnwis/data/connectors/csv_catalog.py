@@ -12,7 +12,7 @@ from typing import Any
 
 from ..deterministic.models import Freshness, Provenance, QueryResult, QuerySpec, Row
 
-BASE = Path(__file__).resolve().parents[3] / "external_data" / "qatar_open_data"
+BASE = Path(__file__).resolve().parents[4] / "external_data" / "qatar_open_data"
 QATAR_OPEN_DATA_LICENSE = "Qatar Open Data Portal License"
 
 _NUM_RE = re.compile(r"^-?\d{1,3}(?:,\d{3})*(?:\.\d+)?$|^-?\d+(?:\.\d+)?$")

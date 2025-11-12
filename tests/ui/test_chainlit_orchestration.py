@@ -17,8 +17,8 @@ from src.qnwis.verification.ui_bridge import (
     render_raw_evidence_panel,
 )
 from src.qnwis.ui.components import (
-    render_timeline_widget,
     render_stage_card,
+    render_stage_timeline_md,
     sanitize_markdown,
     format_metric_value,
 )
@@ -187,17 +187,20 @@ class TestVerificationUIBridge:
 class TestUIComponents:
     """Test UI component rendering functions."""
     
-    def test_render_timeline_widget(self):
-        """Test timeline widget rendering."""
-        completed = ["classify", "prefetch"]
-        current = "agents"
+    def test_render_stage_timeline_md_with_durations(self):
+        """Timeline markdown should show icons and durations."""
+        stages = [
+            ("Classify", "done", 45.0),
+            ("Prefetch", "running", 12.0),
+            ("Agents", "pending", 0.0),
+            ("Verify", "pending", 0.0),
+        ]
         
-        result = render_timeline_widget(completed, current)
-        assert "Stage timeline" in result  # sticky heading present
-        assert "qnwis-stage-complete" in result
-        assert "qnwis-stage-active" in result
-        assert "Classify" in result
-        assert "Prefetch" in result
+        result = render_stage_timeline_md(stages)
+        
+        assert "✅ **Classify** — 45" in result
+        assert "🔄 **Prefetch** — 12" in result
+        assert "⏳ **Agents**" in result
     
     def test_render_stage_card_classify(self):
         """Test rendering classify stage card."""

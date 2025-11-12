@@ -104,11 +104,12 @@ class HealthChecker:
         start = time.time()
         try:
             # Import here to avoid circular dependencies
+            from sqlalchemy import text
             from ..data.deterministic.engine import get_engine
 
             engine = get_engine()
             with engine.connect() as conn:
-                result = conn.execute("SELECT 1").scalar()
+                result = conn.execute(text("SELECT 1")).scalar()
                 if result != 1:
                     raise ValueError("Unexpected query result")
 

@@ -4,7 +4,7 @@ description: Salary levels in 2019 (for YoY baselines).
 source: csv
 expected_unit: qar
 params:
-  pattern: "aggregates/avg_salary_by_sector.csv"
+  pattern: "aggregates/aggregates/avg_salary_by_sector.csv"
   select: ["year", "sector", "avg_salary_qr"]
   year: 2019
 constraints:

@@ -4,7 +4,7 @@ description: Latest unemployment rates for GCC countries (synthetic).
 source: csv
 expected_unit: percent
 params:
-  pattern: "aggregates/unemployment_gcc_latest.csv"
+  pattern: "aggregates/aggregates/unemployment_gcc_latest.csv"
   select: ["country", "year", "value"]
   year: 2024
 constraints:
