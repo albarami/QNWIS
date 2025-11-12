@@ -1,0 +1,31 @@
+# Minimal Traefik configuration for TLS termination (optional)
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+  websecure:
+    address: ":443"
+
+providers:
+  file:
+    filename: /etc/traefik/traefik.yml
+    watch: true
+
+http:
+  routers:
+    qnwis:
+      rule: "PathPrefix(`/`)"
+      service: qnwis-api
+      entryPoints:
+        - websecure
+      tls: {}
+  
+  services:
+    qnwis-api:
+      loadBalancer:
+        servers:
+          - url: "http://api:8000"

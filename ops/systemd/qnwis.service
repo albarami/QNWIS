@@ -1,0 +1,16 @@
+[Unit]
+Description=QNWIS API Service
+After=network.target
+
+[Service]
+WorkingDirectory=/opt/qnwis
+Environment=QNWIS_ENV=prod
+EnvironmentFile=/opt/qnwis/.env
+ExecStart=/usr/local/bin/gunicorn -k uvicorn.workers.UvicornWorker -c configs/gunicorn.conf.py src.qnwis.api.server:create_app()
+Restart=always
+User=qnwis
+Group=qnwis
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

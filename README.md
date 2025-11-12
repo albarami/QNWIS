@@ -88,6 +88,38 @@ lmis_int/
 
 ```
 
+## Production Quick Start
+
+For production deployment to Qatar Ministry of Labour infrastructure:
+
+1. **Review deployment documentation:**
+   - **[docs/deploy/DEPLOYMENT_RUNBOOK.md](docs/deploy/DEPLOYMENT_RUNBOOK.md)** - Complete deployment guide
+   - **[docs/deploy/SECURE_ENV_REFERENCE.md](docs/deploy/SECURE_ENV_REFERENCE.md)** - Environment variables reference
+
+2. **Deploy with Docker Compose (recommended):**
+   ```bash
+   cd ops/docker
+   cp .env.example .env
+   # Edit .env with production secrets (NEVER commit to Git)
+   docker compose -f docker-compose.prod.yml up -d
+   ```
+
+3. **Verify deployment:**
+   ```bash
+   curl http://HOST:8000/health/ready  # → 200 OK
+   curl http://HOST:8000/metrics       # → Prometheus metrics
+   ```
+
+4. **Configure backups:**
+   ```bash
+   # Add to crontab for nightly backups
+   0 2 * * * docker exec qnwis-api-1 /bin/bash -lc 'scripts/pg_backup.sh /app/backups'
+   ```
+
+**Security:** All secrets via environment variables only. TLS termination at reverse proxy. Non-root container runtime.
+
+---
+
 ## Development Setup
 
 1. **Clone and navigate to project:**

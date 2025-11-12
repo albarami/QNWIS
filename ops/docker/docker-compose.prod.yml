@@ -1,0 +1,69 @@
+version: "3.9"
+services:
+  api:
+    image: ${QNWIS_IMAGE:-ghcr.io/your-org/qnwis:latest}
+    # For first-time bootstrap you can set 'build: .' instead of 'image:'
+    env_file:
+      - ./.env
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/health/ready || exit 1"]
+      interval: 15s
+      timeout: 3s
+      retries: 10
+    restart: always
+    command: ["/bin/bash", "-lc", "scripts/entrypoint.sh"]
+    volumes:
+      - type: bind
+        source: ./logs
+        target: /app/logs
+    networks: [ qnwis_net ]
+  
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-qnwis}
+      POSTGRES_USER: ${POSTGRES_USER:-qnwis}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [ qnwis_net ]
+  
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    networks: [ qnwis_net ]
+
+# OPTIONAL reverse proxy (enable if terminating TLS here)
+  # traefik:
+  #   image: traefik:v3.0
+  #   command: ["--providers.file.filename=/etc/traefik/traefik.yml"]
+  #   ports: ["80:80", "443:443"]
+  #   volumes:
+  #     - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+  #   depends_on: [ api ]
+  #   networks: [ qnwis_net ]
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  qnwis_net:
+    driver: bridge
