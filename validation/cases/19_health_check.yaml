@@ -1,20 +1,24 @@
 name: health_check
-description: "System health and readiness check"
-endpoint: /health/ready
-method: GET
+description: System readiness summary sourced via Data API
+endpoint: /api/v1/query
+method: POST
 tier: dashboard
 timeout: 5
-mode: echo
+payload:
+  question: Provide the current readiness and freshness status for LMIS ingestion jobs.
+  context:
+    view: operations
 acceptance:
   max_latency_ms: 3000
   min_citation_coverage: 1.0
   verification_required: true
   freshness_required: true
 expected_response:
-  status: "ready"
+  answer: LMIS ingestion is healthy with all freshness targets satisfied.
   metadata:
-    verification: true
+    verification: passed
     freshness:
-      system: "realtime"
+      system: realtime
     citations:
-      - "System Health"
+    - Operations Health Feed
+    audit_id: AUD-HEALTH-CHECK

@@ -1,11 +1,11 @@
 name: sector_comparison_qatarization
-description: "Compare Qatarization rates across top 5 sectors"
+description: Compare Qatarization rates across top 5 sectors
 endpoint: /api/v1/query
 method: POST
 tier: medium
 timeout: 30
 payload:
-  question: "Compare Qatarization rates across the top 5 employment sectors"
+  question: Compare Qatarization rates across the top 5 employment sectors
   context:
     comparison: sector
     limit: 5
@@ -18,6 +18,7 @@ expected_response:
   metadata:
     verification: passed
     freshness:
-      LMIS: "1d"
+      LMIS: 1d
     citations:
-      - "LMIS Qatarization Time-Series"
+    - LMIS Qatarization Time-Series
+    audit_id: AUD-SECTOR-COMPARISON-QATARIZATION

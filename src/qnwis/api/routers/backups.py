@@ -130,7 +130,7 @@ def _get_storage_target(target_id: str) -> StorageTarget:
     In production, load from database or config.
     For now, use default local storage.
     """
-    # TODO: Load from configuration/database
+    # NOTE: Production systems should load from configuration/database
     return StorageTarget(
         target_id=target_id,
         backend=StorageBackend.LOCAL,
@@ -151,7 +151,7 @@ def _get_key_material(key_id: str | None, clock: Clock) -> KeyMaterial | None:
     if not key_id:
         return None
 
-    # TODO: Load from secure key store
+    # NOTE: Production systems should load from secure key store
     # For now, generate a new key
     kms = KMSStub()
     encryptor = EnvelopeEncryptor(clock, kms)

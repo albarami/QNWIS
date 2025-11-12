@@ -1,11 +1,11 @@
 name: seasonal_patterns_tourism
-description: "Identify seasonal employment patterns in tourism"
+description: Identify seasonal employment patterns in tourism
 endpoint: /api/v1/query
 method: POST
 tier: complex
 timeout: 90
 payload:
-  question: "What seasonal patterns exist in tourism sector employment?"
+  question: What seasonal patterns exist in tourism sector employment?
   context:
     sector: tourism
     analysis: seasonal
@@ -18,7 +18,8 @@ expected_response:
   metadata:
     verification: passed
     freshness:
-      LMIS: "2h"
+      LMIS: 2h
     citations:
-      - "LMIS Employment Time-Series"
-      - "Seasonal Analysis"
+    - LMIS Employment Time-Series
+    - Seasonal Analysis
+    audit_id: AUD-SEASONAL-PATTERNS-TOURISM

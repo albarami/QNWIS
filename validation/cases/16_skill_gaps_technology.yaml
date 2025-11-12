@@ -1,11 +1,11 @@
 name: skill_gaps_technology
-description: "Identify skill gaps in technology sector"
+description: Identify skill gaps in technology sector
 endpoint: /api/v1/query
 method: POST
 tier: medium
 timeout: 30
 payload:
-  question: "What are the key skill gaps in the technology sector?"
+  question: What are the key skill gaps in the technology sector?
   context:
     sector: technology
     analysis: skills
@@ -18,7 +18,8 @@ expected_response:
   metadata:
     verification: passed
     freshness:
-      LMIS: "1w"
+      LMIS: 1w
     citations:
-      - "Skills Database"
-      - "Sector Analysis"
+    - Skills Database
+    - Sector Analysis
+    audit_id: AUD-SKILL-GAPS-TECHNOLOGY

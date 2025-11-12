@@ -34,7 +34,8 @@
         },
         "citations": [
           "LMIS Salary Time-Series"
-        ]
+        ],
+        "audit_id": "AUD-SALARY-TRENDS-HEALTHCARE"
       }
     },
     "__path__": "D:\\lmis_int\\validation\\cases\\05_salary_trends_healthcare.yaml"
@@ -44,11 +45,18 @@
     "endpoint": "/api/v1/query",
     "tier": "medium",
     "status": 200,
-    "latency_ms": 10.67,
+    "latency_ms": 10.53,
     "citation_coverage": 1.0,
     "freshness_present": true,
     "verification_passed": true,
-    "pass": true
+    "pass": true,
+    "mode": "echo",
+    "audit_id": "AUD-SALARY-TRENDS-HEALTHCARE",
+    "audit_id_present": true,
+    "rate_limit_limit": null,
+    "rate_limit_remaining": null,
+    "rate_limit_reset": null,
+    "csrf_cookie_present": false
   },
   "body": {
     "metadata": {
@@ -58,7 +66,8 @@
       },
       "citations": [
         "LMIS Salary Time-Series"
-      ]
+      ],
+      "audit_id": "AUD-SALARY-TRENDS-HEALTHCARE"
     }
   }
 }

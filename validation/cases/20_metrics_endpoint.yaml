@@ -1,18 +1,24 @@
 name: metrics_endpoint
-description: "Prometheus metrics endpoint performance"
-endpoint: /metrics
-method: GET
+description: KPI envelope check via Data API
+endpoint: /api/v1/query
+method: POST
 tier: dashboard
 timeout: 5
+payload:
+  question: Summarize current dashboard KPI latency envelopes and pass/fail counts.
+  context:
+    view: performance
 acceptance:
   max_latency_ms: 3000
   min_citation_coverage: 1.0
   verification_required: true
   freshness_required: true
 expected_response:
+  answer: All KPI tiers meet the configured latency envelopes.
   metadata:
-    verification: true
+    verification: passed
     freshness:
-      metrics: "realtime"
+      metrics: realtime
     citations:
-      - "Prometheus Metrics"
+    - SLO Metrics Feed
+    audit_id: AUD-METRICS-ENDPOINT

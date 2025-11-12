@@ -1,14 +1,15 @@
 name: employment_forecast_hospitality
-description: "Forecast employment in hospitality sector for next 6 months"
+description: Forecast employment in hospitality sector for next 6 months
 endpoint: /api/v1/query
 method: POST
 tier: complex
 timeout: 90
 payload:
-  question: "What is the employment forecast for the hospitality sector over the next 6 months?"
+  question: What is the employment forecast for the hospitality sector over the next
+    6 months?
   context:
     sector: hospitality
-    forecast_horizon: "6 months"
+    forecast_horizon: 6 months
 acceptance:
   max_latency_ms: 90000
   min_citation_coverage: 0.7
@@ -18,7 +19,8 @@ expected_response:
   metadata:
     verification: passed
     freshness:
-      LMIS: "recent"
+      LMIS: recent
     citations:
-      - "LMIS Employment Time-Series"
-      - "Forecast Model"
+    - LMIS Employment Time-Series
+    - Forecast Model
+    audit_id: AUD-EMPLOYMENT-FORECAST-HOSPITALITY

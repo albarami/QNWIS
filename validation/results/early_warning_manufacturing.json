@@ -26,7 +26,8 @@
         },
         "citations": [
           "Early Warning Employment Drops"
-        ]
+        ],
+        "audit_id": "AUD-EARLY-WARNING-MANUFACTURING"
       }
     },
     "__path__": "D:\\lmis_int\\validation\\cases\\09_early_warning_manufacturing.yaml"
@@ -36,11 +37,18 @@
     "endpoint": "/api/v1/query",
     "tier": "medium",
     "status": 200,
-    "latency_ms": 10.54,
+    "latency_ms": 10.72,
     "citation_coverage": 1.0,
     "freshness_present": true,
     "verification_passed": true,
-    "pass": true
+    "pass": true,
+    "mode": "echo",
+    "audit_id": "AUD-EARLY-WARNING-MANUFACTURING",
+    "audit_id_present": true,
+    "rate_limit_limit": null,
+    "rate_limit_remaining": null,
+    "rate_limit_reset": null,
+    "csrf_cookie_present": false
   },
   "body": {
     "metadata": {
@@ -50,7 +58,8 @@
       },
       "citations": [
         "Early Warning Employment Drops"
-      ]
+      ],
+      "audit_id": "AUD-EARLY-WARNING-MANUFACTURING"
     }
   }
 }

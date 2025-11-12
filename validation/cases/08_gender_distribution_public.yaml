@@ -1,11 +1,11 @@
 name: gender_distribution_public
-description: "Gender distribution in public sector employment"
+description: Gender distribution in public sector employment
 endpoint: /api/v1/query
 method: POST
 tier: simple
 timeout: 15
 payload:
-  question: "What is the gender distribution in public sector employment?"
+  question: What is the gender distribution in public sector employment?
   context:
     sector: public
 acceptance:
@@ -17,6 +17,7 @@ expected_response:
   metadata:
     verification: passed
     freshness:
-      LMIS: "1w"
+      LMIS: 1w
     citations:
-      - "Employment Gender Distribution"
+    - Employment Gender Distribution
+    audit_id: AUD-GENDER-DISTRIBUTION-PUBLIC

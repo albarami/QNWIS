@@ -28,7 +28,8 @@
         "citations": [
           "LMIS Retention Time-Series",
           "Pattern Mining Analysis"
-        ]
+        ],
+        "audit_id": "AUD-PATTERN-MINING-RETENTION"
       }
     },
     "__path__": "D:\\lmis_int\\validation\\cases\\10_pattern_mining_retention.yaml"
@@ -38,11 +39,18 @@
     "endpoint": "/api/v1/query",
     "tier": "complex",
     "status": 200,
-    "latency_ms": 10.54,
+    "latency_ms": 10.65,
     "citation_coverage": 1.0,
     "freshness_present": true,
     "verification_passed": true,
-    "pass": true
+    "pass": true,
+    "mode": "echo",
+    "audit_id": "AUD-PATTERN-MINING-RETENTION",
+    "audit_id_present": true,
+    "rate_limit_limit": null,
+    "rate_limit_remaining": null,
+    "rate_limit_reset": null,
+    "csrf_cookie_present": false
   },
   "body": {
     "metadata": {
@@ -53,7 +61,8 @@
       "citations": [
         "LMIS Retention Time-Series",
         "Pattern Mining Analysis"
-      ]
+      ],
+      "audit_id": "AUD-PATTERN-MINING-RETENTION"
     }
   }
 }
