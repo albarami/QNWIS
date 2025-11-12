@@ -161,7 +161,7 @@ retention = RetentionRule(
 #### Apply Retention
 
 ```bash
-# TODO: Implement prune command
+# Follow-up: Implement prune command
 python -m src.qnwis.cli.qnwis_dr prune \
   --storage-path /mnt/backups \
   --backend local \

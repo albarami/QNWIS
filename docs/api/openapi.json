@@ -1,0 +1,4814 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "QNWIS Agent API",
+    "version": "dev"
+  },
+  "paths": {
+    "/": {
+      "get": {
+        "tags": [
+          "info"
+        ],
+        "summary": "Info",
+        "operationId": "info__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Info  Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/live": {
+      "get": {
+        "tags": [
+          "observability"
+        ],
+        "summary": "Health Live",
+        "operationId": "health_live_health_live_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "tags": [
+          "observability"
+        ],
+        "summary": "Health Ready",
+        "operationId": "health_ready_health_ready_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "observability"
+        ],
+        "summary": "Health Alias",
+        "operationId": "health_alias_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metrics": {
+      "get": {
+        "tags": [
+          "observability"
+        ],
+        "summary": "Metrics",
+        "description": "Prometheus metrics endpoint.\n\nExposes application metrics in Prometheus text format including:\n- HTTP request/response metrics (qnwis_requests_total, qnwis_latency_seconds)\n- Database operation metrics (qnwis_db_latency_seconds)\n- Cache metrics (qnwis_cache_hits_total, qnwis_cache_misses_total)\n- Agent execution metrics (qnwis_agent_latency_seconds)\n\nAdditional Prometheus metrics from perf module can be scraped here.",
+        "operationId": "metrics_metrics_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/agents/time/baseline": {
+      "post": {
+        "tags": [
+          "agents.time"
+        ],
+        "summary": "Baseline",
+        "operationId": "baseline_api_v1_agents_time_baseline_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/agents/time/trend": {
+      "post": {
+        "tags": [
+          "agents.time"
+        ],
+        "summary": "Trend",
+        "operationId": "trend_api_v1_agents_time_trend_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/agents/time/breaks": {
+      "post": {
+        "tags": [
+          "agents.time"
+        ],
+        "summary": "Breaks",
+        "operationId": "breaks_api_v1_agents_time_breaks_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/agents/pattern/anomalies": {
+      "post": {
+        "tags": [
+          "agents.pattern"
+        ],
+        "summary": "Anomalies",
+        "operationId": "anomalies_api_v1_agents_pattern_anomalies_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/agents/pattern/correlations": {
+      "post": {
+        "tags": [
+          "agents.pattern"
+        ],
+        "summary": "Correlations",
+        "operationId": "correlations_api_v1_agents_pattern_correlations_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/agents/predictor/forecast": {
+      "post": {
+        "tags": [
+          "agents.predictor"
+        ],
+        "summary": "Forecast",
+        "operationId": "forecast_api_v1_agents_predictor_forecast_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/agents/predictor/warnings": {
+      "post": {
+        "tags": [
+          "agents.predictor"
+        ],
+        "summary": "Warnings",
+        "operationId": "warnings_api_v1_agents_predictor_warnings_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/agents/scenario/apply": {
+      "post": {
+        "tags": [
+          "agents.scenario"
+        ],
+        "summary": "Scenario Apply",
+        "operationId": "scenario_apply_api_v1_agents_scenario_apply_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/agents/scenario/compare": {
+      "post": {
+        "tags": [
+          "agents.scenario"
+        ],
+        "summary": "Scenario Compare",
+        "operationId": "scenario_compare_api_v1_agents_scenario_compare_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/agents/strategy/benchmark": {
+      "post": {
+        "tags": [
+          "agents.strategy"
+        ],
+        "summary": "Gcc Benchmark",
+        "operationId": "gcc_benchmark_api_v1_agents_strategy_benchmark_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/agents/strategy/vision": {
+      "post": {
+        "tags": [
+          "agents.strategy"
+        ],
+        "summary": "Vision Alignment",
+        "operationId": "vision_alignment_api_v1_agents_strategy_vision_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/v1/queries": {
+      "get": {
+        "tags": [
+          "queries"
+        ],
+        "summary": "List Queries",
+        "description": "List all available deterministic query identifiers.\n\nReturns:\n    Dictionary with 'ids' key containing list of query IDs",
+        "operationId": "list_queries_api_v1_v1_queries_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response List Queries Api V1 V1 Queries Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/v1/queries/{query_id}": {
+      "get": {
+        "tags": [
+          "queries"
+        ],
+        "summary": "Get Query",
+        "description": "Retrieve the registered QuerySpec for a given identifier.\n\nArgs:\n    query_id: Query identifier from registry\n\nReturns:\n    Dictionary containing the serialized QuerySpec\n\nRaises:\n    HTTPException: 404 if the query is not registered",
+        "operationId": "get_query_api_v1_v1_queries__query_id__get",
+        "parameters": [
+          {
+            "name": "query_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Query Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Query Api V1 V1 Queries  Query Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/v1/queries/{query_id}/run": {
+      "post": {
+        "tags": [
+          "queries"
+        ],
+        "summary": "Run Query",
+        "description": "Execute a deterministic query through cached access.\n\nAllows safe parameter overrides from a whitelist:\n- year: int\n- timeout_s: int\n- max_rows: int\n- to_percent: list[str]\n\nArgs:\n    query_id: Query identifier from registry\n    req: FastAPI request object\n    ttl_s: Cache TTL override (seconds, bounded to 60-86400)\n    body: Request body with override_params and ttl_s\n\nReturns:\n    Query result with rows, provenance, freshness, and warnings\n\nRaises:\n    HTTPException: 404 if query_id not found",
+        "operationId": "run_query_api_v1_v1_queries__query_id__run_post",
+        "parameters": [
+          {
+            "name": "query_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Query Id"
+            }
+          },
+          {
+            "name": "ttl_s",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ttl S"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 5000,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Page Size"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/QueryRunRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryRunResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/v1/queries/{query_id}/stream": {
+      "post": {
+        "tags": [
+          "queries"
+        ],
+        "summary": "Stream deterministic query rows as JSON.",
+        "description": "Stream deterministic query results as a JSON object with chunked rows.",
+        "operationId": "stream_query_api_v1_v1_queries__query_id__stream_post",
+        "parameters": [
+          {
+            "name": "query_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Query Id"
+            }
+          },
+          {
+            "name": "ttl_s",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ttl S"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/QueryRunRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/v1/queries:batch": {
+      "post": {
+        "tags": [
+          "queries"
+        ],
+        "summary": "Run Query Batch",
+        "description": "Execute multiple deterministic queries in a single request.",
+        "operationId": "run_query_batch_api_v1_v1_queries_batch_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BatchQueryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchQueryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/v1/queries/{query_id}/cache/invalidate": {
+      "post": {
+        "tags": [
+          "queries"
+        ],
+        "summary": "Invalidate",
+        "description": "Invalidate cached results for a specific query.\n\nArgs:\n    query_id: Query identifier to invalidate\n\nReturns:\n    Status confirmation with invalidated query_id",
+        "operationId": "invalidate_api_v1_v1_queries__query_id__cache_invalidate_post",
+        "parameters": [
+          {
+            "name": "query_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Query Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Invalidate Api V1 V1 Queries  Query Id  Cache Invalidate Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/v1/ui/export/csv": {
+      "get": {
+        "tags": [
+          "ui-export"
+        ],
+        "summary": "Export Csv",
+        "description": "Export UI data as CSV.\n\nSupported resources:\n- top-sectors: Top sectors by employment (params: year, n)\n- ewi: Early warning indicators (params: year, threshold, n)\n- sector-employment: Sector employment breakdown (params: year)\n- salary-yoy: Salary year-over-year by sector (params: sector)\n- employment-share: Employment share gauge (params: year)\n\nArgs:\n    resource: Resource type to export\n    queries_dir: Optional queries directory path\n    ttl_s: Cache TTL in seconds (60-86400)\n    year: Target year (defaults to latest)\n    n: Top N results (for top-sectors, ewi)\n    sector: Sector name (for salary-yoy)\n    threshold: Threshold value (for ewi)\n\nReturns:\n    CSV file as text/csv with cache headers",
+        "operationId": "export_csv_api_v1_v1_ui_export_csv_get",
+        "parameters": [
+          {
+            "name": "resource",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^(top-sectors|ewi|sector-employment|salary-yoy|employment-share)$",
+              "title": "Resource"
+            }
+          },
+          {
+            "name": "queries_dir",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Queries Dir"
+            }
+          },
+          {
+            "name": "ttl_s",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 86400,
+              "minimum": 60,
+              "default": 300,
+              "title": "Ttl S"
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 2100,
+                  "minimum": 2000
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Year"
+            }
+          },
+          {
+            "name": "n",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 20,
+              "minimum": 1,
+              "default": 5,
+              "title": "N"
+            }
+          },
+          {
+            "name": "sector",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 2,
+                  "maxLength": 80
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sector"
+            }
+          },
+          {
+            "name": "threshold",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "maximum": 100.0,
+              "minimum": 0.0,
+              "default": 3.0,
+              "title": "Threshold"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deterministic CSV export. See ExportCSVMeta for caching headers.",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "text/csv": {
+                "example": "title,subtitle,kpi,unit\nEnergy,Employment 2024,24000,persons"
+              }
+            },
+            "headers": {
+              "ETag": {
+                "description": "Strong validator representing the file contents.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "description": "Cache-Control header applied to the export response.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not modified when If-None-Match matches resource ETag."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/v1/ui/export/svg": {
+      "get": {
+        "tags": [
+          "ui-export"
+        ],
+        "summary": "Export Svg",
+        "description": "Export chart as SVG.\n\nSupported charts:\n- sector-employment: Bar chart of sector employment (params: year)\n- salary-yoy: Line chart of salary YoY by sector (params: sector)\n\nArgs:\n    chart: Chart type to export\n    queries_dir: Optional queries directory path\n    ttl_s: Cache TTL in seconds (60-86400)\n    year: Target year (defaults to latest)\n    sector: Sector name (for salary-yoy)\n\nReturns:\n    SVG file as image/svg+xml with cache headers",
+        "operationId": "export_svg_api_v1_v1_ui_export_svg_get",
+        "parameters": [
+          {
+            "name": "chart",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^(sector-employment|salary-yoy)$",
+              "title": "Chart"
+            }
+          },
+          {
+            "name": "queries_dir",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Queries Dir"
+            }
+          },
+          {
+            "name": "ttl_s",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 86400,
+              "minimum": 60,
+              "default": 300,
+              "title": "Ttl S"
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 2100,
+                  "minimum": 2000
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Year"
+            }
+          },
+          {
+            "name": "sector",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 2,
+                  "maxLength": 80
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sector"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deterministic SVG export. See ExportSVGMeta for caching headers.",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "image/svg+xml": {
+                "example": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"200\" height=\"100\"><title>Example</title></svg>"
+              }
+            },
+            "headers": {
+              "ETag": {
+                "description": "Strong validator representing the SVG markup.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "description": "Cache-Control header applied to the export response.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not modified when If-None-Match matches resource ETag."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/v1/ui/export/png": {
+      "get": {
+        "tags": [
+          "ui-export"
+        ],
+        "summary": "Export Png",
+        "description": "Optional PNG export. If Pillow is missing or QNWIS_ENABLE_PNG_EXPORT != '1',\nrespond 406 with JSON and suggest using /v1/ui/export/svg instead.\n\nArgs:\n    chart: Chart type to export\n    queries_dir: Optional queries directory path\n    ttl_s: Cache TTL in seconds (60-86400)\n    year: Target year (defaults to latest)\n    sector: Sector name (for salary-yoy)\n\nReturns:\n    PNG file as image/png with cache headers\n\nRaises:\n    HTTPException: 406 if PNG export is disabled or Pillow not installed",
+        "operationId": "export_png_api_v1_v1_ui_export_png_get",
+        "parameters": [
+          {
+            "name": "chart",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^(sector-employment|salary-yoy)$",
+              "title": "Chart"
+            }
+          },
+          {
+            "name": "queries_dir",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Queries Dir"
+            }
+          },
+          {
+            "name": "ttl_s",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 86400,
+              "minimum": 60,
+              "default": 300,
+              "title": "Ttl S"
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 2100,
+                  "minimum": 2000
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Year"
+            }
+          },
+          {
+            "name": "sector",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 2,
+                  "maxLength": 80
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sector"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PNG snapshot when enabled (requires Pillow).",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "image/png": {}
+            },
+            "headers": {
+              "ETag": {
+                "description": "Strong validator representing the SVG markup.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "description": "Cache-Control header applied to the export response.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not modified when If-None-Match matches resource ETag."
+          },
+          "406": {
+            "description": "PNG export disabled when QNWIS_ENABLE_PNG_EXPORT != 1 or Pillow missing."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/v1/ui/cards/top-sectors": {
+      "get": {
+        "tags": [
+          "ui"
+        ],
+        "summary": "Ui Cards Top Sectors",
+        "description": "Get KPI cards for top sectors by employment.",
+        "operationId": "ui_cards_top_sectors_api_v1_v1_ui_cards_top_sectors_get",
+        "parameters": [
+          {
+            "name": "queries_dir",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Queries Dir"
+            }
+          },
+          {
+            "name": "ttl_s",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 86400,
+              "minimum": 60,
+              "default": 300,
+              "title": "Ttl S"
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 2100,
+                  "minimum": 2000
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Year"
+            }
+          },
+          {
+            "name": "n",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 20,
+              "minimum": 1,
+              "default": 5,
+              "title": "N"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UICardsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/v1/ui/cards/ewi": {
+      "get": {
+        "tags": [
+          "ui"
+        ],
+        "summary": "Ui Cards Ewi",
+        "description": "Get KPI cards for early warning indicators (employment drop hotlist).",
+        "operationId": "ui_cards_ewi_api_v1_v1_ui_cards_ewi_get",
+        "parameters": [
+          {
+            "name": "queries_dir",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Queries Dir"
+            }
+          },
+          {
+            "name": "ttl_s",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 86400,
+              "minimum": 60,
+              "default": 300,
+              "title": "Ttl S"
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 2100,
+                  "minimum": 2000
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Year"
+            }
+          },
+          {
+            "name": "threshold",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "maximum": 100.0,
+              "minimum": 0.0,
+              "default": 3.0,
+              "title": "Threshold"
+            }
+          },
+          {
+            "name": "n",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 20,
+              "minimum": 1,
+              "default": 5,
+              "title": "N"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UICardsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/v1/ui/charts/salary-yoy": {
+      "get": {
+        "tags": [
+          "ui"
+        ],
+        "summary": "Ui Chart Salary Yoy",
+        "description": "Get time series chart data for salary year-over-year growth.",
+        "operationId": "ui_chart_salary_yoy_api_v1_v1_ui_charts_salary_yoy_get",
+        "parameters": [
+          {
+            "name": "queries_dir",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Queries Dir"
+            }
+          },
+          {
+            "name": "ttl_s",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 86400,
+              "minimum": 60,
+              "default": 300,
+              "title": "Ttl S"
+            }
+          },
+          {
+            "name": "sector",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 80,
+              "title": "Sector"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SalaryYoYChartResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/v1/ui/charts/sector-employment": {
+      "get": {
+        "tags": [
+          "ui"
+        ],
+        "summary": "Ui Chart Sector Employment",
+        "description": "Get bar chart data for sector employment in a given year.",
+        "operationId": "ui_chart_sector_employment_api_v1_v1_ui_charts_sector_employment_get",
+        "parameters": [
+          {
+            "name": "queries_dir",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Queries Dir"
+            }
+          },
+          {
+            "name": "ttl_s",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 86400,
+              "minimum": 60,
+              "default": 300,
+              "title": "Ttl S"
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 2100,
+                  "minimum": 2000
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Year"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SectorEmploymentChartResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/v1/ui/charts/employment-share": {
+      "get": {
+        "tags": [
+          "ui"
+        ],
+        "summary": "Ui Chart Employment Share",
+        "description": "Get gauge data for employment share (male/female/total percentages).",
+        "operationId": "ui_chart_employment_share_api_v1_v1_ui_charts_employment_share_get",
+        "parameters": [
+          {
+            "name": "queries_dir",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Queries Dir"
+            }
+          },
+          {
+            "name": "ttl_s",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 86400,
+              "minimum": 60,
+              "default": 300,
+              "title": "Ttl S"
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 2100,
+                  "minimum": 2000
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Year"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmploymentShareGaugeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/v1/ui/dashboard/summary": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Dashboard Summary Html",
+        "description": "Get HTML dashboard with embedded PNG charts and KPI cards.\n\nArgs:\n    queries_dir: Optional queries directory path\n    ttl_s: Cache TTL in seconds (60-86400)\n    year: Target year (defaults to latest available)\n    sector: Sector name for salary YoY chart\n\nReturns:\n    HTML document with embedded base64 PNG images\n\nExample:\n    GET /v1/ui/dashboard/summary?year=2024&sector=Energy",
+        "operationId": "dashboard_summary_html_api_v1_v1_ui_dashboard_summary_get",
+        "parameters": [
+          {
+            "name": "queries_dir",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Queries Dir"
+            }
+          },
+          {
+            "name": "ttl_s",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 86400,
+              "minimum": 60,
+              "default": 300,
+              "title": "Ttl S"
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Year"
+            }
+          },
+          {
+            "name": "sector",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "default": "Energy",
+              "title": "Sector"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/v1/ui/export/sector-employment.csv": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Export Sector Employment Csv",
+        "description": "Export sector employment data as CSV.\n\nArgs:\n    queries_dir: Optional queries directory path\n    ttl_s: Cache TTL in seconds (60-86400)\n    year: Target year (required)\n\nReturns:\n    CSV file with columns: year, sector, employees\n\nExample:\n    GET /v1/ui/export/sector-employment.csv?year=2024",
+        "operationId": "export_sector_employment_csv_api_v1_v1_ui_export_sector_employment_csv_get",
+        "parameters": [
+          {
+            "name": "queries_dir",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Queries Dir"
+            }
+          },
+          {
+            "name": "ttl_s",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 86400,
+              "minimum": 60,
+              "default": 300,
+              "title": "Ttl S"
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 2100,
+              "minimum": 2000,
+              "title": "Year"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/v1/ui/export/top-sectors.csv": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Export Top Sectors Csv",
+        "description": "Export top N sectors by employment as CSV.\n\nArgs:\n    queries_dir: Optional queries directory path\n    ttl_s: Cache TTL in seconds (60-86400)\n    year: Target year (defaults to latest available)\n    n: Number of top sectors to return\n\nReturns:\n    CSV file with columns: year, sector, employees\n\nExample:\n    GET /v1/ui/export/top-sectors.csv?year=2024&n=5",
+        "operationId": "export_top_sectors_csv_api_v1_v1_ui_export_top_sectors_csv_get",
+        "parameters": [
+          {
+            "name": "queries_dir",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Queries Dir"
+            }
+          },
+          {
+            "name": "ttl_s",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 86400,
+              "minimum": 60,
+              "default": 300,
+              "title": "Ttl S"
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Year"
+            }
+          },
+          {
+            "name": "n",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 20,
+              "minimum": 1,
+              "default": 5,
+              "title": "N"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/v1/ui/export/salary-yoy.png": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Export Salary Yoy Png",
+        "description": "Export salary year-over-year line chart as PNG.\n\nArgs:\n    queries_dir: Optional queries directory path\n    ttl_s: Cache TTL in seconds (60-86400)\n    sector: Sector name (required)\n\nReturns:\n    PNG image (matplotlib-generated)\n\nExample:\n    GET /v1/ui/export/salary-yoy.png?sector=Energy",
+        "operationId": "export_salary_yoy_png_api_v1_v1_ui_export_salary_yoy_png_get",
+        "parameters": [
+          {
+            "name": "queries_dir",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Queries Dir"
+            }
+          },
+          {
+            "name": "ttl_s",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 86400,
+              "minimum": 60,
+              "default": 300,
+              "title": "Ttl S"
+            }
+          },
+          {
+            "name": "sector",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "title": "Sector"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/v1/ui/export/sector-employment.png": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Export Sector Employment Png",
+        "description": "Export sector employment bar chart as PNG.\n\nArgs:\n    queries_dir: Optional queries directory path\n    ttl_s: Cache TTL in seconds (60-86400)\n    year: Target year (required)\n\nReturns:\n    PNG image (matplotlib-generated)\n\nExample:\n    GET /v1/ui/export/sector-employment.png?year=2024",
+        "operationId": "export_sector_employment_png_api_v1_v1_ui_export_sector_employment_png_get",
+        "parameters": [
+          {
+            "name": "queries_dir",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Queries Dir"
+            }
+          },
+          {
+            "name": "ttl_s",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 86400,
+              "minimum": 60,
+              "default": 300,
+              "title": "Ttl S"
+            }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 2100,
+              "minimum": 2000,
+              "title": "Year"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/v1/council/run": {
+      "post": {
+        "tags": [
+          "council"
+        ],
+        "summary": "Council Run",
+        "description": "Execute multi-agent council with deterministic data access.\n\nRuns all 5 agents sequentially, verifies outputs against numeric\ninvariants, and synthesizes a unified council report with consensus metrics.\n\nArgs:\n    queries_dir: Optional path to query definitions directory\n    ttl_s: Cache TTL in seconds (default: 300)\n\nReturns:\n    Dictionary containing:\n        - council: CouncilReport with findings, consensus, warnings\n        - verification: Agent-level verification results",
+        "operationId": "council_run_api_v1_v1_council_run_post",
+        "parameters": [
+          {
+            "name": "queries_dir",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Queries Dir"
+            }
+          },
+          {
+            "name": "ttl_s",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 300,
+              "title": "Ttl S"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Council Run Api V1 V1 Council Run Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/api/v1/continuity/plan": {
+      "post": {
+        "tags": [
+          "continuity"
+        ],
+        "summary": "Generate Plan",
+        "description": "Generate continuity plan from cluster and policy configuration.\n\nRequires admin or service role.",
+        "operationId": "generate_plan_api_v1_api_v1_continuity_plan_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/api/v1/continuity/execute": {
+      "post": {
+        "tags": [
+          "continuity"
+        ],
+        "summary": "Execute Plan",
+        "description": "Execute failover plan.\n\nRequires admin or service role.",
+        "operationId": "execute_plan_api_v1_api_v1_continuity_execute_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExecuteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExecuteResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/api/v1/continuity/status": {
+      "post": {
+        "tags": [
+          "continuity"
+        ],
+        "summary": "Get Status",
+        "description": "Get cluster and quorum status.\n\nRequires admin or service role.",
+        "operationId": "get_status_api_v1_api_v1_continuity_status_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatusRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/api/v1/continuity/simulate": {
+      "post": {
+        "tags": [
+          "continuity"
+        ],
+        "summary": "Simulate Failover",
+        "description": "Run deterministic failover simulation.\n\nRequires admin or service role.",
+        "operationId": "simulate_failover_api_v1_api_v1_continuity_simulate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimulateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/api/v1/dr/backup": {
+      "post": {
+        "tags": [
+          "dr"
+        ],
+        "summary": "Create Backup",
+        "description": "Create a backup snapshot.\n\nRequires admin or service role.",
+        "operationId": "create_backup_api_v1_api_v1_dr_backup_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/api/v1/dr/restore": {
+      "post": {
+        "tags": [
+          "dr"
+        ],
+        "summary": "Restore Snapshot",
+        "description": "Restore from a snapshot.\n\nRequires admin or service role.",
+        "operationId": "restore_snapshot_api_v1_api_v1_dr_restore_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RestoreRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RestoreResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/api/v1/dr/snapshots": {
+      "get": {
+        "tags": [
+          "dr"
+        ],
+        "summary": "List Snapshots",
+        "description": "List available snapshots.\n\nRequires admin, service, or analyst role.",
+        "operationId": "list_snapshots_api_v1_api_v1_dr_snapshots_get",
+        "parameters": [
+          {
+            "name": "storage_target_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Storage Target Id"
+            }
+          },
+          {
+            "name": "tag",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tag"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SnapshotsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/api/v1/dr/verify/{snapshot_id}": {
+      "post": {
+        "tags": [
+          "dr"
+        ],
+        "summary": "Verify Snapshot",
+        "description": "Verify a snapshot.\n\nRequires admin or service role.",
+        "operationId": "verify_snapshot_api_v1_api_v1_dr_verify__snapshot_id__post",
+        "parameters": [
+          {
+            "name": "snapshot_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Snapshot Id"
+            }
+          },
+          {
+            "name": "storage_target_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Storage Target Id"
+            }
+          },
+          {
+            "name": "key_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Key Id"
+            }
+          },
+          {
+            "name": "sample_count",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 5,
+              "title": "Sample Count"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerifyResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/v1/briefing/minister": {
+      "post": {
+        "tags": [
+          "briefing"
+        ],
+        "summary": "Minister Briefing",
+        "description": "Generate Minister Briefing combining council findings and verification.\n\nThis endpoint:\n1. Runs the agent council on synthetic data\n2. Performs cross-source triangulation checks\n3. Returns a structured briefing with embedded Markdown\n\nArgs:\n    queries_dir: Optional queries directory path\n    ttl_s: Cache TTL in seconds\n\nReturns:\n    JSON with briefing structure including:\n    - title: Briefing title\n    - headline: List of key bullet points\n    - key_metrics: Dictionary of numeric metrics\n    - red_flags: List of verification issues\n    - provenance: List of data source locators\n    - markdown: Full briefing in Markdown format",
+        "operationId": "minister_briefing_api_v1_v1_briefing_minister_post",
+        "parameters": [
+          {
+            "name": "queries_dir",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Queries Dir"
+            }
+          },
+          {
+            "name": "ttl_s",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 300,
+              "title": "Ttl S"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Minister Briefing Api V1 V1 Briefing Minister Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/api/v1/slo/": {
+      "get": {
+        "tags": [
+          "slo"
+        ],
+        "summary": "List Slos",
+        "operationId": "list_slos_api_v1_api_v1_slo__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response List Slos Api V1 Api V1 Slo  Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/api/v1/slo/budget": {
+      "get": {
+        "tags": [
+          "slo"
+        ],
+        "summary": "Get Budgets",
+        "operationId": "get_budgets_api_v1_api_v1_slo_budget_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Get Budgets Api V1 Api V1 Slo Budget Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/api/v1/slo/simulate": {
+      "post": {
+        "tags": [
+          "slo"
+        ],
+        "summary": "Simulate",
+        "operationId": "simulate_api_v1_api_v1_slo_simulate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Simulate Api V1 Api V1 Slo Simulate Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/notify/send": {
+      "post": {
+        "tags": [
+          "notifications"
+        ],
+        "summary": "Send Notification",
+        "description": "Send a notification (admin/service only).\n\nRequires admin or service role.",
+        "operationId": "send_notification_api_v1_notify_send_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendNotificationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidents": {
+      "get": {
+        "tags": [
+          "notifications"
+        ],
+        "summary": "List Incidents",
+        "description": "List incidents with optional filters.\n\nSupports filtering by state, severity, rule_id.",
+        "operationId": "list_incidents_api_v1_incidents_get",
+        "parameters": [
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by state",
+              "title": "State"
+            },
+            "description": "Filter by state"
+          },
+          {
+            "name": "severity",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by severity",
+              "title": "Severity"
+            },
+            "description": "Filter by severity"
+          },
+          {
+            "name": "rule_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by rule ID",
+              "title": "Rule Id"
+            },
+            "description": "Filter by rule ID"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Maximum results",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "Maximum results"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/stats": {
+      "get": {
+        "tags": [
+          "notifications"
+        ],
+        "summary": "Get Incident Stats",
+        "description": "Get incident statistics.",
+        "operationId": "get_incident_stats_api_v1_incidents_stats_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentStatsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/{incident_id}": {
+      "get": {
+        "tags": [
+          "notifications"
+        ],
+        "summary": "Get Incident",
+        "description": "Get incident details by ID.",
+        "operationId": "get_incident_api_v1_incidents__incident_id__get",
+        "parameters": [
+          {
+            "name": "incident_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Incident Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/{incident_id}/ack": {
+      "post": {
+        "tags": [
+          "notifications"
+        ],
+        "summary": "Acknowledge Incident",
+        "description": "Acknowledge an incident (OPEN \u2192 ACK).",
+        "operationId": "acknowledge_incident_api_v1_incidents__incident_id__ack_post",
+        "parameters": [
+          {
+            "name": "incident_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Incident Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/{incident_id}/resolve": {
+      "post": {
+        "tags": [
+          "notifications"
+        ],
+        "summary": "Resolve Incident",
+        "description": "Resolve an incident (any state \u2192 RESOLVED).",
+        "operationId": "resolve_incident_api_v1_incidents__incident_id__resolve_post",
+        "parameters": [
+          {
+            "name": "incident_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Incident Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/incidents/{incident_id}/silence": {
+      "post": {
+        "tags": [
+          "notifications"
+        ],
+        "summary": "Silence Incident",
+        "description": "Silence an incident (OPEN|ACK \u2192 SILENCED). Admin only.",
+        "operationId": "silence_incident_api_v1_incidents__incident_id__silence_post",
+        "parameters": [
+          {
+            "name": "incident_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Incident Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AgentRequest": {
+        "properties": {
+          "intent": {
+            "type": "string",
+            "title": "Intent",
+            "description": "Agent intent (e.g., 'time.baseline')"
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params",
+            "description": "Agent parameters"
+          },
+          "options": {
+            "$ref": "#/components/schemas/AgentRequestOptions",
+            "description": "Execution options"
+          }
+        },
+        "type": "object",
+        "required": [
+          "intent"
+        ],
+        "title": "AgentRequest",
+        "description": "Standard request envelope for agent execution.\n\nAttributes:\n    intent: Agent intent (e.g., 'time.baseline', 'pattern.stable_relations')\n    params: Agent-specific parameters\n    options: Execution options (citations, verification, audit)"
+      },
+      "AgentRequestOptions": {
+        "properties": {
+          "enforce_citations": {
+            "type": "boolean",
+            "title": "Enforce Citations",
+            "description": "Enable citation enforcement",
+            "default": true
+          },
+          "verify_numbers": {
+            "type": "boolean",
+            "title": "Verify Numbers",
+            "description": "Enable numeric verification",
+            "default": true
+          },
+          "audit_pack": {
+            "type": "boolean",
+            "title": "Audit Pack",
+            "description": "Generate audit pack",
+            "default": true
+          },
+          "max_rows": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Rows",
+            "description": "Maximum result rows"
+          }
+        },
+        "type": "object",
+        "title": "AgentRequestOptions",
+        "description": "Optional execution options for agent requests.\n\nAttributes:\n    enforce_citations: Enable L19 citation enforcement (default: True)\n    verify_numbers: Enable L20 numeric verification (default: True)\n    audit_pack: Generate L21 audit pack (default: True)\n    max_rows: Maximum result rows (default: None)"
+      },
+      "AgentResponse": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "title": "Request Id",
+            "description": "Unique request identifier"
+          },
+          "audit_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audit Id",
+            "description": "Audit trail identifier"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ConfidenceScore"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Confidence scoring"
+          },
+          "freshness": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FreshnessInfo"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Data freshness"
+          },
+          "result": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Result",
+            "description": "Agent result payload"
+          },
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/Citation"
+            },
+            "type": "array",
+            "title": "Citations",
+            "description": "Citation references"
+          },
+          "timings_ms": {
+            "$ref": "#/components/schemas/TimingsMs",
+            "description": "Execution timings"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings",
+            "description": "Warning messages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "request_id",
+          "timings_ms"
+        ],
+        "title": "AgentResponse",
+        "description": "Standard response envelope for agent execution.\n\nIncludes verification layers (L19-L22) when enabled.\n\nAttributes:\n    request_id: Unique request identifier\n    audit_id: Audit trail identifier (if audit_pack enabled)\n    confidence: L22 confidence scoring\n    freshness: Data freshness information\n    result: Agent-specific result payload\n    citations: L19 citation references\n    timings_ms: Execution timing breakdown\n    warnings: Optional warning messages"
+      },
+      "BackupRequest": {
+        "properties": {
+          "spec": {
+            "$ref": "#/components/schemas/BackupSpec",
+            "description": "Backup specification"
+          },
+          "storage_target_id": {
+            "type": "string",
+            "title": "Storage Target Id",
+            "description": "Storage target identifier"
+          },
+          "key_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Key Id",
+            "description": "Encryption key ID (if using existing key)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "spec",
+          "storage_target_id"
+        ],
+        "title": "BackupRequest",
+        "description": "Request to create a backup."
+      },
+      "BackupResponse": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "title": "Request Id",
+            "description": "Request identifier"
+          },
+          "snapshot_id": {
+            "type": "string",
+            "title": "Snapshot Id",
+            "description": "Created snapshot ID"
+          },
+          "total_bytes": {
+            "type": "integer",
+            "title": "Total Bytes",
+            "description": "Total bytes backed up"
+          },
+          "file_count": {
+            "type": "integer",
+            "title": "File Count",
+            "description": "Number of files backed up"
+          },
+          "manifest_hash": {
+            "type": "string",
+            "title": "Manifest Hash",
+            "description": "Manifest hash"
+          },
+          "timings_ms": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Timings Ms",
+            "description": "Timing breakdown"
+          }
+        },
+        "type": "object",
+        "required": [
+          "request_id",
+          "snapshot_id",
+          "total_bytes",
+          "file_count",
+          "manifest_hash"
+        ],
+        "title": "BackupResponse",
+        "description": "Response for backup operation."
+      },
+      "BackupSpec": {
+        "properties": {
+          "spec_id": {
+            "type": "string",
+            "title": "Spec Id",
+            "description": "Unique backup spec identifier"
+          },
+          "tag": {
+            "type": "string",
+            "title": "Tag",
+            "description": "Human-readable tag"
+          },
+          "datasets": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Datasets",
+            "description": "Dataset IDs to backup"
+          },
+          "audit_packs": {
+            "type": "boolean",
+            "title": "Audit Packs",
+            "description": "Include audit packs",
+            "default": true
+          },
+          "config": {
+            "type": "boolean",
+            "title": "Config",
+            "description": "Include configuration",
+            "default": true
+          },
+          "storage_target": {
+            "type": "string",
+            "title": "Storage Target",
+            "description": "Storage target identifier"
+          },
+          "encryption": {
+            "$ref": "#/components/schemas/EncryptionAlgorithm",
+            "description": "Encryption algorithm",
+            "default": "aes_256_gcm"
+          },
+          "retention_days": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Retention Days",
+            "description": "Retention period in days",
+            "default": 30
+          }
+        },
+        "type": "object",
+        "required": [
+          "spec_id",
+          "tag",
+          "storage_target"
+        ],
+        "title": "BackupSpec",
+        "description": "Specification for a backup operation.\n\nAttributes:\n    spec_id: Unique identifier for this backup spec\n    tag: Human-readable tag (e.g., 'daily', 'pre-deploy')\n    datasets: List of dataset IDs to include\n    audit_packs: Whether to include audit packs\n    config: Whether to include configuration files\n    storage_target: Target storage backend\n    encryption: Encryption algorithm to use\n    retention_days: Number of days to retain this backup"
+      },
+      "BatchQueryItem": {
+        "properties": {
+          "query_id": {
+            "type": "string",
+            "title": "Query Id",
+            "description": "Registered query identifier"
+          },
+          "payload": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QueryRunRequest"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional payload matching QueryRunRequest (ttl + override_params)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "query_id"
+        ],
+        "title": "BatchQueryItem",
+        "description": "Single entry in a batch query request."
+      },
+      "BatchQueryRequest": {
+        "properties": {
+          "queries": {
+            "items": {
+              "$ref": "#/components/schemas/BatchQueryItem"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Queries"
+          }
+        },
+        "type": "object",
+        "required": [
+          "queries"
+        ],
+        "title": "BatchQueryRequest",
+        "description": "Batch request envelope containing multiple deterministic queries."
+      },
+      "BatchQueryResponse": {
+        "properties": {
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/BatchQueryResult"
+            },
+            "type": "array",
+            "title": "Results"
+          }
+        },
+        "type": "object",
+        "title": "BatchQueryResponse",
+        "description": "Response model for batch deterministic query execution."
+      },
+      "BatchQueryResult": {
+        "properties": {
+          "query_id": {
+            "type": "string",
+            "title": "Query Id"
+          },
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "response": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QueryRunResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "query_id",
+          "ok"
+        ],
+        "title": "BatchQueryResult",
+        "description": "Result entry for a batch query execution."
+      },
+      "Channel": {
+        "type": "string",
+        "enum": [
+          "email",
+          "teams",
+          "webhook"
+        ],
+        "title": "Channel",
+        "description": "Notification channels."
+      },
+      "ChartPoint": {
+        "properties": {
+          "x": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "title": "X"
+          },
+          "y": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Y"
+          }
+        },
+        "type": "object",
+        "required": [
+          "x",
+          "y"
+        ],
+        "title": "ChartPoint",
+        "description": "Generic chart data point."
+      },
+      "Citation": {
+        "properties": {
+          "qid": {
+            "type": "string",
+            "title": "Qid",
+            "description": "Query ID"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note",
+            "description": "Citation note"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source",
+            "description": "Data source"
+          }
+        },
+        "type": "object",
+        "required": [
+          "qid",
+          "note"
+        ],
+        "title": "Citation",
+        "description": "L19 citation reference.\n\nAttributes:\n    qid: Query ID (e.g., 'LMIS_RETENTION_TS')\n    note: Citation note (e.g., 'Per LMIS retention data')\n    source: Data source identifier"
+      },
+      "ConfidenceScore": {
+        "properties": {
+          "score": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Score",
+            "description": "Confidence score (0-100)"
+          },
+          "band": {
+            "type": "string",
+            "title": "Band",
+            "description": "Confidence band (low|med|high|very_high)"
+          },
+          "components": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Components",
+            "description": "Component scores"
+          }
+        },
+        "type": "object",
+        "required": [
+          "score",
+          "band"
+        ],
+        "title": "ConfidenceScore",
+        "description": "L22 confidence scoring result.\n\nAttributes:\n    score: Confidence score (0-100)\n    band: Confidence band (low, med, high, very_high)\n    components: Component scores (data_quality, coverage, timeliness)"
+      },
+      "EmploymentShareGaugeResponse": {
+        "properties": {
+          "year": {
+            "type": "integer",
+            "title": "Year"
+          },
+          "male": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Male"
+          },
+          "female": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Female"
+          },
+          "total": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "year",
+          "male",
+          "female",
+          "total"
+        ],
+        "title": "EmploymentShareGaugeResponse",
+        "description": "Gauge output for employment share by gender."
+      },
+      "EncryptionAlgorithm": {
+        "type": "string",
+        "enum": [
+          "aes_256_gcm",
+          "none"
+        ],
+        "title": "EncryptionAlgorithm",
+        "description": "Supported encryption algorithms."
+      },
+      "ExecuteRequest": {
+        "properties": {
+          "plan": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Plan",
+            "description": "Continuity plan"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run",
+            "description": "Dry-run mode",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "plan"
+        ],
+        "title": "ExecuteRequest",
+        "description": "Request to execute failover plan."
+      },
+      "ExecuteResponse": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "title": "Request Id",
+            "description": "Request identifier"
+          },
+          "execution_id": {
+            "type": "string",
+            "title": "Execution Id",
+            "description": "Execution ID"
+          },
+          "plan_id": {
+            "type": "string",
+            "title": "Plan Id",
+            "description": "Plan ID"
+          },
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "description": "Execution success"
+          },
+          "actions_executed": {
+            "type": "integer",
+            "title": "Actions Executed",
+            "description": "Actions executed"
+          },
+          "actions_failed": {
+            "type": "integer",
+            "title": "Actions Failed",
+            "description": "Actions failed"
+          },
+          "total_duration_ms": {
+            "type": "integer",
+            "title": "Total Duration Ms",
+            "description": "Total duration (ms)"
+          },
+          "audit_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audit Id",
+            "description": "Audit pack ID"
+          },
+          "confidence": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Confidence",
+            "description": "Confidence scoring"
+          },
+          "timings_ms": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Timings Ms",
+            "description": "Timing breakdown"
+          }
+        },
+        "type": "object",
+        "required": [
+          "request_id",
+          "execution_id",
+          "plan_id",
+          "success",
+          "actions_executed",
+          "actions_failed",
+          "total_duration_ms"
+        ],
+        "title": "ExecuteResponse",
+        "description": "Response for failover execution."
+      },
+      "FreshnessInfo": {
+        "properties": {
+          "asof_min": {
+            "type": "string",
+            "title": "Asof Min",
+            "description": "Oldest data timestamp (YYYY-MM-DD)"
+          },
+          "asof_max": {
+            "type": "string",
+            "title": "Asof Max",
+            "description": "Newest data timestamp (YYYY-MM-DD)"
+          },
+          "updated_max": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated Max",
+            "description": "Latest update timestamp"
+          },
+          "sources": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Sources",
+            "description": "Per-source freshness"
+          }
+        },
+        "type": "object",
+        "required": [
+          "asof_min",
+          "asof_max"
+        ],
+        "title": "FreshnessInfo",
+        "description": "Data freshness information.\n\nAttributes:\n    asof_min: Oldest data timestamp\n    asof_max: Newest data timestamp\n    updated_max: Latest update timestamp\n    sources: Per-source freshness"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "IncidentListResponse": {
+        "properties": {
+          "incidents": {
+            "items": {
+              "$ref": "#/components/schemas/IncidentResponse"
+            },
+            "type": "array",
+            "title": "Incidents"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "filters": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Filters"
+          }
+        },
+        "type": "object",
+        "required": [
+          "incidents",
+          "total",
+          "filters"
+        ],
+        "title": "IncidentListResponse",
+        "description": "List of incidents with metadata."
+      },
+      "IncidentResponse": {
+        "properties": {
+          "incident_id": {
+            "type": "string",
+            "title": "Incident Id"
+          },
+          "notification_id": {
+            "type": "string",
+            "title": "Notification Id"
+          },
+          "rule_id": {
+            "type": "string",
+            "title": "Rule Id"
+          },
+          "severity": {
+            "type": "string",
+            "title": "Severity"
+          },
+          "state": {
+            "type": "string",
+            "title": "State"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "scope": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Scope"
+          },
+          "window_start": {
+            "type": "string",
+            "title": "Window Start"
+          },
+          "window_end": {
+            "type": "string",
+            "title": "Window End"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "title": "Updated At"
+          },
+          "ack_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ack At"
+          },
+          "resolved_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved At"
+          },
+          "consecutive_green_count": {
+            "type": "integer",
+            "title": "Consecutive Green Count"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "incident_id",
+          "notification_id",
+          "rule_id",
+          "severity",
+          "state",
+          "message",
+          "scope",
+          "window_start",
+          "window_end",
+          "created_at",
+          "updated_at",
+          "consecutive_green_count",
+          "metadata"
+        ],
+        "title": "IncidentResponse",
+        "description": "Incident response model."
+      },
+      "IncidentStatsResponse": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "by_state": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "By State"
+          },
+          "by_severity": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "By Severity"
+          },
+          "by_rule": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "By Rule"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "by_state",
+          "by_severity",
+          "by_rule"
+        ],
+        "title": "IncidentStatsResponse",
+        "description": "Incident statistics."
+      },
+      "NotificationResponse": {
+        "properties": {
+          "notification_id": {
+            "type": "string",
+            "title": "Notification Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "results": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Results"
+          }
+        },
+        "type": "object",
+        "required": [
+          "notification_id",
+          "status",
+          "results"
+        ],
+        "title": "NotificationResponse",
+        "description": "Response after sending notification."
+      },
+      "PaginationMeta": {
+        "properties": {
+          "page": {
+            "type": "integer",
+            "title": "Page"
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size"
+          },
+          "total_items": {
+            "type": "integer",
+            "title": "Total Items"
+          },
+          "total_pages": {
+            "type": "integer",
+            "title": "Total Pages"
+          },
+          "has_prev": {
+            "type": "boolean",
+            "title": "Has Prev"
+          },
+          "has_next": {
+            "type": "boolean",
+            "title": "Has Next"
+          }
+        },
+        "type": "object",
+        "required": [
+          "page",
+          "page_size",
+          "total_items",
+          "total_pages",
+          "has_prev",
+          "has_next"
+        ],
+        "title": "PaginationMeta",
+        "description": "Metadata describing paginated deterministic query results."
+      },
+      "PlanRequest": {
+        "properties": {
+          "cluster": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Cluster",
+            "description": "Cluster configuration"
+          },
+          "policy": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Policy",
+            "description": "Failover policy"
+          },
+          "trigger_reason": {
+            "type": "string",
+            "title": "Trigger Reason",
+            "description": "Failover trigger reason",
+            "default": "manual"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cluster",
+          "policy"
+        ],
+        "title": "PlanRequest",
+        "description": "Request to generate continuity plan."
+      },
+      "PlanResponse": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "title": "Request Id",
+            "description": "Request identifier"
+          },
+          "plan_id": {
+            "type": "string",
+            "title": "Plan Id",
+            "description": "Generated plan ID"
+          },
+          "cluster_id": {
+            "type": "string",
+            "title": "Cluster Id",
+            "description": "Cluster ID"
+          },
+          "policy_id": {
+            "type": "string",
+            "title": "Policy Id",
+            "description": "Policy ID"
+          },
+          "primary_node_id": {
+            "type": "string",
+            "title": "Primary Node Id",
+            "description": "Current primary node"
+          },
+          "failover_target_id": {
+            "type": "string",
+            "title": "Failover Target Id",
+            "description": "Failover target node"
+          },
+          "estimated_total_ms": {
+            "type": "integer",
+            "title": "Estimated Total Ms",
+            "description": "Estimated execution time (ms)"
+          },
+          "action_count": {
+            "type": "integer",
+            "title": "Action Count",
+            "description": "Number of actions"
+          },
+          "timings_ms": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Timings Ms",
+            "description": "Timing breakdown"
+          }
+        },
+        "type": "object",
+        "required": [
+          "request_id",
+          "plan_id",
+          "cluster_id",
+          "policy_id",
+          "primary_node_id",
+          "failover_target_id",
+          "estimated_total_ms",
+          "action_count"
+        ],
+        "title": "PlanResponse",
+        "description": "Response for plan generation."
+      },
+      "QueryRunRequest": {
+        "properties": {
+          "ttl_s": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ttl S",
+            "description": "Override cache TTL (seconds)"
+          },
+          "override_params": {
+            "title": "Override Params",
+            "description": "Whitelisted parameter overrides (year, timeout_s, max_rows, to_percent)"
+          }
+        },
+        "type": "object",
+        "title": "QueryRunRequest",
+        "description": "Request model for executing a deterministic query."
+      },
+      "QueryRunResponse": {
+        "properties": {
+          "query_id": {
+            "type": "string",
+            "title": "Query Id"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit"
+          },
+          "rows": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "row_count": {
+            "type": "integer",
+            "title": "Row Count"
+          },
+          "provenance": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Provenance"
+          },
+          "freshness": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Freshness"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "pagination": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PaginationMeta"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "auto_paginated": {
+            "type": "boolean",
+            "title": "Auto Paginated",
+            "default": false
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "query_id",
+          "unit",
+          "rows",
+          "row_count",
+          "provenance",
+          "freshness"
+        ],
+        "title": "QueryRunResponse",
+        "description": "Response model for query execution results."
+      },
+      "RestoreRequest": {
+        "properties": {
+          "snapshot_id": {
+            "type": "string",
+            "title": "Snapshot Id",
+            "description": "Snapshot to restore"
+          },
+          "target_path": {
+            "type": "string",
+            "title": "Target Path",
+            "description": "Restore destination"
+          },
+          "storage_target_id": {
+            "type": "string",
+            "title": "Storage Target Id",
+            "description": "Storage target identifier"
+          },
+          "key_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Key Id",
+            "description": "Decryption key ID"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run",
+            "description": "Dry-run mode",
+            "default": false
+          },
+          "overwrite": {
+            "type": "boolean",
+            "title": "Overwrite",
+            "description": "Overwrite existing files",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "snapshot_id",
+          "target_path",
+          "storage_target_id"
+        ],
+        "title": "RestoreRequest",
+        "description": "Request to restore from snapshot."
+      },
+      "RestoreResponse": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "title": "Request Id",
+            "description": "Request identifier"
+          },
+          "plan_id": {
+            "type": "string",
+            "title": "Plan Id",
+            "description": "Restore plan ID"
+          },
+          "files_restored": {
+            "type": "integer",
+            "title": "Files Restored",
+            "description": "Number of files restored"
+          },
+          "bytes_restored": {
+            "type": "integer",
+            "title": "Bytes Restored",
+            "description": "Bytes restored"
+          },
+          "files_skipped": {
+            "type": "integer",
+            "title": "Files Skipped",
+            "description": "Files skipped"
+          },
+          "timings_ms": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Timings Ms",
+            "description": "Timing breakdown"
+          }
+        },
+        "type": "object",
+        "required": [
+          "request_id",
+          "plan_id",
+          "files_restored",
+          "bytes_restored",
+          "files_skipped"
+        ],
+        "title": "RestoreResponse",
+        "description": "Response for restore operation."
+      },
+      "SalaryYoYChartResponse": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "series": {
+            "items": {
+              "$ref": "#/components/schemas/ChartPoint"
+            },
+            "type": "array",
+            "title": "Series"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title"
+        ],
+        "title": "SalaryYoYChartResponse",
+        "description": "Time-series chart showing salary year-over-year growth."
+      },
+      "SectorEmploymentChartResponse": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "categories": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Categories"
+          },
+          "values": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Values"
+          },
+          "year": {
+            "type": "integer",
+            "title": "Year"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "year"
+        ],
+        "title": "SectorEmploymentChartResponse",
+        "description": "Bar chart of sector employment distribution."
+      },
+      "SendNotificationRequest": {
+        "properties": {
+          "rule_id": {
+            "type": "string",
+            "title": "Rule Id",
+            "description": "Alert rule ID"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/Severity",
+            "description": "Alert severity"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "Notification message"
+          },
+          "scope": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Scope",
+            "description": "Alert scope"
+          },
+          "window_start": {
+            "type": "string",
+            "title": "Window Start",
+            "description": "Alert window start (ISO 8601)"
+          },
+          "window_end": {
+            "type": "string",
+            "title": "Window End",
+            "description": "Alert window end (ISO 8601)"
+          },
+          "channels": {
+            "items": {
+              "$ref": "#/components/schemas/Channel"
+            },
+            "type": "array",
+            "title": "Channels",
+            "description": "Target channels"
+          },
+          "evidence": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Evidence",
+            "description": "Supporting evidence"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rule_id",
+          "severity",
+          "message",
+          "window_start",
+          "window_end"
+        ],
+        "title": "SendNotificationRequest",
+        "description": "Request to send a notification."
+      },
+      "Severity": {
+        "type": "string",
+        "enum": [
+          "info",
+          "warning",
+          "error",
+          "critical"
+        ],
+        "title": "Severity",
+        "description": "Alert severity levels."
+      },
+      "SimulateRequest": {
+        "properties": {
+          "cluster": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Cluster",
+            "description": "Cluster configuration"
+          },
+          "policy": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Policy",
+            "description": "Failover policy"
+          },
+          "scenario": {
+            "type": "string",
+            "title": "Scenario",
+            "description": "Simulation scenario",
+            "default": "primary_failure"
+          },
+          "seed": {
+            "type": "integer",
+            "title": "Seed",
+            "description": "Random seed",
+            "default": 42
+          }
+        },
+        "type": "object",
+        "required": [
+          "cluster",
+          "policy"
+        ],
+        "title": "SimulateRequest",
+        "description": "Request for failover simulation."
+      },
+      "SimulateResponse": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "title": "Request Id",
+            "description": "Request identifier"
+          },
+          "scenario": {
+            "type": "string",
+            "title": "Scenario",
+            "description": "Simulation scenario"
+          },
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "description": "Simulation success"
+          },
+          "failover": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Failover",
+            "description": "Failover results"
+          },
+          "verification": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Verification",
+            "description": "Verification results"
+          },
+          "timings_ms": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Timings Ms",
+            "description": "Timing breakdown"
+          }
+        },
+        "type": "object",
+        "required": [
+          "request_id",
+          "scenario",
+          "success"
+        ],
+        "title": "SimulateResponse",
+        "description": "Response for failover simulation."
+      },
+      "SnapshotInfo": {
+        "properties": {
+          "snapshot_id": {
+            "type": "string",
+            "title": "Snapshot Id"
+          },
+          "tag": {
+            "type": "string",
+            "title": "Tag"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "total_bytes": {
+            "type": "integer",
+            "title": "Total Bytes"
+          },
+          "file_count": {
+            "type": "integer",
+            "title": "File Count"
+          },
+          "encrypted": {
+            "type": "boolean",
+            "title": "Encrypted"
+          }
+        },
+        "type": "object",
+        "required": [
+          "snapshot_id",
+          "tag",
+          "created_at",
+          "total_bytes",
+          "file_count",
+          "encrypted"
+        ],
+        "title": "SnapshotInfo",
+        "description": "Snapshot information."
+      },
+      "SnapshotsResponse": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "title": "Request Id",
+            "description": "Request identifier"
+          },
+          "snapshots": {
+            "items": {
+              "$ref": "#/components/schemas/SnapshotInfo"
+            },
+            "type": "array",
+            "title": "Snapshots",
+            "description": "Snapshot list"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "description": "Total count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "request_id",
+          "count"
+        ],
+        "title": "SnapshotsResponse",
+        "description": "Response for list snapshots."
+      },
+      "StatusRequest": {
+        "properties": {
+          "cluster": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Cluster",
+            "description": "Cluster configuration"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cluster"
+        ],
+        "title": "StatusRequest",
+        "description": "Request for cluster status."
+      },
+      "StatusResponse": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "title": "Request Id",
+            "description": "Request identifier"
+          },
+          "cluster_id": {
+            "type": "string",
+            "title": "Cluster Id",
+            "description": "Cluster ID"
+          },
+          "total_nodes": {
+            "type": "integer",
+            "title": "Total Nodes",
+            "description": "Total nodes"
+          },
+          "healthy_nodes": {
+            "type": "integer",
+            "title": "Healthy Nodes",
+            "description": "Healthy nodes"
+          },
+          "quorum_size": {
+            "type": "integer",
+            "title": "Quorum Size",
+            "description": "Required quorum size"
+          },
+          "has_quorum": {
+            "type": "boolean",
+            "title": "Has Quorum",
+            "description": "Quorum achieved"
+          },
+          "primary_node_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primary Node Id",
+            "description": "Current primary node"
+          },
+          "timings_ms": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Timings Ms",
+            "description": "Timing breakdown"
+          }
+        },
+        "type": "object",
+        "required": [
+          "request_id",
+          "cluster_id",
+          "total_nodes",
+          "healthy_nodes",
+          "quorum_size",
+          "has_quorum"
+        ],
+        "title": "StatusResponse",
+        "description": "Response for cluster status."
+      },
+      "TimingsMs": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Total execution time (ms)"
+          },
+          "agent": {
+            "type": "integer",
+            "title": "Agent",
+            "description": "Agent execution time (ms)"
+          },
+          "verification": {
+            "type": "integer",
+            "title": "Verification",
+            "description": "Verification time (ms)",
+            "default": 0
+          },
+          "cache": {
+            "type": "integer",
+            "title": "Cache",
+            "description": "Cache access time (ms)",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "agent"
+        ],
+        "title": "TimingsMs",
+        "description": "Execution timing breakdown in milliseconds.\n\nAttributes:\n    total: Total execution time\n    agent: Agent execution time\n    verification: Verification time\n    cache: Cache access time"
+      },
+      "UICard": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "subtitle": {
+            "type": "string",
+            "title": "Subtitle"
+          },
+          "kpi": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "title": "Kpi"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit"
+          },
+          "meta": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "subtitle",
+          "kpi",
+          "unit"
+        ],
+        "title": "UICard",
+        "description": "Single KPI card used by UI demos."
+      },
+      "UICardsResponse": {
+        "properties": {
+          "cards": {
+            "items": {
+              "$ref": "#/components/schemas/UICard"
+            },
+            "type": "array",
+            "title": "Cards"
+          }
+        },
+        "type": "object",
+        "title": "UICardsResponse",
+        "description": "Envelope for KPI cards responses."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "VerifyResponse": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "title": "Request Id",
+            "description": "Request identifier"
+          },
+          "report_id": {
+            "type": "string",
+            "title": "Report Id",
+            "description": "Verification report ID"
+          },
+          "passed": {
+            "type": "boolean",
+            "title": "Passed",
+            "description": "Verification passed"
+          },
+          "manifest_ok": {
+            "type": "boolean",
+            "title": "Manifest Ok",
+            "description": "Manifest verification"
+          },
+          "sample_files_ok": {
+            "type": "boolean",
+            "title": "Sample Files Ok",
+            "description": "Sample files verification"
+          },
+          "decrypt_ok": {
+            "type": "boolean",
+            "title": "Decrypt Ok",
+            "description": "Decryption test"
+          },
+          "restore_smoke_ok": {
+            "type": "boolean",
+            "title": "Restore Smoke Ok",
+            "description": "Restore smoke test"
+          },
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Errors",
+            "description": "Verification errors"
+          },
+          "timings_ms": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Timings Ms",
+            "description": "Timing breakdown"
+          }
+        },
+        "type": "object",
+        "required": [
+          "request_id",
+          "report_id",
+          "passed",
+          "manifest_ok",
+          "sample_files_ok",
+          "decrypt_ok",
+          "restore_smoke_ok"
+        ],
+        "title": "VerifyResponse",
+        "description": "Response for verify operation."
+      }
+    }
+  }
+}

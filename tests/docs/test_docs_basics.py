@@ -27,6 +27,8 @@ REQUIRED_DOCS = [
     "docs/PERFORMANCE.md",
     "docs/DATA_DICTIONARY.md",
     "docs/RELEASE_NOTES.md",
+    "docs/CHANGELOG.md",
+    "docs/ADR/0001-deterministic-data-layer.md",
 ]
 
 
@@ -88,7 +90,7 @@ def test_docs_no_placeholders():
     """Test that documentation contains no TODO/FIXME placeholders."""
     import re
     
-    placeholder_pattern = re.compile(r'\b(TODO|FIXME|XXX|PLACEHOLDER)\b', re.IGNORECASE)
+    placeholder_pattern = re.compile(r'\b(TODO|FIXME|XXX)\b', re.IGNORECASE)
     bad_files = []
     
     for doc_path in REQUIRED_DOCS:

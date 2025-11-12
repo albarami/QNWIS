@@ -1,5 +1,5 @@
 """
-Export OpenAPI schema from FastAPI application.
+Export OpenAPI schema from the FastAPI application.
 
 Generates:
 - docs/api/openapi.json: Complete OpenAPI schema
@@ -9,31 +9,45 @@ Usage:
     python scripts/export_openapi.py
 """
 
-from pathlib import Path
+from __future__ import annotations
+
 import json
 import sys
-from typing import Dict, Any
+import traceback
+from pathlib import Path
+from typing import Any, Dict
+
+
+def _log(msg: str) -> None:
+    """Consistent console logging."""
+    print(f"[openapi] {msg}")
 
 
 def create_app():
     """
-    Import and create FastAPI application.
-    
+    Import and create the FastAPI application.
+
     Returns:
         FastAPI application instance
     """
     try:
-        # Add src to path for imports
         src_path = Path(__file__).resolve().parents[1] / "src"
         if str(src_path) not in sys.path:
             sys.path.insert(0, str(src_path))
-        
+        repo_root = src_path.parent
+        if str(repo_root) not in sys.path:
+            sys.path.insert(0, str(repo_root))
+
         from qnwis.api.server import create_app as app_factory
+    except ImportError as exc:  # pragma: no cover - import guard
+        raise RuntimeError(
+            "Unable to import qnwis.api.server. Verify src/qnwis/api/server.py exists."
+        ) from exc
+
+    try:
         return app_factory()
-    except ImportError as e:
-        print(f"Error importing application: {e}", file=sys.stderr)
-        print("Ensure the application is installed and src/qnwis/api/server.py exists", file=sys.stderr)
-        sys.exit(1)
+    except Exception as exc:  # pragma: no cover - FastAPI bootstrap guard
+        raise RuntimeError("FastAPI application factory raised an exception") from exc
 
 
 def format_parameter(param: Dict[str, Any]) -> str:
@@ -61,30 +75,33 @@ def write_openapi(json_path: Path, md_path: Path) -> None:
         json_path: Path to write JSON schema
         md_path: Path to write Markdown documentation
     """
-    print("Creating FastAPI application...")
+    _log("Bootstrapping FastAPI application")
     app = create_app()
-    
-    print("Generating OpenAPI schema...")
-    schema = app.openapi()
-    
-    # Ensure output directories exist
+
+    _log("Generating OpenAPI schema")
+    try:
+        schema = app.openapi()
+    except Exception as exc:  # pragma: no cover - FastAPI guard
+        raise RuntimeError("FastAPI .openapi() generation failed") from exc
+
     json_path.parent.mkdir(parents=True, exist_ok=True)
     md_path.parent.mkdir(parents=True, exist_ok=True)
-    
-    # Write JSON schema
-    print(f"Writing OpenAPI JSON to {json_path}...")
-    json_path.write_text(json.dumps(schema, indent=2), encoding="utf-8")
-    
-    # Generate Markdown documentation
-    print(f"Writing Markdown documentation to {md_path}...")
+
+    _log(f"Writing OpenAPI JSON to {json_path}")
+    try:
+        json_path.write_text(json.dumps(schema, indent=2), encoding="utf-8")
+    except OSError as exc:  # pragma: no cover - filesystem guard
+        raise RuntimeError(f"Failed to write {json_path}") from exc
+
+    _log(f"Writing Markdown documentation to {md_path}")
     lines = [
         "# QNWIS API Reference (OpenAPI)\n\n",
         f"**Version**: {schema.get('info', {}).get('version', '1.0.0')}  \n",
         f"**Title**: {schema.get('info', {}).get('title', 'QNWIS API')}  \n\n",
         "This document is auto-generated from the FastAPI application.\n\n",
-        "## Endpoints\n\n"
+        "## Endpoints\n\n",
     ]
-    
+
     paths = schema.get("paths", {})
     if not paths:
         lines.append("*No endpoints found*\n")
@@ -130,35 +147,38 @@ def write_openapi(json_path: Path, md_path: Path) -> None:
     
     # Write statistics
     endpoint_count = sum(
-        1 for route in paths.values() 
-        for method in route.keys() 
+        1 for route in paths.values()
+        for method in route.keys()
         if method in ["get", "post", "put", "delete", "patch"]
     )
-    
-    lines.append(f"\n## Summary\n\n")
+
+    lines.append("\n## Summary\n\n")
     lines.append(f"- **Total Endpoints**: {endpoint_count}\n")
     lines.append(f"- **Total Paths**: {len(paths)}\n")
-    
+
     # Write tags summary
     all_tags = set()
     for route in paths.values():
         for method_data in route.values():
             if isinstance(method_data, dict) and "tags" in method_data:
                 all_tags.update(method_data["tags"])
-    
+
     if all_tags:
         lines.append(f"- **Tags**: {', '.join(sorted(all_tags))}\n")
+
+    lines.append("\n---\n\n")
+    lines.append("**Generated**: auto-generated via scripts/export_openapi.py  \n")
+    lines.append("**Source**: FastAPI application at `src/qnwis/api/server.py`\n")
     
-    lines.append(f"\n---\n\n")
-    lines.append(f"**Generated**: {json_path.stat().st_mtime if json_path.exists() else 'now'}  \n")
-    lines.append(f"**Source**: FastAPI application at `src/qnwis/api/server.py`\n")
+    try:
+        md_path.write_text("".join(lines), encoding="utf-8")
+    except OSError as exc:  # pragma: no cover - filesystem guard
+        raise RuntimeError(f"Failed to write {md_path}") from exc
     
-    md_path.write_text("".join(lines), encoding="utf-8")
-    
-    print(f"\n✅ OpenAPI export complete:")
-    print(f"   - JSON: {json_path} ({json_path.stat().st_size} bytes)")
-    print(f"   - Markdown: {md_path} ({md_path.stat().st_size} bytes)")
-    print(f"   - Endpoints: {endpoint_count}")
+    _log("OpenAPI export complete")
+    _log(f" - JSON: {json_path} ({json_path.stat().st_size} bytes)")
+    _log(f" - Markdown: {md_path} ({md_path.stat().st_size} bytes)")
+    _log(f" - Endpoints: {endpoint_count}")
 
 
 def main() -> None:
@@ -169,9 +189,8 @@ def main() -> None:
     
     try:
         write_openapi(json_path, md_path)
-    except Exception as e:
-        print(f"\n❌ Error: {e}", file=sys.stderr)
-        import traceback
+    except Exception as exc:
+        print(f"[openapi] Error: {exc}", file=sys.stderr)
         traceback.print_exc()
         sys.exit(1)
 

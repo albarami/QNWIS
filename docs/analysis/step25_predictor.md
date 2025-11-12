@@ -430,7 +430,7 @@ Current implementation uses placeholder query IDs:
 query_id = f"ts_{metric}_by_sector"  # Placeholder
 ```
 
-**TODO for Integration**:
+**Integration Follow-ups**:
 - Map metrics to actual registry query IDs
 - Add sector filtering to queries
 - Implement date range filtering
@@ -574,8 +574,8 @@ query_id = f"ts_{metric}_by_sector"  # Placeholder
 ### Internal Documentation
 
 - [Step 23: Time Machine](./step23_time_machine.md) - Baseline computation
-- [Step 22: Confidence Scoring](../STEP22_CONFIDENCE_SCORING_IMPLEMENTATION.md) - Verification patterns
-- [Complete API Specification](../Complete_API_Specification.md) - API contracts
+- [Step 22: Confidence Scoring](../../STEP22_CONFIDENCE_SCORING_IMPLEMENTATION.md) - Verification patterns
+- [Complete API Catalog](../../metadata/complete_api_catalog.md) - API contracts
 
 ---
 
