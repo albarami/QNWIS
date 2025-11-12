@@ -7,7 +7,10 @@ WorkingDirectory=/opt/qnwis
 Environment=QNWIS_ENV=prod
 EnvironmentFile=/opt/qnwis/.env
 ExecStart=/usr/local/bin/gunicorn -k uvicorn.workers.UvicornWorker -c configs/gunicorn.conf.py src.qnwis.api.server:create_app()
+ExecStop=/bin/kill -s SIGTERM $MAINPID
 Restart=always
+KillSignal=SIGTERM
+TimeoutStopSec=45
 User=qnwis
 Group=qnwis
 LimitNOFILE=65535

@@ -6,6 +6,16 @@ This runbook describes how to build, configure, launch, monitor, back up, and ro
 **Security:** Honors Step 34 (CSP, HTTPS, CSRF, RBAC, rate limiting) and uses env-only secrets.  
 **Performance:** Preserves Step 35 metrics (`/metrics`) and connection pooling.
 
+## Environment Matrix
+
+| Environment | Purpose / Scope | Traffic policy | Data / Secrets | Deployment mode | Rollback lever |
+|-------------|-----------------|----------------|----------------|-----------------|----------------|
+| `prod` | Live service for ministers | Public HTTPS via reverse proxy with HSTS + CSP | Real LMIS data; secrets in Vault or `.env` injected at boot | Docker Compose stack on hardened VM, rootless container runtime (`USER qnwis`) | Switch image digest, or promote standby from blue/green |
+| `staging` | Pre-prod + drills | Restricted VPN; `/metrics` reachable only from Prometheus network | Synthetic pack with anonymized API keys | Docker Compose or systemd mirror | Re-run deploy with last known good tag |
+| `drills` (`dr`, `ops`) | Continuity tests + backup verification | Private subnet only | Sanitized snapshots; throwaway secrets | Ephemeral VM + systemd | Destroy VM after test; keep snapshot manifest only |
+
+Refer to [SECURE_ENV_REFERENCE.md](./SECURE_ENV_REFERENCE.md) for the full variable catalog (required/optional flags, defaults, and handling guidance).
+
 ## Prerequisites
 - Docker 24+, Docker Compose v2
 - A DNS name; TLS termination via reverse proxy or platform ingress
@@ -23,17 +33,27 @@ This runbook describes how to build, configure, launch, monitor, back up, and ro
    # Edit .env and set all secrets (POSTGRES_PASSWORD, CSRF_SECRET, SESSION_SECRET, etc.)
    ```
 
-2. **Start the stack:**
+2. **Start the stack (non-root image + pinned digest):**
    ```bash
    cd /ops/docker
+   docker compose -f docker-compose.prod.yml pull
+   # Optional: export QNWIS_IMAGE=ghcr.io/albarami/qnwis@sha256:<digest>
    docker compose -f docker-compose.prod.yml up -d
    ```
+   The runtime container already runs as `qnwis` (see `Dockerfile`). Pinning an image digest keeps blue/green releases deterministic.
 
-3. **Verify health:**
+3. **Verify health/observability (health is public, metrics restricted):**
    ```bash
-   curl http://HOST:8000/health/live    # → 200 (liveness)
-   curl http://HOST:8000/health/ready   # → 200 (readiness)
-   curl http://HOST:8000/metrics        # → Prometheus text format
+   curl -fsS https://HOST/health/live
+   curl -fsS https://HOST/health/ready
+   # /metrics must only be called from the Prometheus network segment
+   curl -fsS http://PROMETHEUS_NODE:8000/metrics
+   ```
+   `/health/*` returns minimal JSON (`{"status": ...}`) and is intentionally unauthenticated per `src/qnwis/utils/health.py`.
+
+4. **Smoke test container after first deploy (ensures deterministic data + router path):**
+   ```bash
+   docker compose exec api pytest tests/system/test_api_readiness.py -k "test_router_smoke" --maxfail=1 -q
    ```
 
 ### Using systemd (Single VM)
@@ -72,6 +92,12 @@ This runbook describes how to build, configure, launch, monitor, back up, and ro
    sudo journalctl -u qnwis -f
    ```
 
+### Pre-stop hooks & graceful drains
+
+- **Docker Compose:** `docker-compose.prod.yml` sets `stop_signal: SIGTERM` and `stop_grace_period: 45s`. Use `docker compose stop --timeout 45 api` (or `docker stop --time 45 qnwis-api-1`) so Gunicorn can finish in-flight requests (`graceful_timeout=30s` in `configs/gunicorn.conf.py`).
+- **systemd:** The unit file now declares `KillSignal=SIGTERM`, `ExecStop=/bin/kill -s SIGTERM $MAINPID`, and `TimeoutStopSec=45`. `systemctl stop qnwis` will wait for Gunicorn to drain before sending SIGKILL.
+- **Load balancer hint:** Before stopping, remove instance from rotation (e.g., flip DNS weight, or for Traefik toggle `traefik.enable=false`) to avoid 5xx bursts.
+
 ---
 
 ## Backups
@@ -98,6 +124,16 @@ cd /opt/qnwis && scripts/pg_backup.sh /opt/qnwis/backups
 ```
 
 Backups are stored as `qnwis_YYYYmmdd_HHMMSS.dump` with automatic rotation (keeps last 14).
+
+### Backup/restore verification (quarterly)
+1. Export a disposable `DATABASE_URL` pointing at staging or a throwaway Postgres (can be a local container).
+2. Run the scripts:
+   ```bash
+   scripts/pg_backup.sh /tmp/qnwis_backups
+   scripts/pg_restore.sh /tmp/qnwis_backups/qnwis_<timestamp>.dump
+   ```
+3. Capture the stdout transcript and attach it to the release checklist. The scripts enforce the 14-file retention policy via `ls | tail -n +15 | xargs rm`, so confirm the directory never exceeds 14 files.
+4. Destroy the temporary database when finished.
 
 ---
 
@@ -136,47 +172,46 @@ Backups are stored as `qnwis_YYYYmmdd_HHMMSS.dump` with automatic rotation (keep
 
 ## Rollback
 
-### Image Rollback (Docker)
+### Blue/Green container swap (Docker)
 
-1. **Identify previous image:**
+1. **Keep both stacks warm:** run production as `-p qnwis-blue` and pre-stage new release as `-p qnwis-green`.
    ```bash
-   docker images ghcr.io/your-org/qnwis
+   cd /ops/docker
+   docker compose -p qnwis-green -f docker-compose.prod.yml pull
+   docker compose -p qnwis-green -f docker-compose.prod.yml up -d
    ```
-
-2. **Update .env with previous tag:**
+2. **Health + smoke:** hit `/health/ready` on the green stack (use the stack-specific reverse proxy label or temporary port) and run:
    ```bash
-   QNWIS_IMAGE=ghcr.io/your-org/qnwis:abc123
+   docker compose -p qnwis-green exec api pytest tests/system/test_api_readiness.py -k "test_router_smoke" --maxfail=1 -q
    ```
+3. **Flip traffic:** update the reverse proxy labels (`traefik.http.routers.qnwis.rule=...`) or DNS/CNAME to point at the green stack.
+4. **Rollback:** if issues arise, flip the route back to blue; containers stay running so cutover is instant.
 
-3. **Restart stack:**
+### Image/digest rollback (single stack)
+
+1. **Find previous digest:**
+   ```bash
+   docker image ls ghcr.io/albarami/qnwis --digests | head
+   ```
+2. **Update Compose/.env:** set `QNWIS_IMAGE=ghcr.io/albarami/qnwis@sha256:<last-good>` and redeploy:
    ```bash
    docker compose -f /ops/docker/docker-compose.prod.yml up -d
    ```
-
-### Code Rollback (systemd)
-
-1. **Checkout previous commit:**
-   ```bash
-   cd /opt/qnwis
-   sudo -u qnwis git checkout <previous-commit-hash>
-   ```
-
-2. **Restart service:**
-   ```bash
-   sudo systemctl restart qnwis
-   ```
+3. **systemd:** edit `/opt/qnwis/.env` or `Environment=QNWIS_VERSION=...`, then `sudo systemctl restart qnwis`.
+4. **Verification:** always re-run the smoke command plus `curl -fsS https://HOST/health/ready` before declaring success.
 
 ---
 
 ## Observability
 
 ### Health Checks
-- **Liveness:** `GET /health/live` → 200 (process alive)
-- **Readiness:** `GET /health/ready` → 200 (dependencies ready)
+- **Liveness:** `GET /health/live` returns HTTP 200 as long as the process is up.
+- **Readiness:** `GET /health/ready` returns HTTP 200 once DB + Redis connections succeed.
 
 ### Metrics
 - **Endpoint:** `GET /metrics` (Prometheus text format)
 - **Scrape interval:** 15s recommended
+- **Network policy:** Only expose `/metrics` to the Prometheus subnet. For Compose, attach the Prometheus container via `metrics_net` (internal network) and omit any public port. For Kubernetes, add a `NetworkPolicy` that matches `app=qnwis` and allows ingress only from the Prometheus namespace. At the reverse proxy, deny `/metrics` for public listeners (e.g., `location /metrics { return 403; }`).
 - **Key metrics:**
   - `qnwis_requests_total` - Total HTTP requests
   - `qnwis_latency_seconds` - Request latency histogram
@@ -211,6 +246,26 @@ Backups are stored as `qnwis_YYYYmmdd_HHMMSS.dump` with automatic rotation (keep
 - Configured per-principal in Step 34
 - Headers: `X-RateLimit-Remaining`, `X-RateLimit-Reset`
 - Adjust limits via `RATE_LIMIT_*` env vars
+
+### Runtime Hardening
+- Containers run as the non-root `qnwis` user (see `Dockerfile`) and only mount a log directory.
+- CSP, HSTS, and other secure headers are enforced centrally in `src/qnwis/security/headers.py`; keep TLS termination at the proxy and forward `X-Forwarded-Proto`.
+- `/health/*` responses remain constant-size JSON without internal details, so they can stay unauthenticated.
+- `/metrics` should never traverse the public internet; rely on the network policies described earlier plus firewall rules (e.g., allowlist Prometheus subnet on SG).
+
+## Deterministic Data Layer & SQL Safety
+
+- All analytical queries are defined as YAML specs in `data/queries` and are loaded through `src/qnwis/data/deterministic/registry.py`. The runtime `QueryRegistry` computes a checksum so deployments can verify they are executing the intended dataset.
+- Execution always flows through `src/qnwis/data/deterministic/access.py`, which fans into approved connectors (`csv_catalog`, `world_bank_det`) and runs validation (`number_verifier`). There is no code path for arbitrary SQL.
+- Parameterized SQL enforcement: `tests/unit/test_query_registry_injection_guard.py` and `tests/unit/test_queries_yaml_loads.py` fail the build if a query introduces string interpolation. When writing migrations, stick to Alembic scripts or parameterized psycopg statements.
+- Deterministic caches (`cache_access.py`) and materialization routines (`data/materialized/postgres.py`) only accept query text emitted by the registry. Never exec user-provided SQL in production shells.
+
+## Reliability Notes
+
+- `scripts/entrypoint.sh` blocks on Postgres readiness (30 attempts) before starting Gunicorn and runs `alembic upgrade head`, so migrations stay idempotent.
+- Readiness checks call into the same health helper, ensuring `/health/ready` only flips true after DB + Redis connections are successful.
+- Gunicorn (`configs/gunicorn.conf.py`) uses `workers=2`, `timeout=120`, `keepalive=5` to balance latency and memory. Increase workers to `min(2 * CPU, 8)` and keep `timeout <= 120` to avoid stuck connections.
+- Compose/service units always restart (`restart: always`, `systemd Restart=always`) so the process comes back after a crash; combine with smoke tests to confirm functionality after restarts.
 
 ---
 
@@ -248,8 +303,12 @@ docker compose -f docker-compose.prod.yml up -d --scale api=3
 ### Vertical Scaling (Gunicorn Workers)
 Edit `configs/gunicorn.conf.py`:
 ```python
-workers = 4  # 2-4x CPU cores recommended
+workers = max(2, cpu_count * 2)  # keep <= 8 on 2 vCPU hosts
+timeout = 120
+graceful_timeout = 30
+keepalive = 5
 ```
+`keepalive=5s` prevents idle sockets from keeping load balancers busy, while `timeout=120s` + `graceful_timeout=30s` aligns with pre-stop hooks.
 
 ### Database Connection Pool
 Adjust in `.env`:

@@ -4,6 +4,30 @@ Complete reference for all production environment variables with secure defaults
 
 ---
 
+## Quick Reference Matrix
+
+| Variable | Required? | Default | Security / Notes |
+|----------|-----------|---------|------------------|
+| `DATABASE_URL` | ✅ | _none_ | Point to Postgres 16+ using `postgresql+psycopg://`. Never log/export. |
+| `POSTGRES_PASSWORD` | ✅ | `change_me` (dev-only) | 16+ chars, rotate quarterly. Stored only in Vault or `.env` on host (chmod 600). |
+| `REDIS_URL` | ✅ | _none_ | Use TLS (`rediss://`) when hosted off-box. Needed for auth, rate limiting, and cache. |
+| `CSRF_SECRET` | ✅ | _none_ | 32+ random bytes. Regenerate with `openssl rand -base64 32`. |
+| `SESSION_SECRET` | ✅ | _none_ | 32+ random bytes. Serves JWT/session signing. |
+| `ALLOWED_ORIGINS` | ✅ (prod) | `*` (dev) | Comma-separated HTTPS origins. No wildcards in prod. |
+| `QNWIS_ENV` | ✅ | `dev` | Set to `prod` in production to enable hardened defaults. |
+| `QNWIS_VERSION` | ✅ | `dev` | Use Git SHA or semver for traceability. |
+| `QNWIS_IMAGE` | ✅ (deploy) | `ghcr.io/your-org/qnwis:latest` | Override with digest `ghcr.io/...@sha256:XYZ` for deterministic rollouts. |
+| `QNWIS_ENABLE_DOCS` | Optional | `false` | Keep `false` in prod to avoid exposing OpenAPI. |
+| `QNWIS_BYPASS_AUTH` | Optional | `false` | MUST remain `false` in prod. |
+| `PERF_POOL_MIN`/`MAX`/`TIMEOUT` | Optional | `5/30/30` | Tune per DB size; keep within Postgres connection budget. |
+| `RATE_LIMIT_*` | Optional | `enabled`, `60 req/min`, `10000 req/day` | Adjust to match SLAs; interplay with Redis. |
+| `LOG_LEVEL` | Optional | `INFO` | Lower to `WARNING` if log volume is too high. |
+| `QNWIS_WARM_CACHE` | Optional | `false` | When `true`, warms deterministic queries listed in `QNWIS_WARM_QUERIES`. |
+| `QNWIS_DEFAULT_CACHE_TTL_S` | Optional | `3600` | Higher TTL reduces DB load but may delay new data. |
+| `RATE_LIMIT_REDIS_PREFIX` | Optional | `rate:` | Helps multi-tenant isolation if sharing Redis. |
+
+The remainder of this document keeps the per-variable deep dive (type info, validation rules, and generation tips).
+
 ## Core Application
 
 ### `QNWIS_ENV`

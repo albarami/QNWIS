@@ -15,14 +15,25 @@ services:
       interval: 15s
       timeout: 3s
       retries: 10
+    stop_signal: SIGTERM
+    stop_grace_period: 45s
     restart: always
     command: ["/bin/bash", "-lc", "scripts/entrypoint.sh"]
     volumes:
       - type: bind
         source: ./logs
         target: /app/logs
-    networks: [ qnwis_net ]
-  
+    # Optional labels for reverse proxy discovery (Traefik example)
+    # labels:
+    #   traefik.enable: "true"
+    #   traefik.http.routers.qnwis.rule: "Host(`api.example.gov.qa`)"
+    #   traefik.http.routers.qnwis.entrypoints: "websecure"
+    #   traefik.http.routers.qnwis.tls.certresolver: "letsencrypt"
+    #   traefik.http.services.qnwis.loadbalancer.server.port: "8000"
+    networks:
+      - qnwis_net
+      # - metrics_net  # attach only when a Prometheus collector is present
+
   postgres:
     image: postgres:16-alpine
     environment:
@@ -67,3 +78,6 @@ volumes:
 networks:
   qnwis_net:
     driver: bridge
+  # metrics_net:
+  #   driver: bridge
+  #   internal: true  # use a private network so only Prometheus can reach /metrics
