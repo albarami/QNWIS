@@ -1,11 +1,11 @@
 name: gcc_unemployment_comparison
-description: "Compare Qatar unemployment with GCC countries"
+description: Compare Qatar unemployment with GCC countries
 endpoint: /api/v1/query
 method: POST
 tier: medium
 timeout: 30
 payload:
-  question: "How does Qatar's unemployment rate compare to other GCC countries?"
+  question: How does Qatar's unemployment rate compare to other GCC countries?
   context:
     region: GCC
 acceptance:
@@ -17,7 +17,8 @@ expected_response:
   metadata:
     verification: passed
     freshness:
-      LMIS: "1d"
-      GCC_STATS: "recent"
+      LMIS: 1d
+      GCC_STATS: recent
     citations:
-      - "GCC Unemployment Comparison"
+    - GCC Unemployment Comparison
+    audit_id: AUD-GCC-UNEMPLOYMENT-COMPARISON

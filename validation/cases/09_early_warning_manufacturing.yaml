@@ -1,11 +1,11 @@
 name: early_warning_manufacturing
-description: "Early warning indicators for manufacturing sector"
+description: Early warning indicators for manufacturing sector
 endpoint: /api/v1/query
 method: POST
 tier: medium
 timeout: 30
 payload:
-  question: "Are there any early warning indicators for employment drops in manufacturing?"
+  question: Are there any early warning indicators for employment drops in manufacturing?
   context:
     sector: manufacturing
 acceptance:
@@ -17,6 +17,7 @@ expected_response:
   metadata:
     verification: passed
     freshness:
-      LMIS: "1d"
+      LMIS: 1d
     citations:
-      - "Early Warning Employment Drops"
+    - Early Warning Employment Drops
+    audit_id: AUD-EARLY-WARNING-MANUFACTURING

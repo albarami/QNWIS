@@ -1,11 +1,12 @@
 name: scenario_planning_energy
-description: "Scenario planning for energy sector workforce"
+description: Scenario planning for energy sector workforce
 endpoint: /api/v1/query
 method: POST
 tier: complex
 timeout: 90
 payload:
-  question: "What are the workforce scenarios for the energy sector under different economic conditions?"
+  question: What are the workforce scenarios for the energy sector under different
+    economic conditions?
   context:
     sector: energy
     analysis: scenario
@@ -18,7 +19,8 @@ expected_response:
   metadata:
     verification: passed
     freshness:
-      LMIS: "recent"
+      LMIS: recent
     citations:
-      - "LMIS Employment Time-Series"
-      - "Scenario Models"
+    - LMIS Employment Time-Series
+    - Scenario Models
+    audit_id: AUD-SCENARIO-PLANNING-ENERGY

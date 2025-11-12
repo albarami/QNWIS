@@ -26,7 +26,8 @@
         },
         "citations": [
           "Employment Gender Distribution"
-        ]
+        ],
+        "audit_id": "AUD-GENDER-DISTRIBUTION-PUBLIC"
       }
     },
     "__path__": "D:\\lmis_int\\validation\\cases\\08_gender_distribution_public.yaml"
@@ -36,11 +37,18 @@
     "endpoint": "/api/v1/query",
     "tier": "simple",
     "status": 200,
-    "latency_ms": 10.25,
+    "latency_ms": 10.52,
     "citation_coverage": 1.0,
     "freshness_present": true,
     "verification_passed": true,
-    "pass": true
+    "pass": true,
+    "mode": "echo",
+    "audit_id": "AUD-GENDER-DISTRIBUTION-PUBLIC",
+    "audit_id_present": true,
+    "rate_limit_limit": null,
+    "rate_limit_remaining": null,
+    "rate_limit_reset": null,
+    "csrf_cookie_present": false
   },
   "body": {
     "metadata": {
@@ -50,7 +58,8 @@
       },
       "citations": [
         "Employment Gender Distribution"
-      ]
+      ],
+      "audit_id": "AUD-GENDER-DISTRIBUTION-PUBLIC"
     }
   }
 }

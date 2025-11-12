@@ -2,7 +2,10 @@
 
 **Purpose:** Deterministic, reproducible validation harness for end-to-end system testing  
 **Scope:** 20 real Ministry questions across all complexity tiers  
-**Status:** Production-ready
+**Status:** Production-ready  
+**Phase Alignment:** Step 38 (Phase 2 extension) building on the Step 37 release tag ([docs/reviews/step37_review.md](../reviews/step37_review.md))  
+**Data API Guarantee:** All 20 cases invoke Data API endpoints only (no ad-hoc SQL or direct DB access).  
+**Reference Guide:** See `docs/validation/READ_ME_FIRST.md` for runbooks and privacy controls.
 
 ---
 
@@ -17,6 +20,35 @@ This validation harness executes real Ministry of Labour questions against the Q
 - **Comprehensive:** 20 cases covering all agent types and complexity tiers
 - **Audited:** Full citation tracking and verification status
 - **Performance:** SLA enforcement with tier-based envelopes
+
+---
+
+## Case Inventory (20 Deterministic Data API Cases)
+
+| # | Case | Endpoint | Tier | Audit ID |
+|---|------|----------|------|----------|
+| 1 | Employment Trend - Construction | `/api/v1/query` | Medium | `AUD-EMPLOYMENT-TREND-CONSTRUCTION` |
+| 2 | Qatarization Rate - Banking | `/api/v1/query` | Medium | `AUD-QATARIZATION-RATE-BANKING` |
+| 3 | GCC Unemployment Comparison | `/api/v1/query` | Simple | `AUD-GCC-UNEMPLOYMENT-COMPARISON` |
+| 4 | Vision 2030 Progress | `/api/v1/query` | Complex | `AUD-VISION-2030-PROGRESS` |
+| 5 | Salary Trends - Healthcare | `/api/v1/query` | Medium | `AUD-SALARY-TRENDS-HEALTHCARE` |
+| 6 | Attrition Rate - Retail | `/api/v1/query` | Simple | `AUD-ATTRITION-RATE-RETAIL` |
+| 7 | Employment Forecast - Hospitality | `/api/v1/query` | Complex | `AUD-EMPLOYMENT-FORECAST-HOSPITALITY` |
+| 8 | Gender Distribution - Public Sector | `/api/v1/query` | Medium | `AUD-GENDER-DISTRIBUTION-PUBLIC` |
+| 9 | Early Warning - Manufacturing | `/api/v1/query` | Medium | `AUD-EARLY-WARNING-MANUFACTURING` |
+| 10 | Pattern Mining - Retention | `/api/v1/query` | Complex | `AUD-PATTERN-MINING-RETENTION` |
+| 11 | Dashboard KPIs | `/api/v1/dashboard/kpis` | Dashboard | `AUD-DASHBOARD-KPIS` |
+| 12 | Sector Comparison - Qatarization | `/api/v1/query` | Medium | `AUD-SECTOR-COMPARISON-QATARIZATION` |
+| 13 | Seasonal Patterns - Tourism | `/api/v1/query` | Medium | `AUD-SEASONAL-PATTERNS-TOURISM` |
+| 14 | Unemployment - Youth | `/api/v1/query` | Simple | `AUD-UNEMPLOYMENT-YOUTH` |
+| 15 | Scenario Planning - Energy | `/api/v1/query` | Complex | `AUD-SCENARIO-PLANNING-ENERGY` |
+| 16 | Skill Gaps - Technology | `/api/v1/query` | Medium | `AUD-SKILL-GAPS-TECHNOLOGY` |
+| 17 | Retention Drivers - Education | `/api/v1/query` | Medium | `AUD-RETENTION-DRIVERS-EDUCATION` |
+| 18 | Wage Competitiveness - Finance | `/api/v1/query` | Complex | `AUD-WAGE-COMPETITIVENESS-FINANCE` |
+| 19 | Health Check (Data API) | `/api/v1/query` | Dashboard | `AUD-HEALTH-CHECK` |
+| 20 | Metrics Envelope (Data API) | `/api/v1/query` | Dashboard | `AUD-METRICS-ENDPOINT` |
+
+All questions rely solely on the Data API contract outlined in `docs/api/step27_service_api.md`. No direct database calls or ad-hoc SQL are allowed.
 
 ---
 
@@ -38,7 +70,7 @@ This validation harness executes real Ministry of Labour questions against the Q
 - **PredictorAgent:** 2 cases (forecasting, early warning)
 - **NationalStrategyAgent:** 4 cases (Vision 2030, GCC comparison)
 - **ScenarioAgent:** 2 cases (scenario planning)
-- **System Health:** 2 cases (health check, metrics)
+- **System Guardrails:** 2 Data API cases (readiness and KPI envelope)
 - **Multi-agent:** 3 cases (complex orchestration)
 
 ---
@@ -59,9 +91,19 @@ complex:   <90,000 ms  # Multi-agent orchestration
 All cases must meet:
 
 1. **Verification Pass:** Deterministic layer verification = `passed`
-2. **Citation Coverage:** ≥60% of numeric claims cited
+2. **Citation Coverage:** >=60% of numeric claims cited (or 1.0 when no numeric claims exist)
 3. **Freshness Present:** Data source age indicators present
 4. **HTTP Status:** 200 or 201
+5. **Audit ID:** `metadata.audit_id` present and unique per case
+6. **Rate/CSRF Evidence:** Result records capture `X-RateLimit-*` headers plus CSRF cookie presence
+
+---
+
+### Performance Verification Workflow
+
+1. Run the harness (see `docs/validation/READ_ME_FIRST.md`). This produces `validation/summary.csv` and `docs/validation/KPI_SUMMARY.md`.
+2. Hit the live `/metrics` endpoint immediately afterwards and confirm latency histograms (for example `qnwis_validation_latency_ms`) align with the values recorded in `KPI_SUMMARY.md`.
+3. Capture the findings and a transcript excerpt inside `docs/reviews/step38_review.md` for handover.
 
 ---
 
@@ -257,12 +299,12 @@ fi
 
 ## Success Criteria
 
-✓ **20 cases executed** across all tiers  
-✓ **Summary & case studies** generated  
-✓ **All envelopes met** (latency, verification, citations)  
-✓ **Scripts & tests pass** locally and in CI  
-✓ **No placeholders** in code or docs  
-✓ **Baseline comparison** shows improvements  
+- [x] **20 cases executed** across all tiers  
+- [x] **Summary & case studies** generated  
+- [x] **All envelopes met** (latency, verification, citations)  
+- [x] **Scripts & tests pass** locally and in CI  
+- [x] **No placeholders** in code or docs  
+- [x] **Baseline comparison** shows improvements  
 
 ---
 
@@ -277,3 +319,6 @@ fi
 ---
 
 *Last Updated: 2025-11-12*
+
+
+

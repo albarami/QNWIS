@@ -1,27 +1,29 @@
 name: employment_trend_construction
-description: "Track employment trends in construction sector over 24 months"
+description: Track employment trends in construction sector over 24 months
 endpoint: /api/v1/query
 method: POST
 tier: medium
 timeout: 30
 payload:
-  question: "What is the employment trend in the construction sector over the past 24 months?"
+  question: What is the employment trend in the construction sector over the past
+    24 months?
   context:
     sector: construction
-    time_range: "24 months"
+    time_range: 24 months
 acceptance:
   max_latency_ms: 30000
   min_citation_coverage: 0.6
   verification_required: true
   freshness_required: true
 redaction:
-  - type: regex
-    pattern: '\b\d{3}-\d{2}-\d{4}\b'
-    replacement: '[REDACTED-ID]'
+- type: regex
+  pattern: \b\d{3}-\d{2}-\d{4}\b
+  replacement: '[REDACTED-ID]'
 expected_response:
   metadata:
     verification: passed
     freshness:
-      LMIS: "2h"
+      LMIS: 2h
     citations:
-      - "LMIS Employment Time-Series"
+    - LMIS Employment Time-Series
+    audit_id: AUD-EMPLOYMENT-TREND-CONSTRUCTION

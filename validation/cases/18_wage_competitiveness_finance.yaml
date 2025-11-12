@@ -1,11 +1,12 @@
 name: wage_competitiveness_finance
-description: "Wage competitiveness in finance sector vs GCC"
+description: Wage competitiveness in finance sector vs GCC
 endpoint: /api/v1/query
 method: POST
 tier: medium
 timeout: 30
 payload:
-  question: "How competitive are wages in Qatar's finance sector compared to other GCC countries?"
+  question: How competitive are wages in Qatar's finance sector compared to other
+    GCC countries?
   context:
     sector: finance
     comparison: gcc
@@ -16,15 +17,16 @@ acceptance:
   verification_required: true
   freshness_required: true
 redaction:
-  - type: regex
-    pattern: '\b\d{1,3}(?:,\d{3})*\s*(?:QAR|USD|AED)\b'
-    replacement: '[REDACTED-AMOUNT]'
+- type: regex
+  pattern: \b\d{1,3}(?:,\d{3})*\s*(?:QAR|USD|AED)\b
+  replacement: '[REDACTED-AMOUNT]'
 expected_response:
   metadata:
     verification: passed
     freshness:
-      LMIS: "1w"
-      GCC_STATS: "recent"
+      LMIS: 1w
+      GCC_STATS: recent
     citations:
-      - "LMIS Salary Time-Series"
-      - "GCC Wage Comparison"
+    - LMIS Salary Time-Series
+    - GCC Wage Comparison
+    audit_id: AUD-WAGE-COMPETITIVENESS-FINANCE

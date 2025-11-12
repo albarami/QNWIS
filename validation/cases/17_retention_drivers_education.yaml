@@ -1,11 +1,11 @@
 name: retention_drivers_education
-description: "Key drivers of retention in education sector"
+description: Key drivers of retention in education sector
 endpoint: /api/v1/query
 method: POST
 tier: complex
 timeout: 90
 payload:
-  question: "What are the key drivers of employee retention in the education sector?"
+  question: What are the key drivers of employee retention in the education sector?
   context:
     sector: education
     metric: retention
@@ -19,7 +19,8 @@ expected_response:
   metadata:
     verification: passed
     freshness:
-      LMIS: "2h"
+      LMIS: 2h
     citations:
-      - "LMIS Retention Time-Series"
-      - "Driver Analysis"
+    - LMIS Retention Time-Series
+    - Driver Analysis
+    audit_id: AUD-RETENTION-DRIVERS-EDUCATION

@@ -19,6 +19,7 @@ from fastapi import APIRouter, HTTPException, Query, Request, Response, status
 from fastapi.responses import StreamingResponse
 
 from ...data.deterministic.cache_access import execute_cached, invalidate_query
+from ...data.deterministic.models import QuerySpec
 from ...data.deterministic.normalize import normalize_params, normalize_rows
 from ...data.deterministic.registry import QueryRegistry
 from ...ui.pagination import paginate

@@ -37,7 +37,8 @@
         "citations": [
           "LMIS Salary Time-Series",
           "GCC Wage Comparison"
-        ]
+        ],
+        "audit_id": "AUD-WAGE-COMPETITIVENESS-FINANCE"
       }
     },
     "__path__": "D:\\lmis_int\\validation\\cases\\18_wage_competitiveness_finance.yaml"
@@ -47,11 +48,18 @@
     "endpoint": "/api/v1/query",
     "tier": "medium",
     "status": 200,
-    "latency_ms": 10.59,
+    "latency_ms": 10.37,
     "citation_coverage": 1.0,
     "freshness_present": true,
     "verification_passed": true,
-    "pass": true
+    "pass": true,
+    "mode": "echo",
+    "audit_id": "AUD-WAGE-COMPETITIVENESS-FINANCE",
+    "audit_id_present": true,
+    "rate_limit_limit": null,
+    "rate_limit_remaining": null,
+    "rate_limit_reset": null,
+    "csrf_cookie_present": false
   },
   "body": {
     "metadata": {
@@ -63,7 +71,8 @@
       "citations": [
         "LMIS Salary Time-Series",
         "GCC Wage Comparison"
-      ]
+      ],
+      "audit_id": "AUD-WAGE-COMPETITIVENESS-FINANCE"
     }
   }
 }

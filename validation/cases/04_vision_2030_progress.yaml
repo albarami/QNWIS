@@ -1,11 +1,11 @@
 name: vision_2030_progress
-description: "Track progress toward Vision 2030 Qatarization targets"
+description: Track progress toward Vision 2030 Qatarization targets
 endpoint: /api/v1/query
 method: POST
 tier: complex
 timeout: 90
 payload:
-  question: "What is Qatar's progress toward Vision 2030 Qatarization targets?"
+  question: What is Qatar's progress toward Vision 2030 Qatarization targets?
   context:
     strategy: vision_2030
 acceptance:
@@ -17,8 +17,9 @@ expected_response:
   metadata:
     verification: passed
     freshness:
-      LMIS: "recent"
-      VISION_2030: "1w"
+      LMIS: recent
+      VISION_2030: 1w
     citations:
-      - "National Qatarization Aggregate"
-      - "Vision 2030 Targets"
+    - National Qatarization Aggregate
+    - Vision 2030 Targets
+    audit_id: AUD-VISION-2030-PROGRESS
