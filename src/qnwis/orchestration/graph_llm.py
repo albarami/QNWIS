@@ -23,6 +23,7 @@ from src.qnwis.agents.scenario_agent import ScenarioAgent
 from src.qnwis.agents.base import AgentReport, DataClient
 from src.qnwis.llm.client import LLMClient
 from src.qnwis.classification.classifier import Classifier
+from src.qnwis.orchestration.citation_injector import CitationInjector
 
 logger = logging.getLogger(__name__)
 
@@ -581,7 +582,45 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
                         reports.append(error_report)
                     
                     break
-        
+
+        # PHASE 1 FIX: Inject citations into all agent reports
+        # Since LLMs resist citation format, we inject programmatically
+        logger.info(f"Injecting citations into {len(reports)} agent reports...")
+        injector = CitationInjector()
+        prefetch_data = state.get("prefetch", {}).get("data", {})
+
+        for report in reports:
+            if not hasattr(report, 'findings') or not report.findings:
+                continue
+
+            # Inject citations into each finding
+            updated_findings = []
+            for finding in report.findings:
+                if isinstance(finding, dict):
+                    updated_finding = finding.copy()
+
+                    # Inject into analysis field
+                    if 'analysis' in updated_finding:
+                        updated_finding['analysis'] = injector.inject_citations(
+                            updated_finding['analysis'],
+                            prefetch_data
+                        )
+
+                    # Inject into summary field
+                    if 'summary' in updated_finding:
+                        updated_finding['summary'] = injector.inject_citations(
+                            updated_finding['summary'],
+                            prefetch_data
+                        )
+
+                    updated_findings.append(updated_finding)
+                else:
+                    updated_findings.append(finding)
+
+            report.findings = updated_findings
+
+        logger.info("Citation injection complete")
+
         return {
             **state,
             "agent_reports": reports
@@ -614,7 +653,13 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
             from .verification import verify_report
 
             reports = state.get("agent_reports", [])
+            # Try both possible keys for prefetch data
             prefetch_data = state.get("prefetch_data", {})
+            if not prefetch_data:
+                prefetch_info = state.get("prefetch", {})
+                prefetch_data = prefetch_info.get("data", {})
+
+            logger.info(f"VERIFICATION START: Checking {len(reports)} reports with {len(prefetch_data)} prefetch results")
 
             # Verify each agent report
             all_issues = []

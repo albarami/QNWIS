@@ -8,7 +8,7 @@ and validates numbers against source data.
 import json
 import re
 import logging
-from typing import List, Set, Optional
+from typing import List, Set, Optional, Union
 from pydantic import BaseModel, Field, field_validator
 
 from src.qnwis.llm.exceptions import LLMParseError
@@ -25,9 +25,9 @@ class AgentFinding(BaseModel):
     
     title: str = Field(..., description="Brief finding title")
     summary: str = Field(..., description="2-3 sentence executive summary")
-    metrics: dict[str, float] = Field(
+    metrics: dict[str, Union[float, int, str]] = Field(
         default_factory=dict,
-        description="Key metrics extracted from data"
+        description="Key metrics extracted from data (accepts numbers and strings for ranges/comparatives)"
     )
     analysis: str = Field(..., description="Detailed analysis paragraph")
     recommendations: list[str] = Field(
@@ -48,7 +48,7 @@ class AgentFinding(BaseModel):
         default="",
         description="Notes about data quality or limitations"
     )
-    
+
     @field_validator('confidence')
     @classmethod
     def validate_confidence(cls, v):
@@ -56,14 +56,14 @@ class AgentFinding(BaseModel):
         if not 0.0 <= v <= 1.0:
             raise ValueError("Confidence must be between 0.0 and 1.0")
         return v
-    
+
     @field_validator('metrics')
     @classmethod
     def validate_metrics(cls, v):
-        """Ensure all metric values are numeric."""
+        """Accept numeric values and strings (for ranges like '0.10% - 4.90%')."""
         for key, value in v.items():
-            if not isinstance(value, (int, float)):
-                raise ValueError(f"Metric '{key}' must be numeric, got {type(value)}")
+            if not isinstance(value, (int, float, str)):
+                raise ValueError(f"Metric '{key}' must be numeric or string, got {type(value)}")
         return v
 
 
