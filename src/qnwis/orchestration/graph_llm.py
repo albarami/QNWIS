@@ -34,6 +34,7 @@ class WorkflowState(TypedDict):
     selected_agents: Optional[list]
     agent_reports: list  # List of AgentReport objects
     debate_results: Optional[Dict[str, Any]]  # Multi-agent debate outcomes
+    critique_results: Optional[Dict[str, Any]]  # Devil's advocate critique
     verification: Optional[Dict[str, Any]]
     synthesis: Optional[str]
     error: Optional[str]
@@ -99,6 +100,7 @@ class LLMWorkflow:
         workflow.add_node("select_agents", self._select_agents_node)
         workflow.add_node("agents", self._agents_node)
         workflow.add_node("debate", self._debate_node)
+        workflow.add_node("critique", self._critique_node)
         workflow.add_node("verify", self._verify_node)
         workflow.add_node("synthesize", self._synthesize_node)
 
@@ -109,7 +111,8 @@ class LLMWorkflow:
         workflow.add_edge("rag", "select_agents")
         workflow.add_edge("select_agents", "agents")
         workflow.add_edge("agents", "debate")
-        workflow.add_edge("debate", "verify")
+        workflow.add_edge("debate", "critique")
+        workflow.add_edge("critique", "verify")
         workflow.add_edge("verify", "synthesize")
         workflow.add_edge("synthesize", END)
         
@@ -902,6 +905,174 @@ OUTPUT FORMAT (JSON):
             }
         }
 
+    async def _critique_node(self, state: WorkflowState) -> WorkflowState:
+        """
+        Devil's advocate critique to stress-test conclusions.
+
+        Args:
+            state: Current workflow state with agent_reports and debate_results
+
+        Returns:
+            Updated state with critique_results
+        """
+        if state.get("event_callback"):
+            await state["event_callback"]("critique", "running")
+
+        start_time = datetime.now(timezone.utc)
+        reports = state.get("agent_reports", [])
+        debate_results = state.get("debate_results", {})
+
+        if not reports:
+            logger.info("No agent reports to critique - skipping")
+
+            if state.get("event_callback"):
+                await state["event_callback"](
+                    "critique",
+                    "complete",
+                    {"status": "skipped"},
+                    0
+                )
+
+            return {
+                **state,
+                "critique_results": {
+                    "status": "skipped",
+                    "reason": "no_reports",
+                    "latency_ms": 0
+                }
+            }
+
+        logger.info(f"Starting devil's advocate critique of {len(reports)} reports")
+
+        # Build critique prompt with all conclusions
+        conclusions = []
+        for report in reports:
+            agent_name = report.get("agent_name", "Unknown")
+            narrative = report.get("narrative", "")
+            confidence = report.get("confidence", 0.5)
+            conclusions.append(f"Agent: {agent_name}\nConfidence: {confidence:.2f}\nConclusion: {narrative}\n")
+
+        conclusions_text = "\n---\n".join(conclusions)
+
+        # Add debate results if available
+        debate_context = ""
+        if debate_results and debate_results.get("status") == "complete":
+            debate_context = f"""
+DEBATE RESULTS:
+- Contradictions found: {debate_results.get('contradictions_found', 0)}
+- Resolved: {debate_results.get('resolved', 0)}
+- Flagged for review: {debate_results.get('flagged_for_review', 0)}
+- Consensus: {debate_results.get('consensus_narrative', 'N/A')}
+"""
+
+        critique_prompt = f"""You are a critical thinking expert acting as a devil's advocate. Your role is to stress-test the conclusions reached by the agents.
+
+AGENT CONCLUSIONS:
+{conclusions_text}
+
+{debate_context}
+
+YOUR TASK:
+1. Identify potential weaknesses in the reasoning
+2. Challenge assumptions that may not be warranted
+3. Look for:
+   - Over-generalization from limited data
+   - Missing alternative explanations
+   - Unwarranted confidence
+   - Gaps in the logic
+   - Hidden biases
+   - Cherry-picked evidence
+4. Propose counter-arguments or alternative interpretations
+5. Rate the robustness of each conclusion (0.0-1.0)
+
+Be constructively critical. The goal is to strengthen conclusions by finding and addressing weaknesses, not to tear them down arbitrarily.
+
+OUTPUT FORMAT (JSON):
+{{
+  "critiques": [
+    {{
+      "agent_name": "agent name",
+      "weakness_found": "description of weakness",
+      "counter_argument": "alternative perspective",
+      "severity": "high" | "medium" | "low",
+      "robustness_score": 0.0-1.0
+    }}
+  ],
+  "overall_assessment": "summary of overall robustness",
+  "confidence_adjustments": {{
+    "agent_name": adjustment_factor_0_to_1
+  }},
+  "red_flags": ["flag 1", "flag 2", ...],
+  "strengthened_by_critique": true | false
+}}
+"""
+
+        try:
+            response = await self.llm_client.generate(prompt=critique_prompt, temperature=0.2)
+
+            # Parse JSON response - handle markdown code fences if present
+            import json
+
+            response_clean = response.strip()
+            if response_clean.startswith("```json"):
+                response_clean = response_clean[7:]
+            if response_clean.startswith("```"):
+                response_clean = response_clean[3:]
+            if response_clean.endswith("```"):
+                response_clean = response_clean[:-3]
+            response_clean = response_clean.strip()
+
+            if not response_clean:
+                raise ValueError("Empty response from LLM")
+
+            critique = json.loads(response_clean)
+
+            logger.info(f"Critique complete: {len(critique.get('critiques', []))} critiques, "
+                       f"{len(critique.get('red_flags', []))} red flags")
+
+            latency_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
+
+            if state.get("event_callback"):
+                await state["event_callback"](
+                    "critique",
+                    "complete",
+                    {
+                        "critiques": len(critique.get("critiques", [])),
+                        "red_flags": len(critique.get("red_flags", [])),
+                        "strengthened": critique.get("strengthened_by_critique", False)
+                    },
+                    latency_ms
+                )
+
+            return {
+                **state,
+                "critique_results": {
+                    "critiques": critique.get("critiques", []),
+                    "overall_assessment": critique.get("overall_assessment", ""),
+                    "confidence_adjustments": critique.get("confidence_adjustments", {}),
+                    "red_flags": critique.get("red_flags", []),
+                    "strengthened_by_critique": critique.get("strengthened_by_critique", False),
+                    "latency_ms": latency_ms,
+                    "status": "complete"
+                }
+            }
+
+        except Exception as e:
+            logger.error(f"Critique failed: {e}", exc_info=True)
+            latency_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
+
+            if state.get("event_callback"):
+                await state["event_callback"]("critique", "error", {"error": str(e)})
+
+            return {
+                **state,
+                "critique_results": {
+                    "status": "failed",
+                    "error": str(e),
+                    "latency_ms": latency_ms
+                }
+            }
+
     async def _synthesize_node(self, state: WorkflowState) -> WorkflowState:
         """
         Synthesize agent findings into final answer with streaming.
@@ -1013,6 +1184,7 @@ Synthesis:"""
             "selected_agents": None,
             "agent_reports": [],
             "debate_results": None,
+            "critique_results": None,
             "verification": None,
             "synthesis": None,
             "error": None,
