@@ -17,6 +17,9 @@ from src.qnwis.agents.nationalization import NationalizationAgent
 from src.qnwis.agents.skills import SkillsAgent
 from src.qnwis.agents.pattern_detective_llm import PatternDetectiveLLMAgent
 from src.qnwis.agents.national_strategy_llm import NationalStrategyLLMAgent
+from src.qnwis.agents.time_machine import TimeMachineAgent
+from src.qnwis.agents.predictor import PredictorAgent
+from src.qnwis.agents.scenario_agent import ScenarioAgent
 from src.qnwis.agents.base import AgentReport, DataClient
 from src.qnwis.llm.client import LLMClient
 from src.qnwis.classification.classifier import Classifier
@@ -35,6 +38,7 @@ class WorkflowState(TypedDict):
     agent_reports: list  # List of AgentReport objects
     debate_results: Optional[Dict[str, Any]]  # Multi-agent debate outcomes
     critique_results: Optional[Dict[str, Any]]  # Devil's advocate critique
+    deterministic_result: Optional[str]  # Result from TimeMachine/Predictor/Scenario
     verification: Optional[Dict[str, Any]]
     synthesis: Optional[str]
     error: Optional[str]
@@ -68,7 +72,7 @@ class LLMWorkflow:
         self.llm_client = llm_client
         self.classifier = classifier or Classifier()
         
-        # Initialize agents
+        # Initialize LLM agents
         self.agents = {
             "labour_economist": LabourEconomistAgent(data_client, llm_client),
             "nationalization": NationalizationAgent(data_client, llm_client),
@@ -76,25 +80,38 @@ class LLMWorkflow:
             "pattern_detective": PatternDetectiveLLMAgent(data_client, llm_client),
             "national_strategy": NationalStrategyLLMAgent(data_client, llm_client),
         }
-        
+
+        # Initialize deterministic agents (Phase 3)
+        self.deterministic_agents = {
+            "time_machine": TimeMachineAgent(data_client),
+            "predictor": PredictorAgent(data_client),
+            "scenario": ScenarioAgent(data_client),
+        }
+
         # Build graph
         self.graph = self._build_graph()
-        
+
         # Agent selector
         from .agent_selector import AgentSelector
         self.agent_selector = AgentSelector()
     
     def _build_graph(self) -> StateGraph:
         """
-        Build LangGraph workflow.
-        
+        Build LangGraph workflow with conditional routing.
+
+        Flow:
+        - classify → routing decision
+        - If deterministic agent detected → run that agent → synthesize → END
+        - If LLM agents → prefetch → rag → agents → debate → critique → verify → synthesize → END
+
         Returns:
             Compiled StateGraph
         """
         workflow = StateGraph(WorkflowState)
-        
+
         # Add nodes
         workflow.add_node("classify", self._classify_node)
+        workflow.add_node("route_deterministic", self._route_deterministic_node)
         workflow.add_node("prefetch", self._prefetch_node)
         workflow.add_node("rag", self._rag_node)
         workflow.add_node("select_agents", self._select_agents_node)
@@ -104,9 +121,42 @@ class LLMWorkflow:
         workflow.add_node("verify", self._verify_node)
         workflow.add_node("synthesize", self._synthesize_node)
 
+        # Define routing function
+        def should_route_deterministic(state: WorkflowState) -> str:
+            """
+            Decide routing based on classification.
+
+            Returns:
+                "deterministic" if temporal/forecast/scenario query
+                "llm_agents" otherwise
+            """
+            classification = state.get("classification", {})
+            route_to = classification.get("route_to")
+
+            if route_to in ["time_machine", "predictor", "scenario"]:
+                logger.info(f"Routing to deterministic agent: {route_to}")
+                return "deterministic"
+            else:
+                logger.info("Routing to LLM agents")
+                return "llm_agents"
+
         # Define edges
         workflow.set_entry_point("classify")
-        workflow.add_edge("classify", "prefetch")
+
+        # Conditional routing after classification
+        workflow.add_conditional_edges(
+            "classify",
+            should_route_deterministic,
+            {
+                "deterministic": "route_deterministic",
+                "llm_agents": "prefetch"
+            }
+        )
+
+        # Deterministic path: route_deterministic → synthesize → END
+        workflow.add_edge("route_deterministic", "synthesize")
+
+        # LLM agents path: prefetch → rag → select_agents → agents → debate → critique → verify → synthesize → END
         workflow.add_edge("prefetch", "rag")
         workflow.add_edge("rag", "select_agents")
         workflow.add_edge("select_agents", "agents")
@@ -114,8 +164,10 @@ class LLMWorkflow:
         workflow.add_edge("debate", "critique")
         workflow.add_edge("critique", "verify")
         workflow.add_edge("verify", "synthesize")
+
+        # Both paths converge at synthesize
         workflow.add_edge("synthesize", END)
-        
+
         return workflow.compile()
     
     async def _classify_node(self, state: WorkflowState) -> WorkflowState:
@@ -172,7 +224,120 @@ class LLMWorkflow:
                 "classification": {"complexity": "medium", "error": str(e)},
                 "error": f"Classification error: {e}"
             }
-    
+
+    async def _route_deterministic_node(self, state: WorkflowState) -> WorkflowState:
+        """
+        Route to appropriate deterministic agent (TimeMachine, Predictor, or Scenario).
+
+        Args:
+            state: Current workflow state
+
+        Returns:
+            Updated state with deterministic_result
+        """
+        if state.get("event_callback"):
+            await state["event_callback"]("route_deterministic", "running")
+
+        start_time = datetime.now(timezone.utc)
+
+        try:
+            classification = state.get("classification", {})
+            route_to = classification.get("route_to")
+            question = state["question"]
+
+            logger.info(f"Routing to deterministic agent: {route_to}")
+
+            # Get the appropriate agent
+            agent = self.deterministic_agents.get(route_to)
+
+            if not agent:
+                raise ValueError(f"Unknown deterministic agent: {route_to}")
+
+            # For now, we'll create simple narrative responses
+            # In production, you'd parse the question to extract parameters
+            # and call the appropriate agent method
+
+            if route_to == "time_machine":
+                # Simple demo: call baseline_report for retention
+                from datetime import date
+                result = agent.baseline_report(
+                    metric="retention",
+                    sector=None,
+                    start=date(2023, 1, 1),
+                    end=date.today()
+                )
+
+            elif route_to == "predictor":
+                # Simple demo: call forecast_baseline for retention
+                from datetime import date
+                result = agent.forecast_baseline(
+                    metric="retention",
+                    sector=None,
+                    start=date(2023, 1, 1),
+                    end=date.today(),
+                    horizon_months=6
+                )
+
+            elif route_to == "scenario":
+                # Simple demo: return instruction message
+                result = """
+# Scenario Planning
+
+To use the Scenario agent, please provide a scenario specification.
+
+Example:
+```yaml
+name: Retention Boost
+description: 10% retention improvement
+metric: retention
+sector: Construction
+horizon_months: 12
+transforms:
+  - type: multiplicative
+    value: 0.10
+    start_month: 0
+```
+
+Use `agent.apply(scenario_spec)` with your scenario definition.
+"""
+            else:
+                result = f"Deterministic agent '{route_to}' called but not yet configured for this query type."
+
+            latency_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
+
+            logger.info(f"Deterministic agent complete: {route_to}, latency={latency_ms:.0f}ms")
+
+            if state.get("event_callback"):
+                await state["event_callback"](
+                    "route_deterministic",
+                    "complete",
+                    {"agent": route_to},
+                    latency_ms
+                )
+
+            return {
+                **state,
+                "deterministic_result": result,
+                "metadata": {
+                    **state.get("metadata", {}),
+                    "deterministic_agent": route_to,
+                    "deterministic_latency_ms": latency_ms
+                }
+            }
+
+        except Exception as e:
+            logger.error(f"Deterministic routing failed: {e}", exc_info=True)
+            latency_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
+
+            if state.get("event_callback"):
+                await state["event_callback"]("route_deterministic", "error", {"error": str(e)})
+
+            return {
+                **state,
+                "deterministic_result": f"Error routing to deterministic agent: {e}",
+                "error": f"Deterministic routing error: {e}"
+            }
+
     async def _prefetch_node(self, state: WorkflowState) -> WorkflowState:
         """
         Prefetch common data needed by agents.
@@ -947,9 +1112,10 @@ OUTPUT FORMAT (JSON):
         # Build critique prompt with all conclusions
         conclusions = []
         for report in reports:
-            agent_name = report.get("agent_name", "Unknown")
-            narrative = report.get("narrative", "")
-            confidence = report.get("confidence", 0.5)
+            # Handle AgentReport objects (not dicts)
+            agent_name = report.agent if hasattr(report, 'agent') else 'Unknown'
+            narrative = report.narrative if hasattr(report, 'narrative') else ''
+            confidence = report.confidence if hasattr(report, 'confidence') else 0.5
             conclusions.append(f"Agent: {agent_name}\nConfidence: {confidence:.2f}\nConclusion: {narrative}\n")
 
         conclusions_text = "\n---\n".join(conclusions)
@@ -1076,29 +1242,60 @@ OUTPUT FORMAT (JSON):
     async def _synthesize_node(self, state: WorkflowState) -> WorkflowState:
         """
         Synthesize agent findings into final answer with streaming.
-        
+
+        Handles both:
+        - LLM agent reports (synthesize multiple findings)
+        - Deterministic agent results (pass through directly)
+
         Args:
             state: Current workflow state
-            
+
         Returns:
             Updated state with synthesis
         """
         if state.get("event_callback"):
             await state["event_callback"]("synthesize", "running")
-        
+
         start_time = datetime.now(timezone.utc)
-        
+
         try:
             question = state["question"]
+
+            # Check if this is a deterministic result (bypass LLM synthesis)
+            deterministic_result = state.get("deterministic_result")
+            if deterministic_result:
+                logger.info("Passing through deterministic result (no LLM synthesis needed)")
+
+                latency_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
+
+                if state.get("event_callback"):
+                    await state["event_callback"](
+                        "synthesize",
+                        "complete",
+                        {"source": "deterministic"},
+                        latency_ms
+                    )
+
+                return {
+                    **state,
+                    "synthesis": deterministic_result,
+                    "metadata": {
+                        **state.get("metadata", {}),
+                        "synthesis_latency_ms": latency_ms,
+                        "synthesis_source": "deterministic"
+                    }
+                }
+
+            # LLM agent synthesis path
             reports = state.get("agent_reports", [])
-            
+
             # Build synthesis prompt
             findings_text = "\n\n".join([
                 f"**Agent {report.agent}**:\n{report.narrative if hasattr(report, 'narrative') else str(report)}"
                 for report in reports
                 if report
             ])
-            
+
             synthesis_prompt = f"""Synthesize the following agent findings into a comprehensive executive summary for the question: \"{question}\"
 
 Agent Findings:
@@ -1111,7 +1308,7 @@ Provide a ministerial-grade synthesis that:
 4. Notes any data quality concerns
 
 Synthesis:"""
-            
+
             # Generate synthesis with streaming
             synthesis_text = ""
             async for token in self.llm_client.generate_stream(
@@ -1125,11 +1322,11 @@ Synthesis:"""
                         "streaming",
                         {"token": token}
                     )
-            
+
             latency_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
-            
+
             logger.info(f"Synthesis complete: latency={latency_ms:.0f}ms")
-            
+
             if state.get("event_callback"):
                 await state["event_callback"](
                     "synthesize",
@@ -1185,6 +1382,7 @@ Synthesis:"""
             "agent_reports": [],
             "debate_results": None,
             "critique_results": None,
+            "deterministic_result": None,  # Phase 3: deterministic agent results
             "verification": None,
             "synthesis": None,
             "error": None,
