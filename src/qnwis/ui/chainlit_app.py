@@ -232,7 +232,8 @@ async def handle_message(message: cl.Message):
                 timeline_markdown = render_stage_timeline_md(
                     _build_timeline_rows(stages_completed, stage_durations)
                 )
-                await timeline_msg.update(content=sanitize_markdown(timeline_markdown))
+                timeline_msg.content = sanitize_markdown(timeline_markdown)
+                await timeline_msg.update()
             
             # Render stage card
             if stage == "classify":
@@ -336,7 +337,8 @@ Please try rephrasing your question or contact support if the issue persists.
             final_markdown = render_stage_timeline_md(
                 _build_timeline_rows(stages_completed, stage_durations)
             )
-            await timeline_msg.update(content=sanitize_markdown(final_markdown))
+            timeline_msg.content = sanitize_markdown(final_markdown)
+            await timeline_msg.update()
         
         logger.info(f"[{request_id}] Workflow completed successfully")
         

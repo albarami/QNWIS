@@ -282,12 +282,10 @@ def format_metric_value(key: str, value: Any) -> str:
         Formatted string representation
     """
     if isinstance(value, float):
-        # Percentages
+        # Percentages (World Bank values are already in percent units, e.g., 0.11 = 0.11%)
         if "percent" in key.lower() or "rate" in key.lower():
-            if abs(value) < 1:
-                return f"{value:.2%}"
-            else:
-                return f"{value:.1f}%"
+            # All percent values: just add % symbol, don't multiply
+            return f"{value:.2f}%"
         # Ratios/scores
         elif "score" in key.lower() or "confidence" in key.lower():
             return f"{value:.2f}"
