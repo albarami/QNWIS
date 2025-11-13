@@ -6,10 +6,12 @@ from . import (
     agents_scenario,
     agents_strategy,
     agents_time,
+    admin,
     backups,
     briefing,
     continuity,
     council,
+    council_llm,
     export,
     notifications,
     queries,
@@ -29,11 +31,13 @@ ROUTERS = [
     ui.router,
     ui_dashboard.router,
     council.router,
+    council_llm.router,
     continuity.router,
     backups.router,
     briefing.router,
     slo.router,
     notifications.router,
+    admin.router,
 ]
 
 __all__ = ["ROUTERS"]
