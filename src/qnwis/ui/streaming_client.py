@@ -111,7 +111,7 @@ class SSEClient:
         self._validate_question(question)
 
         normalized_provider = self._normalize_provider(provider)
-        url = f"{self.base_url}/api/council/stream"
+        url = f"{self.base_url}/api/v1/council/stream"
         request_id = request_id or str(uuid.uuid4())
         headers = {"X-Request-ID": request_id}
         payload = {"question": question, "provider": normalized_provider}
