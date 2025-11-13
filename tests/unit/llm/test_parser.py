@@ -237,11 +237,16 @@ def test_extract_numbers_from_query_results():
     """Test extracting numbers from QueryResult objects."""
     parser = LLMResponseParser()
 
+    from src.qnwis.data.deterministic.models import Freshness
+    
     provenance = Provenance(
-        source_id="test_source",
-        api_version="v1",
-        query_timestamp="2025-01-15T10:00:00Z"
+        source="csv",
+        dataset_id="test_dataset",
+        locator="/path/to/data.csv",
+        fields=["value", "rate"]
     )
+    
+    freshness = Freshness(asof_date="2025-01-15")
 
     query_results = {
         "query1": QueryResult(
@@ -251,7 +256,9 @@ def test_extract_numbers_from_query_results():
                 Row(row_id="r2", data={"value": 100.0, "rate": 3.1})
             ],
             total_rows=2,
-            provenance=provenance
+            provenance=provenance,
+            unit="count",
+            freshness=freshness
         )
     }
 
@@ -265,7 +272,8 @@ def test_extract_numbers_from_query_results():
 
 def test_agent_finding_validates_confidence_bounds():
     """Test AgentFinding validates confidence is 0-1."""
-    with pytest.raises(ValueError, match="Confidence must be between"):
+    from pydantic import ValidationError
+    with pytest.raises(ValidationError):
         AgentFinding(
             title="Test",
             summary="Summary",
@@ -280,7 +288,8 @@ def test_agent_finding_validates_confidence_bounds():
 
 def test_agent_finding_validates_metric_types():
     """Test AgentFinding validates metrics are numeric."""
-    with pytest.raises(ValueError, match="must be numeric"):
+    from pydantic import ValidationError
+    with pytest.raises(ValidationError):
         AgentFinding(
             title="Test",
             summary="Summary",

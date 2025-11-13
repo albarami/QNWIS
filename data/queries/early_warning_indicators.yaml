@@ -1,0 +1,68 @@
+query_id: early_warning_indicators
+description: Early warning indicators for workforce risks and crises
+dataset: LMIS
+sql: |
+  WITH recent_trends AS (
+    SELECT
+      sector,
+      COUNT(CASE WHEN end_date >= CURRENT_DATE - INTERVAL '3 months' THEN 1 END)::float /
+        NULLIF(COUNT(*), 0) * 100 as recent_exit_rate,
+      COUNT(CASE WHEN status = 'unemployed' THEN 1 END)::float /
+        NULLIF(COUNT(*), 0) * 100 as unemployment_rate,
+      AVG(salary_qar) as avg_salary,
+      COUNT(*) as workforce_size
+    FROM employment_records
+    WHERE month >= (SELECT MAX(month) - INTERVAL '6 months' FROM employment_records)
+      AND sector IS NOT NULL
+    GROUP BY sector
+  ),
+  risk_assessment AS (
+    SELECT
+      sector,
+      recent_exit_rate,
+      unemployment_rate,
+      avg_salary,
+      workforce_size,
+      CASE 
+        WHEN recent_exit_rate > 15 THEN 3
+        WHEN recent_exit_rate > 10 THEN 2
+        WHEN recent_exit_rate > 5 THEN 1
+        ELSE 0
+      END +
+      CASE 
+        WHEN unemployment_rate > 8 THEN 3
+        WHEN unemployment_rate > 5 THEN 2
+        WHEN unemployment_rate > 3 THEN 1
+        ELSE 0
+      END as risk_score
+    FROM recent_trends
+  )
+  SELECT
+    sector,
+    ROUND(recent_exit_rate::numeric, 1) as recent_exit_rate,
+    ROUND(unemployment_rate::numeric, 1) as unemployment_rate,
+    ROUND(avg_salary::numeric, 2) as avg_salary,
+    workforce_size,
+    risk_score,
+    CASE
+      WHEN risk_score >= 5 THEN 'Critical'
+      WHEN risk_score >= 3 THEN 'High'
+      WHEN risk_score >= 2 THEN 'Medium'
+      ELSE 'Low'
+    END as risk_level
+  FROM risk_assessment
+  WHERE workforce_size >= 100
+  ORDER BY risk_score DESC, recent_exit_rate DESC
+parameters: []
+output_schema:
+  - {name: sector, type: string}
+  - {name: recent_exit_rate, type: float}
+  - {name: unemployment_rate, type: float}
+  - {name: avg_salary, type: float}
+  - {name: workforce_size, type: integer}
+  - {name: risk_score, type: integer}
+  - {name: risk_level, type: string}
+cache_ttl: 3600
+freshness_sla: 43200
+access_level: restricted
+tags: [early_warning, risk, crisis_management, monitoring]

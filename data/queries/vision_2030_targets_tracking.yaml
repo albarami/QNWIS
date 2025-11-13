@@ -1,0 +1,39 @@
+query_id: vision_2030_targets_tracking
+description: Progress tracking for Qatar Vision 2030 workforce targets
+dataset: VISION_2030
+sql: |
+  SELECT
+    metric_name,
+    target_value,
+    target_year,
+    current_value,
+    last_measured,
+    unit,
+    category,
+    (current_value / NULLIF(target_value, 0) * 100) as progress_pct,
+    target_value - current_value as gap_value,
+    CASE
+      WHEN current_value >= target_value THEN 'Achieved'
+      WHEN current_value >= target_value * 0.9 THEN 'On Track'
+      WHEN current_value >= target_value * 0.7 THEN 'At Risk'
+      ELSE 'Off Track'
+    END as status
+  FROM vision_2030_targets
+  WHERE target_year >= EXTRACT(YEAR FROM CURRENT_DATE)
+  ORDER BY progress_pct DESC, target_year, metric_name
+parameters: []
+output_schema:
+  - {name: metric_name, type: string}
+  - {name: target_value, type: float}
+  - {name: target_year, type: integer}
+  - {name: current_value, type: float}
+  - {name: last_measured, type: date}
+  - {name: unit, type: string}
+  - {name: category, type: string}
+  - {name: progress_pct, type: float}
+  - {name: gap_value, type: float}
+  - {name: status, type: string}
+cache_ttl: 86400
+freshness_sla: 604800
+access_level: public
+tags: [vision2030, targets, policy, strategic_goals]

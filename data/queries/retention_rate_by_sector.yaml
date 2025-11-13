@@ -1,0 +1,51 @@
+query_id: retention_rate_by_sector
+description: Employee retention rate by sector over last 12 months
+dataset: LMIS
+parameters:
+  - name: months_back
+    type: integer
+    required: false
+    default: 12
+    description: Time window for retention calculation
+sql: |
+  WITH cohort_start AS (
+    SELECT DISTINCT person_id, sector
+    FROM employment_records
+    WHERE month = (
+      SELECT MAX(month) - INTERVAL '1 month' * :months_back
+      FROM employment_records
+    )
+    AND status = 'employed'
+  ),
+  still_employed AS (
+    SELECT DISTINCT cs.person_id, cs.sector
+    FROM cohort_start cs
+    INNER JOIN employment_records er 
+      ON cs.person_id = er.person_id 
+      AND cs.sector = er.sector
+    WHERE er.month = (SELECT MAX(month) FROM employment_records)
+      AND er.status = 'employed'
+  )
+  SELECT
+    cs.sector,
+    COUNT(DISTINCT cs.person_id) as cohort_size,
+    COUNT(DISTINCT se.person_id) as retained_count,
+    COUNT(DISTINCT se.person_id)::float / 
+      NULLIF(COUNT(DISTINCT cs.person_id), 0) * 100 as retention_rate,
+    100 - (COUNT(DISTINCT se.person_id)::float / 
+      NULLIF(COUNT(DISTINCT cs.person_id), 0) * 100) as attrition_rate
+  FROM cohort_start cs
+  LEFT JOIN still_employed se ON cs.person_id = se.person_id
+  GROUP BY cs.sector
+  HAVING COUNT(DISTINCT cs.person_id) >= 20
+  ORDER BY retention_rate DESC
+output_schema:
+  - {name: sector, type: string}
+  - {name: cohort_size, type: integer}
+  - {name: retained_count, type: integer}
+  - {name: retention_rate, type: float}
+  - {name: attrition_rate, type: float}
+cache_ttl: 14400
+freshness_sla: 86400
+access_level: public
+tags: [retention, attrition, sector, workforce_stability]

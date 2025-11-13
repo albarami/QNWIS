@@ -1,0 +1,31 @@
+query_id: training_completion_rates
+description: Training and skill development completion rates (placeholder for future integration)
+dataset: LMIS
+sql: |
+  SELECT
+    sector,
+    education_level,
+    COUNT(DISTINCT person_id) as employee_count,
+    COUNT(DISTINCT person_id) * 0.65 as estimated_training_participants,
+    ROUND(65.0 + (RANDOM() * 20), 1) as estimated_completion_rate,
+    'Placeholder - Awaiting training data integration' as data_status
+  FROM employment_records
+  WHERE status = 'employed'
+    AND month = (SELECT MAX(month) FROM employment_records)
+    AND sector IS NOT NULL
+    AND education_level IS NOT NULL
+  GROUP BY sector, education_level
+  HAVING COUNT(DISTINCT person_id) >= 20
+  ORDER BY sector, education_level
+parameters: []
+output_schema:
+  - {name: sector, type: string}
+  - {name: education_level, type: string}
+  - {name: employee_count, type: integer}
+  - {name: estimated_training_participants, type: float}
+  - {name: estimated_completion_rate, type: float}
+  - {name: data_status, type: string}
+cache_ttl: 86400
+freshness_sla: 604800
+access_level: public
+tags: [training, skills_development, placeholder]

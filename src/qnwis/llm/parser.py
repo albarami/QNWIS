@@ -9,7 +9,7 @@ import json
 import re
 import logging
 from typing import List, Set, Optional
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 from src.qnwis.llm.exceptions import LLMParseError
 
@@ -49,14 +49,16 @@ class AgentFinding(BaseModel):
         description="Notes about data quality or limitations"
     )
     
-    @validator('confidence')
+    @field_validator('confidence')
+    @classmethod
     def validate_confidence(cls, v):
         """Ensure confidence is between 0 and 1."""
         if not 0.0 <= v <= 1.0:
             raise ValueError("Confidence must be between 0.0 and 1.0")
         return v
     
-    @validator('metrics')
+    @field_validator('metrics')
+    @classmethod
     def validate_metrics(cls, v):
         """Ensure all metric values are numeric."""
         for key, value in v.items():

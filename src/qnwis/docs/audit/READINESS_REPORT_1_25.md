@@ -1,8 +1,8 @@
 # Readiness Report: Steps 1-33
 
-**Generated:** 2025-11-12T12:37:11.398316
+**Generated:** 2025-11-12T16:57:45.077030
 **Overall Status:** FAIL
-**Execution Time:** 290 ms
+**Execution Time:** 2344 ms
 
 ## Summary
 
@@ -17,7 +17,7 @@
 ## Gate Results
 
 ### step_completeness [PASS]
-- **Duration:** 15 ms
+- **Duration:** 14 ms
 - **Severity:** ERROR
 ```json
 {
@@ -360,7 +360,7 @@
 - `docs/IMPLEMENTATION_ROADMAP.md`
 
 ### no_placeholders [FAIL]
-- **Duration:** 275 ms
+- **Duration:** 2328 ms
 - **Severity:** ERROR
 ```json
 {
@@ -374,6 +374,18 @@
     "^\\s*raise\\s+NotImplementedError\\b.*$"
   ],
   "violations": [
+    {
+      "file": "src/qnwis/agents/base_llm.py",
+      "line": 261,
+      "pattern": "^\\s*pass\\s*$",
+      "snippet": "pass"
+    },
+    {
+      "file": "src/qnwis/agents/base_llm.py",
+      "line": 281,
+      "pattern": "^\\s*pass\\s*$",
+      "snippet": "pass"
+    },
     {
       "file": "src/qnwis/cli/qnwis_continuity.py",
       "line": 37,
@@ -449,6 +461,48 @@
     {
       "file": "src/qnwis/dr/storage.py",
       "line": 102,
+      "pattern": "^\\s*pass\\s*$",
+      "snippet": "pass"
+    },
+    {
+      "file": "src/qnwis/llm/exceptions.py",
+      "line": 8,
+      "pattern": "^\\s*pass\\s*$",
+      "snippet": "pass"
+    },
+    {
+      "file": "src/qnwis/llm/exceptions.py",
+      "line": 13,
+      "pattern": "^\\s*pass\\s*$",
+      "snippet": "pass"
+    },
+    {
+      "file": "src/qnwis/llm/exceptions.py",
+      "line": 18,
+      "pattern": "^\\s*pass\\s*$",
+      "snippet": "pass"
+    },
+    {
+      "file": "src/qnwis/llm/exceptions.py",
+      "line": 23,
+      "pattern": "^\\s*pass\\s*$",
+      "snippet": "pass"
+    },
+    {
+      "file": "src/qnwis/llm/exceptions.py",
+      "line": 28,
+      "pattern": "^\\s*pass\\s*$",
+      "snippet": "pass"
+    },
+    {
+      "file": "src/qnwis/llm/exceptions.py",
+      "line": 33,
+      "pattern": "^\\s*pass\\s*$",
+      "snippet": "pass"
+    },
+    {
+      "file": "src/qnwis/ui/chainlit_app_llm.py",
+      "line": 267,
       "pattern": "^\\s*pass\\s*$",
       "snippet": "pass"
     }

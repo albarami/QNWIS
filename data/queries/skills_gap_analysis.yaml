@@ -1,0 +1,55 @@
+query_id: skills_gap_analysis
+description: Skills supply vs demand analysis by education level and sector
+dataset: LMIS
+sql: |
+  WITH supply AS (
+    SELECT
+      education_level,
+      COUNT(*) as available_workers
+    FROM employment_records
+    WHERE status IN ('unemployed', 'inactive')
+      AND month = (SELECT MAX(month) FROM employment_records)
+      AND education_level IS NOT NULL
+    GROUP BY education_level
+  ),
+  demand AS (
+    SELECT
+      education_level,
+      sector,
+      COUNT(*) as current_employed
+    FROM employment_records
+    WHERE status = 'employed'
+      AND month = (SELECT MAX(month) FROM employment_records)
+      AND education_level IS NOT NULL
+    GROUP BY education_level, sector
+  )
+  SELECT
+    COALESCE(s.education_level, d.education_level) as education_level,
+    d.sector,
+    COALESCE(s.available_workers, 0) as available_workers,
+    COALESCE(d.current_employed, 0) as current_employed,
+    COALESCE(s.available_workers, 0)::float / 
+      NULLIF(d.current_employed, 0) as supply_demand_ratio,
+    CASE 
+      WHEN COALESCE(s.available_workers, 0) > d.current_employed * 0.5 
+        THEN 'Oversupply'
+      WHEN COALESCE(s.available_workers, 0) < d.current_employed * 0.1 
+        THEN 'Shortage'
+      ELSE 'Balanced'
+    END as gap_status
+  FROM supply s
+  FULL OUTER JOIN demand d ON s.education_level = d.education_level
+  WHERE d.sector IS NOT NULL
+  ORDER BY supply_demand_ratio DESC
+parameters: []
+output_schema:
+  - {name: education_level, type: string}
+  - {name: sector, type: string}
+  - {name: available_workers, type: integer}
+  - {name: current_employed, type: integer}
+  - {name: supply_demand_ratio, type: float}
+  - {name: gap_status, type: string}
+cache_ttl: 14400
+freshness_sla: 172800
+access_level: public
+tags: [skills, education, labour_market, planning]

@@ -173,9 +173,9 @@ class LLMAgent(ABC):
                 summary=finding.summary,
                 metrics=finding.metrics,
                 evidence=[evidence_from(qr) for qr in data.values()],
-                warnings=violations if not is_valid else [],
-                confidence_score=finding.confidence
+                warnings=violations if not is_valid else []
             )
+            # Note: confidence_score is auto-computed in __post_init__ based on warnings
             
             report = AgentReport(
                 agent=self.agent_name,

@@ -1,0 +1,50 @@
+query_id: unemployment_trends_monthly
+description: Monthly unemployment rate trend for last N months
+dataset: LMIS
+parameters:
+  - name: months_back
+    type: integer
+    required: false
+    default: 24
+    description: Number of months to retrieve
+  - name: nationality
+    type: string
+    required: false
+    default: 'Qatari'
+    description: Filter by nationality
+sql: |
+  WITH monthly_stats AS (
+    SELECT
+      month,
+      COUNT(CASE WHEN status = 'unemployed' THEN 1 END) as unemployed,
+      COUNT(*) as total,
+      COUNT(CASE WHEN status = 'unemployed' THEN 1 END)::float /
+        NULLIF(COUNT(*), 0) * 100 as unemployment_rate
+    FROM employment_records
+    WHERE nationality = :nationality
+      AND month >= (
+        SELECT date_trunc('month', MAX(month) - INTERVAL '1 month' * :months_back)
+        FROM employment_records
+      )
+    GROUP BY month
+  )
+  SELECT
+    month,
+    unemployment_rate,
+    unemployed,
+    total,
+    LAG(unemployment_rate) OVER (ORDER BY month) as prev_month_rate,
+    unemployment_rate - LAG(unemployment_rate) OVER (ORDER BY month) as month_change
+  FROM monthly_stats
+  ORDER BY month DESC
+output_schema:
+  - {name: month, type: date}
+  - {name: unemployment_rate, type: float}
+  - {name: unemployed, type: integer}
+  - {name: total, type: integer}
+  - {name: prev_month_rate, type: float}
+  - {name: month_change, type: float}
+cache_ttl: 7200
+freshness_sla: 86400
+access_level: public
+tags: [unemployment, trends, timeseries]

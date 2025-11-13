@@ -1,0 +1,27 @@
+query_id: unemployment_rate_latest
+description: Most recent unemployment rate for Qatar nationals
+dataset: LMIS
+sql: |
+  SELECT
+    month,
+    gender,
+    education_level,
+    COUNT(CASE WHEN status = 'unemployed' THEN 1 END)::float /
+      NULLIF(COUNT(*), 0) * 100 as unemployment_rate,
+    COUNT(*) as sample_size
+  FROM employment_records
+  WHERE nationality = 'Qatari'
+    AND month = (SELECT MAX(month) FROM employment_records)
+  GROUP BY month, gender, education_level
+  ORDER BY month DESC, gender, education_level
+parameters: []
+output_schema:
+  - {name: month, type: date}
+  - {name: gender, type: string}
+  - {name: education_level, type: string}
+  - {name: unemployment_rate, type: float}
+  - {name: sample_size, type: integer}
+cache_ttl: 3600
+freshness_sla: 86400
+access_level: public
+tags: [unemployment, demographics, latest]

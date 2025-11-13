@@ -1,0 +1,65 @@
+query_id: gender_pay_gap_analysis
+description: Gender pay gap analysis by sector and education level
+dataset: LMIS
+sql: |
+  WITH salary_stats AS (
+    SELECT
+      sector,
+      education_level,
+      gender,
+      COUNT(*) as employee_count,
+      AVG(salary_qar) as avg_salary,
+      MEDIAN(salary_qar) as median_salary
+    FROM employment_records
+    WHERE status = 'employed'
+      AND month = (SELECT MAX(month) FROM employment_records)
+      AND salary_qar IS NOT NULL
+      AND salary_qar > 0
+      AND gender IN ('Male', 'Female')
+      AND sector IS NOT NULL
+      AND education_level IS NOT NULL
+    GROUP BY sector, education_level, gender
+    HAVING COUNT(*) >= 5
+  )
+  SELECT
+    m.sector,
+    m.education_level,
+    m.employee_count as male_count,
+    f.employee_count as female_count,
+    m.avg_salary as male_avg_salary,
+    f.avg_salary as female_avg_salary,
+    m.median_salary as male_median_salary,
+    f.median_salary as female_median_salary,
+    ((m.avg_salary - f.avg_salary) / NULLIF(m.avg_salary, 0) * 100) as avg_pay_gap_pct,
+    ((m.median_salary - f.median_salary) / NULLIF(m.median_salary, 0) * 100) as median_pay_gap_pct,
+    CASE
+      WHEN ABS((m.avg_salary - f.avg_salary) / NULLIF(m.avg_salary, 0) * 100) < 5 
+        THEN 'Equitable'
+      WHEN ((m.avg_salary - f.avg_salary) / NULLIF(m.avg_salary, 0) * 100) > 0 
+        THEN 'Gap (Male Higher)'
+      ELSE 'Gap (Female Higher)'
+    END as gap_status
+  FROM salary_stats m
+  INNER JOIN salary_stats f 
+    ON m.sector = f.sector 
+    AND m.education_level = f.education_level
+    AND m.gender = 'Male'
+    AND f.gender = 'Female'
+  ORDER BY ABS(avg_pay_gap_pct) DESC
+parameters: []
+output_schema:
+  - {name: sector, type: string}
+  - {name: education_level, type: string}
+  - {name: male_count, type: integer}
+  - {name: female_count, type: integer}
+  - {name: male_avg_salary, type: float}
+  - {name: female_avg_salary, type: float}
+  - {name: male_median_salary, type: float}
+  - {name: female_median_salary, type: float}
+  - {name: avg_pay_gap_pct, type: float}
+  - {name: median_pay_gap_pct, type: float}
+  - {name: gap_status, type: string}
+cache_ttl: 14400
+freshness_sla: 172800
+access_level: restricted
+tags: [gender, pay_equity, compensation, diversity]

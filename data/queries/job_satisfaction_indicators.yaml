@@ -1,0 +1,50 @@
+query_id: job_satisfaction_indicators
+description: Job satisfaction proxy indicators based on tenure and turnover
+dataset: LMIS
+sql: |
+  WITH sector_stats AS (
+    SELECT
+      sector,
+      AVG(EXTRACT(YEAR FROM AGE(COALESCE(end_date, CURRENT_DATE), start_date))) 
+        as avg_tenure_years,
+      COUNT(CASE WHEN end_date IS NOT NULL 
+        AND end_date >= CURRENT_DATE - INTERVAL '12 months' THEN 1 END)::float /
+        NULLIF(COUNT(*), 0) * 100 as annual_turnover_rate,
+      AVG(salary_qar) as avg_salary,
+      COUNT(DISTINCT company_id) as company_count,
+      COUNT(*) as employee_count
+    FROM employment_records
+    WHERE sector IS NOT NULL
+      AND start_date IS NOT NULL
+    GROUP BY sector
+  )
+  SELECT
+    sector,
+    ROUND(avg_tenure_years::numeric, 1) as avg_tenure_years,
+    ROUND(annual_turnover_rate::numeric, 1) as annual_turnover_rate,
+    ROUND(avg_salary::numeric, 2) as avg_salary,
+    company_count,
+    employee_count,
+    CASE
+      WHEN avg_tenure_years > 5 AND annual_turnover_rate < 10 THEN 'High Satisfaction'
+      WHEN avg_tenure_years > 3 AND annual_turnover_rate < 20 THEN 'Moderate Satisfaction'
+      ELSE 'Low Satisfaction'
+    END as satisfaction_indicator,
+    (100 - annual_turnover_rate + (avg_tenure_years * 10)) / 2 as satisfaction_score
+  FROM sector_stats
+  WHERE employee_count >= 50
+  ORDER BY satisfaction_score DESC
+parameters: []
+output_schema:
+  - {name: sector, type: string}
+  - {name: avg_tenure_years, type: float}
+  - {name: annual_turnover_rate, type: float}
+  - {name: avg_salary, type: float}
+  - {name: company_count, type: integer}
+  - {name: employee_count, type: integer}
+  - {name: satisfaction_indicator, type: string}
+  - {name: satisfaction_score, type: float}
+cache_ttl: 14400
+freshness_sla: 172800
+access_level: public
+tags: [satisfaction, retention, workplace_quality]

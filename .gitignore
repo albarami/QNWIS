@@ -73,7 +73,6 @@ credentials/
 # Data files - ignore data directories but allow src/data/apis/*.py
 external_data/
 metadata/
-data/queries/
 data/migrations/
 *.csv
 *.json.gz
@@ -81,6 +80,11 @@ data/migrations/
 *.db
 *.sqlite
 *.sqlite3
+
+# Allow query definitions (essential for system operation)
+!data/queries/
+!data/queries/*.yaml
+!data/queries/*.md
 
 # Allow audit artifacts and reports
 !src/qnwis/docs/audit/**/*.csv

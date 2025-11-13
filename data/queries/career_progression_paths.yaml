@@ -1,0 +1,55 @@
+query_id: career_progression_paths
+description: Career progression analysis showing promotion rates and salary growth
+dataset: LMIS
+parameters:
+  - name: min_tenure_months
+    type: integer
+    required: false
+    default: 12
+    description: Minimum tenure to include in analysis
+sql: |
+  WITH employee_tenure AS (
+    SELECT
+      person_id,
+      sector,
+      MIN(month) as first_month,
+      MAX(month) as last_month,
+      COUNT(DISTINCT month) as months_active,
+      MIN(salary_qar) as starting_salary,
+      MAX(salary_qar) as current_salary,
+      COUNT(DISTINCT job_title) as job_changes
+    FROM employment_records
+    WHERE status = 'employed'
+      AND salary_qar IS NOT NULL
+    GROUP BY person_id, sector
+    HAVING COUNT(DISTINCT month) >= :min_tenure_months
+  )
+  SELECT
+    sector,
+    COUNT(*) as employee_count,
+    AVG(months_active) as avg_tenure_months,
+    AVG(job_changes) as avg_job_changes,
+    AVG((current_salary - starting_salary) / NULLIF(starting_salary, 0) * 100) 
+      as avg_salary_growth_pct,
+    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY 
+      (current_salary - starting_salary) / NULLIF(starting_salary, 0) * 100) 
+      as median_salary_growth_pct,
+    COUNT(CASE WHEN job_changes > 0 THEN 1 END)::float / 
+      NULLIF(COUNT(*), 0) * 100 as promotion_rate
+  FROM employee_tenure
+  WHERE sector IS NOT NULL
+  GROUP BY sector
+  HAVING COUNT(*) >= 20
+  ORDER BY avg_salary_growth_pct DESC
+output_schema:
+  - {name: sector, type: string}
+  - {name: employee_count, type: integer}
+  - {name: avg_tenure_months, type: float}
+  - {name: avg_job_changes, type: float}
+  - {name: avg_salary_growth_pct, type: float}
+  - {name: median_salary_growth_pct, type: float}
+  - {name: promotion_rate, type: float}
+cache_ttl: 14400
+freshness_sla: 172800
+access_level: public
+tags: [career, progression, retention, talent_development]

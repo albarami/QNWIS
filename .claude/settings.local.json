@@ -12,7 +12,16 @@
       "Bash(git commit -m \"$(cat <<''EOF''\nStep 38: Real-World Validation & Executive Demo\n\n- Validation harness (http/inproc/echo), metrics & case-study rendering\n- Privacy redaction, baselines comparison, KPI summary\n- Tests passing; coverage >90%\n- Fixed QuerySpec import and TODO comments\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
       "Bash(git push:*)",
       "Bash(git commit -m \"$(cat <<''EOF''\nStep 39: Real Orchestration UI (LangGraph+RAG+Agents+Verification)\n\nImplements stage streaming, per-agent panels, verification/audit, model fallback.\n\nFeatures:\n- Streaming workflow adapter with StageEvent emission\n- Sticky timeline widget for workflow progress tracking\n- Per-agent finding panels with raw evidence preview\n- RAG context integration with citation tracking\n- Verification panel with freshness and confidence metrics\n- Audit trail with query IDs, sources, and cache stats\n- Model fallback (Anthropic → OpenAI) with error handling\n- Comprehensive sanitization of all UI outputs\n\nTests:\n- 24 unit tests passing (workflow, UI components, RAG, model selection)\n- 8 integration E2E tests passing (complete workflow validation)\n- All Step 39 files linted (flake8) with no errors\n- Coverage: 55%+ on new UI modules\n\nDocumentation:\n- Updated SECURITY.md with /metrics endpoint documentation\n- Added step39_review.md with implementation highlights\n- No TODO/FIXME comments in source code\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(tests/integration/__init__.py)",
+      "Bash(tests/integration/orchestration/__init__.py)",
+      "Bash(flake8:*)",
+      "Bash(while read f)",
+      "Bash(done)",
+      "Bash(dir:*)",
+      "Bash(pip show:*)",
+      "Bash(ruff check:*)",
+      "Bash(black --check:*)"
     ],
     "deny": [],
     "ask": []

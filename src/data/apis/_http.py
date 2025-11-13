@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import Any
 
 import httpx
+import requests
 
 
 @dataclass(frozen=True)
@@ -103,3 +104,24 @@ def send_with_retry(
         raise last_exception
 
     raise RuntimeError("Request failed without response or exception.")
+
+
+def http_get(
+    url: str,
+    params: dict[str, Any] | None = None,
+    headers: dict[str, str] | None = None,
+    timeout: int = 30
+) -> requests.Response:
+    """
+    Simple HTTP GET wrapper for API clients.
+    
+    Args:
+        url: URL to fetch
+        params: Query parameters
+        headers: Request headers
+        timeout: Timeout in seconds
+        
+    Returns:
+        requests.Response object
+    """
+    return requests.get(url, params=params, headers=headers, timeout=timeout)

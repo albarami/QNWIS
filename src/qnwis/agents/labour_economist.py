@@ -1,51 +1,67 @@
 """
 Labour Economist Agent - Employment trends and gender distribution analysis.
 
-This agent analyzes employment share data by gender and computes year-over-year
-growth metrics using only deterministic data sources.
+This agent uses LLM reasoning to analyze employment share data by gender
+and provide contextual insights using only deterministic data sources.
 """
 
 from __future__ import annotations
+from typing import Dict
 
-from ..data.derived.metrics import yoy_growth
-from .base import AgentReport, DataClient, Insight, evidence_from
+from .base import DataClient
+from .base_llm import LLMAgent
+from .prompts.labour_economist import build_labour_economist_prompt
+from ..llm.client import LLMClient
 
 EMPLOYMENT_QUERY = "syn_employment_share_by_gender_latest"
 
 
-class LabourEconomistAgent:
+class LabourEconomistAgent(LLMAgent):
     """
     Agent focused on employment statistics and gender distribution.
-
-    Computes year-over-year growth trends and provides latest employment
-    share metrics from deterministic data sources.
+    
+    Uses LLM reasoning to analyze employment trends and provide
+    contextual insights from deterministic data sources.
     """
 
-    def __init__(self, client: DataClient) -> None:
+    def __init__(self, client: DataClient, llm: LLMClient) -> None:
         """
         Initialize the Labour Economist Agent.
 
         Args:
             client: DataClient instance for accessing deterministic queries
+            llm: LLM client for reasoning
         """
-        self.client = client
+        super().__init__(client, llm)
 
-    def run(self) -> AgentReport:
+    async def _fetch_data(self, question: str, context: Dict) -> Dict:
         """
-        Execute analysis of employment trends.
-
+        Fetch employment data from deterministic layer.
+        
+        Args:
+            question: User's question
+            context: Additional context
+            
         Returns:
-            AgentReport with employment metrics and YoY growth analysis
+            Dictionary of QueryResults
         """
-        res = self.client.run(EMPLOYMENT_QUERY)
-        rows = [{"data": r.data} for r in res.rows]
-        yoy = yoy_growth(rows, value_key="total_percent")
-        latest = yoy[-1]["data"] if yoy else {}
-        insight = Insight(
-            title="Employment share (latest & YoY)",
-            summary="Latest employment split and YoY percentage change for total.",
-            metrics={k: float(v) for k, v in latest.items() if isinstance(v, (int, float))},
-            evidence=[evidence_from(res)],
-            warnings=res.warnings,
-        )
-        return AgentReport(agent="LabourEconomist", findings=[insight])
+        # Fetch employment share data
+        employment_data = self.client.run(EMPLOYMENT_QUERY)
+        
+        return {
+            "employment_share": employment_data
+        }
+    
+    def _build_prompt(self, question: str, data: Dict, context: Dict) -> tuple[str, str]:
+        """
+        Build labour economist prompt with data.
+        
+        Args:
+            question: User's question
+            data: Dictionary of QueryResults
+            context: Additional context
+            
+        Returns:
+            (system_prompt, user_prompt) tuple
+        """
+        return build_labour_economist_prompt(question, data, context)

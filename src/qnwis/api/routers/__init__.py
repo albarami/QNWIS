@@ -13,6 +13,7 @@ from . import (
     council,
     council_llm,
     export,
+    health,
     notifications,
     queries,
     slo,
@@ -21,6 +22,7 @@ from . import (
 )
 
 ROUTERS = [
+    health.router,
     agents_time.router,
     agents_pattern.router,
     agents_predictor.router,

@@ -1,0 +1,54 @@
+query_id: attrition_rate_monthly
+description: Monthly attrition rate trends across all sectors
+dataset: LMIS
+parameters:
+  - name: months_back
+    type: integer
+    required: false
+    default: 12
+    description: Number of months of history to retrieve
+sql: |
+  WITH monthly_cohorts AS (
+    SELECT
+      month,
+      COUNT(DISTINCT person_id) as active_employees
+    FROM employment_records
+    WHERE status = 'employed'
+    GROUP BY month
+  ),
+  monthly_exits AS (
+    SELECT
+      date_trunc('month', end_date) as month,
+      COUNT(DISTINCT person_id) as exits
+    FROM employment_records
+    WHERE end_date IS NOT NULL
+      AND end_date >= (
+        SELECT MAX(month) - INTERVAL '1 month' * :months_back
+        FROM employment_records
+      )
+    GROUP BY date_trunc('month', end_date)
+  )
+  SELECT
+    mc.month,
+    mc.active_employees,
+    COALESCE(me.exits, 0) as exits,
+    (COALESCE(me.exits, 0)::float / NULLIF(mc.active_employees, 0) * 100) as attrition_rate,
+    AVG(COALESCE(me.exits, 0)::float / NULLIF(mc.active_employees, 0) * 100)
+      OVER (ORDER BY mc.month ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) as rolling_3mo_avg
+  FROM monthly_cohorts mc
+  LEFT JOIN monthly_exits me ON mc.month = me.month
+  WHERE mc.month >= (
+    SELECT MAX(month) - INTERVAL '1 month' * :months_back
+    FROM employment_records
+  )
+  ORDER BY mc.month DESC
+output_schema:
+  - {name: month, type: date}
+  - {name: active_employees, type: integer}
+  - {name: exits, type: integer}
+  - {name: attrition_rate, type: float}
+  - {name: rolling_3mo_avg, type: float}
+cache_ttl: 7200
+freshness_sla: 86400
+access_level: public
+tags: [attrition, trends, timeseries, workforce_stability]

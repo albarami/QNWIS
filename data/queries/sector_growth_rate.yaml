@@ -1,0 +1,59 @@
+query_id: sector_growth_rate
+description: Year-over-year employment growth rate by sector
+dataset: LMIS
+parameters:
+  - name: years_back
+    type: integer
+    required: false
+    default: 3
+    description: Number of years of history to analyze
+sql: |
+  WITH yearly_employment AS (
+    SELECT
+      EXTRACT(YEAR FROM month) as year,
+      sector,
+      COUNT(*) as employee_count
+    FROM employment_records
+    WHERE status = 'employed'
+      AND EXTRACT(YEAR FROM month) >= EXTRACT(YEAR FROM CURRENT_DATE) - :years_back
+      AND sector IS NOT NULL
+    GROUP BY EXTRACT(YEAR FROM month), sector
+  ),
+  growth_calc AS (
+    SELECT
+      y1.year,
+      y1.sector,
+      y1.employee_count as current_count,
+      y2.employee_count as prior_year_count,
+      ((y1.employee_count - y2.employee_count)::float / 
+        NULLIF(y2.employee_count, 0) * 100) as yoy_growth_pct,
+      y1.employee_count - y2.employee_count as absolute_change
+    FROM yearly_employment y1
+    LEFT JOIN yearly_employment y2 
+      ON y1.sector = y2.sector 
+      AND y1.year = y2.year + 1
+  )
+  SELECT
+    year,
+    sector,
+    current_count,
+    prior_year_count,
+    yoy_growth_pct,
+    absolute_change,
+    AVG(yoy_growth_pct) OVER (PARTITION BY sector ORDER BY year 
+      ROWS BETWEEN 1 PRECEDING AND CURRENT ROW) as two_year_avg_growth
+  FROM growth_calc
+  WHERE prior_year_count IS NOT NULL
+  ORDER BY year DESC, yoy_growth_pct DESC
+output_schema:
+  - {name: year, type: integer}
+  - {name: sector, type: string}
+  - {name: current_count, type: integer}
+  - {name: prior_year_count, type: integer}
+  - {name: yoy_growth_pct, type: float}
+  - {name: absolute_change, type: integer}
+  - {name: two_year_avg_growth, type: float}
+cache_ttl: 14400
+freshness_sla: 172800
+access_level: public
+tags: [growth, sector, trends, economic_indicators]

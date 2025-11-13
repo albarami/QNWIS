@@ -1,67 +1,38 @@
 """
-Robust LLM model resolver with fallbacks.
-
-Provides model selection with environment variable overrides and automatic fallback
-when primary models are unavailable.
+Robust LLM model resolver with fallbacks driven entirely by environment config.
 """
 
+from __future__ import annotations
+
 import logging
-import os
 from typing import Callable, Tuple, TypeVar
+
+from src.qnwis.llm.config import get_llm_config
 
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
-
-# Model hierarchy (in order of preference)
-ANTHROPIC_MODELS = [
-    "claude-sonnet-4-5-20250929",  # Latest Sonnet 4.5
-    "claude-3-5-sonnet-20241022",  # Sonnet 3.5 (deprecated but may work)
-    "claude-3-opus-20240229",      # Opus 3 fallback
-]
-
-OPENAI_MODELS = [
-    "gpt-4o",                      # GPT-4 Optimized
-    "gpt-4-turbo",                 # GPT-4 Turbo
-    "gpt-4",                       # GPT-4 base
-]
 
 
 def resolve_models() -> Tuple[str, str]:
     """
     Return (primary_model, fallback_model) for LLM operations.
     
-    Selection logic:
-      1. Use QNWIS_ANTHROPIC_MODEL env var if set
-      2. Else try first available Anthropic model
-      3. Fallback: Use QNWIS_OPENAI_MODEL env var or first OpenAI model
-    
-    Returns:
-        Tuple of (primary_model_id, fallback_model_id)
-        
-    Examples:
-        >>> os.environ['QNWIS_ANTHROPIC_MODEL'] = 'claude-sonnet-4-5-20250929'
-        >>> primary, fallback = resolve_models()
-        >>> primary
-        'claude-sonnet-4-5-20250929'
-        >>> fallback
-        'gpt-4o'
+    Models are fully environment-driven. If a model is not configured, we fall back
+    to the stub identifier so diagnostics remain readable without leaking defaults.
     """
-    # Primary model selection
-    primary = os.getenv("QNWIS_ANTHROPIC_MODEL")
-    if primary:
-        logger.info(f"Using primary model from env: {primary}")
-    else:
-        primary = ANTHROPIC_MODELS[0]
-        logger.info(f"Using default primary model: {primary}")
+    config = get_llm_config()
+    primary = config.anthropic_model or "stub-model"
+    fallback = config.openai_model or "stub-model"
     
-    # Fallback model selection
-    fallback = os.getenv("QNWIS_OPENAI_MODEL")
-    if fallback:
-        logger.info(f"Using fallback model from env: {fallback}")
-    else:
-        fallback = OPENAI_MODELS[0]
-        logger.info(f"Using default fallback model: {fallback}")
+    if primary == "stub-model":
+        logger.warning(
+            "QNWIS_ANTHROPIC_MODEL not set; primary model defaults to stub-model."
+        )
+    if fallback == "stub-model":
+        logger.warning(
+            "QNWIS_OPENAI_MODEL not set; fallback model defaults to stub-model."
+        )
     
     return primary, fallback
 

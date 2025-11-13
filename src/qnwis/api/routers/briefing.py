@@ -1,56 +1,62 @@
-"""Briefing API endpoints."""
+"""
+Briefing API endpoints.
+
+Uses LLM-powered multi-agent workflow to generate ministerial briefings.
+"""
 from __future__ import annotations
 
+import warnings
 from typing import Any
 
 from fastapi import APIRouter
 
-from ...briefing.minister import build_briefing
-
 router = APIRouter(tags=["briefing"])
 
 
-def _clamp_ttl(ttl_s: int) -> int:
-    """Bound ttl_s to supported limits."""
-    clamped = max(60, min(86400, int(ttl_s)))
-    return clamped
-
-
-@router.post("/v1/briefing/minister")
+@router.post("/briefing/minister")
 def minister_briefing(
     queries_dir: str | None = None,
     ttl_s: int = 300
 ) -> dict[str, Any]:
     """
-    Generate Minister Briefing combining council findings and verification.
+    [DEPRECATED] Generate Minister Briefing - Legacy endpoint.
 
-    This endpoint:
-    1. Runs the agent council on synthetic data
-    2. Performs cross-source triangulation checks
-    3. Returns a structured briefing with embedded Markdown
+    **Use `/api/v1/council/run-llm` or `/api/v1/council/stream` instead**
+    for LLM-powered ministerial analysis with real-time reasoning.
+
+    This legacy endpoint used deterministic council orchestration.
+    It is maintained for backward compatibility only.
 
     Args:
-        queries_dir: Optional queries directory path
-        ttl_s: Cache TTL in seconds
+        queries_dir: Optional queries directory path (unused)
+        ttl_s: Cache TTL in seconds (unused)
 
     Returns:
-        JSON with briefing structure including:
-        - title: Briefing title
-        - headline: List of key bullet points
-        - key_metrics: Dictionary of numeric metrics
-        - red_flags: List of verification issues
-        - provenance: List of data source locators
-        - markdown: Full briefing in Markdown format
+        Deprecation notice with redirect instructions
     """
-    effective_ttl = _clamp_ttl(ttl_s)
-    b = build_briefing(queries_dir=queries_dir, ttl_s=effective_ttl)
+    warnings.warn(
+        "DEPRECATED: /v1/briefing/minister → use /v1/council/run-llm or /v1/council/stream",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
     return {
-        "title": b.title,
-        "headline": b.headline,
-        "key_metrics": b.key_metrics,
-        "red_flags": b.red_flags,
-        "provenance": b.provenance,
-        "min_confidence": b.min_confidence,
-        "licenses": b.licenses,
-        "markdown": b.markdown,
+        "status": "deprecated",
+        "message": (
+            "This endpoint is deprecated. "
+            "Use /api/v1/council/run-llm for complete LLM analysis "
+            "or /api/v1/council/stream for real-time streaming."
+        ),
+        "redirect": {
+            "complete_json": "/api/v1/council/run-llm",
+            "streaming_sse": "/api/v1/council/stream",
+        },
+        "example": {
+            "method": "POST",
+            "url": "/api/v1/council/run-llm",
+            "body": {
+                "question": "Generate a comprehensive briefing on Qatar's labour market status",
+                "provider": "anthropic",
+            },
+        },
     }

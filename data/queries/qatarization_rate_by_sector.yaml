@@ -1,0 +1,36 @@
+query_id: qatarization_rate_by_sector
+description: Qatarization rate (percentage of Qatari employees) by sector
+dataset: LMIS
+parameters:
+  - name: min_employees
+    type: integer
+    required: false
+    default: 50
+    description: Minimum employees required for sector to be included
+sql: |
+  SELECT
+    sector,
+    COUNT(CASE WHEN nationality = 'Qatari' THEN 1 END) as qatari_count,
+    COUNT(*) as total_count,
+    COUNT(CASE WHEN nationality = 'Qatari' THEN 1 END)::float /
+      NULLIF(COUNT(*), 0) * 100 as qatarization_rate,
+    AVG(CASE WHEN nationality = 'Qatari' THEN salary_qar END) as avg_qatari_salary,
+    AVG(CASE WHEN nationality != 'Qatari' THEN salary_qar END) as avg_expat_salary
+  FROM employment_records
+  WHERE status = 'employed'
+    AND month = (SELECT MAX(month) FROM employment_records)
+    AND sector IS NOT NULL
+  GROUP BY sector
+  HAVING COUNT(*) >= :min_employees
+  ORDER BY qatarization_rate DESC
+output_schema:
+  - {name: sector, type: string}
+  - {name: qatari_count, type: integer}
+  - {name: total_count, type: integer}
+  - {name: qatarization_rate, type: float}
+  - {name: avg_qatari_salary, type: float}
+  - {name: avg_expat_salary, type: float}
+cache_ttl: 7200
+freshness_sla: 86400
+access_level: public
+tags: [qatarization, nationalization, sector, policy]

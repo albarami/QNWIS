@@ -1,0 +1,36 @@
+query_id: gcc_unemployment_comparison
+description: Compare Qatar unemployment rate to other GCC countries
+dataset: GCC_STAT
+sql: |
+  SELECT
+    country,
+    year,
+    quarter,
+    unemployment_rate,
+    labor_force_participation,
+    RANK() OVER (PARTITION BY year, quarter ORDER BY unemployment_rate) as unemployment_rank,
+    unemployment_rate - AVG(unemployment_rate) OVER (PARTITION BY year, quarter) as vs_gcc_avg,
+    CASE
+      WHEN unemployment_rate < 3.0 THEN 'Very Low'
+      WHEN unemployment_rate < 5.0 THEN 'Low'
+      WHEN unemployment_rate < 8.0 THEN 'Moderate'
+      ELSE 'High'
+    END as unemployment_classification
+  FROM gcc_labour_statistics
+  WHERE year >= EXTRACT(YEAR FROM CURRENT_DATE) - 2
+    AND country IN ('Qatar', 'UAE', 'Saudi Arabia', 'Kuwait', 'Bahrain', 'Oman')
+  ORDER BY year DESC, quarter DESC, country
+parameters: []
+output_schema:
+  - {name: country, type: string}
+  - {name: year, type: integer}
+  - {name: quarter, type: integer}
+  - {name: unemployment_rate, type: float}
+  - {name: labor_force_participation, type: float}
+  - {name: unemployment_rank, type: integer}
+  - {name: vs_gcc_avg, type: float}
+  - {name: unemployment_classification, type: string}
+cache_ttl: 86400
+freshness_sla: 604800
+access_level: public
+tags: [gcc, benchmarking, unemployment, regional]

@@ -1,0 +1,55 @@
+query_id: sector_competitiveness_scores
+description: Sector competitiveness score based on salary, growth, and retention
+dataset: LMIS
+sql: |
+  WITH sector_metrics AS (
+    SELECT
+      sector,
+      AVG(salary_qar) as avg_salary,
+      COUNT(*) as employee_count
+    FROM employment_records
+    WHERE status = 'employed'
+      AND month = (SELECT MAX(month) FROM employment_records)
+      AND salary_qar IS NOT NULL
+    GROUP BY sector
+  ),
+  sector_scores AS (
+    SELECT
+      sector,
+      avg_salary,
+      employee_count,
+      PERCENT_RANK() OVER (ORDER BY avg_salary) * 100 as salary_score,
+      PERCENT_RANK() OVER (ORDER BY employee_count) * 100 as size_score,
+      (PERCENT_RANK() OVER (ORDER BY avg_salary) * 50 +
+       PERCENT_RANK() OVER (ORDER BY employee_count) * 50) as competitiveness_score
+    FROM sector_metrics
+  )
+  SELECT
+    sector,
+    ROUND(avg_salary::numeric, 2) as avg_salary,
+    employee_count,
+    ROUND(salary_score::numeric, 1) as salary_score,
+    ROUND(size_score::numeric, 1) as size_score,
+    ROUND(competitiveness_score::numeric, 1) as competitiveness_score,
+    CASE
+      WHEN competitiveness_score >= 80 THEN 'Highly Competitive'
+      WHEN competitiveness_score >= 60 THEN 'Competitive'
+      WHEN competitiveness_score >= 40 THEN 'Moderate'
+      ELSE 'Emerging'
+    END as competitiveness_tier
+  FROM sector_scores
+  WHERE sector IS NOT NULL
+  ORDER BY competitiveness_score DESC
+parameters: []
+output_schema:
+  - {name: sector, type: string}
+  - {name: avg_salary, type: float}
+  - {name: employee_count, type: integer}
+  - {name: salary_score, type: float}
+  - {name: size_score, type: float}
+  - {name: competitiveness_score, type: float}
+  - {name: competitiveness_tier, type: string}
+cache_ttl: 14400
+freshness_sla: 172800
+access_level: public
+tags: [sector, competitiveness, rankings, strategic_intelligence]

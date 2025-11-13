@@ -1,0 +1,35 @@
+query_id: employment_by_education_level
+description: Employment statistics segmented by education level
+dataset: LMIS
+sql: |
+  SELECT
+    education_level,
+    COUNT(CASE WHEN status = 'employed' THEN 1 END) as employed,
+    COUNT(CASE WHEN status = 'unemployed' THEN 1 END) as unemployed,
+    COUNT(CASE WHEN status = 'inactive' THEN 1 END) as inactive,
+    COUNT(*) as total,
+    COUNT(CASE WHEN status = 'employed' THEN 1 END)::float / 
+      NULLIF(COUNT(*), 0) * 100 as employment_rate,
+    COUNT(CASE WHEN status = 'unemployed' THEN 1 END)::float /
+      NULLIF(COUNT(CASE WHEN status IN ('employed', 'unemployed') THEN 1 END), 0) * 100 
+      as unemployment_rate,
+    AVG(CASE WHEN status = 'employed' THEN salary_qar END) as avg_salary
+  FROM employment_records
+  WHERE month = (SELECT MAX(month) FROM employment_records)
+    AND education_level IS NOT NULL
+  GROUP BY education_level
+  ORDER BY employment_rate DESC
+parameters: []
+output_schema:
+  - {name: education_level, type: string}
+  - {name: employed, type: integer}
+  - {name: unemployed, type: integer}
+  - {name: inactive, type: integer}
+  - {name: total, type: integer}
+  - {name: employment_rate, type: float}
+  - {name: unemployment_rate, type: float}
+  - {name: avg_salary, type: float}
+cache_ttl: 7200
+freshness_sla: 86400
+access_level: public
+tags: [employment, education, demographics]

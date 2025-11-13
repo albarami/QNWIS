@@ -1,0 +1,43 @@
+query_id: salary_distribution_by_sector
+description: Salary statistics by sector including percentiles
+dataset: LMIS
+parameters:
+  - name: nationality_filter
+    type: string
+    required: false
+    default: null
+    description: Optional nationality filter (e.g., 'Qatari')
+sql: |
+  SELECT
+    sector,
+    COUNT(*) as employee_count,
+    MIN(salary_qar) as min_salary,
+    percentile_cont(0.25) WITHIN GROUP (ORDER BY salary_qar) as p25_salary,
+    percentile_cont(0.50) WITHIN GROUP (ORDER BY salary_qar) as median_salary,
+    percentile_cont(0.75) WITHIN GROUP (ORDER BY salary_qar) as p75_salary,
+    MAX(salary_qar) as max_salary,
+    AVG(salary_qar) as avg_salary,
+    STDDEV(salary_qar) as stddev_salary
+  FROM employment_records
+  WHERE status = 'employed'
+    AND month = (SELECT MAX(month) FROM employment_records)
+    AND salary_qar IS NOT NULL
+    AND salary_qar > 0
+    AND (:nationality_filter IS NULL OR nationality = :nationality_filter)
+  GROUP BY sector
+  HAVING COUNT(*) >= 10
+  ORDER BY median_salary DESC
+output_schema:
+  - {name: sector, type: string}
+  - {name: employee_count, type: integer}
+  - {name: min_salary, type: float}
+  - {name: p25_salary, type: float}
+  - {name: median_salary, type: float}
+  - {name: p75_salary, type: float}
+  - {name: max_salary, type: float}
+  - {name: avg_salary, type: float}
+  - {name: stddev_salary, type: float}
+cache_ttl: 7200
+freshness_sla: 86400
+access_level: public
+tags: [salary, compensation, sector, distribution]

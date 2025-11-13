@@ -1,55 +1,67 @@
 """
 Skills Agent - Skills pipeline analysis through gender distribution.
 
-This agent uses gender distribution in employment as a proxy metric for
-analyzing the skills pipeline and workforce composition.
+This agent uses LLM reasoning to analyze gender distribution in employment
+and provide insights on skills pipeline and workforce composition.
 """
 
 from __future__ import annotations
+from typing import Dict
 
-from .base import AgentReport, DataClient, Insight, evidence_from
+from .base import DataClient
+from .base_llm import LLMAgent
+from .prompts.skills import build_skills_prompt
+from ..llm.client import LLMClient
+
+SKILLS_QUERY = "syn_employment_share_by_gender_latest"
 
 
-class SkillsAgent:
+class SkillsAgent(LLMAgent):
     """
     Agent focused on skills pipeline through gender distribution metrics.
 
-    Uses employment gender distribution as a deterministic proxy for
-    analyzing skills availability and workforce composition.
+    Uses LLM reasoning to analyze employment gender distribution
+    and provide insights on skills availability and workforce composition.
     """
 
-    def __init__(self, client: DataClient) -> None:
+    def __init__(self, client: DataClient, llm: LLMClient) -> None:
         """
         Initialize the Skills Agent.
 
         Args:
             client: DataClient instance for accessing deterministic queries
+            llm: LLM client for reasoning
         """
-        self.client = client
+        super().__init__(client, llm)
 
-    def run(self) -> AgentReport:
+    async def _fetch_data(self, question: str, context: Dict) -> Dict:
         """
-        Execute skills pipeline analysis.
-
+        Fetch skills and employment data from deterministic layer.
+        
+        Args:
+            question: User's question
+            context: Additional context
+            
         Returns:
-            AgentReport with gender distribution metrics as skills proxy
+            Dictionary of QueryResults
         """
-        res = self.client.run("syn_employment_share_by_gender_latest")
-        latest = res.rows[-1].data if res.rows else {}
-        metrics = {}
-        for k in ("male_percent", "female_percent", "total_percent"):
-            v = latest.get(k)
-            if isinstance(v, (int, float)):
-                metrics[k] = float(v)
-        return AgentReport(
-            agent="Skills",
-            findings=[
-                Insight(
-                    title="Gender distribution (employment)",
-                    summary="Latest split by gender.",
-                    metrics=metrics,
-                    evidence=[evidence_from(res)],
-                    warnings=res.warnings,
-                )
-            ],
-        )
+        # Fetch employment gender distribution data
+        skills_data = self.client.run(SKILLS_QUERY)
+        
+        return {
+            "employment_gender": skills_data
+        }
+    
+    def _build_prompt(self, question: str, data: Dict, context: Dict) -> tuple[str, str]:
+        """
+        Build skills prompt with data.
+        
+        Args:
+            question: User's question
+            data: Dictionary of QueryResults
+            context: Additional context
+            
+        Returns:
+            (system_prompt, user_prompt) tuple
+        """
+        return build_skills_prompt(question, data, context)

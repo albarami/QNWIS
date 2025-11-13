@@ -1,0 +1,34 @@
+query_id: gcc_labour_force_participation
+description: Labour force participation rates across GCC countries
+dataset: GCC_STAT
+sql: |
+  SELECT
+    country,
+    year,
+    quarter,
+    labor_force_participation,
+    population_working_age,
+    labor_force_participation - LAG(labor_force_participation) 
+      OVER (PARTITION BY country ORDER BY year, quarter) as qoq_change,
+    RANK() OVER (PARTITION BY year, quarter ORDER BY labor_force_participation DESC) as participation_rank,
+    labor_force_participation - AVG(labor_force_participation) 
+      OVER (PARTITION BY year, quarter) as vs_gcc_avg
+  FROM gcc_labour_statistics
+  WHERE year >= EXTRACT(YEAR FROM CURRENT_DATE) - 3
+    AND country IN ('Qatar', 'UAE', 'Saudi Arabia', 'Kuwait', 'Bahrain', 'Oman')
+    AND labor_force_participation IS NOT NULL
+  ORDER BY year DESC, quarter DESC, labor_force_participation DESC
+parameters: []
+output_schema:
+  - {name: country, type: string}
+  - {name: year, type: integer}
+  - {name: quarter, type: integer}
+  - {name: labor_force_participation, type: float}
+  - {name: population_working_age, type: integer}
+  - {name: qoq_change, type: float}
+  - {name: participation_rank, type: integer}
+  - {name: vs_gcc_avg, type: float}
+cache_ttl: 86400
+freshness_sla: 604800
+access_level: public
+tags: [gcc, benchmarking, participation, regional]

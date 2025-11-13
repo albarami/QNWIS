@@ -1,0 +1,55 @@
+query_id: workforce_composition_by_age
+description: Workforce composition segmented by age groups
+dataset: LMIS
+sql: |
+  WITH age_groups AS (
+    SELECT
+      CASE
+        WHEN age < 25 THEN 'Under 25'
+        WHEN age BETWEEN 25 AND 34 THEN '25-34'
+        WHEN age BETWEEN 35 AND 44 THEN '35-44'
+        WHEN age BETWEEN 45 AND 54 THEN '45-54'
+        WHEN age >= 55 THEN '55+'
+        ELSE 'Unknown'
+      END as age_group,
+      status,
+      nationality,
+      COUNT(*) as person_count
+    FROM employment_records
+    WHERE month = (SELECT MAX(month) FROM employment_records)
+      AND age IS NOT NULL
+    GROUP BY age_group, status, nationality
+  )
+  SELECT
+    age_group,
+    SUM(CASE WHEN status = 'employed' THEN person_count ELSE 0 END) as employed,
+    SUM(CASE WHEN status = 'unemployed' THEN person_count ELSE 0 END) as unemployed,
+    SUM(person_count) as total,
+    SUM(CASE WHEN nationality = 'Qatari' THEN person_count ELSE 0 END) as qatari_count,
+    SUM(CASE WHEN status = 'employed' THEN person_count ELSE 0 END)::float /
+      NULLIF(SUM(person_count), 0) * 100 as employment_rate,
+    SUM(person_count)::float / SUM(SUM(person_count)) OVER () * 100 as pct_of_workforce
+  FROM age_groups
+  GROUP BY age_group
+  ORDER BY 
+    CASE age_group
+      WHEN 'Under 25' THEN 1
+      WHEN '25-34' THEN 2
+      WHEN '35-44' THEN 3
+      WHEN '45-54' THEN 4
+      WHEN '55+' THEN 5
+      ELSE 6
+    END
+parameters: []
+output_schema:
+  - {name: age_group, type: string}
+  - {name: employed, type: integer}
+  - {name: unemployed, type: integer}
+  - {name: total, type: integer}
+  - {name: qatari_count, type: integer}
+  - {name: employment_rate, type: float}
+  - {name: pct_of_workforce, type: float}
+cache_ttl: 7200
+freshness_sla: 86400
+access_level: public
+tags: [demographics, age, workforce_composition]
