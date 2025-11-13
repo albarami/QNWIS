@@ -121,6 +121,9 @@ async def run_workflow_stream(
             latency_ms=prefetch_latency
         )
         
+        # Initialize context dictionary
+        context = {"classification": classification}
+        
         # Store prefetched data in context for agents to use
         context["prefetched_data"] = prefetched_data
         
@@ -220,7 +223,7 @@ async def run_workflow_stream(
             logger.warning("No agents selected, falling back to LabourEconomist")
             agents = [("LabourEconomist", agent_registry["LabourEconomist"])]
         
-        context = {"classification": classification}
+        # Context already initialized earlier with classification and prefetched_data
         agent_reports = []
         
         for agent_name, agent in agents:
