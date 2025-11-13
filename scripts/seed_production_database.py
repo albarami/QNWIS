@@ -32,7 +32,7 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from qnwis.data.synthetic.seed_lmis import generate_synthetic_lmis
-from qnwis.db.engine import get_engine
+from qnwis.data.deterministic.engine import get_engine
 
 # Import API clients
 try:
@@ -503,7 +503,11 @@ def main():
     
     # Get database engine
     try:
-        engine = get_engine(args.db_url)
+        # Override DATABASE_URL if provided
+        if args.db_url:
+            os.environ["DATABASE_URL"] = args.db_url
+        
+        engine = get_engine()
         print("✅ Connected to database")
     except Exception as e:
         print(f"❌ Failed to connect to database: {e}")
