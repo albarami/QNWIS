@@ -105,10 +105,11 @@ async def readiness() -> JSONResponse:
 
     # Check 3: Database (optional, skip if not configured)
     try:
-        from ...db.engine import get_engine
+        from ...data.deterministic.engine import get_engine
+        from sqlalchemy import text
 
         with get_engine().connect() as conn:
-            conn.execute("SELECT 1")
+            conn.execute(text("SELECT 1"))
             conn.close()
         checks["database"] = "healthy"
     except Exception as e:
