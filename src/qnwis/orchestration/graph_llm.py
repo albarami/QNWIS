@@ -211,6 +211,7 @@ class LLMWorkflow:
                 "classification": {
                     "complexity": classification.get("complexity", "medium"),
                     "topics": classification.get("topics", []),
+                    "route_to": classification.get("route_to"),  # Phase 3: deterministic routing
                     "latency_ms": latency_ms
                 }
             }
