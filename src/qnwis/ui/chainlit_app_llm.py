@@ -48,7 +48,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # API base URL from environment or default to localhost
-BASE_URL = os.getenv("QNWIS_API_URL", "http://localhost:8001")
+BASE_URL = os.getenv("QNWIS_API_URL", "http://localhost:8000")
 ALLOWED_PROVIDERS = {"anthropic", "openai", "stub"}
 DEFAULT_PROVIDER = os.getenv("QNWIS_UI_PROVIDER", "anthropic").strip().lower() or "anthropic"
 if DEFAULT_PROVIDER not in ALLOWED_PROVIDERS:
