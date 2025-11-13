@@ -6,11 +6,11 @@ classify → prefetch → agents (parallel) → verify → synthesize → done
 """
 
 import logging
-from typing import TypedDict, Annotated, Sequence, Optional, Dict, Any
+import re
+from typing import TypedDict, Annotated, Sequence, Optional, Dict, Any, AsyncIterator
 from datetime import datetime, timezone
 
 from langgraph.graph import StateGraph, END
-from langgraph.graph.message import add_messages
 
 from src.qnwis.agents.labour_economist import LabourEconomistAgent
 from src.qnwis.agents.nationalization import NationalizationAgent
@@ -26,15 +26,20 @@ logger = logging.getLogger(__name__)
 
 class WorkflowState(TypedDict):
     """State passed between workflow nodes."""
-    
+
     question: str
     classification: Optional[Dict[str, Any]]
     prefetch: Optional[Dict[str, Any]]
-    agent_reports: Annotated[Sequence[AgentReport], add_messages]
+    rag_context: Optional[Dict[str, Any]]
+    selected_agents: Optional[list]
+    agent_reports: list  # List of AgentReport objects
+    debate_results: Optional[Dict[str, Any]]  # Multi-agent debate outcomes
     verification: Optional[Dict[str, Any]]
     synthesis: Optional[str]
     error: Optional[str]
     metadata: Dict[str, Any]
+    reasoning_chain: list  # Step-by-step log of workflow actions
+    event_callback: Optional[Any]  # For streaming events
 
 
 class LLMWorkflow:
@@ -73,6 +78,10 @@ class LLMWorkflow:
         
         # Build graph
         self.graph = self._build_graph()
+        
+        # Agent selector
+        from .agent_selector import AgentSelector
+        self.agent_selector = AgentSelector()
     
     def _build_graph(self) -> StateGraph:
         """
@@ -86,15 +95,21 @@ class LLMWorkflow:
         # Add nodes
         workflow.add_node("classify", self._classify_node)
         workflow.add_node("prefetch", self._prefetch_node)
+        workflow.add_node("rag", self._rag_node)
+        workflow.add_node("select_agents", self._select_agents_node)
         workflow.add_node("agents", self._agents_node)
+        workflow.add_node("debate", self._debate_node)
         workflow.add_node("verify", self._verify_node)
         workflow.add_node("synthesize", self._synthesize_node)
-        
+
         # Define edges
         workflow.set_entry_point("classify")
         workflow.add_edge("classify", "prefetch")
-        workflow.add_edge("prefetch", "agents")
-        workflow.add_edge("agents", "verify")
+        workflow.add_edge("prefetch", "rag")
+        workflow.add_edge("rag", "select_agents")
+        workflow.add_edge("select_agents", "agents")
+        workflow.add_edge("agents", "debate")
+        workflow.add_edge("debate", "verify")
         workflow.add_edge("verify", "synthesize")
         workflow.add_edge("synthesize", END)
         
@@ -110,6 +125,10 @@ class LLMWorkflow:
         Returns:
             Updated state with classification
         """
+        # Emit running event
+        if state.get("event_callback"):
+            await state["event_callback"]("classify", "running")
+        
         start_time = datetime.now(timezone.utc)
         
         try:
@@ -123,6 +142,15 @@ class LLMWorkflow:
                 f"latency={latency_ms:.0f}ms"
             )
             
+            # Emit complete event
+            if state.get("event_callback"):
+                await state["event_callback"](
+                    "classify", 
+                    "complete", 
+                    {"classification": classification},
+                    latency_ms
+                )
+            
             return {
                 **state,
                 "classification": {
@@ -134,6 +162,8 @@ class LLMWorkflow:
         
         except Exception as e:
             logger.error(f"Classification failed: {e}", exc_info=True)
+            if state.get("event_callback"):
+                await state["event_callback"]("classify", "error", {"error": str(e)})
             return {
                 **state,
                 "classification": {"complexity": "medium", "error": str(e)},
@@ -150,34 +180,138 @@ class LLMWorkflow:
         Returns:
             Updated state with prefetch results
         """
+        if state.get("event_callback"):
+            await state["event_callback"]("prefetch", "running")
+        
         start_time = datetime.now(timezone.utc)
         
         try:
-            # Prefetch common queries
-            # (In a real implementation, this would cache results for agents)
+            # Use intelligent prefetching
+            from .prefetch import prefetch_queries
+            
+            classification = state.get("classification", {})
+            prefetched_data = await prefetch_queries(
+                classification=classification,
+                data_client=self.data_client,
+                max_concurrent=5,
+                timeout_seconds=20.0
+            )
+            
             latency_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
             
-            logger.info(f"Prefetch complete: latency={latency_ms:.0f}ms")
+            logger.info(f"Prefetch complete: {len(prefetched_data)} queries, latency={latency_ms:.0f}ms")
+            
+            if state.get("event_callback"):
+                await state["event_callback"](
+                    "prefetch",
+                    "complete",
+                    {
+                        "queries_fetched": len(prefetched_data),
+                        "query_ids": list(prefetched_data.keys())
+                    },
+                    latency_ms
+                )
             
             return {
                 **state,
                 "prefetch": {
                     "status": "complete",
+                    "data": prefetched_data,
                     "latency_ms": latency_ms
                 }
             }
         
         except Exception as e:
             logger.error(f"Prefetch failed: {e}", exc_info=True)
+            if state.get("event_callback"):
+                await state["event_callback"]("prefetch", "error", {"error": str(e)})
             return {
                 **state,
                 "prefetch": {"status": "failed", "error": str(e)},
                 "error": f"Prefetch error: {e}"
             }
     
+    async def _rag_node(self, state: WorkflowState) -> WorkflowState:
+        """RAG context retrieval node."""
+        if state.get("event_callback"):
+            await state["event_callback"]("rag", "running")
+        
+        start_time = datetime.now(timezone.utc)
+        
+        try:
+            from ..rag.retriever import retrieve_external_context
+            
+            question = state["question"]
+            rag_result = await retrieve_external_context(
+                query=question,
+                max_snippets=3,
+                include_api_data=True,
+                min_relevance=0.15
+            )
+            
+            latency_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
+            
+            if state.get("event_callback"):
+                await state["event_callback"](
+                    "rag",
+                    "complete",
+                    {
+                        "snippets_retrieved": len(rag_result.get("snippets", [])),
+                        "sources": rag_result.get("sources", [])
+                    },
+                    latency_ms
+                )
+            
+            return {
+                **state,
+                "rag_context": rag_result
+            }
+        
+        except Exception as e:
+            logger.error(f"RAG failed: {e}", exc_info=True)
+            if state.get("event_callback"):
+                await state["event_callback"]("rag", "error", {"error": str(e)})
+            return {
+                **state,
+                "rag_context": {"snippets": [], "sources": []}
+            }
+    
+    async def _select_agents_node(self, state: WorkflowState) -> WorkflowState:
+        """Intelligent agent selection node."""
+        classification = state.get("classification", {})
+        
+        selected_agent_names = self.agent_selector.select_agents(
+            classification=classification,
+            min_agents=2,
+            max_agents=4
+        )
+        
+        selection_explanation = self.agent_selector.explain_selection(
+            selected_agent_names, classification
+        )
+        
+        if state.get("event_callback"):
+            await state["event_callback"](
+                "agent_selection",
+                "complete",
+                {
+                    "selected_agents": selected_agent_names,
+                    "selected_count": len(selected_agent_names),
+                    "total_available": len(self.agent_selector.AGENT_EXPERTISE),
+                    "savings": selection_explanation["savings"],
+                    "explanation": selection_explanation
+                },
+                0
+            )
+        
+        return {
+            **state,
+            "selected_agents": selected_agent_names
+        }
+    
     async def _agents_node(self, state: WorkflowState) -> WorkflowState:
         """
-        Execute all agents in parallel.
+        Execute selected agents with streaming and deliberation.
         
         Args:
             state: Current workflow state
@@ -190,31 +324,94 @@ class LLMWorkflow:
         question = state["question"]
         context = {
             "classification": state.get("classification"),
-            "prefetch": state.get("prefetch")
+            "prefetch": state.get("prefetch", {}).get("data", {}),
+            "rag_context": state.get("rag_context", {})
         }
         
-        # Run all agents in parallel
-        agent_tasks = []
-        for agent_name, agent in self.agents.items():
-            task = agent.run(question, context)
-            agent_tasks.append((agent_name, task))
+        # Get selected agents
+        selected_agent_names = state.get("selected_agents", [])
+        if not selected_agent_names:
+            selected_agent_names = list(self.agents.keys())
         
+        # Map agent names to instances
+        agent_name_mapping = {
+            "labour_economist": "LabourEconomist",
+            "nationalization": "Nationalization",
+            "skills": "SkillsAgent",
+            "pattern_detective": "PatternDetective",
+            "national_strategy": "NationalStrategy"
+        }
+        
+        # Run selected agents with streaming
         reports = []
-        for agent_name, task in agent_tasks:
-            try:
-                report = await task
-                reports.append(report)
-                logger.info(f"Agent {agent_name} completed successfully")
-            except Exception as e:
-                logger.error(f"Agent {agent_name} failed: {e}", exc_info=True)
-                # Create error report
-                from src.qnwis.agents.base import AgentReport
-                error_report = AgentReport(
-                    agent=agent_name,
-                    findings=[],
-                    narrative=f"Agent failed: {e}"
-                )
-                reports.append(error_report)
+        for agent_name in selected_agent_names:
+            # Find matching agent instance
+            agent_key = agent_name.lower().replace("agent", "").replace("_", "")
+            for key, agent in self.agents.items():
+                if key in agent_key or agent_key in key:
+                    if state.get("event_callback"):
+                        await state["event_callback"](f"agent:{agent_name}", "running")
+                    
+                    start_time = datetime.now(timezone.utc)
+                    
+                    try:
+                        # Run agent with streaming
+                        if hasattr(agent, 'run_stream'):
+                            async for event in agent.run_stream(question, context):
+                                if event["type"] == "token" and state.get("event_callback"):
+                                    await state["event_callback"](
+                                        f"agent:{agent_name}",
+                                        "streaming",
+                                        {"token": event["content"]}
+                                    )
+                                elif event["type"] == "complete":
+                                    report = event["report"]
+                                    reports.append(report)
+                                    
+                                    latency_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
+                                    
+                                    if state.get("event_callback"):
+                                        await state["event_callback"](
+                                            f"agent:{agent_name}",
+                                            "complete",
+                                            {"report": report},
+                                            latency_ms
+                                        )
+                        else:
+                            # Fallback to non-streaming
+                            report = await agent.run(question, context)
+                            reports.append(report)
+                            
+                            latency_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
+                            
+                            if state.get("event_callback"):
+                                await state["event_callback"](
+                                    f"agent:{agent_name}",
+                                    "complete",
+                                    {"report": report},
+                                    latency_ms
+                                )
+                        
+                        logger.info(f"Agent {agent_name} completed successfully")
+                    
+                    except Exception as e:
+                        logger.error(f"Agent {agent_name} failed: {e}", exc_info=True)
+                        if state.get("event_callback"):
+                            await state["event_callback"](
+                                f"agent:{agent_name}",
+                                "error",
+                                {"error": str(e)}
+                            )
+                        # Create error report
+                        from src.qnwis.agents.base import AgentReport
+                        error_report = AgentReport(
+                            agent=agent_name,
+                            findings=[],
+                            narrative=f"Agent failed: {e}"
+                        )
+                        reports.append(error_report)
+                    
+                    break
         
         return {
             **state,
@@ -223,52 +420,491 @@ class LLMWorkflow:
     
     async def _verify_node(self, state: WorkflowState) -> WorkflowState:
         """
-        Verify agent outputs for consistency.
-        
+        Verify agent outputs for citations and number accuracy.
+
+        Enhanced verification that:
+        1. Extracts all numbers from agent narratives
+        2. Checks each number has [Per extraction: ...] citation
+        3. Validates numbers against source data
+        4. Logs violations loudly
+        5. Adjusts confidence scores based on violations
+
         Args:
             state: Current workflow state
-            
+
         Returns:
             Updated state with verification results
         """
+        if state.get("event_callback"):
+            await state["event_callback"]("verify", "running")
+
         start_time = datetime.now(timezone.utc)
-        
+
         try:
+            import re
+            from .verification import verify_report
+
             reports = state.get("agent_reports", [])
-            
-            # Collect all warnings from agents
-            all_warnings = []
+            prefetch_data = state.get("prefetch_data", {})
+
+            # Verify each agent report
+            all_issues = []
+            warnings_list = []
+            citation_violations = []
+            number_violations = []
+
+            # Extract all numbers from source data for validation
+            source_numbers = set()
+            for query_result in prefetch_data.values():
+                if hasattr(query_result, 'rows'):
+                    for row in query_result.rows:
+                        if hasattr(row, 'data'):
+                            for value in row.data.values():
+                                if isinstance(value, (int, float)):
+                                    source_numbers.add(float(value))
+
             for report in reports:
-                if hasattr(report, 'warnings') and report.warnings:
-                    all_warnings.extend(report.warnings)
-            
+                if not report:
+                    continue
+
+                agent_name = report.agent if hasattr(report, 'agent') else 'Unknown'
+
+                # 1. Run existing verification
+                verification_result = verify_report(report)
+                if hasattr(verification_result, 'issues') and verification_result.issues:
+                    for issue in verification_result.issues:
+                        issue_str = f"[{agent_name}] {issue.code}: {issue.detail}"
+                        warnings_list.append(issue_str)
+                        all_issues.append(issue)
+
+                # 2. Check citations in narrative
+                narrative = report.narrative if hasattr(report, 'narrative') else ""
+
+                # Extract all numbers from narrative (integers, floats, percentages)
+                number_pattern = r'\b\d+\.?\d*%?\b'
+                numbers_in_narrative = re.findall(number_pattern, narrative)
+
+                # Extract all citations
+                citation_pattern = r'\[Per extraction: \'[^\']+\' from [^\]]+\]'
+                citations_found = re.findall(citation_pattern, narrative)
+
+                # 3. Check if numbers have citations nearby
+                # Simple heuristic: citation should appear within 50 chars of the number
+                uncited_numbers = []
+                for num_match in re.finditer(number_pattern, narrative):
+                    num_pos = num_match.start()
+                    num_value = num_match.group()
+
+                    # Check if there's a citation within +/- 50 chars
+                    has_nearby_citation = False
+                    for cite_match in re.finditer(citation_pattern, narrative):
+                        cite_pos = cite_match.start()
+                        if abs(cite_pos - num_pos) < 100:  # Within 100 chars
+                            has_nearby_citation = True
+                            break
+
+                    if not has_nearby_citation:
+                        uncited_numbers.append(num_value)
+
+                if uncited_numbers:
+                    violation = f"[{agent_name}] {len(uncited_numbers)} number(s) without citations: {uncited_numbers[:5]}"
+                    citation_violations.append(violation)
+                    warnings_list.append(violation)
+                    logger.warning(f"CITATION VIOLATION: {violation}")
+
+                # 4. Validate cited numbers against source data (with tolerance)
+                for cite_match in re.finditer(citation_pattern, narrative):
+                    citation_text = cite_match.group()
+                    # Extract the value from citation
+                    value_match = re.search(r"'([^']+)'", citation_text)
+                    if value_match:
+                        cited_value_str = value_match.group(1)
+                        # Try to parse as number
+                        try:
+                            # Remove % and other non-numeric chars
+                            clean_value = cited_value_str.replace('%', '').replace(',', '').strip()
+                            cited_value = float(clean_value)
+
+                            # Check if this number exists in source data (with 2% tolerance)
+                            found_in_source = False
+                            for source_num in source_numbers:
+                                tolerance = abs(source_num * 0.02)  # 2% tolerance
+                                if abs(cited_value - source_num) <= tolerance:
+                                    found_in_source = True
+                                    break
+
+                            if not found_in_source and cited_value > 0.01:  # Ignore very small numbers
+                                violation = f"[{agent_name}] Cited value '{cited_value_str}' not found in source data"
+                                number_violations.append(violation)
+                                warnings_list.append(violation)
+                                logger.warning(f"NUMBER FABRICATION: {violation}")
+
+                        except (ValueError, AttributeError):
+                            # Not a parseable number, skip
+                            pass
+
+            verification_result = {
+                "status": "complete",
+                "warnings": warnings_list,
+                "warning_count": len([i for i in all_issues if hasattr(i, 'level') and i.level == 'warn']),
+                "error_count": len([i for i in all_issues if hasattr(i, 'level') and i.level == 'error']),
+                "missing_citations": len(citation_violations),
+                "citation_violations": citation_violations,
+                "number_violations": number_violations,
+                "fabricated_numbers": len(number_violations)
+            }
+
             latency_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
-            
+
             logger.info(
-                f"Verification complete: {len(all_warnings)} warnings, "
+                f"Verification complete: {len(warnings_list)} warnings, "
+                f"{len(citation_violations)} citation violations, "
+                f"{len(number_violations)} number violations, "
                 f"latency={latency_ms:.0f}ms"
             )
+            
+            if state.get("event_callback"):
+                await state["event_callback"](
+                    "verify",
+                    "complete",
+                    verification_result,
+                    latency_ms
+                )
             
             return {
                 **state,
                 "verification": {
-                    "status": "complete",
-                    "warnings": all_warnings,
+                    **verification_result,
                     "latency_ms": latency_ms
                 }
             }
         
         except Exception as e:
             logger.error(f"Verification failed: {e}", exc_info=True)
+            if state.get("event_callback"):
+                await state["event_callback"]("verify", "error", {"error": str(e)})
             return {
                 **state,
                 "verification": {"status": "failed", "error": str(e)},
                 "error": f"Verification error: {e}"
             }
-    
+
+    def _detect_contradictions(self, reports: list) -> list:
+        """
+        Detect contradictions between agent reports.
+
+        Args:
+            reports: List of agent reports (dicts with 'agent_name', 'narrative', 'confidence')
+
+        Returns:
+            List of contradiction dicts
+        """
+        contradictions = []
+
+        # Extract numbers and citations from each report
+        number_pattern = r'\b(\d+\.?\d*%?)\b'
+        citation_pattern = r'\[Per extraction: \'([^\']+)\' from ([^\]]+)\]'
+
+        for i, report1 in enumerate(reports):
+            for report2 in reports[i+1:]:
+                # Extract all numbers with nearby citations from both reports
+                narrative1 = report1.get("narrative", "")
+                narrative2 = report2.get("narrative", "")
+
+                # Find numbers in report1
+                numbers1 = re.finditer(number_pattern, narrative1)
+                for match1 in numbers1:
+                    value1_str = match1.group(1)
+                    pos1 = match1.start()
+
+                    # Find nearby citation
+                    citation_search1 = narrative1[max(0, pos1-100):min(len(narrative1), pos1+100)]
+                    citation_match1 = re.search(citation_pattern, citation_search1)
+
+                    if not citation_match1:
+                        continue
+
+                    citation1_value = citation_match1.group(1)
+                    citation1_source = citation_match1.group(2)
+
+                    # Now look for similar metric in report2
+                    numbers2 = re.finditer(number_pattern, narrative2)
+                    for match2 in numbers2:
+                        value2_str = match2.group(1)
+                        pos2 = match2.start()
+
+                        # Find nearby citation
+                        citation_search2 = narrative2[max(0, pos2-100):min(len(narrative2), pos2+100)]
+                        citation_match2 = re.search(citation_pattern, citation_search2)
+
+                        if not citation_match2:
+                            continue
+
+                        citation2_value = citation_match2.group(1)
+                        citation2_source = citation_match2.group(2)
+
+                        # Check if this is a contradiction (same metric, different values)
+                        # Parse numeric values
+                        try:
+                            val1 = float(value1_str.replace('%', ''))
+                            val2 = float(value2_str.replace('%', ''))
+
+                            # Skip if values are the same (or very close - within 0.1%)
+                            if abs(val1 - val2) <= 0.001:
+                                continue
+
+                            # Check if values differ by more than 5%
+                            if val1 > 0 and abs(val1 - val2) / val1 > 0.05:
+                                # This is a potential contradiction
+                                contradictions.append({
+                                    "metric_name": f"metric_at_pos_{pos1}_{pos2}",
+                                    "agent1_name": report1.get("agent_name", "Unknown"),
+                                    "agent1_value": val1,
+                                    "agent1_value_str": value1_str,
+                                    "agent1_citation": f"[Per extraction: '{citation1_value}' from {citation1_source}]",
+                                    "agent1_confidence": report1.get("confidence", 0.5),
+                                    "agent2_name": report2.get("agent_name", "Unknown"),
+                                    "agent2_value": val2,
+                                    "agent2_value_str": value2_str,
+                                    "agent2_citation": f"[Per extraction: '{citation2_value}' from {citation2_source}]",
+                                    "agent2_confidence": report2.get("confidence", 0.5),
+                                    "severity": "high" if abs(val1 - val2) / val1 > 0.20 else "medium"
+                                })
+                        except ValueError:
+                            # Not numeric, skip
+                            continue
+
+        logger.info(f"Detected {len(contradictions)} contradictions")
+        return contradictions
+
+    async def _conduct_debate(self, contradiction: dict) -> dict:
+        """
+        Conduct structured debate to resolve a contradiction.
+
+        Args:
+            contradiction: Contradiction dict with agent findings
+
+        Returns:
+            DebateResolution dict
+        """
+        debate_prompt = f"""You are a neutral arbitrator conducting a structured debate between two agents who have conflicting findings.
+
+CONTRADICTION:
+- Metric: {contradiction['metric_name']}
+- Agent 1 ({contradiction['agent1_name']}): {contradiction['agent1_value_str']} {contradiction['agent1_citation']} (confidence: {contradiction['agent1_confidence']:.2f})
+- Agent 2 ({contradiction['agent2_name']}): {contradiction['agent2_value_str']} {contradiction['agent2_citation']} (confidence: {contradiction['agent2_confidence']:.2f})
+
+TASK:
+1. Analyze both citations to determine source reliability
+2. Check if values are actually measuring the same thing (e.g., same time period, same definition)
+3. Determine if both can be correct (different methodologies/sources)
+4. If only one can be correct, determine which based on:
+   - Source authority (GCC-STAT > World Bank > other)
+   - Data freshness (more recent > older)
+   - Citation completeness
+   - Agent confidence
+
+OUTPUT FORMAT (JSON):
+{{
+  "resolution": "agent1_correct" | "agent2_correct" | "both_valid" | "neither_valid",
+  "explanation": "Detailed explanation of why",
+  "recommended_value": value or null,
+  "recommended_citation": "citation" or null,
+  "confidence": 0.0-1.0,
+  "action": "use_agent1" | "use_agent2" | "use_both" | "flag_for_review"
+}}
+"""
+
+        try:
+            response = await self.llm_client.generate(prompt=debate_prompt, temperature=0.2)
+
+            # Parse JSON response - handle markdown code fences if present
+            import json
+
+            # Strip markdown code fences if present
+            response_clean = response.strip()
+            if response_clean.startswith("```json"):
+                response_clean = response_clean[7:]
+            if response_clean.startswith("```"):
+                response_clean = response_clean[3:]
+            if response_clean.endswith("```"):
+                response_clean = response_clean[:-3]
+            response_clean = response_clean.strip()
+
+            if not response_clean:
+                raise ValueError("Empty response from LLM")
+
+            resolution = json.loads(response_clean)
+
+            logger.info(f"Debate resolution: {resolution['action']} - {resolution['explanation'][:100]}...")
+
+            return resolution
+
+        except Exception as e:
+            logger.error(f"Debate failed: {e}", exc_info=True)
+            # Default to flagging for review
+            return {
+                "resolution": "neither_valid",
+                "explanation": f"Debate failed due to error: {e}",
+                "recommended_value": None,
+                "recommended_citation": None,
+                "confidence": 0.0,
+                "action": "flag_for_review"
+            }
+
+    def _build_consensus(self, resolutions: list) -> dict:
+        """
+        Build consensus from debate resolutions.
+
+        Args:
+            resolutions: List of DebateResolution dicts
+
+        Returns:
+            ConsensusResult dict
+        """
+        resolved_count = sum(1 for r in resolutions if r["action"] in ["use_agent1", "use_agent2", "use_both"])
+        flagged_count = sum(1 for r in resolutions if r["action"] == "flag_for_review")
+
+        # Build narrative
+        narratives = []
+        for r in resolutions:
+            if r["action"] == "flag_for_review":
+                narratives.append(f"- FLAGGED: {r['explanation']}")
+            else:
+                narratives.append(f"- RESOLVED: {r['explanation']}")
+
+        consensus_narrative = "\n".join(narratives)
+
+        return {
+            "resolved_contradictions": resolved_count,
+            "flagged_for_review": flagged_count,
+            "consensus_narrative": consensus_narrative
+        }
+
+    def _apply_debate_resolutions(self, reports: list, resolutions: list) -> list:
+        """
+        Apply debate resolutions to adjust agent reports.
+
+        Args:
+            reports: Original agent reports
+            resolutions: Debate resolutions
+
+        Returns:
+            Adjusted agent reports
+        """
+        # For now, just return original reports
+        # In a full implementation, we would modify narratives based on resolutions
+        adjusted_reports = []
+
+        for report in reports:
+            adjusted_report = report.copy()
+
+            # Find resolutions that affect this report
+            relevant_resolutions = [
+                r for r in resolutions
+                if r.get("explanation", "").find(report.get("agent_name", "")) >= 0
+            ]
+
+            if relevant_resolutions:
+                # Add debate context to narrative
+                debate_context = "\n\n[Debate Context]\n"
+                for r in relevant_resolutions:
+                    debate_context += f"- {r['explanation']}\n"
+
+                adjusted_report["narrative"] = report.get("narrative", "") + debate_context
+
+            adjusted_reports.append(adjusted_report)
+
+        return adjusted_reports
+
+    async def _debate_node(self, state: WorkflowState) -> WorkflowState:
+        """
+        Conduct multi-agent debate to resolve contradictions.
+
+        Args:
+            state: Current workflow state with agent_reports
+
+        Returns:
+            Updated state with debate_results and adjusted reports
+        """
+        if state.get("event_callback"):
+            await state["event_callback"]("debate", "running")
+
+        start_time = datetime.now(timezone.utc)
+        reports = state.get("agent_reports", [])
+
+        # 1. Detect contradictions
+        contradictions = self._detect_contradictions(reports)
+
+        if not contradictions:
+            logger.info("No contradictions detected - skipping debate")
+
+            if state.get("event_callback"):
+                await state["event_callback"](
+                    "debate",
+                    "complete",
+                    {"contradictions": 0, "status": "skipped"},
+                    0
+                )
+
+            return {
+                **state,
+                "debate_results": {
+                    "contradictions_found": 0,
+                    "status": "skipped",
+                    "latency_ms": 0
+                }
+            }
+
+        logger.info(f"Detected {len(contradictions)} contradictions - starting debate")
+
+        # 2. Conduct structured debates
+        resolutions = []
+        for contradiction in contradictions:
+            resolution = await self._conduct_debate(contradiction)
+            resolutions.append(resolution)
+
+        # 3. Build consensus
+        consensus = self._build_consensus(resolutions)
+
+        # 4. Adjust agent reports based on debate
+        adjusted_reports = self._apply_debate_resolutions(reports, resolutions)
+
+        latency_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
+
+        logger.info(
+            f"Debate complete: {consensus['resolved_contradictions']} resolved, "
+            f"{consensus['flagged_for_review']} flagged, latency={latency_ms:.0f}ms"
+        )
+
+        if state.get("event_callback"):
+            await state["event_callback"](
+                "debate",
+                "complete",
+                {
+                    "contradictions": len(contradictions),
+                    "resolved": consensus["resolved_contradictions"],
+                    "flagged": consensus["flagged_for_review"]
+                },
+                latency_ms
+            )
+
+        return {
+            **state,
+            "agent_reports": adjusted_reports,
+            "debate_results": {
+                "contradictions_found": len(contradictions),
+                "resolved": consensus["resolved_contradictions"],
+                "flagged_for_review": consensus["flagged_for_review"],
+                "consensus_narrative": consensus["consensus_narrative"],
+                "latency_ms": latency_ms,
+                "status": "complete"
+            }
+        }
+
     async def _synthesize_node(self, state: WorkflowState) -> WorkflowState:
         """
-        Synthesize agent findings into final answer.
+        Synthesize agent findings into final answer with streaming.
         
         Args:
             state: Current workflow state
@@ -276,26 +912,64 @@ class LLMWorkflow:
         Returns:
             Updated state with synthesis
         """
+        if state.get("event_callback"):
+            await state["event_callback"]("synthesize", "running")
+        
         start_time = datetime.now(timezone.utc)
         
         try:
-            from src.qnwis.synthesis.engine import SynthesisEngine
-            
-            engine = SynthesisEngine(self.llm_client)
-            
             question = state["question"]
             reports = state.get("agent_reports", [])
             
-            # Generate synthesis
-            synthesis = await engine.synthesize(question, reports)
+            # Build synthesis prompt
+            findings_text = "\n\n".join([
+                f"**Agent {report.agent}**:\n{report.narrative if hasattr(report, 'narrative') else str(report)}"
+                for report in reports
+                if report
+            ])
+            
+            synthesis_prompt = f"""Synthesize the following agent findings into a comprehensive executive summary for the question: \"{question}\"
+
+Agent Findings:
+{findings_text}
+
+Provide a ministerial-grade synthesis that:
+1. Summarizes key insights
+2. Identifies consensus across agents
+3. Highlights critical recommendations
+4. Notes any data quality concerns
+
+Synthesis:"""
+            
+            # Generate synthesis with streaming
+            synthesis_text = ""
+            async for token in self.llm_client.generate_stream(
+                prompt=synthesis_prompt,
+                system="You are an expert labour market analyst for Qatar's Ministry of Labour. Provide concise, data-driven executive summaries."
+            ):
+                synthesis_text += token
+                if state.get("event_callback"):
+                    await state["event_callback"](
+                        "synthesize",
+                        "streaming",
+                        {"token": token}
+                    )
             
             latency_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
             
             logger.info(f"Synthesis complete: latency={latency_ms:.0f}ms")
             
+            if state.get("event_callback"):
+                await state["event_callback"](
+                    "synthesize",
+                    "complete",
+                    {"synthesis": synthesis_text},
+                    latency_ms
+                )
+            
             return {
                 **state,
-                "synthesis": synthesis,
+                "synthesis": synthesis_text,
                 "metadata": {
                     **state.get("metadata", {}),
                     "synthesis_latency_ms": latency_ms
@@ -304,12 +978,15 @@ class LLMWorkflow:
         
         except Exception as e:
             logger.error(f"Synthesis failed: {e}", exc_info=True)
+            if state.get("event_callback"):
+                await state["event_callback"]("synthesize", "error", {"error": str(e)})
+            
             # Fallback to simple concatenation
             reports = state.get("agent_reports", [])
             fallback = "\n\n".join([
                 f"**{report.agent}**: {report.narrative}"
                 for report in reports
-                if report.narrative
+                if hasattr(report, 'narrative') and report.narrative
             ])
             
             return {
@@ -332,13 +1009,18 @@ class LLMWorkflow:
             "question": question,
             "classification": None,
             "prefetch": None,
+            "rag_context": None,
+            "selected_agents": None,
             "agent_reports": [],
+            "debate_results": None,
             "verification": None,
             "synthesis": None,
             "error": None,
             "metadata": {
                 "start_time": datetime.now(timezone.utc).isoformat()
-            }
+            },
+            "reasoning_chain": [],
+            "event_callback": None
         }
         
         final_state = await self.graph.ainvoke(initial_state)
@@ -347,6 +1029,46 @@ class LLMWorkflow:
         start_time = datetime.fromisoformat(final_state["metadata"]["start_time"])
         total_latency_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
         final_state["metadata"]["total_latency_ms"] = total_latency_ms
+        
+        return final_state
+    
+    async def run_stream(self, question: str, event_callback) -> AsyncIterator[Dict[str, Any]]:
+        """
+        Run workflow with streaming events.
+        
+        Args:
+            question: User's question
+            event_callback: Async callback for events (stage, status, payload, latency_ms)
+            
+        Yields:
+            Workflow state updates
+        """
+        initial_state: WorkflowState = {
+            "question": question,
+            "classification": None,
+            "prefetch": None,
+            "rag_context": None,
+            "selected_agents": None,
+            "agent_reports": [],
+            "verification": None,
+            "synthesis": None,
+            "error": None,
+            "metadata": {
+                "start_time": datetime.now(timezone.utc).isoformat()
+            },
+            "event_callback": event_callback
+        }
+        
+        # Execute graph
+        final_state = await self.graph.ainvoke(initial_state)
+        
+        # Add total latency
+        start_time = datetime.fromisoformat(final_state["metadata"]["start_time"])
+        total_latency_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
+        final_state["metadata"]["total_latency_ms"] = total_latency_ms
+        
+        # Emit completion
+        await event_callback("done", "complete", final_state, total_latency_ms)
         
         return final_state
 

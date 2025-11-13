@@ -5,6 +5,7 @@ Discovers correlations, detects anomalies, and validates data consistency.
 """
 
 from typing import Dict
+from ..base_llm import ZERO_FABRICATION_CITATION_RULES
 
 
 PATTERN_DETECTIVE_SYSTEM = """You are a data quality and pattern detection specialist for Qatar's workforce intelligence.
@@ -28,7 +29,9 @@ CRITICAL REQUIREMENTS:
 - Cite all data sources
 - Be precise about validation rules
 - Flag all inconsistencies
-- Provide confidence levels"""
+- Provide confidence levels
+
+{citation_rules}"""
 
 
 PATTERN_DETECTIVE_USER = """TASK: Validate data consistency and detect patterns in Qatar's workforce data.
@@ -36,7 +39,7 @@ PATTERN_DETECTIVE_USER = """TASK: Validate data consistency and detect patterns 
 USER QUESTION:
 {question}
 
-DATA PROVIDED:
+DATA PROVIDED (WITH SOURCE ATTRIBUTION):
 {data_summary}
 
 DETAILED DATA:
@@ -52,6 +55,16 @@ ANALYSIS INSTRUCTIONS:
 4. Assess data quality
 5. Flag any issues
 
+⚠️ MANDATORY CITATION REQUIREMENT ⚠️
+EVERY numeric claim in your analysis MUST include inline citation in the exact format:
+[Per extraction: '{{exact_value}}' from {{source}} {{period}}]
+
+Example:
+"Anomaly detected at [Per extraction: '15.2%' from GCC-STAT Q2-2024]"
+
+If a metric is NOT in the provided data, write:
+"NOT IN DATA - cannot provide {{metric_name}} figure"
+
 VALIDATION RULES:
 - Gender totals: abs((male + female) - total) <= 0.5 percentage points
 - Percentages: All values should be 0-100
@@ -60,20 +73,20 @@ VALIDATION RULES:
 OUTPUT FORMAT (JSON):
 {{
   "title": "Brief, descriptive title",
-  "summary": "2-3 sentence executive summary",
+  "summary": "2-3 sentence executive summary with [Per extraction: ...] citations",
   "metrics": {{
     "validation_checks_passed": value,
     "anomalies_detected": value,
     ...
   }},
-  "analysis": "Detailed analysis paragraph (3-5 sentences)",
+  "analysis": "Detailed analysis paragraph with [Per extraction: ...] citations for EVERY number",
   "recommendations": ["Recommendation 1", "Recommendation 2", ...],
   "confidence": 0.0-1.0,
   "data_quality_notes": "Any concerns about data quality",
   "citations": ["data_source_1", "data_source_2", ...]
 }}
 
-CRITICAL: All numbers must come from the provided data. Do not fabricate."""
+CRITICAL: All numbers MUST have [Per extraction: ...] citations. No exceptions."""
 
 
 def build_pattern_detective_prompt(
@@ -83,30 +96,35 @@ def build_pattern_detective_prompt(
 ) -> tuple[str, str]:
     """
     Build pattern detective prompt with data.
-    
+
     Args:
         question: User's question
         data: Dictionary of QueryResult objects
         context: Additional context
-        
+
     Returns:
         (system_prompt, user_prompt) tuple
     """
     from src.qnwis.agents.prompts.labour_economist import (
-        _format_data_summary,
+        _format_data_summary_with_sources,
         _format_data_tables,
         _format_context
     )
-    
-    data_summary = _format_data_summary(data)
+
+    data_summary = _format_data_summary_with_sources(data)
     data_tables = _format_data_tables(data)
     context_str = _format_context(context)
-    
+
+    # Inject citation rules into system prompt
+    system_prompt = PATTERN_DETECTIVE_SYSTEM.format(
+        citation_rules=ZERO_FABRICATION_CITATION_RULES
+    )
+
     user_prompt = PATTERN_DETECTIVE_USER.format(
         question=question,
         data_summary=data_summary,
         data_tables=data_tables,
         context=context_str
     )
-    
-    return PATTERN_DETECTIVE_SYSTEM, user_prompt
+
+    return system_prompt, user_prompt

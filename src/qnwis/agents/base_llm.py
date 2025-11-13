@@ -19,6 +19,43 @@ from src.qnwis.llm.exceptions import LLMError, LLMParseError
 logger = logging.getLogger(__name__)
 
 
+# Zero Fabrication Citation Requirement
+ZERO_FABRICATION_CITATION_RULES = """
+═══════════════════════════════════════════════════════════════════════
+MANDATORY CITATION FORMAT - ZERO FABRICATION GUARANTEE
+═══════════════════════════════════════════════════════════════════════
+
+RULE 1: Every metric, number, percentage, or statistic MUST include inline citation.
+
+RULE 2: Citation format is EXACTLY:
+  [Per extraction: '{exact_value}' from {source} {period}]
+
+RULE 3: Example formats:
+  ✅ CORRECT: "Qatar unemployment was [Per extraction: '0.10%' from GCC-STAT Q1-2024]"
+  ✅ CORRECT: "Employment reached [Per extraction: '2.3M workers' from LMIS Database 2024-Q1]"
+  ✅ CORRECT: "Qatarization rate stands at [Per extraction: '23.5%' from Ministry Report 2024]"
+
+  ❌ WRONG: "Qatar unemployment is 0.10%" (no citation)
+  ❌ WRONG: "Qatar unemployment is very low" (vague, no number)
+  ❌ WRONG: "According to data, unemployment is 0.10%" (citation not inline)
+
+RULE 4: If metric NOT in provided extraction:
+  Write EXACTLY: "NOT IN DATA - cannot provide {metric_name} figure"
+
+  Example: "Youth unemployment: NOT IN DATA - cannot provide youth unemployment figure"
+
+RULE 5: NEVER round, estimate, or approximate without showing:
+  "Approximately [Per extraction: '0.098%' from source] rounds to 0.1%"
+
+═══════════════════════════════════════════════════════════════════════
+VIOLATION CONSEQUENCES:
+- Response will be flagged
+- Confidence score reduced by 30%
+- May be rejected entirely
+═══════════════════════════════════════════════════════════════════════
+"""
+
+
 class LLMAgent(ABC):
     """
     Base class for LLM-powered agents.
