@@ -299,7 +299,6 @@ async def run_workflow_stream(
         
         # Comprehensive verification using existing verification infrastructure
         from ..orchestration.verification import verify_report, VerificationIssue
-        from ..verification.result_verifier import ResultVerifier
         from ..verification.schemas import NumericClaim
         
         # Collect all verification data

@@ -1,0 +1,22 @@
+query_id: syn_employment_share_by_gender_latest
+description: Latest employment distribution by gender (synthetic query for agents)
+dataset: LMIS
+sql: |
+  SELECT
+    gender,
+    COUNT(*) as employee_count,
+    ROUND(COUNT(*)::numeric / SUM(COUNT(*)) OVER () * 100, 2) as share_pct
+  FROM employment_records
+  WHERE status = 'employed'
+    AND month = (SELECT MAX(month) FROM employment_records WHERE month IS NOT NULL)
+  GROUP BY gender
+  ORDER BY employee_count DESC
+parameters: []
+output_schema:
+  - {name: gender, type: string}
+  - {name: employee_count, type: integer}
+  - {name: share_pct, type: float}
+cache_ttl: 3600
+freshness_sla: 86400
+access_level: public
+tags: [employment, gender, demographics, synthetic]

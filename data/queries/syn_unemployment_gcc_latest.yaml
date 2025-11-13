@@ -1,0 +1,31 @@
+query_id: syn_unemployment_gcc_latest
+description: Latest GCC unemployment rates for regional comparison (synthetic query)
+dataset: GCC_STATS
+sql: |
+  SELECT
+    country,
+    year,
+    quarter,
+    unemployment_rate,
+    youth_unemployment_rate,
+    female_labor_participation
+  FROM gcc_labour_statistics
+  WHERE (year, quarter) = (
+    SELECT year, quarter
+    FROM gcc_labour_statistics
+    ORDER BY year DESC, quarter DESC
+    LIMIT 1
+  )
+  ORDER BY country
+parameters: []
+output_schema:
+  - {name: country, type: string}
+  - {name: year, type: integer}
+  - {name: quarter, type: integer}
+  - {name: unemployment_rate, type: float}
+  - {name: youth_unemployment_rate, type: float}
+  - {name: female_labor_participation, type: float}
+cache_ttl: 7200
+freshness_sla: 604800
+access_level: public
+tags: [unemployment, gcc, regional, synthetic]

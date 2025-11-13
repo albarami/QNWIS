@@ -1,0 +1,31 @@
+query_id: q_unemployment_rate_gcc_latest
+description: Qatar unemployment rate with GCC comparison (latest period)
+dataset: GCC_STATS
+sql: |
+  SELECT
+    country,
+    year,
+    quarter,
+    unemployment_rate,
+    labor_force_participation,
+    CASE WHEN country = 'Qatar' THEN 1 ELSE 0 END as is_qatar
+  FROM gcc_labour_statistics
+  WHERE (year, quarter) = (
+    SELECT year, quarter
+    FROM gcc_labour_statistics
+    ORDER BY year DESC, quarter DESC
+    LIMIT 1
+  )
+  ORDER BY is_qatar DESC, country
+parameters: []
+output_schema:
+  - {name: country, type: string}
+  - {name: year, type: integer}
+  - {name: quarter, type: integer}
+  - {name: unemployment_rate, type: float}
+  - {name: labor_force_participation, type: float}
+  - {name: is_qatar, type: integer}
+cache_ttl: 7200
+freshness_sla: 604800
+access_level: public
+tags: [unemployment, gcc, qatar, comparison]
