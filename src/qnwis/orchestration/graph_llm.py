@@ -590,34 +590,40 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
         prefetch_data = state.get("prefetch", {}).get("data", {})
 
         for report in reports:
-            if not hasattr(report, 'findings') or not report.findings:
-                continue
+            # CRITICAL FIX: Inject into narrative field (this is what UI displays!)
+            if hasattr(report, 'narrative') and report.narrative:
+                original_narrative = report.narrative
+                cited_narrative = injector.inject_citations(original_narrative, prefetch_data)
+                report.narrative = cited_narrative
+                logger.info(f"Injected citations into narrative: {len(original_narrative)} -> {len(cited_narrative)} chars")
+                logger.info(f"Citations present in narrative: {'[Per extraction:' in cited_narrative}")
 
-            # Inject citations into each finding
-            updated_findings = []
-            for finding in report.findings:
-                if isinstance(finding, dict):
-                    updated_finding = finding.copy()
+            # Also inject into findings (for completeness)
+            if hasattr(report, 'findings') and report.findings:
+                updated_findings = []
+                for finding in report.findings:
+                    if isinstance(finding, dict):
+                        updated_finding = finding.copy()
 
-                    # Inject into analysis field
-                    if 'analysis' in updated_finding:
-                        updated_finding['analysis'] = injector.inject_citations(
-                            updated_finding['analysis'],
-                            prefetch_data
-                        )
+                        # Inject into analysis field
+                        if 'analysis' in updated_finding:
+                            updated_finding['analysis'] = injector.inject_citations(
+                                updated_finding['analysis'],
+                                prefetch_data
+                            )
 
-                    # Inject into summary field
-                    if 'summary' in updated_finding:
-                        updated_finding['summary'] = injector.inject_citations(
-                            updated_finding['summary'],
-                            prefetch_data
-                        )
+                        # Inject into summary field
+                        if 'summary' in updated_finding:
+                            updated_finding['summary'] = injector.inject_citations(
+                                updated_finding['summary'],
+                                prefetch_data
+                            )
 
-                    updated_findings.append(updated_finding)
-                else:
-                    updated_findings.append(finding)
+                        updated_findings.append(updated_finding)
+                    else:
+                        updated_findings.append(finding)
 
-            report.findings = updated_findings
+                report.findings = updated_findings
 
         logger.info("Citation injection complete")
 
