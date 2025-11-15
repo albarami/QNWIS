@@ -1,73 +1,98 @@
-# React + TypeScript + Vite
+# QNWIS React Streaming Console
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Modern React + TypeScript frontend for the Qatar National Workforce Intelligence System (QNWIS).  
+The app renders the ministerial streaming console, consumes Server-Sent Events (SSE) from
+`/api/v1/council/stream`, and visualises every stage of the LangGraph workflow (classification,
+agent execution, debate/critique, synthesis, and verification).
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **SSE-native workflow viewer** powered by `@microsoft/fetch-event-source`
+- **Stage-aware layouts** (classification, orchestration, analysis) with optimistic progress UI
+- **Shared component library** under `src/components/{common,workflow,analysis}`
+- **Tailwind CSS + Lucide icons** for consistent Qatar MoL design language
+- **Simple configuration**: Vite proxy points `/api/*` to the FastAPI server on `http://localhost:8000`
 
-## React Compiler
+## Project Structure
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+| Path                           | Purpose |
+|--------------------------------|---------|
+| `src/App.tsx`                  | Root layout and page orchestration |
+| `src/components/common/*`      | Buttons, cards, badges, spinners, error boundaries |
+| `src/components/workflow/*`    | Stage indicator, metadata panel, query input |
+| `src/components/analysis/*`    | Debate, critique, extracted facts, KPI cards |
+| `src/hooks/useWorkflowStream`  | SSE client that maps backend `StreamEventResponse` ➜ UI state |
+| `src/types/workflow.ts`        | Shared TypeScript types mirroring backend Pydantic models |
+| `src/utils/cn.ts`              | Small helper for Tailwind class concatenation |
 
-## Expanding the ESLint configuration
+## Requirements
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- Node.js **18.x** or newer
+- npm **10.x** (ships with Node 18)
+- Running QNWIS backend (`uvicorn src.qnwis.api.server:app --port 8000`)
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Getting Started
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+cd qnwis-ui
+npm install            # install dependencies once
+npm run dev -- --host 0.0.0.0 --port 3000
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Open http://localhost:3000. The Vite dev server proxies `/api/*` calls to `http://localhost:8000`
+(`vite.config.ts`), so no extra environment variables are required during development.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Available Scripts
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+| Command | Description |
+|---------|-------------|
+| `npm run dev`     | Start Vite dev server with Fast Refresh |
+| `npm run build`   | Type-check (`tsc -b`) and produce production bundle in `dist/` |
+| `npm run preview` | Serve the built bundle locally (useful for smoke tests) |
+| `npm run lint`    | Run ESLint with the project configuration |
+
+## Backend Integration & SSE Contract
+
+The hook `useWorkflowStream` posts `{question, provider}` to `/api/v1/council/stream` and expects
+the backend `StreamEventResponse` schema defined in `src/qnwis/api/models/responses.py`. The hook
+handles:
+
+- connection lifecycle (`onopen`, `onmessage`, `onerror`, `onclose`)
+- incremental synthesis tokens (`payload.token`) during the `synthesize` stage
+- status transitions (`running` ➜ `complete` / `error`)
+
+If you change the backend payload, update:
+
+1. `src/types/workflow.ts` (TypeScript definitions)
+2. `src/hooks/useWorkflowStream.ts` (state mapper)
+3. Any components that consume the fields you added/removed
+
+## Styling & Theming
+
+- Tailwind is configured via `tailwind.config.js` and `src/index.css`
+- Global styles live in `src/App.css`
+- Component-specific styles are expressed through Tailwind utility classes to keep the bundle lean
+
+To add Qatar-specific color tokens, extend the `theme.colors` block in `tailwind.config.js`.
+
+## Production Build & Deployment
+
+```bash
+npm run build
+# dist/ contains static assets (index.html + hashed JS/CSS)
 ```
+
+Serve the `dist/` directory behind any static host (Nginx, S3/CloudFront, etc.) and point the proxy
+for `/api/*` to the deployed FastAPI service. If you need a different backend URL at runtime, update
+`vite.config.ts` or add `VITE_API_BASE` and use `import.meta.env.VITE_API_BASE` inside the hook.
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---------|-----|
+| `npm run dev` cannot find backend | Start the FastAPI server on `http://localhost:8000` or change the proxy target in `vite.config.ts`. |
+| SSE stops prematurely | Ensure `council_llm.py` emits well-formed JSON per `StreamEventResponse`. Use browser dev tools → Network → EventStream to inspect payloads. |
+| Type errors referencing backend payload keys | Regenerate or update `src/types/workflow.ts` to match the latest backend schema, then rerun `npm run build`. |
+
+For deeper integration details, see `REACT_MIGRATION_REVISED.md` (Phase 2–6) and
+`BACKEND_SSE_STATUS.md` for the server contract.
