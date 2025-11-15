@@ -8,25 +8,36 @@ LLM council workflow: classify -> prefetch -> agents -> verify -> synthesize.
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
+from contextlib import asynccontextmanager
 from dataclasses import asdict, is_dataclass
 from datetime import datetime, timezone
 from typing import Any, AsyncIterator, Literal
 from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, status
-from fastapi.encoders import jsonable_encoder
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
 from ...agents.base import AgentReport, DataClient
 from ...classification.classifier import Classifier
 from ...llm.client import LLMClient
 from ...orchestration.streaming import run_workflow_stream
+from ..models.responses import StreamEventResponse
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["council-llm"])
+STREAM_TIMEOUT_SECONDS = 180
+
+try:
+    _async_timeout = asyncio.timeout  # Python 3.11+
+except AttributeError:  # pragma: no cover
+
+    @asynccontextmanager
+    async def _async_timeout(_: float):
+        yield
+else:
+    _async_timeout = asyncio.timeout
 
 
 class CouncilRequest(BaseModel):
@@ -157,6 +168,10 @@ def _error_detail(request_id: str) -> CouncilErrorResponse:
     )
 
 
+def _serialize_sse(event: StreamEventResponse) -> str:
+    return f"data: {event.model_dump_json(exclude_none=True)}\n\n"
+
+
 @router.post(
     "/council/stream",
     responses={
@@ -191,36 +206,62 @@ async def council_stream_llm(req: CouncilRequest) -> StreamingResponse:
         classifier = Classifier()
 
         async def event_generator() -> AsyncIterator[str]:
-            heartbeat = json.dumps(
-                {
-                    "stage": "heartbeat",
-                    "status": "ready",
-                    "payload": {},
-                    "latency_ms": 0,
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                },
-                ensure_ascii=False,
-            )
-            yield f"event: heartbeat\ndata: {heartbeat}\n\n"
+            heartbeat = StreamEventResponse.heartbeat()
+            heartbeat.timestamp = datetime.now(timezone.utc).isoformat()
+            yield f"event: heartbeat\n{_serialize_sse(heartbeat)}"
 
-            async for event in run_workflow_stream(
-                question=req.question,
-                data_client=data_client,
-                llm_client=llm_client,
-                classifier=classifier,
-            ):
-                envelope = jsonable_encoder(
-                    {
-                        "stage": event.stage,
-                        "status": event.status,
-                        "payload": event.payload,
-                        "latency_ms": event.latency_ms,
-                        "timestamp": getattr(event, "timestamp", None),
-                    },
-                    exclude_none=True,
+            try:
+                async with _async_timeout(STREAM_TIMEOUT_SECONDS):
+                    async for event in run_workflow_stream(
+                        question=req.question,
+                        data_client=data_client,
+                        llm_client=llm_client,
+                        classifier=classifier,
+                    ):
+                        try:
+                            envelope = StreamEventResponse(
+                                stage=event.stage,
+                                status=event.status,
+                                payload=event.payload,
+                                latency_ms=event.latency_ms,
+                                timestamp=getattr(event, "timestamp", None),
+                            )
+                        except ValidationError as exc:
+                            logger.warning(
+                                "Invalid workflow event structure (stage=%s)", event.stage, exc_info=True
+                            )
+                            envelope = StreamEventResponse(
+                                stage=event.stage or "unknown",
+                                status="error",
+                                payload={
+                                    "error": "invalid_event_payload",
+                                    "details": exc.errors(),
+                                },
+                                message="Workflow emitted malformed event payload.",
+                            )
+                        yield _serialize_sse(envelope)
+                        await asyncio.sleep(0)
+            except asyncio.TimeoutError:
+                timeout_event = StreamEventResponse(
+                    stage="timeout",
+                    status="error",
+                    payload={"error": "workflow_timeout"},
+                    message=f"Workflow exceeded {STREAM_TIMEOUT_SECONDS}s timeout window.",
                 )
-                yield f"data: {json.dumps(envelope, ensure_ascii=False)}\n\n"
-                await asyncio.sleep(0)
+                yield _serialize_sse(timeout_event)
+            except Exception as exc:
+                logger.exception(
+                    "council_stream_llm emitted internal error mid-stream (request_id=%s)",
+                    request_id,
+                )
+                failure_event = StreamEventResponse(
+                    stage="internal_error",
+                    status="error",
+                    payload={"error": "internal_server_error"},
+                    message="LLM council execution failed mid-stream.",
+                )
+                yield _serialize_sse(failure_event)
+                raise
 
         return StreamingResponse(
             event_generator(),
