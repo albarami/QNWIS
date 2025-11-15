@@ -28,7 +28,7 @@ export const useWorkflowStream = (options: UseWorkflowStreamOptions = {}) => {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ question, provider: 'stub' }),
+          body: JSON.stringify({ question, provider: 'anthropic' }),
           signal: abortController.signal,
 
           async onopen(response) {

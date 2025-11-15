@@ -69,12 +69,16 @@ class Classifier:
         # Detect deterministic agent routing
         route_to = self._detect_routing(question_lower)
 
-        # Simple keyword-based classification
-        complexity = "simple"
-        if any(word in question_lower for word in ["compare", "analyze", "forecast", "predict"]):
-            complexity = "medium"
-        if any(word in question_lower for word in ["scenario", "what if", "simulate"]):
-            complexity = "complex"
+        # Force COMPLEX for MVP - always use full multi-agent system
+        # TODO: Implement smart classification after system is proven
+        complexity = "complex"
+        
+        # Original logic (disabled for MVP):
+        # complexity = "simple"
+        # if any(word in question_lower for word in ["compare", "analyze", "forecast", "predict"]):
+        #     complexity = "medium"
+        # if any(word in question_lower for word in ["scenario", "what if", "simulate"]):
+        #     complexity = "complex"
 
         intent = "baseline"
         if "trend" in question_lower or "historical" in question_lower:
@@ -94,38 +98,17 @@ class Classifier:
             "route_to": route_to,  # NEW: deterministic agent routing
         }
 
-    def _detect_routing(self, question: str) -> Optional[str]:
+    def _detect_routing(self, question_lower: str) -> Optional[str]:
         """
-        Detect if question should route to a deterministic agent.
-
-        Priority order (highest first):
-        1. Scenario (what if)
-        2. Temporal (what was/historical)
-        3. Forecast (what will/predict)
+        Detect if question should route to a specific deterministic agent.
 
         Args:
-            question: Lowercase question text
+            question_lower: Lowercased question text
 
         Returns:
-            Agent name ("time_machine", "predictor", "scenario") or None for LLM agents
+            Agent name ('time_machine', 'predictor', 'scenario') or None
         """
-        # Check scenario first (highest specificity)
-        if any(re.search(pattern, question) for pattern in self.scenario_patterns):
-            logger.info("Routing to Scenario agent (what-if detected)")
-            return "scenario"
-
-        # Check temporal BEFORE forecast (to prevent "trend" misclassification)
-        # Temporal is for historical data (what WAS)
-        if any(re.search(pattern, question) for pattern in self.temporal_patterns):
-            logger.info("Routing to TimeMachine agent (temporal detected)")
-            return "time_machine"
-
-        # Check forecast LAST (what WILL)
-        # Only route to Predictor if no temporal match
-        if any(re.search(pattern, question) for pattern in self.forecast_patterns):
-            logger.info("Routing to Predictor agent (forecast detected)")
-            return "predictor"
-
-        # Default to LLM agents
-        logger.info("Routing to LLM agents (no deterministic match)")
+        # Deterministic agents disabled - queries need aggregated time-series data
+        # Current database has raw transactional data
+        # Route all questions to LLM agents which can query and aggregate
         return None

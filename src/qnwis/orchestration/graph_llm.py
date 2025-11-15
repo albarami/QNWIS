@@ -1,8 +1,8 @@
-"""
+﻿"""
 LangGraph workflow for LLM-powered multi-agent orchestration.
 
 Implements streaming workflow with nodes:
-classify → prefetch → agents (parallel) → verify → synthesize → done
+classify ΓåÆ prefetch ΓåÆ agents (parallel) ΓåÆ verify ΓåÆ synthesize ΓåÆ done
 """
 
 import logging
@@ -24,6 +24,7 @@ from ..agents.base import AgentReport, DataClient
 from ..llm.client import LLMClient
 from ..classification.classifier import Classifier
 from .citation_injector import CitationInjector
+from src.qnwis.orchestration.prefetch_apis import get_complete_prefetch
 
 logger = logging.getLogger(__name__)
 
@@ -101,9 +102,9 @@ class LLMWorkflow:
         Build LangGraph workflow with conditional routing.
 
         Flow:
-        - classify → routing decision
-        - If deterministic agent detected → run that agent → synthesize → END
-        - If LLM agents → prefetch → rag → agents → debate → critique → verify → synthesize → END
+        - classify ΓåÆ routing decision
+        - If deterministic agent detected ΓåÆ run that agent ΓåÆ synthesize ΓåÆ END
+        - If LLM agents ΓåÆ prefetch ΓåÆ rag ΓåÆ agents ΓåÆ debate ΓåÆ critique ΓåÆ verify ΓåÆ synthesize ΓåÆ END
 
         Returns:
             Compiled StateGraph
@@ -154,10 +155,10 @@ class LLMWorkflow:
             }
         )
 
-        # Deterministic path: route_deterministic → synthesize → END
+        # Deterministic path: route_deterministic ΓåÆ synthesize ΓåÆ END
         workflow.add_edge("route_deterministic", "synthesize")
 
-        # LLM agents path: prefetch → rag → select_agents → agents → debate → critique → verify → synthesize → END
+        # LLM agents path: prefetch ΓåÆ rag ΓåÆ select_agents ΓåÆ agents ΓåÆ debate ΓåÆ critique ΓåÆ verify ΓåÆ synthesize ΓåÆ END
         workflow.add_edge("prefetch", "rag")
         workflow.add_edge("rag", "select_agents")
         workflow.add_edge("select_agents", "agents")
@@ -202,7 +203,7 @@ class LLMWorkflow:
             reasoning_chain = list(state.get("reasoning_chain", []))
             route_to = classification.get("route_to") or "llm_agents"
             reasoning_chain.append(
-                f"✓ Classification: {classification.get('complexity', 'medium')} complexity, "
+                f"Γ£ô Classification: {classification.get('complexity', 'medium')} complexity, "
                 f"routed to {route_to}"
             )
             
@@ -321,7 +322,7 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
             # Update reasoning chain
             reasoning_chain = list(state.get("reasoning_chain", []))
             reasoning_chain.append(
-                f"✓ Deterministic routing: executed {route_to} for historical/forecast/scenario analysis"
+                f"Γ£ô Deterministic routing: executed {route_to} for historical/forecast/scenario analysis"
             )
 
             if state.get("event_callback"):
@@ -356,76 +357,76 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
                 "error": f"Deterministic routing error: {e}"
             }
 
+
     async def _prefetch_node(self, state: WorkflowState) -> WorkflowState:
         """
-        Prefetch common data needed by agents.
-        
-        Args:
-            state: Current workflow state
-            
-        Returns:
-            Updated state with prefetch results
+        Prefetch data from ALL available sources.
+        Uses: MoL, GCC-STAT, World Bank, Semantic Scholar, Brave, Perplexity
         """
-        if state.get("event_callback"):
-            await state["event_callback"]("prefetch", "running")
-        
-        start_time = datetime.now(timezone.utc)
-        
-        try:
-            # Use intelligent prefetching
-            from .prefetch import prefetch_queries
-            
-            classification = state.get("classification", {})
-            prefetched_data = await prefetch_queries(
-                classification=classification,
-                data_client=self.data_client,
-                max_concurrent=5,
-                timeout_seconds=20.0
-            )
-            
-            latency_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
-            
-            logger.info(f"Prefetch complete: {len(prefetched_data)} queries, latency={latency_ms:.0f}ms")
+        query = state.get("question") or state.get("query", "")
 
-            # Update reasoning chain
+        prefetch = get_complete_prefetch()
+
+        try:
+            extracted_facts = await prefetch.fetch_all_sources(query)
+
+            extraction_confidence = 0.85 if len(extracted_facts) > 10 else 0.60
+            reasoning = f"Extracted {len(extracted_facts)} facts from multiple sources"
             reasoning_chain = list(state.get("reasoning_chain", []))
-            query_ids = list(prefetched_data.keys())
-            reasoning_chain.append(
-                f"✓ Prefetch: loaded {len(prefetched_data)} deterministic queries"
-                + (f" ({', '.join(query_ids[:5])}{' ...' if len(query_ids) > 5 else ''})" if query_ids else "")
-            )
-            
-            if state.get("event_callback"):
-                await state["event_callback"](
+            reasoning_chain.append(reasoning)
+
+            updated_state = {
+                **state,
+                "prefetch": {
+                    "fact_count": len(extracted_facts),
+                    "facts": extracted_facts,
+                },
+                "extracted_facts": extracted_facts,
+                "extraction_confidence": extraction_confidence,
+                "reasoning_chain": reasoning_chain,
+            }
+
+            if event_callback := state.get("event_callback"):
+                await event_callback(
                     "prefetch",
                     "complete",
                     {
-                        "queries_fetched": len(prefetched_data),
-                        "query_ids": list(prefetched_data.keys())
+                        "extracted_facts": extracted_facts,
+                        "fact_count": len(extracted_facts),
+                        "sources": list(
+                            {fact["source"] for fact in extracted_facts if isinstance(fact, dict) and fact.get("source")}
+                        ),
                     },
-                    latency_ms
+                    0,
                 )
-            
-            return {
-                **state,
-                "prefetch": {
-                    "status": "complete",
-                    "data": prefetched_data,
-                    "latency_ms": latency_ms,
-                },
-                "reasoning_chain": reasoning_chain,
-            }
-        
+
+            print(f"\n✅ Prefetch Complete: {len(extracted_facts)} facts")
+            sources: Dict[str, int] = {}
+            for fact in extracted_facts:
+                if isinstance(fact, dict):
+                    source = fact.get("source", "Unknown")
+                    sources[source] = sources.get(source, 0) + 1
+
+            for source, count in sources.items():
+                print(f"   • {source}: {count} facts")
+
+            return updated_state
+
         except Exception as e:
-            logger.error(f"Prefetch failed: {e}", exc_info=True)
+            print(f"❌ Prefetch error: {e}")
+            import traceback
+            traceback.print_exc()
+
             if state.get("event_callback"):
                 await state["event_callback"]("prefetch", "error", {"error": str(e)})
+
             return {
                 **state,
                 "prefetch": {"status": "failed", "error": str(e)},
-                "error": f"Prefetch error: {e}"
+                "extracted_facts": [],
+                "extraction_confidence": 0.0,
             }
-    
+
     async def _rag_node(self, state: WorkflowState) -> WorkflowState:
         """RAG context retrieval node."""
         if state.get("event_callback"):
@@ -462,7 +463,7 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
             snippets = len(rag_result.get("snippets", []))
             sources = rag_result.get("sources", [])
             reasoning_chain.append(
-                f"✓ RAG: retrieved {snippets} external context snippets"
+                f"Γ£ô RAG: retrieved {snippets} external context snippets"
                 + (f" from {', '.join(sources[:3])}{' ...' if len(sources) > 3 else ''}" if sources else "")
             )
 
@@ -512,7 +513,7 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
         # Update reasoning chain
         reasoning_chain = list(state.get("reasoning_chain", []))
         reasoning_chain.append(
-            f"✓ Agent selection: chose {len(selected_agent_names)}/{len(self.agent_selector.AGENT_EXPERTISE)} agents"
+            f"Γ£ô Agent selection: chose {len(selected_agent_names)}/{len(self.agent_selector.AGENT_EXPERTISE)} agents"
             + (f" ({', '.join(selected_agent_names)})" if selected_agent_names else "")
         )
 
@@ -673,7 +674,7 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
         # Update reasoning chain
         reasoning_chain = list(state.get("reasoning_chain", []))
         reasoning_chain.append(
-            f"✓ Multi-agent analysis: executed {len(reports)} agent report(s) with inline citations"
+            f"Γ£ô Multi-agent analysis: executed {len(reports)} agent report(s) with inline citations"
         )
 
         return {
@@ -836,7 +837,7 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
             # Update reasoning chain
             reasoning_chain = list(state.get("reasoning_chain", []))
             reasoning_chain.append(
-                "✓ Verification: "
+                "Γ£ô Verification: "
                 f"{len(citation_violations)} citation violation(s), "
                 f"{len(number_violations)} number violation(s)"
             )
@@ -1128,7 +1129,7 @@ OUTPUT FORMAT (JSON):
 
             # Update reasoning chain (explicitly record that debate was skipped)
             reasoning_chain = list(state.get("reasoning_chain", []))
-            reasoning_chain.append("✓ Debate: no contradictions detected; debate skipped")
+            reasoning_chain.append("Γ£ô Debate: no contradictions detected; debate skipped")
 
             return {
                 **state,
@@ -1176,7 +1177,7 @@ OUTPUT FORMAT (JSON):
         # Update reasoning chain
         reasoning_chain = list(state.get("reasoning_chain", []))
         reasoning_chain.append(
-            "✓ Debate: "
+            "Γ£ô Debate: "
             f"{consensus['resolved_contradictions']} contradiction(s) resolved, "
             f"{consensus['flagged_for_review']} flagged for review"
         )
@@ -1225,7 +1226,7 @@ OUTPUT FORMAT (JSON):
 
             # Update reasoning chain
             reasoning_chain = list(state.get("reasoning_chain", []))
-            reasoning_chain.append("✓ Critique: no agent reports available; critique skipped")
+            reasoning_chain.append("Γ£ô Critique: no agent reports available; critique skipped")
 
             return {
                 **state,
@@ -1343,7 +1344,7 @@ OUTPUT FORMAT (JSON):
             # Update reasoning chain
             reasoning_chain = list(state.get("reasoning_chain", []))
             reasoning_chain.append(
-                "✓ Critique: "
+                "Γ£ô Critique: "
                 f"{len(critique.get('critiques', []))} critique(s), "
                 f"{len(critique.get('red_flags', []))} red flag(s)"
             )
@@ -1417,7 +1418,7 @@ OUTPUT FORMAT (JSON):
 
                 # Update reasoning chain
                 reasoning_chain = list(state.get("reasoning_chain", []))
-                reasoning_chain.append("✓ Synthesis: returned deterministic analytical narrative")
+                reasoning_chain.append("Γ£ô Synthesis: returned deterministic analytical narrative")
 
                 return {
                     **state,
@@ -1473,7 +1474,7 @@ Synthesis:"""
 
             # Update reasoning chain
             reasoning_chain = list(state.get("reasoning_chain", []))
-            reasoning_chain.append("✓ Synthesis: generated ministerial-grade summary from agent findings")
+            reasoning_chain.append("Γ£ô Synthesis: generated ministerial-grade summary from agent findings")
 
             if state.get("event_callback"):
                 await state["event_callback"](

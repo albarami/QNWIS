@@ -158,8 +158,7 @@ def start_react_ui(port: int = 3000):
     if port_in_use(port):
         print(f'❌ UI port {port} is already in use')
         return None
-    print(f"
-🚀 Starting React UI on port {port}...")
+    print(f"🚀 Starting React UI on port {port}...")
     npm_exe = shutil.which('npm')
     if not npm_exe:
         print('   ⚠️  npm not found on PATH. Install Node.js 18+ to run the React UI.')

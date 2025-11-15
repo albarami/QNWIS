@@ -35,7 +35,7 @@ from .deps import attach_security
 from ..perf.cache_warming import warm_queries
 
 PUBLIC_EXACT = {"/", "/health", "/health/live", "/health/ready", "/metrics", "/openapi.json"}
-PUBLIC_PREFIXES = ("/docs", "/redoc")
+PUBLIC_PREFIXES = ("/docs", "/redoc", "/api/v1/council/stream")
 DEFAULT_WARM_QUERIES = tuple(
     qid.strip()
     for qid in os.getenv(

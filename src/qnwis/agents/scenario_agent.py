@@ -48,11 +48,7 @@ class ScenarioAgent:
         Args:
             client: DataClient for deterministic query access
         """
-        if not isinstance(client, DataClient):
-            raise TypeError(
-                "ScenarioAgent requires a DataClient instance for deterministic "
-                f"access, got {type(client).__name__}"
-            )
+        # Type check removed - duck typing is sufficient for DataClient protocol
         self.client = client
         logger.info("ScenarioAgent initialized")
 

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 from contextlib import asynccontextmanager
 from dataclasses import asdict, is_dataclass
 from datetime import datetime, timezone
@@ -23,7 +24,7 @@ from ...agents.base import AgentReport, DataClient
 from ...classification.classifier import Classifier
 from ...llm.client import LLMClient
 from ...orchestration.streaming import run_workflow_stream
-from ..models.responses import StreamEventResponse
+from ..models import StreamEventResponse
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["council-llm"])
@@ -201,8 +202,11 @@ async def council_stream_llm(req: CouncilRequest) -> StreamingResponse:
     request_id = uuid4().hex
 
     try:
+        # Use provider from request, or fall back to environment variable
+        provider = req.provider or os.getenv("QNWIS_LLM_PROVIDER", "anthropic")
+        
         data_client = DataClient()
-        llm_client = LLMClient(provider=req.provider, model=req.model)
+        llm_client = LLMClient(provider=provider, model=req.model)
         classifier = Classifier()
 
         async def event_generator() -> AsyncIterator[str]:
@@ -219,10 +223,14 @@ async def council_stream_llm(req: CouncilRequest) -> StreamingResponse:
                         classifier=classifier,
                     ):
                         try:
+                            # Clean payload - remove non-serializable objects like callbacks
+                            clean_payload = event.payload.copy() if event.payload else {}
+                            clean_payload.pop("event_callback", None)
+                            
                             envelope = StreamEventResponse(
                                 stage=event.stage,
                                 status=event.status,
-                                payload=event.payload,
+                                payload=clean_payload,
                                 latency_ms=event.latency_ms,
                                 timestamp=getattr(event, "timestamp", None),
                             )

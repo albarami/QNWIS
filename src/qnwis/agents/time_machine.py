@@ -65,12 +65,14 @@ class TimeMachineAgent:
         self.client = data_client
 
         # Default series mapping (can be overridden)
+        # Maps to existing query definitions in data/queries/
         self.series_map = series_map or {
-            'retention': 'LMIS_RETENTION_TS',
-            'qatarization': 'LMIS_QATARIZATION_TS',
-            'salary': 'LMIS_SALARY_TS',
-            'employment': 'LMIS_EMPLOYMENT_TS',
-            'attrition': 'syn_attrition_monthly',
+            'retention': 'retention_rate_by_sector',
+            'qatarization': 'qatarization_rate_by_sector',
+            'salary': 'salary_distribution_by_sector',
+            'employment': 'employment_share_by_gender',
+            'attrition': 'attrition_rate_monthly',
+            'unemployment': 'unemployment_trends_monthly',
         }
 
     def _fetch_series(

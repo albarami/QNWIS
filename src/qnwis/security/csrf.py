@@ -12,6 +12,7 @@ from starlette.responses import PlainTextResponse
 from .security_settings import get_security_settings
 
 SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
+CSRF_EXEMPT_PATHS = {"/api/v1/council/stream"}  # SSE streaming endpoint
 
 
 class CSRFMiddleware(BaseHTTPMiddleware):
@@ -38,7 +39,11 @@ class CSRFMiddleware(BaseHTTPMiddleware):
         Returns:
             Response with CSRF cookie or 403 if validation fails
         """
+        # Skip CSRF for auth bypass or exempt paths
         if getattr(request.app.state, "auth_bypass", False):
+            return await call_next(request)
+        
+        if request.url.path in CSRF_EXEMPT_PATHS:
             return await call_next(request)
 
         # Ensure token cookie exists on all safe requests

@@ -307,3 +307,35 @@ class BatchQueryResponse(BaseModel):
     """Response model for batch deterministic query execution."""
 
     results: list[BatchQueryResult] = Field(default_factory=list)
+
+
+# ============================================================================
+# Streaming Response Models
+# ============================================================================
+
+from typing import Literal
+
+StreamStatus = Literal["ready", "running", "streaming", "complete", "error"]
+
+
+class StreamEventResponse(BaseModel):
+    """Validated SSE envelope emitted by the council workflow."""
+
+    stage: str = Field(..., description="Workflow stage (classify, rag, synthesize, etc.).")
+    status: StreamStatus = Field(..., description="Stage status indicator.")
+    payload: dict[str, Any] = Field(default_factory=dict, description="Stage-specific payload.")
+    latency_ms: float | None = Field(
+        default=None,
+        ge=0,
+        description="Optional latency value captured when the stage completed.",
+    )
+    timestamp: str | None = Field(
+        default=None, description="ISO-8601 timestamp emitted by the stage."
+    )
+    message: str | None = Field(
+        default=None, description="Optional human-friendly message about the event."
+    )
+
+    @classmethod
+    def heartbeat(cls) -> "StreamEventResponse":
+        return cls(stage="heartbeat", status="ready", payload={})
