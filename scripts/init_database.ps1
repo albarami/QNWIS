@@ -134,5 +134,5 @@ Write-Host ""
 Write-Host "Next steps:" -ForegroundColor Yellow
 Write-Host "  • Test queries: python scripts/test_query_loading.py"
 Write-Host "  • Start API: python -m uvicorn qnwis.api.server:app --reload"
-Write-Host "  • Launch UI: chainlit run apps/chainlit/app.py"
+Write-Host "  • Launch UI: npm install && npm run dev --prefix qnwis-ui"
 Write-Host ""

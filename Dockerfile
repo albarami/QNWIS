@@ -54,7 +54,6 @@ COPY --chown=qnwis:qnwis src ./src
 COPY --chown=qnwis:qnwis scripts ./scripts
 COPY --chown=qnwis:qnwis data ./data
 COPY --chown=qnwis:qnwis configs ./configs
-COPY --chown=qnwis:qnwis .chainlit ./.chainlit
 
 # Security: Switch to non-root user
 USER qnwis

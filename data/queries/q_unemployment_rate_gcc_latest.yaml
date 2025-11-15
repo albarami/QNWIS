@@ -1,6 +1,6 @@
 query_id: q_unemployment_rate_gcc_latest
 description: Qatar unemployment rate with GCC comparison (latest period)
-dataset: GCC_STATS
+dataset: GCC_STAT
 sql: |
   SELECT
     country,

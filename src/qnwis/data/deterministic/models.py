@@ -5,7 +5,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
-SourceType = Literal["csv", "world_bank"]
+SourceType = Literal["csv", "world_bank", "sql"]
 UnitType = Literal["count", "percent", "qar", "usd", "index", "unknown"]
 
 

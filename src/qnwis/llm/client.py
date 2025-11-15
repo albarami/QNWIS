@@ -290,7 +290,9 @@ class LLMClient:
             "title": "Test Finding",
             "summary": "This is a test finding from the stub LLM.",
             "metrics": {"test_metric": 42.0},
-            "analysis": "Detailed analysis would go here.",
+            # Include a numeric unemployment value that should be cited
+            # based on the synthetic deterministic data (0.10 → 10.0%).
+            "analysis": "Detailed analysis would go here, including Qatar's unemployment rate of 0.10% compared to peers.",
             "recommendations": ["Test recommendation 1", "Test recommendation 2"],
             "confidence": 0.85,
             "citations": ["test_query_id"],

@@ -12,18 +12,18 @@ from datetime import datetime, timezone
 
 from langgraph.graph import StateGraph, END
 
-from src.qnwis.agents.labour_economist import LabourEconomistAgent
-from src.qnwis.agents.nationalization import NationalizationAgent
-from src.qnwis.agents.skills import SkillsAgent
-from src.qnwis.agents.pattern_detective_llm import PatternDetectiveLLMAgent
-from src.qnwis.agents.national_strategy_llm import NationalStrategyLLMAgent
-from src.qnwis.agents.time_machine import TimeMachineAgent
-from src.qnwis.agents.predictor import PredictorAgent
-from src.qnwis.agents.scenario_agent import ScenarioAgent
-from src.qnwis.agents.base import AgentReport, DataClient
-from src.qnwis.llm.client import LLMClient
-from src.qnwis.classification.classifier import Classifier
-from src.qnwis.orchestration.citation_injector import CitationInjector
+from ..agents.labour_economist import LabourEconomistAgent
+from ..agents.nationalization import NationalizationAgent
+from ..agents.skills import SkillsAgent
+from ..agents.pattern_detective_llm import PatternDetectiveLLMAgent
+from ..agents.national_strategy_llm import NationalStrategyLLMAgent
+from ..agents.time_machine import TimeMachineAgent
+from ..agents.predictor import PredictorAgent
+from ..agents.scenario_agent import ScenarioAgent
+from ..agents.base import AgentReport, DataClient
+from ..llm.client import LLMClient
+from ..classification.classifier import Classifier
+from .citation_injector import CitationInjector
 
 logger = logging.getLogger(__name__)
 
@@ -197,6 +197,14 @@ class LLMWorkflow:
                 f"Classification complete: complexity={classification.get('complexity')}, "
                 f"latency={latency_ms:.0f}ms"
             )
+
+            # Update reasoning chain
+            reasoning_chain = list(state.get("reasoning_chain", []))
+            route_to = classification.get("route_to") or "llm_agents"
+            reasoning_chain.append(
+                f"✓ Classification: {classification.get('complexity', 'medium')} complexity, "
+                f"routed to {route_to}"
+            )
             
             # Emit complete event
             if state.get("event_callback"):
@@ -213,8 +221,9 @@ class LLMWorkflow:
                     "complexity": classification.get("complexity", "medium"),
                     "topics": classification.get("topics", []),
                     "route_to": classification.get("route_to"),  # Phase 3: deterministic routing
-                    "latency_ms": latency_ms
-                }
+                    "latency_ms": latency_ms,
+                },
+                "reasoning_chain": reasoning_chain,
             }
         
         except Exception as e:
@@ -309,6 +318,12 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
 
             logger.info(f"Deterministic agent complete: {route_to}, latency={latency_ms:.0f}ms")
 
+            # Update reasoning chain
+            reasoning_chain = list(state.get("reasoning_chain", []))
+            reasoning_chain.append(
+                f"✓ Deterministic routing: executed {route_to} for historical/forecast/scenario analysis"
+            )
+
             if state.get("event_callback"):
                 await state["event_callback"](
                     "route_deterministic",
@@ -323,8 +338,9 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
                 "metadata": {
                     **state.get("metadata", {}),
                     "deterministic_agent": route_to,
-                    "deterministic_latency_ms": latency_ms
-                }
+                    "deterministic_latency_ms": latency_ms,
+                },
+                "reasoning_chain": reasoning_chain,
             }
 
         except Exception as e:
@@ -370,6 +386,14 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
             latency_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
             
             logger.info(f"Prefetch complete: {len(prefetched_data)} queries, latency={latency_ms:.0f}ms")
+
+            # Update reasoning chain
+            reasoning_chain = list(state.get("reasoning_chain", []))
+            query_ids = list(prefetched_data.keys())
+            reasoning_chain.append(
+                f"✓ Prefetch: loaded {len(prefetched_data)} deterministic queries"
+                + (f" ({', '.join(query_ids[:5])}{' ...' if len(query_ids) > 5 else ''})" if query_ids else "")
+            )
             
             if state.get("event_callback"):
                 await state["event_callback"](
@@ -387,8 +411,9 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
                 "prefetch": {
                     "status": "complete",
                     "data": prefetched_data,
-                    "latency_ms": latency_ms
-                }
+                    "latency_ms": latency_ms,
+                },
+                "reasoning_chain": reasoning_chain,
             }
         
         except Exception as e:
@@ -432,9 +457,19 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
                     latency_ms
                 )
             
+            # Update reasoning chain
+            reasoning_chain = list(state.get("reasoning_chain", []))
+            snippets = len(rag_result.get("snippets", []))
+            sources = rag_result.get("sources", [])
+            reasoning_chain.append(
+                f"✓ RAG: retrieved {snippets} external context snippets"
+                + (f" from {', '.join(sources[:3])}{' ...' if len(sources) > 3 else ''}" if sources else "")
+            )
+
             return {
                 **state,
-                "rag_context": rag_result
+                "rag_context": rag_result,
+                "reasoning_chain": reasoning_chain,
             }
         
         except Exception as e:
@@ -474,9 +509,17 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
                 0
             )
         
+        # Update reasoning chain
+        reasoning_chain = list(state.get("reasoning_chain", []))
+        reasoning_chain.append(
+            f"✓ Agent selection: chose {len(selected_agent_names)}/{len(self.agent_selector.AGENT_EXPERTISE)} agents"
+            + (f" ({', '.join(selected_agent_names)})" if selected_agent_names else "")
+        )
+
         return {
             **state,
-            "selected_agents": selected_agent_names
+            "selected_agents": selected_agent_names,
+            "reasoning_chain": reasoning_chain,
         }
     
     async def _agents_node(self, state: WorkflowState) -> WorkflowState:
@@ -627,9 +670,16 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
 
         logger.info("Citation injection complete")
 
+        # Update reasoning chain
+        reasoning_chain = list(state.get("reasoning_chain", []))
+        reasoning_chain.append(
+            f"✓ Multi-agent analysis: executed {len(reports)} agent report(s) with inline citations"
+        )
+
         return {
             **state,
-            "agent_reports": reports
+            "agent_reports": reports,
+            "reasoning_chain": reasoning_chain,
         }
     
     async def _verify_node(self, state: WorkflowState) -> WorkflowState:
@@ -782,6 +832,14 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
                 f"{len(number_violations)} number violations, "
                 f"latency={latency_ms:.0f}ms"
             )
+
+            # Update reasoning chain
+            reasoning_chain = list(state.get("reasoning_chain", []))
+            reasoning_chain.append(
+                "✓ Verification: "
+                f"{len(citation_violations)} citation violation(s), "
+                f"{len(number_violations)} number violation(s)"
+            )
             
             if state.get("event_callback"):
                 await state["event_callback"](
@@ -795,8 +853,9 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
                 **state,
                 "verification": {
                     **verification_result,
-                    "latency_ms": latency_ms
-                }
+                    "latency_ms": latency_ms,
+                },
+                "reasoning_chain": reasoning_chain,
             }
         
         except Exception as e:
@@ -1067,13 +1126,18 @@ OUTPUT FORMAT (JSON):
                     0
                 )
 
+            # Update reasoning chain (explicitly record that debate was skipped)
+            reasoning_chain = list(state.get("reasoning_chain", []))
+            reasoning_chain.append("✓ Debate: no contradictions detected; debate skipped")
+
             return {
                 **state,
                 "debate_results": {
                     "contradictions_found": 0,
                     "status": "skipped",
-                    "latency_ms": 0
-                }
+                    "latency_ms": 0,
+                },
+                "reasoning_chain": reasoning_chain,
             }
 
         logger.info(f"Detected {len(contradictions)} contradictions - starting debate")
@@ -1109,6 +1173,14 @@ OUTPUT FORMAT (JSON):
                 latency_ms
             )
 
+        # Update reasoning chain
+        reasoning_chain = list(state.get("reasoning_chain", []))
+        reasoning_chain.append(
+            "✓ Debate: "
+            f"{consensus['resolved_contradictions']} contradiction(s) resolved, "
+            f"{consensus['flagged_for_review']} flagged for review"
+        )
+
         return {
             **state,
             "agent_reports": adjusted_reports,
@@ -1118,8 +1190,9 @@ OUTPUT FORMAT (JSON):
                 "flagged_for_review": consensus["flagged_for_review"],
                 "consensus_narrative": consensus["consensus_narrative"],
                 "latency_ms": latency_ms,
-                "status": "complete"
-            }
+                "status": "complete",
+            },
+            "reasoning_chain": reasoning_chain,
         }
 
     async def _critique_node(self, state: WorkflowState) -> WorkflowState:
@@ -1150,13 +1223,18 @@ OUTPUT FORMAT (JSON):
                     0
                 )
 
+            # Update reasoning chain
+            reasoning_chain = list(state.get("reasoning_chain", []))
+            reasoning_chain.append("✓ Critique: no agent reports available; critique skipped")
+
             return {
                 **state,
                 "critique_results": {
                     "status": "skipped",
                     "reason": "no_reports",
-                    "latency_ms": 0
-                }
+                    "latency_ms": 0,
+                },
+                "reasoning_chain": reasoning_chain,
             }
 
         logger.info(f"Starting devil's advocate critique of {len(reports)} reports")
@@ -1262,6 +1340,14 @@ OUTPUT FORMAT (JSON):
                     latency_ms
                 )
 
+            # Update reasoning chain
+            reasoning_chain = list(state.get("reasoning_chain", []))
+            reasoning_chain.append(
+                "✓ Critique: "
+                f"{len(critique.get('critiques', []))} critique(s), "
+                f"{len(critique.get('red_flags', []))} red flag(s)"
+            )
+
             return {
                 **state,
                 "critique_results": {
@@ -1271,8 +1357,9 @@ OUTPUT FORMAT (JSON):
                     "red_flags": critique.get("red_flags", []),
                     "strengthened_by_critique": critique.get("strengthened_by_critique", False),
                     "latency_ms": latency_ms,
-                    "status": "complete"
-                }
+                    "status": "complete",
+                },
+                "reasoning_chain": reasoning_chain,
             }
 
         except Exception as e:
@@ -1328,14 +1415,19 @@ OUTPUT FORMAT (JSON):
                         latency_ms
                     )
 
+                # Update reasoning chain
+                reasoning_chain = list(state.get("reasoning_chain", []))
+                reasoning_chain.append("✓ Synthesis: returned deterministic analytical narrative")
+
                 return {
                     **state,
                     "synthesis": deterministic_result,
                     "metadata": {
                         **state.get("metadata", {}),
                         "synthesis_latency_ms": latency_ms,
-                        "synthesis_source": "deterministic"
-                    }
+                        "synthesis_source": "deterministic",
+                    },
+                    "reasoning_chain": reasoning_chain,
                 }
 
             # LLM agent synthesis path
@@ -1379,6 +1471,10 @@ Synthesis:"""
 
             logger.info(f"Synthesis complete: latency={latency_ms:.0f}ms")
 
+            # Update reasoning chain
+            reasoning_chain = list(state.get("reasoning_chain", []))
+            reasoning_chain.append("✓ Synthesis: generated ministerial-grade summary from agent findings")
+
             if state.get("event_callback"):
                 await state["event_callback"](
                     "synthesize",
@@ -1392,8 +1488,9 @@ Synthesis:"""
                 "synthesis": synthesis_text,
                 "metadata": {
                     **state.get("metadata", {}),
-                    "synthesis_latency_ms": latency_ms
-                }
+                    "synthesis_latency_ms": latency_ms,
+                },
+                "reasoning_chain": reasoning_chain,
             }
         
         except Exception as e:
@@ -1472,13 +1569,17 @@ Synthesis:"""
             "rag_context": None,
             "selected_agents": None,
             "agent_reports": [],
+            "debate_results": None,
+            "critique_results": None,
+            "deterministic_result": None,
             "verification": None,
             "synthesis": None,
             "error": None,
             "metadata": {
                 "start_time": datetime.now(timezone.utc).isoformat()
             },
-            "event_callback": event_callback
+            "reasoning_chain": [],
+            "event_callback": event_callback,
         }
         
         # Execute graph

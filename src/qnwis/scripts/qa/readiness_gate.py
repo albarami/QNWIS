@@ -239,7 +239,7 @@ STEP_REQUIREMENTS: tuple[StepRequirement, ...] = (
     StepRequirement(
         step=11,
         name="UI demos",
-        code_paths=("apps/chainlit/app.py", "src/qnwis/ui/charts.py"),
+        code_paths=("qnwis-ui/src/App.tsx", "src/qnwis/ui/charts.py"),
         test_paths=("tests/unit/test_ui_helpers.py", "tests/integration/test_api_ui_charts.py"),
         smoke_targets=("docs/reviews/step11_ui_demos_review.md", "docs/ui_demos.md"),
     ),

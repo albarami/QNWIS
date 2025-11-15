@@ -1,6 +1,6 @@
 query_id: syn_unemployment_gcc_latest
 description: Latest GCC unemployment rates for regional comparison (synthetic query)
-dataset: GCC_STATS
+dataset: GCC_STAT
 sql: |
   SELECT
     country,

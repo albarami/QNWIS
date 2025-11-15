@@ -3,7 +3,7 @@ Full System Launch Script for QNWIS with Real LLM.
 
 Launches:
 1. FastAPI server with all API endpoints
-2. Chainlit UI with streaming LLM agents
+2. React streaming console (Vite dev server)
 3. Admin diagnostics endpoints
 4. Health checks and monitoring
 
@@ -13,7 +13,7 @@ Usage:
     python launch_full_system.py --provider stub  # For testing
 """
 
-import argparse, os, sys, time, subprocess, socket
+import argparse, os, sys, time, subprocess, socket, shutil
 from pathlib import Path
 from urllib.request import urlopen, Request
 from urllib.error import URLError, HTTPError
@@ -153,50 +153,56 @@ def start_fastapi_server(port: int = 8001):
         return None
 
 
-def start_chainlit_ui(port: int = 8050):
-    """Start Chainlit UI; fall back to legacy app if LLM UI missing."""
+def start_react_ui(port: int = 3000):
+    """Start the React UI dev server (Vite)."""
     if port_in_use(port):
-        print(f"❌ UI port {port} is already in use")
+        print(f'❌ UI port {port} is already in use')
         return None
-    print(f"\n🎨 Starting Chainlit UI on port {port}...")
+    print(f"
+🚀 Starting React UI on port {port}...")
+    npm_exe = shutil.which('npm')
+    if not npm_exe:
+        print('   ⚠️  npm not found on PATH. Install Node.js 18+ to run the React UI.')
+        return None
+    frontend_dir = ROOT / 'qnwis-ui'
+    if not frontend_dir.exists():
+        print('   ❌ React frontend not found at qnwis-ui/')
+        print('      Run the migration setup or restore the directory before launching.')
+        return None
     try:
-        # Verify chainlit installed
-        chk = subprocess.run([sys.executable, "-m", "chainlit", "--version"], capture_output=True, text=True)
-        if chk.returncode != 0:
-            print("   ⚠️  Chainlit not installed. Install with: pip install chainlit")
-            return None
-        ui_file = ROOT / "src/qnwis/ui/chainlit_app_llm.py"
-        if not ui_file.exists():
-            ui_file = ROOT / "src/qnwis/ui/chainlit_app.py"
-        if not ui_file.exists():
-            print("   ❌ No Chainlit app found at src/qnwis/ui/")
-            return None
         process = subprocess.Popen(
             [
-                sys.executable, "-m", "chainlit", "run", str(ui_file),
-                "--port", str(port), "--host", "0.0.0.0",
+                npm_exe,
+                'run',
+                'dev',
+                '--',
+                '--host',
+                '0.0.0.0',
+                '--port',
+                str(port),
             ],
-            env=_env_with_src(),
+            cwd=str(frontend_dir),
+            env=os.environ.copy(),
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
         )
-        print("   ⏳ Waiting for UI to start...")
+        print('   ⏳ Waiting for UI to start...')
         time.sleep(3)
         if process.poll() is None:
-            print(f"   ✅ Chainlit UI running on http://localhost:{port}")
-            print("   💬 Open in browser to chat with agents")
+            print(f'   ✅ React UI running on http://localhost:{port}')
+            print('   💬 Open the React console to run workflows')
             return process
-        stdout = process.stdout.read() if process.stdout else ""
-        print("   ❌ UI failed to start")
+        stdout = process.stdout.read() if process.stdout else ''
+        print('   ❌ UI failed to start')
         print(stdout)
         return None
     except Exception as e:
-        print(f"   ❌ Error starting UI: {e}")
+        print(f'   ❌ Error starting UI: {e}')
         return None
 
 
-def print_system_info(api_process, ui_process):
+def print_system_info(api_process, ui_process, api_port: int, ui_port: int):
     """Print system information and access URLs."""
     print("\n" + "="*60)
     print("🎉 QNWIS SYSTEM LAUNCHED SUCCESSFULLY!")
@@ -204,17 +210,18 @@ def print_system_info(api_process, ui_process):
     
     print("\n📊 System Status:")
     print(f"   {'✅' if api_process else '❌'} FastAPI Server")
-    print(f"   {'✅' if ui_process else '❌'} Chainlit UI")
+    print(f"   {'✅' if ui_process else '❌'} React UI")
     
     print("\n🌐 Access URLs:")
     if api_process:
-        print("   📡 API Server: http://localhost:8001")
-        print("   📚 API Docs: http://localhost:8001/docs")
-        print("   🔧 Admin Panel: http://localhost:8001/api/v1/admin/models")
-        print("   ❤️  Health Check: http://localhost:8001/health")
+        print(f"   📡 API Server: http://localhost:{api_port}")
+        print(f"   📚 API Docs: http://localhost:{api_port}/docs")
+        print(f"   🔧 Admin Panel: http://localhost:{api_port}/api/v1/admin/models")
+        print(f"   ❤️  Health Check: http://localhost:{api_port}/health")
     
     if ui_process:
-        print("   💬 Chat UI: http://localhost:8000")
+        print(f"   💬 React UI: http://localhost:{ui_port}")
+        print("   📱 Proxy: http://localhost:{ui_port}/api -> backend")
     
     print("\n🤖 Available Agents:")
     print("   • LabourEconomist - Employment trends & analysis")
@@ -265,14 +272,14 @@ def main():
     parser.add_argument(
         "--api-port",
         type=int,
-        default=8001,
-        help="FastAPI server port (default: 8001)"
+        default=8000,
+        help="FastAPI server port (default: 8000)"
     )
     parser.add_argument(
         "--ui-port",
         type=int,
-        default=8050,
-        help="Chainlit UI port (default: 8050)"
+        default=3000,
+        help="React UI port (default: 3000)"
     )
     parser.add_argument(
         "--skip-test",
@@ -316,10 +323,10 @@ def main():
             api_process = start_fastapi_server(args.api_port)
         
         if not args.api_only:
-            ui_process = start_chainlit_ui(args.ui_port)
+            ui_process = start_react_ui(args.ui_port)
         
         # Print system info
-        print_system_info(api_process, ui_process)
+        print_system_info(api_process, ui_process, args.api_port, args.ui_port)
         
         # Keep running
         if api_process or ui_process:

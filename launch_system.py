@@ -6,6 +6,7 @@ This script launches the complete QNWIS system with all enhancements:
 - Phase 2: Intelligence multipliers (debate + critique)
 - Phase 3: Deterministic routing (fast path for temporal/forecast/scenario)
 - Phase 4: UI transparency (routing, reasoning chain, debate, critique)
+- Phase 5: React streaming console powered by Vite + Tailwind
 
 Usage:
     python launch_system.py
@@ -13,12 +14,13 @@ Usage:
 The script will:
 1. Verify all dependencies are installed
 2. Check environment configuration
-3. Launch the Chainlit UI
-4. Run a test query to verify the system
+3. Run a test query to verify the system
+4. Launch the React UI (npm run dev in qnwis-ui/)
 """
 
 import asyncio
 import logging
+import shutil
 import sys
 from pathlib import Path
 from dotenv import load_dotenv
@@ -32,7 +34,8 @@ from qnwis.llm.client import LLMClient
 from qnwis.config.model_select import get_llm_config
 
 # Load environment
-env_path = Path(__file__).parent / ".env"
+root_path = Path(__file__).parent
+env_path = root_path / ".env"
 load_dotenv(env_path)
 
 logging.basicConfig(level=logging.INFO)
@@ -45,7 +48,6 @@ def check_dependencies():
 
     required_packages = [
         "anthropic",
-        "chainlit",
         "langgraph",
         "pydantic",
         "duckdb",
@@ -151,29 +153,45 @@ async def test_system():
         return False
 
 
-def launch_ui():
-    """Launch the Chainlit UI."""
-    logger.info("\n" + "="*80)
-    logger.info("LAUNCHING CHAINLIT UI")
-    logger.info("="*80)
-    logger.info("\nThe UI will open in your browser at: http://localhost:8000")
-    logger.info("Press Ctrl+C to stop the server\n")
+def launch_react_ui(port: int = 3000):
+    """Launch the React UI via Vite dev server."""
+    logger.info("\n" + "=" * 80)
+    logger.info("LAUNCHING REACT UI (Vite)")
+    logger.info("=" * 80)
+    logger.info("\nThe UI will open in your browser at: http://localhost:%s", port)
+    logger.info("Proxy configured to call the FastAPI backend at http://localhost:8000")
+    logger.info("Press Ctrl+C to stop the dev server\n")
+
+    frontend_dir = root_path / "qnwis-ui"
+    if not frontend_dir.exists():
+        logger.error("React frontend not found at %s", frontend_dir)
+        logger.error("Run Phase 1 of the migration plan or reproduce qnwis-ui/ prior to launching.")
+        return
+
+    npm_exe = shutil.which("npm")
+    if not npm_exe:
+        logger.error("npm not found on PATH. Install Node.js 18+ to run the React UI.")
+        return
 
     import subprocess
 
     try:
-        # Launch Chainlit with the LLM app
-        subprocess.run([
-            sys.executable,
-            "-m",
-            "chainlit",
-            "run",
-            "src/qnwis/ui/chainlit_app_llm.py",
-            "--port",
-            "8000"
-        ])
+        subprocess.run(
+            [
+                npm_exe,
+                "run",
+                "dev",
+                "--",
+                "--host",
+                "0.0.0.0",
+                "--port",
+                str(port),
+            ],
+            cwd=str(frontend_dir),
+            check=False,
+        )
     except KeyboardInterrupt:
-        logger.info("\nShutting down...")
+        logger.info("\nShutting down React dev server...")
 
 
 async def main():
@@ -216,7 +234,7 @@ async def main():
     # Auto-launch for this script
     logger.info("\nLaunching UI in 3 seconds...")
     await asyncio.sleep(3)
-    launch_ui()
+    launch_react_ui()
 
     return 0
 

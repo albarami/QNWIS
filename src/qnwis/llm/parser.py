@@ -221,31 +221,54 @@ class LLMResponseParser:
         allowed: Set[float],
         tolerance: float = 0.01
     ) -> bool:
-        """
-        Check if number exists in allowed set with tolerance.
-        
-        Uses relative tolerance to handle floating point precision.
-        
+        """Check if ``number`` exists in ``allowed`` within a relative tolerance.
+
+        The caller may pass metrics as strings (e.g. "0.10%" or "0.10 - 0.20").
+        This helper now defensively coerces common numeric-like strings to
+        floats and treats non-numeric strings as simply not present rather than
+        raising a ``TypeError`` during ``abs()``.
+
         Args:
-            number: Number to check
-            allowed: Set of allowed numbers
-            tolerance: Relative tolerance (default 1%)
-            
+            number: Number (or numeric-like string) to check.
+            allowed: Set of allowed numeric values.
+            tolerance: Relative tolerance (default 1%).
+
         Returns:
-            True if number exists in allowed set
+            True if the value exists in ``allowed`` within the given tolerance.
         """
+
+        # Coerce strings like "0.10%" or "1,234.5" to float when possible.
+        if not isinstance(number, (int, float)):
+            if isinstance(number, str):
+                candidate = number.strip().replace(",", "")
+                # Drop trailing percent sign if present.
+                if candidate.endswith("%"):
+                    candidate = candidate[:-1]
+                try:
+                    number_val = float(candidate)
+                except ValueError:
+                    # Non-numeric string: treat as not found.
+                    logger.debug("_number_exists: non-numeric value '%s'", number)
+                    return False
+            else:
+                # Unsupported type (e.g. list/dict) – cannot be validated numerically.
+                logger.debug("_number_exists: unsupported type %s", type(number))
+                return False
+        else:
+            number_val = float(number)
+
         for allowed_num in allowed:
             # Handle exact matches
-            if number == allowed_num:
+            if number_val == allowed_num:
                 return True
-            
+
             # Handle relative tolerance
-            denominator = max(abs(allowed_num), abs(number), 1.0)
-            relative_diff = abs(number - allowed_num) / denominator
-            
+            denominator = max(abs(allowed_num), abs(number_val), 1.0)
+            relative_diff = abs(number_val - allowed_num) / denominator
+
             if relative_diff < tolerance:
                 return True
-        
+
         return False
     
     def extract_numbers_from_query_results(

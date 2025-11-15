@@ -78,7 +78,7 @@ Qatar's Ministry of Labour faces complex challenges in managing workforce planni
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                    USER INTERFACE LAYER                          │
-│  • Natural Language Queries  • Chainlit Dashboard  • CLI Tools  │
+│  • Natural Language Queries  • React Streaming Console  • CLI Tools  │
 └────────────────────┬────────────────────────────────────────────┘
                      │
 ┌────────────────────▼────────────────────────────────────────────┐
@@ -275,7 +275,7 @@ Step 6: FORMATTED RESPONSE
 - ✅ **Step 26**: Scenario Planner with what-if analysis (JUST COMPLETED)
 
 #### **Phase 6: User Interfaces** ✅
-- ✅ Chainlit dashboard (web interface)
+- ✅ React dashboard (web interface)
 - ✅ CLI tools (qnwis-cache, qnwis-scenario, qnwis-verify, etc.)
 - ✅ Python API for programmatic access
 
@@ -397,7 +397,7 @@ All production requirements met:
 - **AI Framework**: LangGraph for agent orchestration
 - **Caching**: Redis (5-minute TTL)
 - **Data Storage**: CSV catalogs, World Bank API, PostgreSQL (future)
-- **Web Interface**: Chainlit dashboard
+- **Web Interface**: React dashboard
 - **API Framework**: FastAPI (future REST API)
 
 ### Key Differentiators

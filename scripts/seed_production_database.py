@@ -550,7 +550,7 @@ def main():
         print("\nNext steps:")
         print("  1. Test queries: python scripts/test_query_loading.py")
         print("  2. Start API server: python -m uvicorn qnwis.api.server:app --reload")
-        print("  3. Launch Chainlit UI: chainlit run apps/chainlit/app.py")
+        print("  3. Launch React UI: npm run dev --prefix qnwis-ui")
         
         return 0
         

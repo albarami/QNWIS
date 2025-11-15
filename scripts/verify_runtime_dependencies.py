@@ -19,7 +19,6 @@ REQUIRED = [
     "langgraph",
     "langchain",
     "langchain_core",
-    "chainlit",
     "sqlalchemy",
     "alembic",
     "redis",

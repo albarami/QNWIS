@@ -16,7 +16,6 @@ def test_pyproject_has_required_dependencies():
         "langgraph",
         "langchain",
         "langchain-core",
-        "chainlit",
         "sqlalchemy",
         "redis",
     }

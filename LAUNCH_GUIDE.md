@@ -27,7 +27,7 @@ python launch_full_system.py --provider openai --api-key YOUR_OPENAI_KEY
 
 ### Required Packages
 ```bash
-pip install fastapi uvicorn anthropic openai langgraph chainlit pydantic
+pip install fastapi uvicorn anthropic openai langgraph pydantic
 ```
 
 ### Optional (for full features)
@@ -35,9 +35,15 @@ pip install fastapi uvicorn anthropic openai langgraph chainlit pydantic
 pip install python-multipart aiofiles httpx
 ```
 
+### Frontend Dependencies
+- Install **Node.js 18+**
+- In `qnwis-ui/`, run `npm install`
+
 ---
 
 ## 🚀 Launch Options
+
+> **React Frontend:** Install Node.js 18+ and run `npm install` inside `qnwis-ui/` before launching.
 
 ### Full System (API + UI)
 ```bash
@@ -45,8 +51,8 @@ python launch_full_system.py --provider anthropic --api-key YOUR_KEY
 ```
 
 **Launches**:
-- ✅ FastAPI server on port 8001
-- ✅ Chainlit UI on port 8000
+- ✅ FastAPI server on port 8000
+- ✅ React UI dev server on port 3000
 - ✅ All 5 LLM agents
 - ✅ Admin diagnostics
 - ✅ Health checks
@@ -76,20 +82,20 @@ python launch_full_system.py \
 
 Once launched, access the system at:
 
-### Chainlit UI (Chat Interface)
-- **URL**: http://localhost:8000
+### React UI (Streaming Console)
+- **URL**: http://localhost:3000
 - **Purpose**: Interactive chat with LLM agents
-- **Features**: Streaming responses, multi-agent analysis
+- **Features**: Streaming responses, multi-agent analysis (proxying `/api` to 8000)
 
 ### FastAPI Server
-- **Base URL**: http://localhost:8001
-- **API Docs**: http://localhost:8001/docs
-- **ReDoc**: http://localhost:8001/redoc
+- **Base URL**: http://localhost:8000
+- **API Docs**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
 
 ### Admin Endpoints
-- **Models**: http://localhost:8001/api/v1/admin/models
-- **LLM Health**: http://localhost:8001/api/v1/admin/health/llm
-- **System Health**: http://localhost:8001/health
+- **Models**: http://localhost:8000/api/v1/admin/models
+- **LLM Health**: http://localhost:8000/api/v1/admin/health/llm
+- **System Health**: http://localhost:8000/health
 
 ---
 
@@ -126,7 +132,7 @@ The system includes 5 specialized agents:
 
 ## 💬 Example Questions
 
-Try these questions in the Chainlit UI:
+Try these questions in the React UI:
 
 ### Employment Analysis
 - "What are Qatar's current unemployment trends?"
@@ -211,19 +217,19 @@ python test_system_e2e.py
 ### Test API Endpoints
 ```bash
 # Health check
-curl http://localhost:8001/health
+curl http://localhost:8000/health
 
 # List models
-curl http://localhost:8001/api/v1/admin/models
+curl http://localhost:8000/api/v1/admin/models
 
 # LLM health
-curl http://localhost:8001/api/v1/admin/health/llm
+curl http://localhost:8000/api/v1/admin/health/llm
 ```
 
 ### Test with curl
 ```bash
 # Run a query
-curl -X POST http://localhost:8001/api/v1/queries/run \
+curl -X POST http://localhost:8000/api/v1/queries/run \
   -H "Content-Type: application/json" \
   -d '{"query_id": "syn_employment_latest_total"}'
 ```
@@ -232,11 +238,8 @@ curl -X POST http://localhost:8001/api/v1/queries/run \
 
 ## 🐛 Troubleshooting
 
-### Issue: "chainlit not found"
-**Solution**: Install Chainlit
-```bash
-pip install chainlit
-```
+### Issue: "`npm` not found"
+**Solution**: Install Node.js 18+ from https://nodejs.org and ensure `npm` is on PATH.
 
 ### Issue: "ANTHROPIC_API_KEY not set"
 **Solution**: Provide API key
@@ -247,7 +250,7 @@ python launch_full_system.py --provider anthropic --api-key YOUR_KEY
 ### Issue: "Port already in use"
 **Solution**: Use different ports
 ```bash
-python launch_full_system.py --api-port 9001 --ui-port 9000
+python launch_full_system.py --api-port 9001 --ui-port 3100
 ```
 
 ### Issue: "Module not found"
@@ -255,7 +258,7 @@ python launch_full_system.py --api-port 9001 --ui-port 9000
 ```bash
 pip install -r requirements.txt
 # Or manually:
-pip install fastapi uvicorn anthropic openai langgraph chainlit pydantic
+pip install fastapi uvicorn anthropic openai langgraph pydantic
 ```
 
 ### Issue: Slow responses
@@ -283,7 +286,7 @@ pip install fastapi uvicorn anthropic openai langgraph chainlit pydantic
 Press `Ctrl+C` in the terminal where you launched the system.
 
 The script will gracefully shut down:
-1. Stop Chainlit UI
+1. Stop React UI dev server
 2. Stop FastAPI server
 3. Clean up processes
 
@@ -294,7 +297,7 @@ The script will gracefully shut down:
 - **Implementation**: `STEP39_IMPLEMENTATION_COMPLETE.md`
 - **Launch Summary**: `STEP39_LAUNCH_SUMMARY.md`
 - **Quick Start**: `STEP39_QUICK_START.md`
-- **API Docs**: http://localhost:8001/docs (when running)
+- **API Docs**: http://localhost:8000/docs (when running)
 
 ---
 
@@ -302,8 +305,8 @@ The script will gracefully shut down:
 
 System is working correctly when you see:
 
-✅ **FastAPI server running on http://localhost:8001**  
-✅ **Chainlit UI running on http://localhost:8000**  
+✅ **FastAPI server running on http://localhost:8000**  
+✅ **React UI running on http://localhost:3000**  
 ✅ **Agents responding to questions**  
 ✅ **Streaming tokens visible in UI**  
 ✅ **Response times 20-45s with real LLM**  
@@ -320,7 +323,7 @@ python launch_full_system.py --provider stub
 # Production (with Anthropic)
 python launch_full_system.py --provider anthropic --api-key YOUR_KEY
 
-# Then open: http://localhost:8000
+# Then open: http://localhost:3000
 ```
 
 **The system is ready for production use!**

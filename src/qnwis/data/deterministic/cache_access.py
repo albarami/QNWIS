@@ -19,6 +19,7 @@ from ..freshness.verifier import verify_freshness
 from .access import execute as execute_uncached
 from .models import QueryResult, QuerySpec
 from .registry import QueryRegistry
+from .schema import QueryDefinition
 from qnwis.perf.cache_tuning import should_cache, ttl_for
 
 logger = logging.getLogger(__name__)
@@ -100,18 +101,30 @@ def _canonicalize_params(value: Any) -> Any:
     return value
 
 
-def _key_for(spec: QuerySpec) -> str:
-    """Generate deterministic cache key from query spec."""
-    normalized_params = _canonicalize_params(spec.params or {})
-    # Include postprocess in cache key to differentiate transform pipelines
-    postprocess_data = [
-        {"name": step.name, "params": _canonicalize_params(step.params)}
-        for step in (spec.postprocess or [])
-    ]
+def _key_for(spec: QuerySpec | QueryDefinition) -> str:
+    """Generate deterministic cache key from query spec or definition."""
+    # Handle both QuerySpec and QueryDefinition types
+    if isinstance(spec, QueryDefinition):
+        # QueryDefinition from YAML
+        query_id = spec.query_id
+        params_dict = {p.name: p.default for p in spec.parameters} if spec.parameters else {}
+        normalized_params = _canonicalize_params(params_dict)
+        postprocess_data = []  # QueryDefinition doesn't have postprocess
+        source = spec.dataset.lower()
+    else:
+        # QuerySpec (legacy)
+        query_id = spec.id
+        normalized_params = _canonicalize_params(spec.params or {})
+        postprocess_data = [
+            {"name": step.name, "params": _canonicalize_params(step.params)}
+            for step in (spec.postprocess or [])
+        ]
+        source = spec.source
+
     payload = json.dumps(
         {
-            "id": spec.id,
-            "source": spec.source,
+            "id": query_id,
+            "source": source,
             "params": normalized_params,
             "postprocess": postprocess_data,
         },
@@ -120,7 +133,7 @@ def _key_for(spec: QuerySpec) -> str:
         default=str,
     )
     h = hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
-    return f"qnwis:ddl:v1:{spec.id}:{h}"
+    return f"qnwis:ddl:v1:{query_id}:{h}"
 
 
 def _enrich_provenance(res: QueryResult) -> None:
@@ -262,8 +275,8 @@ def execute_cached(
     
     source_spec = spec_override or registry.get(query_id)
     spec = source_spec.model_copy(deep=True)
-    if spec.id != query_id:
-        raise ValueError(f"Spec ID mismatch: expected {query_id}, got {spec.id}")
+    if spec.query_id != query_id:
+        raise ValueError(f"Spec ID mismatch: expected {query_id}, got {spec.query_id}")
 
     key = _key_for(spec)
     cache: CacheBackend = get_cache_backend()
@@ -284,7 +297,9 @@ def execute_cached(
             duration_ms = (time.perf_counter() - start_time) * 1000
             logger.debug(f"Cache HIT for {query_id} in {duration_ms:.2f}ms")
             _enrich_provenance(res)
-            res.warnings.extend(verify_freshness(spec, res))
+            # Verify freshness only for QuerySpec (has constraints)
+            if not isinstance(spec, QueryDefinition):
+                res.warnings.extend(verify_freshness(spec, res))
             return res
 
     COUNTERS["misses"] = COUNTERS.get("misses", 0) + 1
@@ -293,16 +308,19 @@ def execute_cached(
     exec_start = time.perf_counter()
     res = execute_uncached(query_id, registry, spec_override=spec)
     exec_duration_ms = (time.perf_counter() - exec_start) * 1000
-    
+
     _enrich_provenance(res)
-    res.warnings.extend(verify_freshness(spec, res))
+    # Verify freshness only for QuerySpec (has constraints)
+    if not isinstance(spec, QueryDefinition):
+        res.warnings.extend(verify_freshness(spec, res))
 
     cache_value = _encode_for_cache(res)
     ttl_for_storage = normalized_ttl
 
     if adaptive_ttl and _ADAPTIVE_CACHE_ENABLED and normalized_ttl is not None:
+        spec_id = spec.query_id if isinstance(spec, QueryDefinition) else spec.id
         ttl_for_storage = _compute_adaptive_ttl(
-            spec.id,
+            spec_id,
             normalized_ttl,
             len(res.rows),
             exec_duration_ms,

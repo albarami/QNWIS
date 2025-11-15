@@ -71,16 +71,18 @@ class SSEClient:
     _MIN_QUESTION_LEN = 3
     _MAX_QUESTION_LEN = 5000
 
-    def __init__(self, base_url: str, timeout: float = 120.0):
+    def __init__(self, base_url: str, timeout: float = 120.0, api_key: str | None = None):
         """
         Initialize SSE client.
 
         Args:
             base_url: Base URL of the API (e.g., http://localhost:8001)
             timeout: Request timeout in seconds (default: 120s for long workflows)
+            api_key: Optional API key for authentication
         """
         self.base_url = self._validate_base_url(base_url)
         self.timeout = timeout
+        self.api_key = api_key
         self.log = logging.getLogger(__name__)
 
     async def stream(
@@ -114,6 +116,11 @@ class SSEClient:
         url = f"{self.base_url}/api/v1/council/stream"
         request_id = request_id or str(uuid.uuid4())
         headers = {"X-Request-ID": request_id}
+        
+        # Add API key if provided
+        if self.api_key:
+            headers["X-API-Key"] = self.api_key
+        
         payload = {"question": question, "provider": normalized_provider}
         if model:
             cleaned_model = model.strip()

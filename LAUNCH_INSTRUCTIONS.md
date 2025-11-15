@@ -17,7 +17,7 @@
 
 This will start:
 1. FastAPI backend on http://localhost:8000
-2. Chainlit UI on http://localhost:8001
+2. React UI dev server on http://localhost:3000
 
 ### Option 2: Manual Launch
 
@@ -27,18 +27,19 @@ cd d:\lmis_int
 python -m uvicorn src.qnwis.api.server:app --reload --port 8000
 ```
 
-**Terminal 2 - Chainlit UI:**
+**Terminal 2 - React UI:**
 ```powershell
-cd d:\lmis_int
-chainlit run src/qnwis/ui/chainlit_app_llm.py --port 8001
+cd d:\lmis_int\qnwis-ui
+npm install   # first-time setup
+npm run dev -- --host 0.0.0.0 --port 3000
 ```
 
 ---
 
 ## Accessing the System
 
-### Chainlit UI (Primary Interface)
-**URL:** http://localhost:8001
+### React UI (Primary Interface)
+**URL:** http://localhost:3000
 
 **Features Available:**
 - ✅ Ask questions in natural language

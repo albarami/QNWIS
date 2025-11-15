@@ -85,6 +85,7 @@ class CitationInjector:
 
         # Percentage formats (if value < 1, likely a decimal percentage)
         if value < 1:
+            # Decimal-as-percentage (e.g., 0.10 → 10.0)
             percent = value * 100
             formats.append(f"{percent:.0f}")
             formats.append(f"{percent:.1f}")
@@ -92,6 +93,10 @@ class CitationInjector:
             formats.append(f"{percent:.0f}%")
             formats.append(f"{percent:.1f}%")
             formats.append(f"{percent:.2f}%")
+            
+            # Also include decimal-with-percent (e.g., 0.10%)
+            formats.append(f"{value:.1f}%")
+            formats.append(f"{value:.2f}%")
         else:
             # Already a percentage
             formats.append(f"{value:.0f}%")
@@ -174,8 +179,8 @@ class CitationInjector:
             return number
 
         # Replace all numbers with cited versions
-        # Pattern: Matches integers, decimals, percentages
-        pattern = r'\b\d+\.?\d*%?\b'
+        # Pattern: enforce a boundary so the optional % stays with the match
+        pattern = r'(?<![\d.])\d+(?:\.\d+)?%?'
         cited_text = re.sub(pattern, replace_number, text)
 
         injected_count = len(cited_positions)
