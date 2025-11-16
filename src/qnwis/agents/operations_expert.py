@@ -116,18 +116,51 @@ NOW PROVIDE YOUR ANALYSIS:
                 "Agent violated citation requirements.\n\n" + response
             )
         
+        # Extract metadata (using similar logic to other agents)
+        from qnwis.agents.base import (
+            extract_citations_from_narrative,
+            extract_data_gaps,
+            extract_assumptions,
+            extract_usage_tokens,
+            resolve_response_model
+        )
+        from datetime import datetime
+        
+        citations = extract_citations_from_narrative(response, extracted_facts)
+        data_gaps = extract_data_gaps(response)
+        assumptions = extract_assumptions(response)
+        facts_used = sorted({citation["metric"] for citation in citations})
+        confidence = extract_confidence_from_response(response)
+        tokens_in, tokens_out = extract_usage_tokens(response)
+        model_name = resolve_response_model(response, llm_client)
+        
         return {
-            "agent": "OperationsExpert",
-            "persona": "Senior Operations Expert",
-            "analysis": response,
-            "confidence": extract_confidence_from_response(response),
+            "agent_name": "operations_expert",
+            "narrative": response,
+            "confidence": confidence,
+            "citations": citations,
+            "facts_used": facts_used,
+            "assumptions": assumptions,
+            "data_gaps": data_gaps,
+            "timestamp": datetime.utcnow().isoformat(),
+            "model": model_name,
+            "tokens_in": tokens_in,
+            "tokens_out": tokens_out,
         }
     except Exception as exc:
+        from datetime import datetime
         return {
-            "agent": "OperationsExpert",
-            "persona": "Senior Operations Expert",
-            "analysis": f"ERROR: {exc}",
+            "agent_name": "operations_expert",
+            "narrative": f"ERROR: {exc}",
             "confidence": 0.0,
+            "citations": [],
+            "facts_used": [],
+            "assumptions": [],
+            "data_gaps": ["Agent execution failed"],
+            "timestamp": datetime.utcnow().isoformat(),
+            "model": getattr(llm_client, "model", "unknown"),
+            "tokens_in": 0,
+            "tokens_out": 0,
         }
 
 

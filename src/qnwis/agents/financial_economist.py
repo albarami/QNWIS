@@ -128,34 +128,34 @@ NOW PROVIDE YOUR ANALYSIS:
         tokens_in, tokens_out = extract_usage_tokens(response)
         model_name = resolve_response_model(response, llm_client)
 
-        return AgentReport(
-            agent_name="financial_economist",
-            narrative=narrative,
-            confidence=confidence,
-            citations=citations,
-            facts_used=facts_used,
-            assumptions=assumptions,
-            data_gaps=data_gaps,
-            timestamp=datetime.utcnow().isoformat(),
-            model=model_name,
-            tokens_in=tokens_in,
-            tokens_out=tokens_out,
-        )
+        return {
+            "agent_name": "financial_economist",
+            "narrative": narrative,
+            "confidence": confidence,
+            "citations": citations,
+            "facts_used": facts_used,
+            "assumptions": assumptions,
+            "data_gaps": data_gaps,
+            "timestamp": datetime.utcnow().isoformat(),
+            "model": model_name,
+            "tokens_in": tokens_in,
+            "tokens_out": tokens_out,
+        }
     except Exception as exc:  # pragma: no cover - defensive
         error_text = f"ERROR: {exc}"
-        return AgentReport(
-            agent_name="financial_economist",
-            narrative=error_text,
-            confidence=0.0,
-            citations=[],
-            facts_used=[],
-            assumptions=[],
-            data_gaps=["Agent execution failed"],
-            timestamp=datetime.utcnow().isoformat(),
-            model=getattr(llm_client, "model", "unknown"),
-            tokens_in=0,
-            tokens_out=0,
-        )
+        return {
+            "agent_name": "financial_economist",
+            "narrative": error_text,
+            "confidence": 0.0,
+            "citations": [],
+            "facts_used": [],
+            "assumptions": [],
+            "data_gaps": ["Agent execution failed"],
+            "timestamp": datetime.utcnow().isoformat(),
+            "model": getattr(llm_client, "model", "unknown"),
+            "tokens_in": 0,
+            "tokens_out": 0,
+        }
 
 
 def extract_confidence_from_response(response: str) -> float:
