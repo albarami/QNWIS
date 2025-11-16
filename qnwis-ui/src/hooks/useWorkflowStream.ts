@@ -124,7 +124,20 @@ export const useWorkflowStream = (options: UseWorkflowStreamOptions = {}) => {
                       next.complexity = classification.complexity || 'simple'
                       Object.assign(next, streamEvent.payload)
                     } else {
-                      Object.assign(next, streamEvent.payload)
+                      // CRITICAL FIX: Backend sends 'agent_reports', frontend expects 'agent_outputs'
+                      const payload = { ...streamEvent.payload }
+                      if (payload.agent_reports && !payload.agent_outputs) {
+                        payload.agent_outputs = payload.agent_reports
+                        
+                        // ALSO extract individual agent analyses for AgentOutputs component
+                        payload.agent_reports.forEach((report: any) => {
+                          const agentKey = report.agent_name?.toLowerCase().replace(/ /g, '_')
+                          if (agentKey) {
+                            payload[`${agentKey}_analysis`] = report.narrative || report.analysis || ''
+                          }
+                        })
+                      }
+                      Object.assign(next, payload)
                     }
                   }
                 }
