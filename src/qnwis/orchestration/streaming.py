@@ -42,6 +42,16 @@ class WorkflowEvent:
         self.payload = payload or {}
         self.latency_ms = latency_ms
         self.timestamp = datetime.now(timezone.utc).isoformat()
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert event to dictionary for serialization."""
+        return {
+            "stage": self.stage,
+            "status": self.status,
+            "payload": self.payload,
+            "latency_ms": self.latency_ms,
+            "timestamp": self.timestamp
+        }
 
 
 async def run_workflow_stream(

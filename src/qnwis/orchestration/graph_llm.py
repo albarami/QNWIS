@@ -255,7 +255,7 @@ class LLMWorkflow:
         
         # Emit running event
         if state.get("event_callback"):
-            await state["event_callback"]("classify", "running")
+            await state["event_callback"]("classify", "running", {}, None)
         
         start_time = datetime.now(timezone.utc)
         
@@ -312,7 +312,7 @@ class LLMWorkflow:
         except Exception as e:
             logger.error(f"Classification failed: {e}", exc_info=True)
             if state.get("event_callback"):
-                await state["event_callback"]("classify", "error", {"error": str(e)})
+                await state["event_callback"]("classify", "error", {"error": str(e)}, None)
             return {
                 **state,
                 "classification": {"complexity": "medium", "error": str(e)},
@@ -332,7 +332,7 @@ class LLMWorkflow:
         print(f"\n[DETERMINISTIC NODE] Handling simple query without LLM...")
         
         if state.get("event_callback"):
-            await state["event_callback"]("route_deterministic", "running")
+            await state["event_callback"]("route_deterministic", "running", {}, None)
 
         start_time = datetime.now(timezone.utc)
 
@@ -416,7 +416,7 @@ This query was answered using direct database access without requiring LLM infer
             latency_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
 
             if state.get("event_callback"):
-                await state["event_callback"]("route_deterministic", "error", {"error": str(e)})
+                await state["event_callback"]("route_deterministic", "error", {"error": str(e)}, None)
 
             # Fallback: create a simple error message that synthesis can handle
             reasoning_chain = list(state.get("reasoning_chain", []))
@@ -538,7 +538,7 @@ This query was answered using direct database access without requiring LLM infer
             traceback.print_exc()
 
             if state.get("event_callback"):
-                await state["event_callback"]("prefetch", "error", {"error": str(e)})
+                await state["event_callback"]("prefetch", "error", {"error": str(e)}, None)
 
             return {
                 **state,
@@ -550,7 +550,7 @@ This query was answered using direct database access without requiring LLM infer
     async def _rag_node(self, state: WorkflowState) -> WorkflowState:
         """RAG context retrieval node."""
         if state.get("event_callback"):
-            await state["event_callback"]("rag", "running")
+            await state["event_callback"]("rag", "running", {}, None)
         
         start_time = datetime.now(timezone.utc)
         
@@ -596,7 +596,7 @@ This query was answered using direct database access without requiring LLM infer
         except Exception as e:
             logger.error(f"RAG failed: {e}", exc_info=True)
             if state.get("event_callback"):
-                await state["event_callback"]("rag", "error", {"error": str(e)})
+                await state["event_callback"]("rag", "error", {"error": str(e)}, None)
             return {
                 **state,
                 "rag_context": {"snippets": [], "sources": []}
@@ -1101,7 +1101,7 @@ Synthesize this debate for the Minister.
             Updated state with verification results
         """
         if state.get("event_callback"):
-            await state["event_callback"]("verify", "running")
+            await state["event_callback"]("verify", "running", {}, None)
 
         start_time = datetime.now(timezone.utc)
 
@@ -1262,7 +1262,7 @@ Synthesize this debate for the Minister.
         except Exception as e:
             logger.error(f"Verification failed: {e}", exc_info=True)
             if state.get("event_callback"):
-                await state["event_callback"]("verify", "error", {"error": str(e)})
+                await state["event_callback"]("verify", "error", {"error": str(e)}, None)
             return {
                 **state,
                 "verification": {"status": "failed", "error": str(e)},
@@ -1660,7 +1660,7 @@ Provide:
             )
             raise
     
-    async def run_stream(self, question: str, event_callback) -> AsyncIterator[Dict[str, Any]]:
+    async def run_stream(self, question: str, event_callback) -> Dict[str, Any]:
         """
         Run workflow with streaming events.
         
