@@ -144,6 +144,8 @@ def verify_report(rep: AgentReport) -> VerificationResult:
         VerificationResult with aggregated issues from all insights
     """
     issues: list[VerificationIssue] = []
-    for ins in rep.findings:
+    # Handle both dict and dataclass AgentReport
+    findings = rep.get("findings", []) if isinstance(rep, dict) else rep.findings
+    for ins in findings:
         issues += verify_insight(ins).issues
     return VerificationResult(issues=issues)
