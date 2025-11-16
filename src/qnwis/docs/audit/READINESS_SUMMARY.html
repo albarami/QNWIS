@@ -1,8 +1,8 @@
 <pre># Readiness Report: Steps 1-33
 
-**Generated:** 2025-11-12T16:57:45.077030
+**Generated:** 2025-11-16T16:35:49.526000
 **Overall Status:** FAIL
-**Execution Time:** 2344 ms
+**Execution Time:** 341 ms
 
 ## Summary
 
@@ -360,7 +360,7 @@
 - `docs/IMPLEMENTATION_ROADMAP.md`
 
 ### no_placeholders [FAIL]
-- **Duration:** 2328 ms
+- **Duration:** 322 ms
 - **Severity:** ERROR
 ```json
 {
@@ -376,15 +376,21 @@
   &quot;violations&quot;: [
     {
       &quot;file&quot;: &quot;src/qnwis/agents/base_llm.py&quot;,
-      &quot;line&quot;: 261,
+      &quot;line&quot;: 298,
       &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
       &quot;snippet&quot;: &quot;pass&quot;
     },
     {
       &quot;file&quot;: &quot;src/qnwis/agents/base_llm.py&quot;,
-      &quot;line&quot;: 281,
+      &quot;line&quot;: 318,
       &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
       &quot;snippet&quot;: &quot;pass&quot;
+    },
+    {
+      &quot;file&quot;: &quot;src/qnwis/classification/classifier.py&quot;,
+      &quot;line&quot;: 73,
+      &quot;pattern&quot;: &quot;^\\s*(?:#\\s*)?TODO\\b.*$&quot;,
+      &quot;snippet&quot;: &quot;# TODO: Implement smart classification after system is proven&quot;
     },
     {
       &quot;file&quot;: &quot;src/qnwis/cli/qnwis_continuity.py&quot;,
@@ -501,8 +507,20 @@
       &quot;snippet&quot;: &quot;pass&quot;
     },
     {
-      &quot;file&quot;: &quot;src/qnwis/ui/chainlit_app_llm.py&quot;,
-      &quot;line&quot;: 267,
+      &quot;file&quot;: &quot;src/qnwis/orchestration/graph_llm.py&quot;,
+      &quot;line&quot;: 1196,
+      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
+      &quot;snippet&quot;: &quot;pass&quot;
+    },
+    {
+      &quot;file&quot;: &quot;src/qnwis/orchestration/prefetch_apis.py&quot;,
+      &quot;line&quot;: 77,
+      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
+      &quot;snippet&quot;: &quot;pass&quot;
+    },
+    {
+      &quot;file&quot;: &quot;src/qnwis/orchestration/streaming.py&quot;,
+      &quot;line&quot;: 163,
       &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
       &quot;snippet&quot;: &quot;pass&quot;
     }

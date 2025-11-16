@@ -149,7 +149,7 @@ class SimulateResponse(BaseModel):
 @router.post("/plan", response_model=PlanResponse, dependencies=[Depends(require_roles(["admin", "service"]))])
 async def generate_plan(
     request: PlanRequest,
-    clock: Clock = Depends(get_clock),
+    clock: Clock = Depends(get_clock),  # noqa: B008
 ) -> PlanResponse:
     """
     Generate continuity plan from cluster and policy configuration.
@@ -201,7 +201,7 @@ async def generate_plan(
 @router.post("/execute", response_model=ExecuteResponse, dependencies=[Depends(require_roles(["admin", "service"]))])
 async def execute_plan(
     request: ExecuteRequest,
-    clock: Clock = Depends(get_clock),
+    clock: Clock = Depends(get_clock),  # noqa: B008
 ) -> ExecuteResponse:
     """
     Execute failover plan.
@@ -265,7 +265,7 @@ async def execute_plan(
 @router.post("/status", response_model=StatusResponse, dependencies=[Depends(require_roles(["admin", "service"]))])
 async def get_status(
     request: StatusRequest,
-    clock: Clock = Depends(get_clock),
+    clock: Clock = Depends(get_clock),  # noqa: B008
 ) -> StatusResponse:
     """
     Get cluster and quorum status.
@@ -319,7 +319,7 @@ async def get_status(
 @router.post("/simulate", response_model=SimulateResponse, dependencies=[Depends(require_roles(["admin", "service"]))])
 async def simulate_failover(
     request: SimulateRequest,
-    clock: Clock = Depends(get_clock),
+    clock: Clock = Depends(get_clock),  # noqa: B008
 ) -> SimulateResponse:
     """
     Run deterministic failover simulation.

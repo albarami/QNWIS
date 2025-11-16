@@ -1,8 +1,8 @@
 # Readiness Report: Steps 1-33
 
-**Generated:** 2025-11-12T16:57:45.077030
+**Generated:** 2025-11-16T16:35:49.526000
 **Overall Status:** FAIL
-**Execution Time:** 2344 ms
+**Execution Time:** 341 ms
 
 ## Summary
 
@@ -360,7 +360,7 @@
 - `docs/IMPLEMENTATION_ROADMAP.md`
 
 ### no_placeholders [FAIL]
-- **Duration:** 2328 ms
+- **Duration:** 322 ms
 - **Severity:** ERROR
 ```json
 {
@@ -376,15 +376,21 @@
   "violations": [
     {
       "file": "src/qnwis/agents/base_llm.py",
-      "line": 261,
+      "line": 298,
       "pattern": "^\\s*pass\\s*$",
       "snippet": "pass"
     },
     {
       "file": "src/qnwis/agents/base_llm.py",
-      "line": 281,
+      "line": 318,
       "pattern": "^\\s*pass\\s*$",
       "snippet": "pass"
+    },
+    {
+      "file": "src/qnwis/classification/classifier.py",
+      "line": 73,
+      "pattern": "^\\s*(?:#\\s*)?TODO\\b.*$",
+      "snippet": "# TODO: Implement smart classification after system is proven"
     },
     {
       "file": "src/qnwis/cli/qnwis_continuity.py",
@@ -501,8 +507,20 @@
       "snippet": "pass"
     },
     {
-      "file": "src/qnwis/ui/chainlit_app_llm.py",
-      "line": 267,
+      "file": "src/qnwis/orchestration/graph_llm.py",
+      "line": 1196,
+      "pattern": "^\\s*pass\\s*$",
+      "snippet": "pass"
+    },
+    {
+      "file": "src/qnwis/orchestration/prefetch_apis.py",
+      "line": 77,
+      "pattern": "^\\s*pass\\s*$",
+      "snippet": "pass"
+    },
+    {
+      "file": "src/qnwis/orchestration/streaming.py",
+      "line": 163,
       "pattern": "^\\s*pass\\s*$",
       "snippet": "pass"
     }

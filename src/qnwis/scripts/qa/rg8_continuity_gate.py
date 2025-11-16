@@ -86,7 +86,7 @@ def _percentile(values: list[float], percentile: float) -> float:
     return float(values[index])
 
 
-def run_gate() -> int:
+def run_gate() -> int:  # noqa: C901
     _ensure_repo_root()
 
     from qnwis.continuity.audit import ContinuityAuditor
