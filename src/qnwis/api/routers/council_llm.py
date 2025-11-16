@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 from typing import Any, AsyncIterator, Literal
 from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
@@ -25,6 +25,7 @@ from ...classification.classifier import Classifier
 from ...llm.client import LLMClient
 from ...orchestration.streaming import run_workflow_stream
 from ..models import StreamEventResponse
+from ..middleware.rate_limit import limiter
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["council-llm"])
@@ -182,7 +183,8 @@ def _serialize_sse(event: StreamEventResponse) -> str:
         }
     },
 )
-async def council_stream_llm(req: CouncilRequest) -> StreamingResponse:
+@limiter.limit("10/hour")  # 10 LLM queries per hour per user/IP (cost control)
+async def council_stream_llm(request: Request, req: CouncilRequest) -> StreamingResponse:
     """
     Stream the multi-stage LLM council via Server-Sent Events (SSE).
 
@@ -305,7 +307,8 @@ async def council_stream_llm(req: CouncilRequest) -> StreamingResponse:
         }
     },
 )
-async def council_run_llm(req: CouncilRequest) -> CouncilRunLLMResponse:
+@limiter.limit("10/hour")  # 10 LLM queries per hour per user/IP (cost control)
+async def council_run_llm(request: Request, req: CouncilRequest) -> CouncilRunLLMResponse:
     """
     Execute the LLM council and return a structured JSON payload.
 

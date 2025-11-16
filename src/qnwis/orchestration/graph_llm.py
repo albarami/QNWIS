@@ -695,7 +695,12 @@ This query was answered using direct database access without requiring LLM infer
         }
     
     async def _invoke_agents_node(self, state: WorkflowState) -> WorkflowState:
-        """Invoke selected agents in parallel and capture structured AgentReports."""
+        """
+        Invoke selected agents based on complexity and selection results (OPTIMIZED).
+        
+        Reduces unnecessary LLM calls by honoring agent selection instead of
+        always invoking all 5 agents.
+        """
 
         from qnwis.agents import (
             financial_economist,
@@ -706,7 +711,6 @@ This query was answered using direct database access without requiring LLM infer
         )
 
         reasoning_chain = list(state.get("reasoning_chain", []))
-        reasoning_chain.append("Invoking specialist agents with citation enforcement")
 
         query_text = state.get("query") or state.get("question", "")
         if not query_text:
@@ -715,16 +719,52 @@ This query was answered using direct database access without requiring LLM infer
             return state
 
         extracted_facts = state.get("extracted_facts", []) or []
+        
+        # Get selection results and complexity
+        selected_agents = state.get("selected_agents", [])
+        classification = state.get("classification", {})
+        complexity = classification.get("complexity", "complex") if isinstance(classification, dict) else "complex"
 
-        agents = [
-            labour_economist,
-            financial_economist,
-            market_economist,
-            operations_expert,
-            research_scientist,
-        ]
+        # Agent mapping
+        agent_map = {
+            "labour_economist": labour_economist,
+            "financial_economist": financial_economist,
+            "market_economist": market_economist,
+            "operations_expert": operations_expert,
+            "research_scientist": research_scientist,
+        }
 
-        logger.info("Invoking %d agents in parallel", len(agents))
+        # Determine which agents to invoke based on complexity
+        if complexity == "simple":
+            # Simple queries: just labour economist
+            agents_to_invoke = ["labour_economist"]
+            reasoning_chain.append("Simple query → invoking Labour Economist only")
+            
+        elif complexity == "medium":
+            # Medium queries: core economic agents
+            agents_to_invoke = ["labour_economist", "financial_economist"]
+            reasoning_chain.append("Medium query → invoking 2 core economic agents")
+            
+        elif complexity in ["complex", "critical"]:
+            # Complex/critical: honor selection if available
+            if selected_agents and len(selected_agents) > 0:
+                agents_to_invoke = selected_agents
+                reasoning_chain.append(f"Complex query → invoking {len(selected_agents)} selected agents")
+            else:
+                # Fallback to all agents if no selection
+                agents_to_invoke = list(agent_map.keys())
+                reasoning_chain.append("Complex query → invoking all 5 agents (no selection)")
+        else:
+            # Default to all agents
+            agents_to_invoke = list(agent_map.keys())
+            reasoning_chain.append("Unknown complexity → invoking all 5 agents")
+
+        # Build agent list
+        agents = [agent_map[name] for name in agents_to_invoke if name in agent_map]
+        
+        logger.info(
+            f"Invoking {len(agents)} agents (complexity={complexity}): {agents_to_invoke}"
+        )
 
         tasks = [agent.analyze(query_text, extracted_facts, self.llm_client) for agent in agents]
         results = await asyncio.gather(*tasks, return_exceptions=True)

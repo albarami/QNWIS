@@ -17,6 +17,7 @@ from fastapi.exception_handlers import http_exception_handler
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse
+from slowapi.errors import RateLimitExceeded
 
 from ..agents.base import DataClient
 from ..config.settings import Settings
@@ -33,6 +34,7 @@ from ..utils.clock import Clock
 from .routers import ROUTERS
 from .deps import attach_security
 from ..perf.cache_warming import warm_queries
+from .middleware.rate_limit import limiter, rate_limit_exceeded_handler
 
 PUBLIC_EXACT = {"/", "/health", "/health/live", "/health/ready", "/metrics", "/openapi.json"}
 PUBLIC_PREFIXES = ("/docs", "/redoc", "/api/v1/council/stream")
@@ -125,6 +127,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.settings = settings
     app.state.auth_bypass = os.getenv("QNWIS_BYPASS_AUTH", "false").lower() == "true"
     logger.info("Auth bypass enabled: %s", app.state.auth_bypass)
+    
+    # Add slowapi rate limiter
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+    logger.info("Rate limiter initialized (100/hour default)")
 
     app.add_middleware(
         CORSMiddleware,

@@ -35,3 +35,7 @@ mcp>=0.9.0
 # Phase 2: RAG Embeddings Upgrade (sentence-transformers)
 sentence-transformers>=2.2.2
 torch>=2.1.0
+
+# Phase 4: Rate Limiting (production hardening)
+slowapi>=0.1.9
+# redis already in dependencies for other features
