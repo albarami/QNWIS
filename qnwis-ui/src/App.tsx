@@ -1,417 +1,250 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import type { FormEvent } from 'react'
 import './App.css'
+import { useWorkflowStream } from './hooks/useWorkflowStream'
+import { StageIndicator } from './components/workflow/StageIndicator'
+import { WorkflowProgress } from './components/workflow/WorkflowProgress'
+import { MetadataDisplay } from './components/workflow/MetadataDisplay'
+import { AgentOutputs } from './components/AgentOutputs'
+import { DebateSynthesis } from './components/analysis/DebateSynthesis'
+import { ExecutiveSummaryCard } from './components/analysis/ExecutiveSummaryCard'
+import { LiveDebateTimeline } from './components/analysis/LiveDebateTimeline'
+import { ExtractedFactsCard } from './components/analysis/ExtractedFactsCard'
+import { ConfidenceBreakdownCard } from './components/analysis/ConfidenceBreakdownCard'
+import { QuickStatsCard } from './components/analysis/QuickStatsCard'
+import type { WorkflowState } from './types/workflow'
 
-interface AgentResult {
-  agent: string
-  narrative: string
-  confidence: number
-  status: 'analyzing' | 'complete'
+const INITIAL_WORKFLOW_STATE: WorkflowState = {
+  stage: 'classify',
+  query: 'Awaiting ministerial question…',
+  complexity: 'complex',
+  extracted_facts: [],
+  extraction_confidence: 0,
+  agent_outputs: [],
+  agents_invoked: [],
+  final_synthesis: '',
+  confidence_score: 0,
+  status: 'idle',
 }
 
-interface WorkflowEvent {
-  stage: string
-  status: string
-  payload: any
-  latency_ms?: number
-  timestamp?: string
+const STAGES = [
+  'classify',
+  'prefetch',
+  'rag',
+  'agent_selection',
+  'agents',
+  'verify',
+  'debate',
+  'critique',
+  'synthesis',
+  'done',
+] as const
+
+const STAGE_LABELS: Record<string, string> = {
+  classify: 'Classify',
+  prefetch: 'Prefetch',
+  rag: 'Retrieve',
+  agent_selection: 'Select Agents',
+  agents: 'Agent Analyses',
+  verify: 'Verify',
+  debate: 'Debate',
+  critique: 'Critique',
+  synthesis: 'Synthesis',
+  done: 'Complete',
 }
+
+const queryExamples = [
+  'Is 70% Qatarization in Qatar financial sector by 2030 feasible?',
+  'What are the implications of raising the minimum wage for Qatari nationals to QR 20,000?',
+  'Compare Qatar unemployment rates with other GCC countries',
+]
+
+const DEFAULT_PROMPT =
+  'What are the implications of raising the minimum wage for Qatari nationals to QR 20,000?'
 
 function App() {
-  const [query, setQuery] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [currentStage, setCurrentStage] = useState('')
-  const [agents, setAgents] = useState<AgentResult[]>([])
-  const [synthesis, setSynthesis] = useState('')
-  const [error, setError] = useState('')
+  const [question, setQuestion] = useState('')
+  const { state, isStreaming, error, startStream } = useWorkflowStream()
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!query.trim()) return
-
-    // Reset state
-    setLoading(true)
-    setCurrentStage('Starting analysis...')
-    setAgents([])
-    setSynthesis('')
-    setError('')
-
-    try {
-      const payload = { 
-        question: query.trim(), 
-        provider: 'anthropic',
-        model: 'claude-sonnet-4-20250514'
-      }
-      
-      const response = await fetch('/api/v1/council/stream', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      })
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(`HTTP ${response.status}: ${errorText}`)
-      }
-
-      const reader = response.body?.getReader()
-      const decoder = new TextDecoder()
-
-      if (reader) {
-        let streamComplete = false
-        
-        while (!streamComplete) {
-          const { done, value } = await reader.read()
-          if (done) break
-          
-          const chunk = decoder.decode(value)
-          const lines = chunk.split('\n')
-          
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6)
-              if (data.trim()) {
-                try {
-                  const event: WorkflowEvent = JSON.parse(data)
-                  
-                  // Update UI based on event
-                  if (event.stage === 'classify') {
-                    setCurrentStage(' Classifying query complexity...')
-                  } else if (event.stage === 'prefetch') {
-                    setCurrentStage(' Gathering data from 19 sources...')
-                  } else if (event.stage === 'rag') {
-                    setCurrentStage(' Retrieving relevant context...')
-                  } else if (event.stage === 'agent_selection') {
-                    setCurrentStage(' Selecting specialist agents...')
-                  } else if (event.stage === 'agents' && event.status === 'complete') {
-                    // Agent completed
-                    const agentData = event.payload
-                    if (agentData && agentData.agent && agentData.narrative) {
-                      setAgents(prev => {
-                        const existing = prev.find(a => a.agent === agentData.agent)
-                        if (existing) {
-                          return prev.map(a => 
-                            a.agent === agentData.agent 
-                              ? { ...a, narrative: agentData.narrative, confidence: agentData.confidence, status: 'complete' }
-                              : a
-                          )
-                        }
-                        return [...prev, {
-                          agent: agentData.agent,
-                          narrative: agentData.narrative,
-                          confidence: agentData.confidence || 0,
-                          status: 'complete'
-                        }]
-                      })
-                    }
-                  } else if (event.stage === 'verify') {
-                    setCurrentStage(' Verifying citations and data...')
-                  } else if (event.stage === 'done' && event.status === 'complete') {
-                    setCurrentStage(' Analysis complete!')
-                    streamComplete = true
-                    
-                    // Extract synthesis from final state
-                    if (event.payload && event.payload.synthesis) {
-                      setSynthesis(event.payload.synthesis)
-                    }
-                    break
-                  }
-                } catch (e) {
-                  console.error('Parse error:', e)
-                }
-              }
-            }
-          }
-        }
-        
-        await reader.cancel()
-      }
-    } catch (error) {
-      setError((error as Error).message)
-    } finally {
-      setLoading(false)
-    }
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const sanitized = question.trim()
+    if (!sanitized) return
+    void startStream(sanitized)
   }
 
-  const getAgentIcon = (agent: string) => {
-    const icons: Record<string, string> = {
-      'labour_economist': '',
-      'financial_economist': '',
-      'market_economist': '',
-      'operations_expert': '',
-      'research_scientist': ''
-    }
-    return icons[agent] || ''
-  }
+  const workflowState: WorkflowState | null = state
+  const effectiveState = workflowState ?? INITIAL_WORKFLOW_STATE
+  const hasResults = Boolean(workflowState)
 
-  const getAgentTitle = (agent: string) => {
-    const titles: Record<string, string> = {
-      'labour_economist': 'Labour Economist',
-      'financial_economist': 'Financial Economist',
-      'market_economist': 'Market Economist',
-      'operations_expert': 'Operations Expert',
-      'research_scientist': 'Research Scientist'
+  const agentResultPayload = useMemo(() => {
+    if (!workflowState) return null
+    return {
+      labour_economist_analysis: workflowState.labour_economist_analysis,
+      financial_economist_analysis: workflowState.financial_economist_analysis,
+      market_economist_analysis: workflowState.market_economist_analysis,
+      operations_expert_analysis: workflowState.operations_expert_analysis,
+      research_scientist_analysis: workflowState.research_scientist_analysis,
+      multi_agent_debate: workflowState.multi_agent_debate,
+      critique_output: workflowState.critique_output,
     }
-    return titles[agent] || agent
-  }
+  }, [workflowState])
+
+  const overallError = error || workflowState?.error || null
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f3f4f6' }}>
-      {/* Header */}
-      <div style={{ 
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        color: 'white',
-        padding: '32px 20px',
-        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
-      }}>
-        <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
-          <h1 style={{ margin: 0, fontSize: '32px', fontWeight: 'bold', marginBottom: '8px' }}>
-            QNWIS Intelligence System
-          </h1>
-          <p style={{ margin: 0, fontSize: '18px', opacity: 0.95 }}>
-            Qatar Ministry of Labour – Multi-Agent Strategic Council
-          </p>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '32px 20px' }}>
-        
-        {/* Query Input */}
-        <div style={{ 
-          background: 'white', 
-          borderRadius: '12px', 
-          padding: '24px',
-          boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)',
-          marginBottom: '24px'
-        }}>
-          <form onSubmit={handleSubmit}>
-            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#374151' }}>
-              Ask Your Strategic Question
-            </label>
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <input
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="What are the implications of raising the minimum wage for Qatari nationals to QR 20,000?"
-                style={{
-                  flex: 1,
-                  padding: '14px 16px',
-                  fontSize: '16px',
-                  border: '2px solid #e5e7eb',
-                  borderRadius: '8px',
-                  outline: 'none',
-                  transition: 'border-color 0.2s'
-                }}
-                disabled={loading}
-                onFocus={(e) => e.target.style.borderColor = '#667eea'}
-                onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-              />
-              <button
-                type="submit"
-                disabled={loading || !query.trim()}
-                style={{
-                  padding: '14px 32px',
-                  fontSize: '16px',
-                  background: loading ? '#9ca3af' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: loading ? 'not-allowed' : 'pointer',
-                  fontWeight: '600',
-                  boxShadow: loading ? 'none' : '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                  transition: 'all 0.2s'
-                }}
-              >
-                {loading ? 'Analyzing...' : 'Analyze'}
-              </button>
-            </div>
-          </form>
-        </div>
-
-        {/* Current Stage */}
-        {loading && currentStage && (
-          <div style={{ 
-            background: 'white',
-            border: '2px solid #667eea',
-            borderRadius: '12px',
-            padding: '20px',
-            marginBottom: '24px',
-            boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ 
-                animation: 'spin 1s linear infinite',
-                width: '24px',
-                height: '24px',
-                border: '3px solid #e5e7eb',
-                borderTopColor: '#667eea',
-                borderRadius: '50%'
-              }} />
-              <div>
-                <div style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937' }}>
-                  {currentStage}
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white shadow-2xl border-b-4 border-amber-500">
+        <div className="mx-auto max-w-7xl px-6 py-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-2xl font-bold text-slate-900">
+                  QN
                 </div>
-                <div style={{ fontSize: '14px', color: '#6b7280', marginTop: '4px' }}>
-                  Deep analysis in progress...
+                <div>
+                  <h1 className="text-3xl font-bold tracking-tight">Qatar National Workforce Intelligence System</h1>
+                  <p className="text-amber-200 text-sm font-medium tracking-wide">
+                    QNWIS · Ministry of Labour Strategic Intelligence Council
+                  </p>
                 </div>
               </div>
             </div>
+            <div className="text-right">
+              <div className="text-xs uppercase tracking-widest text-slate-400 mb-1">Classification</div>
+              <div className="text-sm font-bold text-amber-400">MINISTERIAL BRIEFING</div>
+            </div>
           </div>
-        )}
+        </div>
+      </header>
 
-        {/* Agent Results */}
-        {agents.length > 0 && (
-          <div style={{ marginBottom: '24px' }}>
-            <h2 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '16px', color: '#1f2937' }}>
-              Agent Analysis
-            </h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '16px' }}>
-              {agents.map((agent, idx) => (
-                <div 
-                  key={idx}
-                  style={{
-                    background: 'white',
-                    borderRadius: '12px',
-                    padding: '20px',
-                    boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)',
-                    border: '1px solid #e5e7eb'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                    <div style={{ fontSize: '32px' }}>{getAgentIcon(agent.agent)}</div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937' }}>
-                        {getAgentTitle(agent.agent)}
-                      </div>
-                      <div style={{ 
-                        fontSize: '14px', 
-                        color: agent.confidence >= 0.5 ? '#059669' : '#dc2626',
-                        fontWeight: '500'
-                      }}>
-                        Confidence: {Math.round(agent.confidence * 100)}%
-                      </div>
-                    </div>
-                  </div>
-                  <div style={{
-                    fontSize: '14px',
-                    lineHeight: '1.6',
-                    color: '#4b5563',
-                    maxHeight: '300px',
-                    overflowY: 'auto',
-                    whiteSpace: 'pre-wrap'
-                  }}>
-                    {agent.narrative.substring(0, 500)}...
-                    <button style={{
-                      marginTop: '12px',
-                      padding: '6px 12px',
-                      background: '#f3f4f6',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      fontSize: '13px',
-                      fontWeight: '500',
-                      color: '#4b5563'
-                    }}>
-                      Read Full Analysis →
-                    </button>
-                  </div>
+      <main className="mx-auto max-w-7xl px-4 py-8">
+        <section className="mb-8 rounded-2xl bg-white shadow-xl border border-slate-200">
+          <div className="border-b border-slate-200 bg-gradient-to-r from-slate-50 to-slate-100 px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">Strategic Query Interface</h2>
+                <p className="text-sm text-slate-600">Submit policy questions for multi-agent analysis</p>
+              </div>
+              {isStreaming && (
+                <div className="flex items-center gap-2 rounded-full bg-amber-100 px-4 py-2 text-sm font-semibold text-amber-800">
+                  <div className="h-2 w-2 animate-pulse rounded-full bg-amber-600"></div>
+                  Live Analysis in Progress
                 </div>
-              ))}
+              )}
             </div>
           </div>
-        )}
-
-        {/* Executive Summary */}
-        {synthesis && (
-          <div style={{
-            background: 'white',
-            borderRadius: '12px',
-            padding: '32px',
-            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-            border: '2px solid #667eea'
-          }}>
-            <h2 style={{ fontSize: '28px', fontWeight: '700', marginBottom: '20px', color: '#1f2937', display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <span></span> Executive Summary
-            </h2>
-            <div style={{
-              fontSize: '16px',
-              lineHeight: '1.8',
-              color: '#374151',
-              whiteSpace: 'pre-wrap'
-            }}>
-              {synthesis}
+          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+            <div className="space-y-3">
+              <label htmlFor="question" className="block text-sm font-bold uppercase tracking-wide text-slate-700">
+                Ministerial Question
+              </label>
+              <textarea
+                id="question"
+                value={question}
+                onChange={(event) => setQuestion(event.target.value)}
+                placeholder={DEFAULT_PROMPT}
+                rows={4}
+                className="w-full rounded-xl border-2 border-slate-300 px-5 py-4 text-lg font-medium text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-amber-500 focus:ring-4 focus:ring-amber-100 focus:outline-none disabled:bg-slate-50 disabled:text-slate-500"
+                disabled={isStreaming}
+              />
+              <div className="flex items-center justify-between text-xs text-slate-500">
+                <span>{question.length} characters</span>
+                <span>Maximum 5,000 characters</span>
+              </div>
             </div>
-          </div>
-        )}
+            <div className="flex items-center justify-between">
+              <button
+                type="submit"
+                disabled={!question.trim() || isStreaming}
+                className="rounded-xl bg-gradient-to-r from-slate-900 to-slate-700 px-10 py-4 text-base font-bold text-white shadow-lg transition hover:from-slate-800 hover:to-slate-600 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:from-slate-900"
+              >
+                {isStreaming ? (
+                  <span className="flex items-center gap-2">
+                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Analyzing via 5-Agent Council
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    Submit to Intelligence Council
+                  </span>
+                )}
+              </button>
+              <div className="text-sm text-slate-600">
+                <span className="font-semibold">Expected response time:</span> 90-120 seconds
+              </div>
+            </div>
+          </form>
 
-        {/* Error */}
-        {error && (
-          <div style={{
-            background: '#fef2f2',
-            border: '2px solid #fca5a5',
-            borderRadius: '12px',
-            padding: '20px',
-            color: '#991b1b'
-          }}>
-            <strong>Error:</strong> {error}
-          </div>
-        )}
-
-        {/* Suggested Queries */}
-        {!loading && agents.length === 0 && (
-          <div style={{ 
-            background: 'white',
-            borderRadius: '12px',
-            padding: '24px',
-            boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)'
-          }}>
-            <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px', color: '#1f2937' }}>
-              Suggested Strategic Questions
-            </h3>
-            <div style={{ display: 'grid', gap: '12px' }}>
-              {[
-                'Is 70% Qatarization in Qatar financial sector by 2030 feasible?',
-                'What are the implications of raising the minimum wage for Qatari nationals to QR 20,000?',
-                'Compare Qatar unemployment rates with other GCC countries'
-              ].map((q, idx) => (
+          <div className="border-t border-slate-200 bg-slate-50 px-6 py-4">
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-700 mb-3">Sample Strategic Queries</p>
+            <div className="flex flex-wrap gap-2">
+              {queryExamples.map((sample) => (
                 <button
-                  key={idx}
-                  onClick={() => setQuery(q)}
-                  style={{
-                    padding: '16px',
-                    background: '#f9fafb',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    fontSize: '15px',
-                    color: '#374151',
-                    transition: 'all 0.2s'
-                  }}
-                  onMouseOver={(e) => {
-                    e.currentTarget.style.background = '#eff6ff'
-                    e.currentTarget.style.borderColor = '#667eea'
-                  }}
-                  onMouseOut={(e) => {
-                    e.currentTarget.style.background = '#f9fafb'
-                    e.currentTarget.style.borderColor = '#e5e7eb'
-                  }}
+                  key={sample}
+                  type="button"
+                  onClick={() => setQuestion(sample)}
+                  className="rounded-lg border-2 border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-amber-400 hover:bg-amber-50 hover:text-amber-900"
                 >
-                  {q}
+                  {sample}
                 </button>
               ))}
             </div>
           </div>
-        )}
-      </div>
 
-      <style>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
+          {overallError && (
+            <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {overallError}
+            </div>
+          )}
+        </section>
+
+        <section className="grid gap-6 lg:grid-cols-3">
+          <div className="space-y-6 lg:col-span-2">
+            <StageIndicator
+              stages={STAGES}
+              stageLabels={STAGE_LABELS}
+              currentStage={effectiveState.stage}
+              isStreaming={isStreaming}
+            />
+
+            <LiveDebateTimeline
+              agentOutputs={workflowState?.agent_outputs ?? []}
+              debate={workflowState?.multi_agent_debate}
+              critique={workflowState?.critique_output}
+              synthesis={workflowState?.final_synthesis}
+            />
+
+            {hasResults && agentResultPayload && <AgentOutputs result={agentResultPayload} />}
+
+            {hasResults && workflowState?.debate_synthesis && (
+              <DebateSynthesis debate={workflowState.debate_synthesis} />
+            )}
+          </div>
+
+          <div className="space-y-6">
+            <WorkflowProgress state={effectiveState} />
+            <QuickStatsCard state={effectiveState} />
+            <MetadataDisplay state={effectiveState} />
+            <ExecutiveSummaryCard
+              synthesis={workflowState?.final_synthesis}
+              confidence={workflowState?.confidence_score}
+              status={effectiveState.status}
+            />
+            <ExtractedFactsCard facts={workflowState?.extracted_facts ?? []} />
+            <ConfidenceBreakdownCard
+              agentOutputs={workflowState?.agent_outputs ?? []}
+              overallConfidence={workflowState?.confidence_score}
+            />
+          </div>
+        </section>
+      </main>
     </div>
   )
 }
