@@ -1,8 +1,8 @@
 # Readiness Report: Steps 1-33
 
-**Generated:** 2025-11-16T17:40:43.422547
+**Generated:** 2025-11-16T18:14:01.409837
 **Overall Status:** FAIL
-**Execution Time:** 348 ms
+**Execution Time:** 349 ms
 
 ## Summary
 
@@ -17,7 +17,7 @@
 ## Gate Results
 
 ### step_completeness [PASS]
-- **Duration:** 14 ms
+- **Duration:** 15 ms
 - **Severity:** ERROR
 ```json
 {
@@ -508,7 +508,7 @@
     },
     {
       "file": "src/qnwis/orchestration/graph_llm.py",
-      "line": 1262,
+      "line": 1215,
       "pattern": "^\\s*pass\\s*$",
       "snippet": "pass"
     },
