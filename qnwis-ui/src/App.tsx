@@ -36,9 +36,14 @@ function App() {
       const decoder = new TextDecoder()
 
       if (reader) {
-        while (true) {
+        let streamComplete = false
+        
+        while (!streamComplete) {
           const { done, value } = await reader.read()
-          if (done) break
+          if (done) {
+            console.log('Stream ended by server')
+            break
+          }
           
           const chunk = decoder.decode(value)
           const lines = chunk.split('\n')
@@ -49,14 +54,25 @@ function App() {
               if (data.trim()) {
                 try {
                   const event = JSON.parse(data)
+                  console.log('Received event:', event.stage, event.status)
                   setResult(prev => prev + '\n' + JSON.stringify(event, null, 2))
+                  
+                  // Check if workflow is complete
+                  if (event.stage === 'done' && event.status === 'complete') {
+                    console.log('Workflow complete, closing stream')
+                    streamComplete = true
+                    break
+                  }
                 } catch (e) {
-                  console.error('Parse error:', e)
+                  console.error('Parse error:', e, 'Data:', data)
                 }
               }
             }
           }
         }
+        
+        // Close the reader
+        await reader.cancel()
       }
     } catch (error) {
       setResult('Error: ' + (error as Error).message)

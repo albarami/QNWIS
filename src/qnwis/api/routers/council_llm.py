@@ -251,6 +251,12 @@ async def council_stream_llm(request: Request, req: CouncilRequest = Body(...)) 
                             )
                         yield _serialize_sse(envelope)
                         await asyncio.sleep(0)
+                        
+                        # Check if this is the final "done" event
+                        if event.stage == "done" and event.status == "complete":
+                            logger.info(f"Workflow complete, closing SSE stream (request_id={request_id})")
+                            return  # Exit generator, close stream
+                            
             except asyncio.TimeoutError:
                 timeout_event = StreamEventResponse(
                     stage="timeout",
