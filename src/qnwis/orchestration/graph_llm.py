@@ -727,6 +727,12 @@ This query was answered using direct database access without requiring LLM infer
                 logger.error("%s failed", agent_name, exc_info=result)
                 reasoning_chain.append(f"❌ {agent_name} failed: {result}")
                 continue
+            
+            # Check if result is a valid dict with required keys
+            if not isinstance(result, dict) or "agent_name" not in result:
+                logger.error("%s returned invalid result: %s", agent_name, type(result))
+                reasoning_chain.append(f"❌ {agent_name} returned invalid result")
+                continue
 
             agent_reports.append(result)
             agents_invoked.append(result["agent_name"])
