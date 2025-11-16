@@ -718,9 +718,11 @@ def record_query_execution(
     collector.query_executions_total[key] += 1
     
     # Record citation violations
-    if citation_violations > 0:
+    # Handle both int and list types
+    violation_count = len(citation_violations) if isinstance(citation_violations, list) else citation_violations
+    if violation_count > 0:
         violation_key = ()
-        collector.citation_violations_total[violation_key] += citation_violations
+        collector.citation_violations_total[violation_key] += violation_count
     
     # Record query latency
     latency_labels = {

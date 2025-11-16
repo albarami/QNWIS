@@ -18,9 +18,9 @@ from qnwis.agents.base import (
 from qnwis.agents.prompts.base import ANTI_FABRICATION_RULES, format_extracted_facts
 
 # Import AgentReport from typing to avoid circular dependency
-# (runtime will use Dict[str, Any] from base.py's TYPE_CHECKING block)
-from typing import Dict, Any
-AgentReport = Dict[str, Any]
+# (runtime will use dict[str, Any] from base.py's TYPE_CHECKING block)
+from typing import Any
+AgentReport = dict[str, Any]
 
 LABOUR_ECONOMIST_PERSONA = """
 ═══════════════════════════════════════════════════

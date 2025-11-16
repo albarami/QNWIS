@@ -18,8 +18,8 @@ from qnwis.agents.base import (
 from qnwis.agents.prompts.base import ANTI_FABRICATION_RULES, format_extracted_facts
 
 # Import AgentReport from typing to avoid circular dependency
-from typing import Dict, Any
-AgentReport = Dict[str, Any]
+from typing import Any
+AgentReport = dict[str, Any]
 
 FINANCIAL_ECONOMIST_PERSONA = """
 ═══════════════════════════════════════════════════
