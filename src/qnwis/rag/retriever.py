@@ -6,7 +6,7 @@ with semantic search capabilities to augment agent responses with contextual inf
 
 Features:
 - Real-time API data retrieval
-- Semantic similarity search using embeddings
+- Semantic similarity search using sentence-transformers embeddings
 - Document caching and freshness tracking
 - Citation and provenance management
 - Ministry-grade data quality standards
@@ -21,6 +21,8 @@ import logging
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
+
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +60,7 @@ class Document:
         self.metadata = metadata or {}
         self.freshness = freshness or datetime.utcnow().strftime("%Y-%m-%d")
         self.doc_type = doc_type
-        self.embedding: Optional[List[float]] = None
+        self.embedding: Optional[np.ndarray] = None
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert document to dictionary."""
@@ -144,43 +146,99 @@ class DocumentStore:
     """
     In-memory document store with semantic search capabilities.
     
+    Uses sentence-transformers for high-quality semantic embeddings.
+    Falls back to simple token-based similarity if sentence-transformers unavailable.
+    
     Production systems should use vector databases (Pinecone, Weaviate, ChromaDB),
     but this provides functional semantic search for ministry-level deployment.
     """
     
-    def __init__(self, cache_ttl_hours: int = 24):
+    def __init__(
+        self, 
+        cache_ttl_hours: int = 24,
+        embedding_model: str = "all-mpnet-base-v2",
+        use_simple_fallback: bool = True
+    ):
         """
         Initialize document store.
         
         Args:
             cache_ttl_hours: Hours before cached documents expire
+            embedding_model: Sentence-transformers model name
+            use_simple_fallback: Use SimpleEmbedder if sentence-transformers unavailable
         """
         self.documents: Dict[str, Document] = {}
-        self.embedder = SimpleEmbedder()
         self.cache_ttl = timedelta(hours=cache_ttl_hours)
-        self._doc_tokens: Dict[str, List[str]] = {}
-        logger.info(f"DocumentStore initialized with {cache_ttl_hours}h TTL")
+        self._doc_tokens: Dict[str, List[str]] = {}  # For fallback only
+        
+        # Try to initialize sentence-transformers embedder
+        try:
+            from qnwis.rag.embeddings import SentenceEmbedder
+            
+            self.embedder = SentenceEmbedder(model_name=embedding_model)
+            self.use_sentence_embeddings = True
+            logger.info(
+                f"DocumentStore initialized with sentence-transformers "
+                f"({embedding_model}, {cache_ttl_hours}h TTL)"
+            )
+            
+        except ImportError:
+            if use_simple_fallback:
+                logger.warning(
+                    "sentence-transformers not available, falling back to SimpleEmbedder. "
+                    "Install sentence-transformers for better quality: "
+                    "pip install sentence-transformers"
+                )
+                self.embedder = SimpleEmbedder()
+                self.use_sentence_embeddings = False
+                logger.info(f"DocumentStore initialized with SimpleEmbedder ({cache_ttl_hours}h TTL)")
+            else:
+                raise ImportError(
+                    "sentence-transformers required but not installed. "
+                    "Install with: pip install sentence-transformers"
+                )
     
     def add_document(self, document: Document) -> None:
         """
-        Add document to store.
+        Add document to store with automatic embedding.
         
         Args:
             document: Document to add
         """
+        if self.use_sentence_embeddings:
+            # Use sentence-transformers embeddings
+            document.embedding = self.embedder.embed(document.text)
+        else:
+            # Use simple token-based fallback
+            self._doc_tokens[document.doc_id] = self.embedder.embed_text(document.text)
+        
         self.documents[document.doc_id] = document
-        self._doc_tokens[document.doc_id] = self.embedder.embed_text(document.text)
         logger.debug(f"Added document {document.doc_id} from {document.source}")
     
     def add_documents(self, documents: List[Document]) -> None:
         """
-        Add multiple documents to store.
+        Add multiple documents to store efficiently (batch embedding).
         
         Args:
             documents: List of documents to add
         """
-        for doc in documents:
-            self.add_document(doc)
+        if not documents:
+            return
+        
+        if self.use_sentence_embeddings:
+            # Batch embed all documents for efficiency
+            texts = [doc.text for doc in documents]
+            embeddings = self.embedder.embed_batch(texts)
+            
+            for doc, embedding in zip(documents, embeddings):
+                doc.embedding = embedding
+                self.documents[doc.doc_id] = doc
+                logger.debug(f"Added document {doc.doc_id} from {doc.source}")
+        else:
+            # Use simple embedder (no batch support)
+            for doc in documents:
+                self.add_document(doc)
+        
         logger.info(f"Added {len(documents)} documents to store")
     
     def search(
@@ -193,6 +251,9 @@ class DocumentStore:
         """
         Search for relevant documents using semantic similarity.
         
+        Uses sentence-transformers embeddings for high-quality semantic search,
+        or falls back to token-based similarity if unavailable.
+        
         Args:
             query: Search query
             top_k: Number of top results to return
@@ -202,6 +263,63 @@ class DocumentStore:
         Returns:
             List of (Document, score) tuples sorted by relevance
         """
+        if self.use_sentence_embeddings:
+            return self._search_with_embeddings(query, top_k, min_score, source_filter)
+        else:
+            return self._search_with_tokens(query, top_k, min_score, source_filter)
+    
+    def _search_with_embeddings(
+        self,
+        query: str,
+        top_k: int,
+        min_score: float,
+        source_filter: Optional[List[str]]
+    ) -> List[Tuple[Document, float]]:
+        """Search using sentence-transformers embeddings."""
+        # Embed query
+        query_embedding = self.embedder.embed(query)
+        
+        # Collect document embeddings
+        doc_ids = []
+        doc_embeddings = []
+        
+        for doc_id, document in self.documents.items():
+            # Apply source filter
+            if source_filter and document.source not in source_filter:
+                continue
+            
+            if document.embedding is not None:
+                doc_ids.append(doc_id)
+                doc_embeddings.append(document.embedding)
+        
+        if not doc_embeddings:
+            return []
+        
+        # Compute similarities efficiently
+        doc_embeddings_array = np.array(doc_embeddings)
+        similarities = self.embedder.similarity_matrix(query_embedding, doc_embeddings_array)
+        
+        # Build results
+        results: List[Tuple[Document, float]] = []
+        for doc_id, similarity in zip(doc_ids, similarities):
+            if similarity >= min_score:
+                document = self.documents[doc_id]
+                results.append((document, float(similarity)))
+        
+        # Sort by score descending
+        results.sort(key=lambda x: x[1], reverse=True)
+        
+        # Return top k
+        return results[:top_k]
+    
+    def _search_with_tokens(
+        self,
+        query: str,
+        top_k: int,
+        min_score: float,
+        source_filter: Optional[List[str]]
+    ) -> List[Tuple[Document, float]]:
+        """Search using simple token-based similarity (fallback)."""
         query_tokens = self.embedder.embed_text(query)
         
         results: List[Tuple[Document, float]] = []
