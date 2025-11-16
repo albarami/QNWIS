@@ -1582,36 +1582,59 @@ Respond in this exact structure:
         ])
         
         if has_debate:
-            # Best case: Use debate synthesis as foundation
+            critique_output = state.get("critique_output", "")
+
+            print(f"\n{'='*60}")
+            print("SYNTHESIS DEBUG")
+            print(f"{'='*60}")
+            print(f"Debate length: {len(debate_synthesis)} chars")
+            print(f"Critique length: {len(critique_output)} chars")
+            print(f"Critique preview: {critique_output[:200]}...")
+            print(f"{'='*60}\n")
+
             synthesis_prompt = f"""
-You are synthesizing multi-agent intelligence into a final ministerial briefing.
+You are presenting multi-agent intelligence to the EMIR OF QATAR and the Qatar Financial Centre Authority.
+
+CRITICAL: They don't want consultant platitudes. They need:
+- SPECIFIC NUMBERS from agent calculations (not "significant gaps" - give actual numbers)
+- BRUTAL CONTRADICTIONS between experts (don't smooth over disagreements - show the fight)
+- NAMED PRECEDENTS with actual outcomes (not "regional examples" - cite Singapore 1985, Saudi Nitaqat, etc.)
+- QUANTIFIED RISKS in dollar terms (not "may impact" - give $X billion estimates)
+- SEVERITY RATINGS from devil's advocate (quote the brutal warnings)
 
 **MULTI-AGENT DEBATE SYNTHESIS:**
-{debate_synthesis}
+{debate_synthesis[:4000]}
+
+**DEVIL'S ADVOCATE CRITIQUE:**
+{critique_output[:2000]}
 
 **YOUR TASK:**
-Create a concise executive summary that:
-1. States the key finding (1-2 sentences)
-2. Provides the evidence-based recommendation
-3. Flags critical risks/dependencies
-4. States confidence level and reasoning
-
-Format:
+Create an executive summary that PRESERVES the brutal, specific details above.
 
 ## 🎯 EXECUTIVE SUMMARY
 
 **Key Finding:**
-[1-2 sentence conclusion]
+[ONE SENTENCE with SPECIFIC NUMBERS. Example: "Qatar needs 1,277 finance graduates annually but produces only 347 total tech graduates, creating an 18-fold supply crisis that renders 70% target impossible without 25x education capacity expansion."]
+
+**Critical Disagreement:**
+[SHOW THE ACTUAL FIGHT between experts with their specific numbers and reasoning. Example: "Labour Economist assigns 5% feasibility probability citing Saudi Nitaqat's 23% private sector job losses, while Operations Expert argues Qatar's 88.5% LFPR vs Saudi's 69.8% creates different dynamics. Financial Economist quantifies downside as 20-35% FDI reduction ($42-73B capital flight)."]
+
+**Devil's Advocate Warning:**
+[QUOTE THE MOST BRUTAL PART of the critique with severity. Example: "QIA's $445B portfolio disruption could cost $9-13B annually in reduced returns. Policy failure risks 30-40% financial sector contraction requiring QCB intervention." Severity: HIGH]
 
 **Recommendation:**
-[Actionable recommendation with timeline]
+[SPECIFIC ACTION, NOT GENERIC. Example: "NO-GO on 70% by 2030. MANDATORY 6-month baseline study to quantify: (1) current financial sector Qatarization rate, (2) QCB enforcement capacity for 500+ institutions, (3) salary premium vs Dubai/London markets. Then pilot 35% target in Islamic banking only with adjustment triggers."]
 
-**Critical Dependencies:**
-• [Key dependency 1]
-• [Key dependency 2]
+**Go/No-Go Decision:**
+[CLEAN DECISION. Example: "NO-GO on current timeline (2027: 50%, 2030: 70%). Operationally impossible given 36-48 month infrastructure lead times. ALTERNATIVE: 40% by 2030, 60% by 2035 with quality controls preventing UAE-style ghost employment."]
 
 **Confidence: [X]%**
-[Justification for confidence level]
+[EXPLAIN THE CONFIDENCE BREAKDOWN with numbers. Example: "35% confidence overall. HIGH (90%) that current timeline fails. MEDIUM (60%) that 8-year revised timeline works. VERY LOW (15%) on economic impacts due to missing GDP sector data, FDI sensitivity, productivity differentials."]
+
+**Stakes:**
+[WHAT HAPPENS if policy succeeds vs fails with hard numbers. Example: "FAILURE: 30-40% financial sector contraction, brain drain to Dubai/London, $9-13B QIA performance hit. SUCCESS: $200B knowledge economy anchor, Vision 2030 credibility."]
+
+DO NOT use generic phrases like "substantial challenges" or "stakeholder engagement". Use the agents' actual numbers, precedents, and contradictions.
 """
             
         elif has_agents:
