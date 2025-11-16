@@ -203,46 +203,13 @@ class LLMWorkflow:
         # Define routing function
         def should_route_deterministic(state: WorkflowState) -> str:
             """
-            Intelligent routing based on query complexity.
+            Always route to LLM agents for maximum depth and quality.
             
-            Routes simple factual queries to deterministic agents for cost savings.
-            Routes complex queries to full LLM multi-agent workflow.
-            
-            Returns:
-                "deterministic" for simple queries, "llm_agents" for complex queries
+            Cost-optimization disabled - user prioritizes depth over cost.
+            Every query gets full 5-agent treatment for ministerial-grade intelligence.
             """
-            classification = state.get("classification", {})
-            complexity = classification.get("complexity", "complex")
-            question = state.get("question", "")
-            
-            # Simple patterns that can be answered deterministically
-            simple_patterns = [
-                r"what (is|was|are|were) .* (unemployment|employment) rate",
-                r"show me .* (data|statistics|numbers|stats)",
-                r"(current|latest|recent) .* (GDP|unemployment|employment|rate)",
-                r"how many .* (workers|employees|jobs)",
-                r"(list|show) .* (sectors|industries|companies)",
-                r"what (is|are) .* (qatarization|nationalization) (rate|percentage)",
-            ]
-            
-            # Check if query matches simple patterns
-            is_simple_pattern = any(
-                re.search(pattern, question, re.IGNORECASE) 
-                for pattern in simple_patterns
-            )
-            
-            # Route simple queries to deterministic path (60% cost savings)
-            if complexity == "simple" or is_simple_pattern:
-                logger.info(
-                    f"Routing to deterministic agents (complexity={complexity}, "
-                    f"pattern_match={is_simple_pattern}, query: {question[:50]}...)"
-                )
-                return "deterministic"
-            else:
-                logger.info(
-                    f"Routing to LLM agents (complexity={complexity})"
-                )
-                return "llm_agents"
+            logger.info("Routing to LLM agents (full depth prioritized over cost)")
+            return "llm_agents"
 
         # Define edges
         workflow.set_entry_point("classify")
@@ -734,36 +701,16 @@ This query was answered using direct database access without requiring LLM infer
             "research_scientist": research_scientist,
         }
 
-        # Determine which agents to invoke based on complexity
-        if complexity == "simple":
-            # Simple queries: just labour economist
-            agents_to_invoke = ["labour_economist"]
-            reasoning_chain.append("Simple query → invoking Labour Economist only")
-            
-        elif complexity == "medium":
-            # Medium queries: core economic agents
-            agents_to_invoke = ["labour_economist", "financial_economist"]
-            reasoning_chain.append("Medium query → invoking 2 core economic agents")
-            
-        elif complexity in ["complex", "critical"]:
-            # Complex/critical: honor selection if available
-            if selected_agents and len(selected_agents) > 0:
-                agents_to_invoke = selected_agents
-                reasoning_chain.append(f"Complex query → invoking {len(selected_agents)} selected agents")
-            else:
-                # Fallback to all agents if no selection
-                agents_to_invoke = list(agent_map.keys())
-                reasoning_chain.append("Complex query → invoking all 5 agents (no selection)")
-        else:
-            # Default to all agents
-            agents_to_invoke = list(agent_map.keys())
-            reasoning_chain.append("Unknown complexity → invoking all 5 agents")
+        # ALWAYS invoke ALL 5 agents for maximum depth and quality
+        # Cost-optimization disabled - user prioritizes depth over cost
+        agents_to_invoke = list(agent_map.keys())  # All 5 agents, every time
+        reasoning_chain.append("✅ Invoking ALL 5 PhD-level agents for maximum intelligence depth")
 
         # Build agent list
         agents = [agent_map[name] for name in agents_to_invoke if name in agent_map]
         
         logger.info(
-            f"Invoking {len(agents)} agents (complexity={complexity}): {agents_to_invoke}"
+            f"Invoking ALL {len(agents)} agents for maximum depth (complexity={complexity} is for display only)"
         )
 
         tasks = [agent.analyze(query_text, extracted_facts, self.llm_client) for agent in agents]
