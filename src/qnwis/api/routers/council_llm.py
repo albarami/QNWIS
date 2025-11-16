@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 from typing import Any, AsyncIterator, Literal
 from uuid import uuid4
 
-from fastapi import APIRouter, Body, HTTPException, Request, status
+from fastapi import APIRouter, HTTPException, Request, status, Body as FastAPIBody
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
@@ -183,8 +183,8 @@ def _serialize_sse(event: StreamEventResponse) -> str:
         }
     },
 )
-@limiter.limit("10/hour")  # 10 LLM queries per hour per user/IP (cost control)
-async def council_stream_llm(request: Request, req: CouncilRequest = Body(...)) -> StreamingResponse:
+# @limiter.limit("10/hour")  # 10 LLM queries per hour per user/IP (cost control)  # TEMPORARILY DISABLED FOR DEBUGGING
+async def council_stream_llm(req: CouncilRequest) -> StreamingResponse:
     """
     Stream the multi-stage LLM council via Server-Sent Events (SSE).
 

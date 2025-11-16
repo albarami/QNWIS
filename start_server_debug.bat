@@ -1,0 +1,3 @@
+@echo off
+echo Starting server with debug logging...
+.venv\Scripts\python.exe -m uvicorn src.qnwis.api.server:app --reload --port 8000 --log-level debug 2>&1 | tee server.log
