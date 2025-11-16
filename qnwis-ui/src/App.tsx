@@ -8,10 +8,8 @@ import { StageIndicator } from '@/components/workflow/StageIndicator'
 import { WorkflowProgress } from '@/components/workflow/WorkflowProgress'
 import { MetadataDisplay } from '@/components/workflow/MetadataDisplay'
 import { ExtractedFacts } from '@/components/analysis/ExtractedFacts'
-import { AgentsPanel } from '@/components/analysis/AgentsPanel'
-import { DebateSynthesis } from '@/components/analysis/DebateSynthesis'
-import { CritiquePanel } from '@/components/analysis/CritiquePanel'
 import { FinalSynthesis } from '@/components/analysis/FinalSynthesis'
+import { AgentOutputs } from '@/components/AgentOutputs'
 
 const STAGE_ORDER = [
   'classify',
@@ -101,13 +99,9 @@ function App() {
 
           <ExtractedFacts facts={state.extracted_facts} />
 
-          <AgentsPanel agents={state.agent_outputs} />
-
-          <DebateSynthesis debate={state.debate_synthesis} />
-
-          <CritiquePanel critique={state.critique} />
-
           <FinalSynthesis synthesis={state.final_synthesis} confidence={state.confidence_score} />
+
+          <AgentOutputs result={state} />
 
           <MetadataDisplay state={state} />
         </div>

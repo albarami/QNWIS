@@ -16,6 +16,7 @@ from .pattern_detective import PatternDetectiveAgent
 from .pattern_miner import PatternMinerAgent
 from .predictor import PredictorAgent
 from .reporting.jsonl import write_report
+from .research_scientist import ResearchScientistAgent
 from .scenario_agent import ScenarioAgent
 from .skills import SkillsAgent
 from .time_machine import TimeMachineAgent
@@ -34,6 +35,7 @@ __all__ = [
     "PatternDetectiveAgent",
     "PatternMinerAgent",
     "PredictorAgent",
+    "ResearchScientistAgent",
     "ScenarioAgent",
     "SkillsAgent",
     "TimeMachineAgent",

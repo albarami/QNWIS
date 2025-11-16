@@ -59,8 +59,10 @@ export const useWorkflowStream = (options: UseWorkflowStreamOptions = {}) => {
                     status: 'running',
                   }),
                   stage: streamEvent.stage as WorkflowState['stage'],
+                  // CRITICAL FIX: Only set status to 'complete' if it's the FINAL 'done' event
+                  // Individual stages completing should keep status as 'running'
                   status:
-                    streamEvent.status === 'complete'
+                    streamEvent.stage === 'done' && streamEvent.status === 'complete'
                       ? 'complete'
                       : streamEvent.status === 'error'
                         ? 'error'
@@ -75,7 +77,14 @@ export const useWorkflowStream = (options: UseWorkflowStreamOptions = {}) => {
                   ) {
                     next.final_synthesis = `${prev?.final_synthesis ?? ''}${streamEvent.payload.token}`
                   } else {
-                    Object.assign(next, streamEvent.payload)
+                    // Handle classify stage: extract complexity from classification object
+                    if (streamEvent.stage === 'classify' && streamEvent.payload.classification) {
+                      const classification = streamEvent.payload.classification as any
+                      next.complexity = classification.complexity || 'simple'
+                      Object.assign(next, streamEvent.payload)
+                    } else {
+                      Object.assign(next, streamEvent.payload)
+                    }
                   }
                 }
 

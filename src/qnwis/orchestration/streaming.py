@@ -101,20 +101,35 @@ async def run_workflow_stream(
             payload=payload,
             latency_ms=latency_ms
         )
+        logger.info(f"📤 Event emitted: {stage} - {status}")
         await events_queue.put(event)
+        # Force async yield point to ensure event is processed
+        await asyncio.sleep(0)
     
     # Run workflow in background task
     async def execute_workflow():
         try:
-            logger.info(f"Starting LangGraph workflow for question: {question[:100]}...")
-            await workflow.run_stream(question, event_callback)
+            logger.info(f"🚀 Starting LangGraph workflow for question: {question[:100]}...")
+            logger.info(f"📋 Workflow instance: {workflow}")
+            logger.info(f"🔄 Calling workflow.run_stream()...")
+            
+            result = await workflow.run_stream(question, event_callback)
+            
+            logger.info(f"✅ Workflow completed successfully")
+            logger.info(f"📊 Final result keys: {result.keys() if isinstance(result, dict) else type(result)}")
+            
             await events_queue.put(None)  # Signal completion
+            logger.info(f"🏁 Completion signal sent to queue")
+            
         except Exception as e:
-            logger.error(f"LangGraph workflow failed: {e}", exc_info=True)
+            logger.error(f"❌ LangGraph workflow failed: {e}", exc_info=True)
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            
             await events_queue.put(WorkflowEvent(
                 stage="error",
                 status="error",
-                payload={"error": str(e), "error_type": type(e).__name__}
+                payload={"error": str(e), "error_type": type(e).__name__, "traceback": traceback.format_exc()}
             ))
             await events_queue.put(None)
     
@@ -123,11 +138,19 @@ async def run_workflow_stream(
     
     try:
         # Yield events as they arrive from the graph
+        logger.info("📥 Starting to consume events from queue...")
+        event_count = 0
         while True:
+            logger.debug(f"⏳ Waiting for event #{event_count + 1}...")
             event = await events_queue.get()
+            
             if event is None:
                 # Workflow complete
+                logger.info(f"🏁 Received completion signal after {event_count} events")
                 break
+            
+            event_count += 1
+            logger.info(f"📨 Yielding event #{event_count}: {event.stage} - {event.status}")
             yield event
     
     finally:

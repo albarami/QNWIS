@@ -342,6 +342,28 @@ class LLMClient:
         ):
             response += token
         return response
+
+    async def ainvoke(
+        self,
+        prompt: str,
+        *,
+        system: str = "",
+        temperature: float = 0.3,
+        max_tokens: int = 2000,
+        stop: Optional[list[str]] = None,
+        extra: Optional[Dict[str, Any]] = None,
+    ) -> str:
+        """
+        Compatibility wrapper aligning with LangChain-style ainvoke.
+        """
+        return await self.generate(
+            prompt=prompt,
+            system=system,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            stop=stop,
+            extra=extra,
+        )
     
     async def list_models(self) -> Dict[str, Any]:
         """
@@ -394,3 +416,11 @@ class LLMClient:
         if status_code:
             return f"{exc.__class__.__name__} (status={status_code})"
         return exc.__class__.__name__
+
+
+def get_client(*, provider: Optional[str] = None, **kwargs) -> LLMClient:
+    """Factory helper for creating LLMClient instances."""
+    return LLMClient(provider=provider, **kwargs)
+
+
+__all__ = ["LLMClient", "get_client"]

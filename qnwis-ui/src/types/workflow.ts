@@ -85,6 +85,13 @@ export interface WorkflowState {
   extraction_confidence: number
   agent_outputs: AgentOutput[]
   agents_invoked: string[]
+  labour_economist_analysis?: string
+  financial_economist_analysis?: string
+  market_economist_analysis?: string
+  operations_expert_analysis?: string
+  research_scientist_analysis?: string
+  multi_agent_debate?: string
+  critique_output?: string
   debate_synthesis?: DebateOutput
   critique?: CritiqueOutput
   final_synthesis: string
