@@ -1,16 +1,39 @@
 import { useState } from 'react'
+import './App.css'
+
+interface AgentResult {
+  agent: string
+  narrative: string
+  confidence: number
+  status: 'analyzing' | 'complete'
+}
+
+interface WorkflowEvent {
+  stage: string
+  status: string
+  payload: any
+  latency_ms?: number
+  timestamp?: string
+}
 
 function App() {
   const [query, setQuery] = useState('')
-  const [result, setResult] = useState('')
   const [loading, setLoading] = useState(false)
+  const [currentStage, setCurrentStage] = useState('')
+  const [agents, setAgents] = useState<AgentResult[]>([])
+  const [synthesis, setSynthesis] = useState('')
+  const [error, setError] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!query.trim()) return
 
+    // Reset state
     setLoading(true)
-    setResult('')
+    setCurrentStage('Starting analysis...')
+    setAgents([])
+    setSynthesis('')
+    setError('')
 
     try {
       const payload = { 
@@ -18,7 +41,6 @@ function App() {
         provider: 'anthropic',
         model: 'claude-sonnet-4-20250514'
       }
-      console.log('Sending request:', payload)
       
       const response = await fetch('/api/v1/council/stream', {
         method: 'POST',
@@ -28,7 +50,6 @@ function App() {
 
       if (!response.ok) {
         const errorText = await response.text()
-        console.error('API Error:', errorText)
         throw new Error(`HTTP ${response.status}: ${errorText}`)
       }
 
@@ -40,10 +61,7 @@ function App() {
         
         while (!streamComplete) {
           const { done, value } = await reader.read()
-          if (done) {
-            console.log('Stream ended by server')
-            break
-          }
+          if (done) break
           
           const chunk = decoder.decode(value)
           const lines = chunk.split('\n')
@@ -53,137 +71,347 @@ function App() {
               const data = line.slice(6)
               if (data.trim()) {
                 try {
-                  const event = JSON.parse(data)
-                  console.log('Received event:', event.stage, event.status)
-                  setResult(prev => prev + '\n' + JSON.stringify(event, null, 2))
+                  const event: WorkflowEvent = JSON.parse(data)
                   
-                  // Check if workflow is complete
-                  if (event.stage === 'done' && event.status === 'complete') {
-                    console.log('Workflow complete, closing stream')
+                  // Update UI based on event
+                  if (event.stage === 'classify') {
+                    setCurrentStage(' Classifying query complexity...')
+                  } else if (event.stage === 'prefetch') {
+                    setCurrentStage(' Gathering data from 19 sources...')
+                  } else if (event.stage === 'rag') {
+                    setCurrentStage(' Retrieving relevant context...')
+                  } else if (event.stage === 'agent_selection') {
+                    setCurrentStage(' Selecting specialist agents...')
+                  } else if (event.stage === 'agents' && event.status === 'complete') {
+                    // Agent completed
+                    const agentData = event.payload
+                    if (agentData && agentData.agent && agentData.narrative) {
+                      setAgents(prev => {
+                        const existing = prev.find(a => a.agent === agentData.agent)
+                        if (existing) {
+                          return prev.map(a => 
+                            a.agent === agentData.agent 
+                              ? { ...a, narrative: agentData.narrative, confidence: agentData.confidence, status: 'complete' }
+                              : a
+                          )
+                        }
+                        return [...prev, {
+                          agent: agentData.agent,
+                          narrative: agentData.narrative,
+                          confidence: agentData.confidence || 0,
+                          status: 'complete'
+                        }]
+                      })
+                    }
+                  } else if (event.stage === 'verify') {
+                    setCurrentStage(' Verifying citations and data...')
+                  } else if (event.stage === 'done' && event.status === 'complete') {
+                    setCurrentStage(' Analysis complete!')
                     streamComplete = true
+                    
+                    // Extract synthesis from final state
+                    if (event.payload && event.payload.synthesis) {
+                      setSynthesis(event.payload.synthesis)
+                    }
                     break
                   }
                 } catch (e) {
-                  console.error('Parse error:', e, 'Data:', data)
+                  console.error('Parse error:', e)
                 }
               }
             }
           }
         }
         
-        // Close the reader
         await reader.cancel()
       }
     } catch (error) {
-      setResult('Error: ' + (error as Error).message)
+      setError((error as Error).message)
     } finally {
       setLoading(false)
     }
   }
 
+  const getAgentIcon = (agent: string) => {
+    const icons: Record<string, string> = {
+      'labour_economist': '',
+      'financial_economist': '',
+      'market_economist': '',
+      'operations_expert': '',
+      'research_scientist': ''
+    }
+    return icons[agent] || ''
+  }
+
+  const getAgentTitle = (agent: string) => {
+    const titles: Record<string, string> = {
+      'labour_economist': 'Labour Economist',
+      'financial_economist': 'Financial Economist',
+      'market_economist': 'Market Economist',
+      'operations_expert': 'Operations Expert',
+      'research_scientist': 'Research Scientist'
+    }
+    return titles[agent] || agent
+  }
+
   return (
-    <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto', fontFamily: 'system-ui' }}>
-      <div style={{ background: 'white', borderBottom: '1px solid #e5e7eb', padding: '20px', marginBottom: '20px' }}>
-        <h1 style={{ margin: 0, fontSize: '24px', fontWeight: 'bold' }}>
-          QNWIS Intelligence System
-        </h1>
-        <p style={{ margin: '5px 0 0 0', color: '#666' }}>
-          Qatar Ministry of Labour – 5-Agent Strategic Council
-        </p>
-      </div>
-
-      <form onSubmit={handleSubmit} style={{ marginBottom: '20px' }}>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Ask about Qatar's labor market, policies, or economic trends..."
-            style={{
-              flex: 1,
-              padding: '12px',
-              border: '1px solid #d1d5db',
-              borderRadius: '6px',
-              fontSize: '16px'
-            }}
-            disabled={loading}
-          />
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              padding: '12px 24px',
-              background: loading ? '#9ca3af' : '#3b82f6',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              fontSize: '16px',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              fontWeight: '500'
-            }}
-          >
-            {loading ? 'Analyzing...' : 'Ask Council'}
-          </button>
-        </div>
-      </form>
-
-      {loading && (
-        <div style={{ 
-          padding: '20px', 
-          background: '#eff6ff', 
-          borderRadius: '8px',
-          border: '1px solid #3b82f6'
-        }}>
-          <p style={{ margin: 0, color: '#1e40af', fontWeight: '500' }}>
-            🤖 5 PhD-level agents analyzing your query...
-          </p>
-          <p style={{ margin: '5px 0 0 0', fontSize: '14px', color: '#3b82f6' }}>
-            This takes 90-120 seconds for legendary depth
-          </p>
-        </div>
-      )}
-
-      {result && (
-        <div style={{
-          marginTop: '20px',
-          padding: '20px',
-          background: '#f9fafb',
-          borderRadius: '8px',
-          border: '1px solid #e5e7eb'
-        }}>
-          <h3 style={{ marginTop: 0 }}>Results:</h3>
-          <pre style={{
-            whiteSpace: 'pre-wrap',
-            fontSize: '12px',
-            lineHeight: '1.5',
-            maxHeight: '600px',
-            overflow: 'auto'
-          }}>
-            {result}
-          </pre>
-        </div>
-      )}
-
+    <div style={{ minHeight: '100vh', background: '#f3f4f6' }}>
+      {/* Header */}
       <div style={{ 
-        marginTop: '40px', 
-        padding: '20px', 
-        background: '#fef3c7',
-        borderRadius: '8px',
-        border: '1px solid #f59e0b'
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        color: 'white',
+        padding: '32px 20px',
+        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
       }}>
-        <h3 style={{ marginTop: 0, color: '#92400e' }}>💡 Try These Queries:</h3>
-        <ul style={{ margin: '10px 0', color: '#78350f' }}>
-          <li style={{ marginBottom: '8px' }}>
-            Is 70% Qatarization in Qatar's financial sector by 2030 feasible?
-          </li>
-          <li style={{ marginBottom: '8px' }}>
-            What are the implications of raising the minimum wage for Qatari nationals to QR 20,000?
-          </li>
-          <li>
-            Compare Qatar's unemployment rates with other GCC countries
-          </li>
-        </ul>
+        <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+          <h1 style={{ margin: 0, fontSize: '32px', fontWeight: 'bold', marginBottom: '8px' }}>
+            QNWIS Intelligence System
+          </h1>
+          <p style={{ margin: 0, fontSize: '18px', opacity: 0.95 }}>
+            Qatar Ministry of Labour – Multi-Agent Strategic Council
+          </p>
+        </div>
       </div>
+
+      {/* Main Content */}
+      <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '32px 20px' }}>
+        
+        {/* Query Input */}
+        <div style={{ 
+          background: 'white', 
+          borderRadius: '12px', 
+          padding: '24px',
+          boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)',
+          marginBottom: '24px'
+        }}>
+          <form onSubmit={handleSubmit}>
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#374151' }}>
+              Ask Your Strategic Question
+            </label>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="What are the implications of raising the minimum wage for Qatari nationals to QR 20,000?"
+                style={{
+                  flex: 1,
+                  padding: '14px 16px',
+                  fontSize: '16px',
+                  border: '2px solid #e5e7eb',
+                  borderRadius: '8px',
+                  outline: 'none',
+                  transition: 'border-color 0.2s'
+                }}
+                disabled={loading}
+                onFocus={(e) => e.target.style.borderColor = '#667eea'}
+                onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+              />
+              <button
+                type="submit"
+                disabled={loading || !query.trim()}
+                style={{
+                  padding: '14px 32px',
+                  fontSize: '16px',
+                  background: loading ? '#9ca3af' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  fontWeight: '600',
+                  boxShadow: loading ? 'none' : '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                  transition: 'all 0.2s'
+                }}
+              >
+                {loading ? 'Analyzing...' : 'Analyze'}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* Current Stage */}
+        {loading && currentStage && (
+          <div style={{ 
+            background: 'white',
+            border: '2px solid #667eea',
+            borderRadius: '12px',
+            padding: '20px',
+            marginBottom: '24px',
+            boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ 
+                animation: 'spin 1s linear infinite',
+                width: '24px',
+                height: '24px',
+                border: '3px solid #e5e7eb',
+                borderTopColor: '#667eea',
+                borderRadius: '50%'
+              }} />
+              <div>
+                <div style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937' }}>
+                  {currentStage}
+                </div>
+                <div style={{ fontSize: '14px', color: '#6b7280', marginTop: '4px' }}>
+                  Deep analysis in progress...
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Agent Results */}
+        {agents.length > 0 && (
+          <div style={{ marginBottom: '24px' }}>
+            <h2 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '16px', color: '#1f2937' }}>
+              Agent Analysis
+            </h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '16px' }}>
+              {agents.map((agent, idx) => (
+                <div 
+                  key={idx}
+                  style={{
+                    background: 'white',
+                    borderRadius: '12px',
+                    padding: '20px',
+                    boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)',
+                    border: '1px solid #e5e7eb'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                    <div style={{ fontSize: '32px' }}>{getAgentIcon(agent.agent)}</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937' }}>
+                        {getAgentTitle(agent.agent)}
+                      </div>
+                      <div style={{ 
+                        fontSize: '14px', 
+                        color: agent.confidence >= 0.5 ? '#059669' : '#dc2626',
+                        fontWeight: '500'
+                      }}>
+                        Confidence: {Math.round(agent.confidence * 100)}%
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{
+                    fontSize: '14px',
+                    lineHeight: '1.6',
+                    color: '#4b5563',
+                    maxHeight: '300px',
+                    overflowY: 'auto',
+                    whiteSpace: 'pre-wrap'
+                  }}>
+                    {agent.narrative.substring(0, 500)}...
+                    <button style={{
+                      marginTop: '12px',
+                      padding: '6px 12px',
+                      background: '#f3f4f6',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                      fontWeight: '500',
+                      color: '#4b5563'
+                    }}>
+                      Read Full Analysis →
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Executive Summary */}
+        {synthesis && (
+          <div style={{
+            background: 'white',
+            borderRadius: '12px',
+            padding: '32px',
+            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+            border: '2px solid #667eea'
+          }}>
+            <h2 style={{ fontSize: '28px', fontWeight: '700', marginBottom: '20px', color: '#1f2937', display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <span></span> Executive Summary
+            </h2>
+            <div style={{
+              fontSize: '16px',
+              lineHeight: '1.8',
+              color: '#374151',
+              whiteSpace: 'pre-wrap'
+            }}>
+              {synthesis}
+            </div>
+          </div>
+        )}
+
+        {/* Error */}
+        {error && (
+          <div style={{
+            background: '#fef2f2',
+            border: '2px solid #fca5a5',
+            borderRadius: '12px',
+            padding: '20px',
+            color: '#991b1b'
+          }}>
+            <strong>Error:</strong> {error}
+          </div>
+        )}
+
+        {/* Suggested Queries */}
+        {!loading && agents.length === 0 && (
+          <div style={{ 
+            background: 'white',
+            borderRadius: '12px',
+            padding: '24px',
+            boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)'
+          }}>
+            <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px', color: '#1f2937' }}>
+              Suggested Strategic Questions
+            </h3>
+            <div style={{ display: 'grid', gap: '12px' }}>
+              {[
+                'Is 70% Qatarization in Qatar financial sector by 2030 feasible?',
+                'What are the implications of raising the minimum wage for Qatari nationals to QR 20,000?',
+                'Compare Qatar unemployment rates with other GCC countries'
+              ].map((q, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setQuery(q)}
+                  style={{
+                    padding: '16px',
+                    background: '#f9fafb',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    fontSize: '15px',
+                    color: '#374151',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.background = '#eff6ff'
+                    e.currentTarget.style.borderColor = '#667eea'
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.background = '#f9fafb'
+                    e.currentTarget.style.borderColor = '#e5e7eb'
+                  }}
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   )
 }
