@@ -4,12 +4,22 @@ Financial Economist agent with Dr. Mohammed Al-Khater persona.
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Dict, Any, List
 
-from qnwis.agents.prompts.base import (
-    ANTI_FABRICATION_RULES,
-    format_extracted_facts,
+from qnwis.agents.base import (
+    coerce_llm_response_text,
+    extract_assumptions,
+    extract_citations_from_narrative,
+    extract_data_gaps,
+    extract_usage_tokens,
+    resolve_response_model,
 )
+from qnwis.agents.prompts.base import ANTI_FABRICATION_RULES, format_extracted_facts
+
+# Import AgentReport from typing to avoid circular dependency
+from typing import Dict, Any
+AgentReport = Dict[str, Any]
 
 FINANCIAL_ECONOMIST_PERSONA = """
 ═══════════════════════════════════════════════════
@@ -79,10 +89,10 @@ PROVIDE YOUR ANALYSIS IN THIS EXACT FORMAT:
 """
 
 
-async def analyze(query: str, extracted_facts: List[Dict[str, Any]], llm_client) -> Dict[str, Any]:
-    """
-    Financial Economist analysis with mandatory citation enforcement.
-    """
+async def analyze(
+    query: str, extracted_facts: List[Dict[str, Any]], llm_client: Any
+) -> AgentReport:
+    """Financial Economist analysis with mandatory citation enforcement."""
     facts_formatted = format_extracted_facts(extracted_facts)
     
     prompt = f"""
@@ -102,25 +112,50 @@ NOW PROVIDE YOUR ANALYSIS:
     
     try:
         response = await llm_client.ainvoke(prompt)
-        if "Per extraction:" not in response and "NOT IN DATA" not in response:
-            response = (
+        narrative = coerce_llm_response_text(response)
+
+        if "Per extraction:" not in narrative and "NOT IN DATA" not in narrative:
+            narrative = (
                 "⚠️ ANALYSIS REJECTED - No citations found. "
-                "Agent violated citation requirements.\n\n" + response
+                "Agent violated citation requirements.\n\n" + narrative
             )
-        
-        return {
-            "agent": "FinancialEconomist",
-            "persona": "Dr. Mohammed Al-Khater",
-            "analysis": response,
-            "confidence": extract_confidence_from_response(response),
-        }
-    except Exception as exc:
-        return {
-            "agent": "FinancialEconomist",
-            "persona": "Dr. Mohammed Al-Khater",
-            "analysis": f"ERROR: {exc}",
-            "confidence": 0.0,
-        }
+
+        citations = extract_citations_from_narrative(narrative, extracted_facts)
+        data_gaps = extract_data_gaps(narrative)
+        assumptions = extract_assumptions(narrative)
+        facts_used = sorted({citation["metric"] for citation in citations})
+        confidence = extract_confidence_from_response(narrative)
+        tokens_in, tokens_out = extract_usage_tokens(response)
+        model_name = resolve_response_model(response, llm_client)
+
+        return AgentReport(
+            agent_name="financial_economist",
+            narrative=narrative,
+            confidence=confidence,
+            citations=citations,
+            facts_used=facts_used,
+            assumptions=assumptions,
+            data_gaps=data_gaps,
+            timestamp=datetime.utcnow().isoformat(),
+            model=model_name,
+            tokens_in=tokens_in,
+            tokens_out=tokens_out,
+        )
+    except Exception as exc:  # pragma: no cover - defensive
+        error_text = f"ERROR: {exc}"
+        return AgentReport(
+            agent_name="financial_economist",
+            narrative=error_text,
+            confidence=0.0,
+            citations=[],
+            facts_used=[],
+            assumptions=[],
+            data_gaps=["Agent execution failed"],
+            timestamp=datetime.utcnow().isoformat(),
+            model=getattr(llm_client, "model", "unknown"),
+            tokens_in=0,
+            tokens_out=0,
+        )
 
 
 def extract_confidence_from_response(response: str) -> float:

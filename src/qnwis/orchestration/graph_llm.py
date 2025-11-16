@@ -669,10 +669,11 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
         }
     
     async def _invoke_agents_node(self, state: WorkflowState) -> WorkflowState:
-        """Invoke specialist agents using new async analyze() helpers."""
+        """Invoke selected agents in parallel and capture structured AgentReports."""
+
         from qnwis.agents import (
-            labour_economist,
             financial_economist,
+            labour_economist,
             market_economist,
             operations_expert,
             research_scientist,
@@ -681,278 +682,122 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
         reasoning_chain = list(state.get("reasoning_chain", []))
         reasoning_chain.append("Invoking specialist agents with citation enforcement")
 
-        llm_client = self.llm_client
-
-        extracted_facts = state.get("extracted_facts")
-        
-        if not extracted_facts:
-            reasoning_chain.append("No extracted facts available; agents running with limited data")
-            extracted_facts = []
-
-        classification = state.get("classification", {})
-        complexity = state.get("complexity") or classification.get("complexity", "medium")
-        question_text = state.get("query") or state.get("question", "")
-
-        if not question_text:
+        query_text = state.get("query") or state.get("question", "")
+        if not query_text:
             reasoning_chain.append("Missing question text; aborting agent invocation")
-            state.update({"reasoning_chain": reasoning_chain})
+            state["reasoning_chain"] = reasoning_chain
             return state
 
-        if complexity in ("complex", "critical"):
-            agents_to_run = [
-                ("LabourEconomist", labour_economist.analyze),
-                ("FinancialEconomist", financial_economist.analyze),
-                ("MarketEconomist", market_economist.analyze),
-                ("OperationsExpert", operations_expert.analyze),
-                ("ResearchScientist", research_scientist.analyze),
-            ]
-        elif complexity == "medium":
-            agents_to_run = [
-                ("LabourEconomist", labour_economist.analyze),
-                ("FinancialEconomist", financial_economist.analyze),
-            ]
-        else:
-            agents_to_run = [
-                ("LabourEconomist", labour_economist.analyze),
-            ]
+        extracted_facts = state.get("extracted_facts", []) or []
 
-        reasoning_chain.append(
-            f"Running {len(agents_to_run)} agents: {[name for name, _ in agents_to_run]}"
-        )
-
-        tasks = [
-            analyze_fn(query=question_text, extracted_facts=extracted_facts, llm_client=llm_client)
-            for _, analyze_fn in agents_to_run
+        agents = [
+            labour_economist,
+            financial_economist,
+            market_economist,
+            operations_expert,
+            research_scientist,
         ]
 
+        logger.info("Invoking %d agents in parallel", len(agents))
+
+        tasks = [agent.analyze(query_text, extracted_facts, self.llm_client) for agent in agents]
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
-        agent_key_map = {
-            "LabourEconomist": "labour_economist_analysis",
-            "FinancialEconomist": "financial_economist_analysis",
-            "MarketEconomist": "market_economist_analysis",
-            "OperationsExpert": "operations_expert_analysis",
-            "ResearchScientist": "research_scientist_analysis",
-        }
-
-        completed_agents: list[str] = []
+        agent_reports: list[dict[str, Any]] = []
+        agents_invoked: list[str] = []
         confidences: list[float] = []
 
-        for idx, (agent_name, _) in enumerate(agents_to_run):
-            result = results[idx]
+        for agent_obj, result in zip(agents, results):
+            agent_name = getattr(agent_obj, "__name__", "agent")
 
             if isinstance(result, Exception):
-                logger.error(f"{agent_name} failed", exc_info=result)
+                logger.error("%s failed", agent_name, exc_info=result)
                 reasoning_chain.append(f"❌ {agent_name} failed: {result}")
                 continue
 
-            analysis_text = result.get("analysis", "")
-            agent_key = agent_key_map.get(agent_name, f"{agent_name.lower()}_analysis")
-            state[agent_key] = analysis_text
+            agent_reports.append(result)
+            agents_invoked.append(result["agent_name"])
+            confidences.append(result.get("confidence", 0.0))
 
-            completed_agents.append(agent_name)
-            confidences.append(result.get("confidence", 0.5))
+            state[f"{result['agent_name']}_analysis"] = result["narrative"]
 
-            if "⚠️ ANALYSIS REJECTED" in analysis_text:
-                reasoning_chain.append(
-                    f"⚠️ {agent_name} violated citation requirements - flagged for review"
+            if state.get("event_callback"):
+                await state["event_callback"](
+                    "agents",
+                    "complete",
+                    {
+                        "agent": result["agent_name"],
+                        "narrative": result["narrative"],
+                        "confidence": result.get("confidence", 0.0),
+                        "citations_count": len(result.get("citations", [])),
+                        "data_gaps_count": len(result.get("data_gaps", [])),
+                    },
+                    0,
                 )
-            else:
-                reasoning_chain.append(f"✅ {agent_name} completed with valid citations")
 
-        state["agents_invoked"] = completed_agents
-        state["confidence_score"] = sum(confidences) / len(confidences) if confidences else 0.0
+            reasoning_chain.append(f"✅ {result['agent_name']} completed with structured output")
 
-        reasoning_chain.append(f"{len(completed_agents)} agents completed successfully")
-        reasoning_chain.append(f"Average confidence: {state['confidence_score']:.1%}")
+        avg_conf = sum(confidences) / len(confidences) if confidences else 0.0
+        reasoning_chain.append(f"{len(agent_reports)} agents completed successfully")
+        reasoning_chain.append(f"Average confidence: {avg_conf:.1%}")
 
-        state["reasoning_chain"] = reasoning_chain
-        return state
+        return {
+            **state,
+            "agent_reports": agent_reports,
+            "confidence_score": avg_conf,
+            "agents_invoked": agents_invoked,
+            "reasoning_chain": reasoning_chain,
+        }
 
     async def _verify_node(self, state: WorkflowState) -> WorkflowState:
-        """
-        Verify agent outputs for citations and number accuracy.
+        """Verify structured agent reports for citation coverage and numeric accuracy."""
+        from .verification_helpers import verify_agent_reports
 
-        Enhanced verification that:
-        1. Extracts all numbers from agent narratives
-        2. Checks each number has [Per extraction: ...] citation
-        3. Validates numbers against source data
-        4. Logs violations loudly
-        5. Adjusts confidence scores based on violations
-
-        Args:
-            state: Current workflow state
-
-        Returns:
-            Updated state with verification results
-        """
         if state.get("event_callback"):
             await state["event_callback"]("verify", "running")
 
         start_time = datetime.now(timezone.utc)
 
         try:
-            import re
-            from .verification import verify_report
+            agent_reports = state.get("agent_reports", []) or []
+            extracted_facts = state.get("extracted_facts", []) or []
 
-            reports = state.get("agent_reports", [])
-            # Try both possible keys for prefetch data
-            prefetch_data = state.get("prefetch_data", {})
-            if not prefetch_data:
-                prefetch_info = state.get("prefetch", {})
-                prefetch_data = prefetch_info.get("data", {})
-
-            logger.info(f"VERIFICATION START: Checking {len(reports)} reports with {len(prefetch_data)} prefetch results")
-
-            # Verify each agent report
-            all_issues = []
-            warnings_list = []
-            citation_violations = []
-            number_violations = []
-
-            # Extract all numbers from source data for validation
-            source_numbers = set()
-            for query_result in prefetch_data.values():
-                if hasattr(query_result, 'rows'):
-                    for row in query_result.rows:
-                        if hasattr(row, 'data'):
-                            for value in row.data.values():
-                                if isinstance(value, (int, float)):
-                                    source_numbers.add(float(value))
-
-            for report in reports:
-                if not report:
-                    continue
-
-                agent_name = report.agent if hasattr(report, 'agent') else 'Unknown'
-
-                # 1. Run existing verification
-                verification_result = verify_report(report)
-                if hasattr(verification_result, 'issues') and verification_result.issues:
-                    for issue in verification_result.issues:
-                        issue_str = f"[{agent_name}] {issue.code}: {issue.detail}"
-                        warnings_list.append(issue_str)
-                        all_issues.append(issue)
-
-                # 2. Check citations in narrative
-                narrative = report.narrative if hasattr(report, 'narrative') else ""
-
-                # Extract all numbers from narrative (integers, floats, percentages)
-                number_pattern = r'\b\d+\.?\d*%?\b'
-                numbers_in_narrative = re.findall(number_pattern, narrative)
-
-                # Extract all citations
-                citation_pattern = r'\[Per extraction: \'[^\']+\' from [^\]]+\]'
-                citations_found = re.findall(citation_pattern, narrative)
-
-                # 3. Check if numbers have citations nearby
-                # Simple heuristic: citation should appear within 50 chars of the number
-                uncited_numbers = []
-                for num_match in re.finditer(number_pattern, narrative):
-                    num_pos = num_match.start()
-                    num_value = num_match.group()
-
-                    # Check if there's a citation within +/- 50 chars
-                    has_nearby_citation = False
-                    for cite_match in re.finditer(citation_pattern, narrative):
-                        cite_pos = cite_match.start()
-                        if abs(cite_pos - num_pos) < 100:  # Within 100 chars
-                            has_nearby_citation = True
-                            break
-
-                    if not has_nearby_citation:
-                        uncited_numbers.append(num_value)
-
-                if uncited_numbers:
-                    violation = f"[{agent_name}] {len(uncited_numbers)} number(s) without citations: {uncited_numbers[:5]}"
-                    citation_violations.append(violation)
-                    warnings_list.append(violation)
-                    logger.warning(f"CITATION VIOLATION: {violation}")
-
-                # 4. Validate cited numbers against source data (with tolerance)
-                for cite_match in re.finditer(citation_pattern, narrative):
-                    citation_text = cite_match.group()
-                    # Extract the value from citation
-                    value_match = re.search(r"'([^']+)'", citation_text)
-                    if value_match:
-                        cited_value_str = value_match.group(1)
-                        # Try to parse as number
-                        try:
-                            # Remove % and other non-numeric chars
-                            clean_value = cited_value_str.replace('%', '').replace(',', '').strip()
-                            cited_value = float(clean_value)
-
-                            # Check if this number exists in source data (with 2% tolerance)
-                            found_in_source = False
-                            for source_num in source_numbers:
-                                tolerance = abs(source_num * 0.02)  # 2% tolerance
-                                if abs(cited_value - source_num) <= tolerance:
-                                    found_in_source = True
-                                    break
-
-                            if not found_in_source and cited_value > 0.01:  # Ignore very small numbers
-                                violation = f"[{agent_name}] Cited value '{cited_value_str}' not found in source data"
-                                number_violations.append(violation)
-                                warnings_list.append(violation)
-                                logger.warning(f"NUMBER FABRICATION: {violation}")
-
-                        except (ValueError, AttributeError):
-                            # Not a parseable number, skip
-                            pass
-
-            verification_result = {
-                "status": "complete",
-                "warnings": warnings_list,
-                "warning_count": len([i for i in all_issues if hasattr(i, 'level') and i.level == 'warn']),
-                "error_count": len([i for i in all_issues if hasattr(i, 'level') and i.level == 'error']),
-                "missing_citations": len(citation_violations),
-                "citation_violations": citation_violations,
-                "number_violations": number_violations,
-                "fabricated_numbers": len(number_violations)
-            }
+            # Call pure verification helper
+            verification_payload = verify_agent_reports(agent_reports, extracted_facts)
 
             latency_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
 
-            logger.info(
-                f"Verification complete: {len(warnings_list)} warnings, "
-                f"{len(citation_violations)} citation violations, "
-                f"{len(number_violations)} number violations, "
-                f"latency={latency_ms:.0f}ms"
-            )
-
-            # Update reasoning chain
             reasoning_chain = list(state.get("reasoning_chain", []))
             reasoning_chain.append(
-                "Γ£ô Verification: "
-                f"{len(citation_violations)} citation violation(s), "
-                f"{len(number_violations)} number violation(s)"
+                "✓ Verification: "
+                f"{verification_payload['warning_count']} citation violation(s), "
+                f"{verification_payload['error_count']} number violation(s)"
             )
-            
+
             if state.get("event_callback"):
                 await state["event_callback"](
-                    "verify",
-                    "complete",
-                    verification_result,
-                    latency_ms
+                    "verify", "complete", verification_payload, latency_ms
                 )
-            
+
             return {
                 **state,
                 "verification": {
-                    **verification_result,
+                    **verification_payload,
                     "latency_ms": latency_ms,
                 },
                 "reasoning_chain": reasoning_chain,
             }
-        
-        except Exception as e:
-            logger.error(f"Verification failed: {e}", exc_info=True)
+
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.error("Verification failed: %s", exc, exc_info=True)
             if state.get("event_callback"):
-                await state["event_callback"]("verify", "error", {"error": str(e)})
+                await state["event_callback"](
+                    "verify", "error", {"error": str(exc)}, None
+                )
             return {
                 **state,
-                "verification": {"status": "failed", "error": str(e)},
-                "error": f"Verification error: {e}"
+                "verification": {"status": "failed", "error": str(exc)},
+                "error": f"Verification error: {exc}",
             }
 
     def _detect_contradictions(self, reports: list) -> list:

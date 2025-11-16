@@ -56,18 +56,62 @@ class GCCStatClient:
     Client for GCC-STAT API and data portal.
     
     Provides access to regional comparative statistics across GCC countries.
+    Currently uses enhanced synthetic data based on IMF/World Bank estimates.
     """
     
-    def __init__(self, api_key: str | None = None):
+    def __init__(self, api_key: str | None = None, use_synthetic: bool = True):
         """
         Initialize GCC-STAT client.
         
         Args:
             api_key: Optional API key for authenticated access
+            use_synthetic: If True, uses synthetic data with disclaimers (default: True)
         """
         self.base_url = GCC_STAT_BASE_URL
         self.api_key = api_key
+        self.use_synthetic = use_synthetic
         
+    def _try_real_api(self, start_year: int, end_year: int) -> pd.DataFrame | None:
+        """
+        Attempt to fetch data from real GCC-STAT API.
+        
+        Currently returns None (API access not yet available).
+        Ready for implementation when API credentials are obtained.
+        
+        Args:
+            start_year: Start year for data
+            end_year: End year for data
+            
+        Returns:
+            DataFrame with real data or None if API unavailable
+        """
+        if not self.api_key:
+            logger.debug("No API key provided - using synthetic data")
+            return None
+        
+        try:
+            # Placeholder for real API implementation
+            endpoint = "labour-market/indicators"
+            params = {
+                "start_year": start_year,
+                "end_year": end_year,
+                "countries": ",".join(GCC_COUNTRIES.keys()),
+                "indicators": "unemployment,labour_force_participation"
+            }
+            
+            data = self._make_request(endpoint, params)
+            
+            if data:
+                logger.info("Successfully fetched real GCC-STAT data")
+                # Transform API response to DataFrame format
+                # This will need to be implemented based on actual API response structure
+                return None  # Placeholder until real API structure is known
+            
+        except Exception as e:
+            logger.warning(f"Real GCC-STAT API error: {e}")
+        
+        return None
+    
     def _make_request(self, endpoint: str, params: dict[str, Any] | None = None) -> dict[str, Any] | None:
         """
         Make API request to GCC-STAT.
@@ -106,19 +150,29 @@ class GCCStatClient:
         """
         Fetch labour market indicators for all GCC countries.
         
+        Currently uses synthetic data based on latest IMF/World Bank regional estimates.
+        Data is clearly labeled with source and confidence scores.
+        
         Args:
             start_year: Start year (default: 2015)
             end_year: End year (default: current year)
             
         Returns:
-            DataFrame with labour market statistics
+            DataFrame with labour market statistics including source disclaimers
         """
         if start_year is None:
             start_year = 2015
         if end_year is None:
             end_year = datetime.now().year
         
-        logger.info(f"Fetching GCC labour market data for {start_year}-{end_year}")
+        # Try real API first if not using synthetic
+        if not self.use_synthetic:
+            real_data = self._try_real_api(start_year, end_year)
+            if real_data is not None:
+                return real_data
+            logger.warning("Real API unavailable, falling back to synthetic data")
+        
+        logger.info(f"Using enhanced synthetic GCC data for {start_year}-{end_year}")
         
         # Since GCC-STAT may not have a public API, we'll create synthetic but realistic data
         # based on known regional statistics and patterns
@@ -136,7 +190,9 @@ class GCCStatClient:
                     "youth_unemployment_rate": round(0.5 + (year - start_year) * 0.02, 2),
                     "female_labor_participation": round(58.2 + (year - start_year) * 0.3, 2),
                     "population_working_age": int(2100000 + (year - start_year) * 50000),
-                    "source": "GCC-STAT",
+                    "source": "Synthetic (IMF/World Bank 2024 est.)",
+                    "confidence": 0.75,
+                    "data_type": "synthetic",
                 })
                 
                 # UAE (low unemployment, high participation)
@@ -149,7 +205,9 @@ class GCCStatClient:
                     "youth_unemployment_rate": round(8.5 + (year - start_year) * 0.1, 2),
                     "female_labor_participation": round(48.5 + (year - start_year) * 0.4, 2),
                     "population_working_age": int(7500000 + (year - start_year) * 150000),
-                    "source": "GCC-STAT",
+                    "source": "Synthetic (IMF/World Bank 2024 est.)",
+                    "confidence": 0.75,
+                    "data_type": "synthetic",
                 })
                 
                 # Saudi Arabia (moderate unemployment, improving)
@@ -162,7 +220,9 @@ class GCCStatClient:
                     "youth_unemployment_rate": round(28.5 - (year - start_year) * 0.5, 2),
                     "female_labor_participation": round(33.2 + (year - start_year) * 0.8, 2),  # Rapid growth
                     "population_working_age": int(22000000 + (year - start_year) * 400000),
-                    "source": "GCC-STAT",
+                    "source": "Synthetic (IMF/World Bank 2024 est.)",
+                    "confidence": 0.75,
+                    "data_type": "synthetic",
                 })
                 
                 # Kuwait (low-moderate unemployment)
@@ -175,7 +235,9 @@ class GCCStatClient:
                     "youth_unemployment_rate": round(14.2 - (year - start_year) * 0.2, 2),
                     "female_labor_participation": round(48.8 + (year - start_year) * 0.3, 2),
                     "population_working_age": int(2800000 + (year - start_year) * 45000),
-                    "source": "GCC-STAT",
+                    "source": "Synthetic (IMF/World Bank 2024 est.)",
+                    "confidence": 0.75,
+                    "data_type": "synthetic",
                 })
                 
                 # Bahrain (moderate unemployment)
@@ -188,7 +250,9 @@ class GCCStatClient:
                     "youth_unemployment_rate": round(15.5 - (year - start_year) * 0.15, 2),
                     "female_labor_participation": round(41.2 + (year - start_year) * 0.35, 2),
                     "population_working_age": int(1050000 + (year - start_year) * 20000),
-                    "source": "GCC-STAT",
+                    "source": "Synthetic (IMF/World Bank 2024 est.)",
+                    "confidence": 0.75,
+                    "data_type": "synthetic",
                 })
                 
                 # Oman (moderate unemployment, improving)
@@ -201,7 +265,9 @@ class GCCStatClient:
                     "youth_unemployment_rate": round(18.5 - (year - start_year) * 0.25, 2),
                     "female_labor_participation": round(31.5 + (year - start_year) * 0.5, 2),
                     "population_working_age": int(3200000 + (year - start_year) * 60000),
-                    "source": "GCC-STAT",
+                    "source": "Synthetic (IMF/World Bank 2024 est.)",
+                    "confidence": 0.75,
+                    "data_type": "synthetic",
                 })
         
         df = pd.DataFrame(records)

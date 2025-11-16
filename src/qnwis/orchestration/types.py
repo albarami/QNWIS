@@ -1,13 +1,41 @@
 """
-Protocol types for orchestration coordination layer.
+Typed structures shared across orchestration components.
 
-Defines lightweight TypedDict specifications for prefetch declarations
-and agent call specifications used by the Coordinator.
+Includes both agent report structures (Citation, AgentReport) and
+coordination layer types (PrefetchSpec, AgentCallSpec, ExecutionTrace).
 """
 
 from __future__ import annotations
 
-from typing import Any, NotRequired, TypedDict
+from datetime import datetime
+from typing import Any, List, NotRequired, Optional, TypedDict
+
+
+class Citation(TypedDict):
+    """Single citation reference within an agent narrative."""
+
+    claim: str
+    metric: str
+    value: str
+    source: str
+    confidence: float
+    extraction_reference: str  # e.g. "[Per extraction: '...' from ...]"
+
+
+class AgentReport(TypedDict):
+    """Structured agent analysis output sent downstream for verification."""
+
+    agent_name: str
+    narrative: str
+    confidence: float
+    citations: List[Citation]
+    facts_used: List[str]
+    assumptions: List[str]
+    data_gaps: List[str]
+    timestamp: str
+    model: str
+    tokens_in: int
+    tokens_out: int
 
 
 class PrefetchSpec(TypedDict):

@@ -8,15 +8,21 @@ deterministic data only. No SQL, RAG, or network calls are permitted here.
 from __future__ import annotations
 
 import logging
+import re
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any, Dict, List
 
 from ..data.deterministic.cache_access import execute_cached
 from ..data.deterministic.models import QueryResult, QuerySpec, Row
 from ..data.deterministic.normalize import normalize_rows
 from ..data.deterministic.registry import DEFAULT_QUERY_ROOT, QueryRegistry
+
+if TYPE_CHECKING:  # pragma: no cover - import only for typing
+    from ..orchestration.types import Citation
+else:  # Fallback to maintain runtime independence
+    Citation = Dict[str, Any]
 
 logger = logging.getLogger(__name__)
 
@@ -271,3 +277,163 @@ def metric_from_rows(rows: list[Row], key: str) -> float:
         if isinstance(v, (int, float)):
             val = float(v)
     return val
+
+
+def extract_citations_from_narrative(
+    narrative: str, extracted_facts: List[Dict[str, Any]]
+) -> List[Citation]:
+    """Parse agent narrative text to extract structured citation references."""
+
+    citations: List[Citation] = []
+    citation_pattern = r"\[Per extraction: ([^\]]+)\]"
+
+    for match in re.finditer(citation_pattern, narrative or ""):
+        citation_body = match.group(1)
+        claim = get_claim_context(narrative, match.start())
+
+        parts = citation_body.split(" from ")
+        if len(parts) != 2:
+            continue
+
+        value_part, source = parts[0].strip(), parts[1].strip()
+        metric_match = re.search(r"['\"]([^'\"]+)['\"]", value_part)
+        if not metric_match:
+            continue
+
+        metric = metric_match.group(1)
+        value_text = (
+            value_part.replace(f"'{metric}'", "").replace(f'"{metric}"', "").strip()
+        )
+        fact = next((f for f in extracted_facts if f.get("metric") == metric), None)
+
+        citations.append(
+            Citation(
+                claim=claim,
+                metric=metric,
+                value=value_text,
+                source=source,
+                confidence=float(fact.get("confidence", 0.5)) if fact else 0.5,
+                extraction_reference=match.group(0),
+            )
+        )
+
+    return citations
+
+
+def get_claim_context(text: str, citation_pos: int, radius: int = 150) -> str:
+    """Return the sentence fragment surrounding a citation position."""
+
+    if not text:
+        return ""
+
+    start = max(0, citation_pos - radius)
+    end = min(len(text), citation_pos + radius)
+
+    before = text[start:citation_pos]
+    after = text[citation_pos:end]
+
+    last_period = before.rfind(".")
+    if last_period != -1:
+        before = before[last_period + 1 :]
+
+    next_period = after.find(".")
+    if next_period != -1:
+        after = after[: next_period + 1]
+
+    return (before + after).strip()
+
+
+def extract_data_gaps(narrative: str) -> List[str]:
+    """Identify explicit data gap statements within an agent narrative."""
+
+    gaps: set[str] = set()
+    patterns = [
+        r"NOT IN DATA[:\-\s]*([^\.]+)",
+        r"CANNOT CALCULATE[:\-\s]*([^\.]+)",
+        r"cannot determine ([^\.]+) without",
+        r"Missing ([^\.]+) data",
+    ]
+
+    for pattern in patterns:
+        for match in re.finditer(pattern, narrative or "", flags=re.IGNORECASE):
+            gap = match.group(1).strip()
+            if gap and len(gap) > 10:
+                gaps.add(gap)
+
+    return sorted(gaps)
+
+
+def extract_assumptions(narrative: str) -> List[str]:
+    """Collect ASSUMPTION statements along with their confidence levels."""
+
+    assumptions: List[str] = []
+    pattern = r"ASSUMPTION \(confidence: (\d+)%\): ([^\.]+\.)"
+
+    for match in re.finditer(pattern, narrative or ""):
+        confidence = match.group(1)
+        statement = match.group(2).strip()
+        assumptions.append(f"{statement} (confidence: {confidence}%)")
+
+    return assumptions
+
+
+def coerce_llm_response_text(response: Any) -> str:
+    """Best-effort conversion of an LLM client response into plain text."""
+
+    if isinstance(response, str):
+        return response
+
+    content = getattr(response, "content", None)
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts: list[str] = []
+        for item in content:
+            if isinstance(item, str):
+                parts.append(item)
+            elif hasattr(item, "text"):
+                text_value = getattr(item, "text")
+                if text_value is not None:
+                    parts.append(str(text_value))
+            else:
+                parts.append(str(item))
+        if parts:
+            return "\n".join(parts)
+
+    if hasattr(response, "text"):
+        text_value = getattr(response, "text")
+        if text_value is not None:
+            return str(text_value)
+
+    return str(response)
+
+
+def extract_usage_tokens(response: Any) -> tuple[int, int]:
+    """Extract token usage metadata from an LLM client response when available."""
+
+    tokens_in = tokens_out = 0
+    usage = getattr(response, "usage", None)
+    if usage is None:
+        return tokens_in, tokens_out
+
+    if isinstance(usage, dict):
+        tokens_in = int(usage.get("input_tokens") or usage.get("prompt_tokens") or 0)
+        tokens_out = int(usage.get("output_tokens") or usage.get("completion_tokens") or 0)
+        return tokens_in, tokens_out
+
+    tokens_in = int(
+        getattr(usage, "input_tokens", getattr(usage, "prompt_tokens", 0)) or 0
+    )
+    tokens_out = int(
+        getattr(usage, "output_tokens", getattr(usage, "completion_tokens", 0)) or 0
+    )
+    return tokens_in, tokens_out
+
+
+def resolve_response_model(response: Any, llm_client: Any) -> str:
+    """Resolve the model name for an LLM response with sensible fallbacks."""
+
+    model_name = getattr(response, "model", None)
+    if isinstance(model_name, str) and model_name:
+        return model_name
+    return getattr(llm_client, "model", "unknown")
