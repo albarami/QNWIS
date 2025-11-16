@@ -25,6 +25,7 @@ from ..agents.base import AgentReport, DataClient
 from ..llm.client import LLMClient
 from ..classification.classifier import Classifier
 from src.qnwis.orchestration.prefetch_apis import get_complete_prefetch
+from src.qnwis.observability.query_metrics import start_query, finish_query
 
 logger = logging.getLogger(__name__)
 
@@ -1557,14 +1558,17 @@ Provide:
     
     async def run(self, question: str) -> Dict[str, Any]:
         """
-        Run workflow for a question.
+        Run workflow for a question with comprehensive metrics tracking.
         
         Args:
             question: User's question
             
         Returns:
-            Final workflow state
+            Final workflow state with metrics
         """
+        # Start query metrics tracking
+        query_id = start_query(question)
+        
         initial_state: WorkflowState = {
             "question": question,
             "classification": None,
@@ -1579,20 +1583,64 @@ Provide:
             "synthesis": None,
             "error": None,
             "metadata": {
-                "start_time": datetime.now(timezone.utc).isoformat()
+                "start_time": datetime.now(timezone.utc).isoformat(),
+                "query_id": query_id
             },
             "reasoning_chain": [],
             "event_callback": None
         }
         
-        final_state = await self.graph.ainvoke(initial_state)
-        
-        # Add total latency
-        start_time = datetime.fromisoformat(final_state["metadata"]["start_time"])
-        total_latency_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
-        final_state["metadata"]["total_latency_ms"] = total_latency_ms
-        
-        return final_state
+        try:
+            final_state = await self.graph.ainvoke(initial_state)
+            
+            # Add total latency
+            start_time = datetime.fromisoformat(final_state["metadata"]["start_time"])
+            total_latency_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
+            final_state["metadata"]["total_latency_ms"] = total_latency_ms
+            
+            # Extract metrics data
+            complexity = final_state.get("classification", {}).get("complexity", "unknown") \
+                if isinstance(final_state.get("classification"), dict) else "unknown"
+            
+            agents_invoked = [report.get("agent_name", "unknown") 
+                            for report in final_state.get("agent_reports", [])]
+            
+            confidence = final_state.get("confidence_score", 0.0)
+            
+            verification = final_state.get("verification", {})
+            citation_violations = verification.get("citation_violations", 0) \
+                if isinstance(verification, dict) else 0
+            
+            facts_extracted = len(final_state.get("extracted_facts", []))
+            
+            # Finish query metrics tracking
+            query_metrics = finish_query(
+                query_id=query_id,
+                complexity=complexity,
+                status="success",
+                agents_invoked=agents_invoked,
+                confidence=confidence,
+                citation_violations=citation_violations,
+                facts_extracted=facts_extracted
+            )
+            
+            # Add metrics summary to final state
+            final_state["metrics"] = query_metrics.summary()
+            
+            return final_state
+            
+        except Exception as e:
+            # Record failed query
+            finish_query(
+                query_id=query_id,
+                complexity="unknown",
+                status="error",
+                agents_invoked=[],
+                confidence=0.0,
+                citation_violations=0,
+                facts_extracted=0
+            )
+            raise
     
     async def run_stream(self, question: str, event_callback) -> AsyncIterator[Dict[str, Any]]:
         """

@@ -8,6 +8,8 @@ from .metrics import (
     record_agent_execution,
     record_auth_attempt,
     record_cache_hit,
+    record_llm_call,
+    record_query_execution,
     record_rate_limit_event,
     record_request,
 )
@@ -26,4 +28,6 @@ __all__ = [
     "record_cache_hit",
     "record_auth_attempt",
     "record_rate_limit_event",
+    "record_llm_call",
+    "record_query_execution",
 ]

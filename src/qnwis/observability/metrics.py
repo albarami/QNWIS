@@ -46,6 +46,15 @@ class MetricsCollector:
         self.failover_executions_total = defaultdict(int)  # {(cluster, status): count}
         self.failover_success_total = defaultdict(int)  # {(cluster): count}
         self.failover_failures_total = defaultdict(int)  # {(cluster, reason): count}
+        
+        # LLM usage counters (Phase 2)
+        self.llm_calls_total = defaultdict(int)  # {(model, agent, purpose): count}
+        self.llm_tokens_total = defaultdict(int)  # {(model, token_type): count}
+        self.llm_cost_usd_total = defaultdict(float)  # {(model): cost}
+        
+        # Query-level counters (Phase 2)
+        self.query_executions_total = defaultdict(int)  # {(complexity, status): count}
+        self.citation_violations_total = defaultdict(int)  # {(): count}
 
         # Histograms (simplified - store all observations for percentile calculation)
         self.request_duration_seconds: list[tuple[dict[str, str], float]] = []
@@ -55,6 +64,10 @@ class MetricsCollector:
         self.dr_restore_duration_seconds: list[tuple[dict[str, str], float]] = []
         self.failover_execution_ms: list[tuple[dict[str, str], float]] = []
         self.failover_validation_ms: list[tuple[dict[str, str], float]] = []
+        
+        # LLM and Query histograms (Phase 2)
+        self.llm_call_latency_ms: list[tuple[dict[str, str], float]] = []
+        self.query_latency_ms: list[tuple[dict[str, str], float]] = []
 
         # Gauges
         self.active_requests = 0
@@ -616,3 +629,110 @@ def update_continuity_status(healthy_nodes: int, has_quorum: bool) -> None:
     collector = get_metrics_collector()
     collector.set_gauge("qnwis_continuity_nodes_healthy", healthy_nodes)
     collector.set_gauge("qnwis_continuity_quorum_reached", 1 if has_quorum else 0)
+
+
+def record_llm_call(
+    model: str,
+    input_tokens: int,
+    output_tokens: int,
+    latency_ms: float,
+    agent_name: str | None = None,
+    purpose: str | None = None
+) -> None:
+    """
+    Record LLM API call metrics.
+
+    Args:
+        model: Model name (e.g., claude-3-5-sonnet-20241022)
+        input_tokens: Number of input tokens
+        output_tokens: Number of output tokens
+        latency_ms: API call latency in milliseconds
+        agent_name: Name of agent making the call (if applicable)
+        purpose: Purpose of the call (e.g., analysis, synthesis, debate)
+    """
+    collector = get_metrics_collector()
+    
+    # Record call count
+    labels = {
+        "model": model,
+        "agent": agent_name or "unknown",
+        "purpose": purpose or "unknown"
+    }
+    key = tuple(sorted(labels.items()))
+    collector.llm_calls_total[key] += 1
+    
+    # Record tokens
+    token_labels_input = ("model", model), ("token_type", "input")
+    token_labels_output = ("model", model), ("token_type", "output")
+    collector.llm_tokens_total[token_labels_input] += input_tokens
+    collector.llm_tokens_total[token_labels_output] += output_tokens
+    
+    # Record cost (Anthropic Claude pricing as of Nov 2024)
+    # claude-3-5-sonnet-20241022: $3/M input, $15/M output
+    cost_input = (input_tokens / 1_000_000) * 3.0
+    cost_output = (output_tokens / 1_000_000) * 15.0
+    total_cost = cost_input + cost_output
+    
+    cost_key = (("model", model),)
+    collector.llm_cost_usd_total[cost_key] += total_cost
+    
+    # Record latency
+    collector.llm_call_latency_ms.append((labels, latency_ms))
+    
+    logger.debug(
+        f"LLM call: model={model}, agent={agent_name}, "
+        f"tokens={input_tokens}+{output_tokens}, "
+        f"latency={latency_ms:.1f}ms, cost=${total_cost:.6f}"
+    )
+
+
+def record_query_execution(
+    complexity: str,
+    status: str,
+    total_latency_ms: float,
+    agents_invoked: list[str],
+    confidence: float,
+    citation_violations: int,
+    facts_extracted: int
+) -> None:
+    """
+    Record workflow query execution metrics.
+
+    Args:
+        complexity: Query complexity (simple, medium, complex)
+        status: Execution status (success, error)
+        total_latency_ms: Total query latency in milliseconds
+        agents_invoked: List of agents invoked
+        confidence: Final confidence score (0.0-1.0)
+        citation_violations: Number of citation violations
+        facts_extracted: Number of facts extracted
+    """
+    collector = get_metrics_collector()
+    
+    # Record query execution count
+    query_labels = {
+        "complexity": complexity,
+        "status": status
+    }
+    key = tuple(sorted(query_labels.items()))
+    collector.query_executions_total[key] += 1
+    
+    # Record citation violations
+    if citation_violations > 0:
+        violation_key = ()
+        collector.citation_violations_total[violation_key] += citation_violations
+    
+    # Record query latency
+    latency_labels = {
+        "complexity": complexity,
+        "agent_count": str(len(agents_invoked)),
+        "status": status
+    }
+    collector.query_latency_ms.append((latency_labels, total_latency_ms))
+    
+    logger.info(
+        f"Query execution: complexity={complexity}, status={status}, "
+        f"latency={total_latency_ms:.1f}ms, agents={len(agents_invoked)}, "
+        f"confidence={confidence:.2f}, violations={citation_violations}, "
+        f"facts={facts_extracted}"
+    )

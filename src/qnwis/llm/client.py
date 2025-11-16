@@ -11,6 +11,7 @@ import asyncio
 import json
 import logging
 import random
+import time
 from typing import AsyncIterator, Optional, Dict, Any
 
 from src.qnwis.llm.config import LLMConfig, get_llm_config
@@ -19,6 +20,7 @@ from src.qnwis.llm.exceptions import (
     LLMRateLimitError,
     LLMProviderError,
 )
+from src.qnwis.observability.metrics import record_llm_call
 
 logger = logging.getLogger(__name__)
 
@@ -352,18 +354,72 @@ class LLMClient:
         max_tokens: int = 2000,
         stop: Optional[list[str]] = None,
         extra: Optional[Dict[str, Any]] = None,
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> str:
         """
-        Compatibility wrapper aligning with LangChain-style ainvoke.
+        Compatibility wrapper aligning with LangChain-style ainvoke with metrics tracking.
+        
+        Args:
+            prompt: User prompt
+            system: System prompt
+            temperature: Temperature setting
+            max_tokens: Maximum tokens to generate
+            stop: Stop sequences
+            extra: Extra provider-specific parameters
+            metadata: Metadata for metrics (agent, purpose, etc.)
+            
+        Returns:
+            Generated text response
         """
-        return await self.generate(
-            prompt=prompt,
-            system=system,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            stop=stop,
-            extra=extra,
-        )
+        start_time = time.time()
+        
+        try:
+            response = await self.generate(
+                prompt=prompt,
+                system=system,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                stop=stop,
+                extra=extra,
+            )
+            
+            # Calculate latency
+            latency_ms = (time.time() - start_time) * 1000
+            
+            # Estimate tokens (rough approximation: 1 token ≈ 4 characters)
+            # This is a fallback; ideally we'd get actual usage from the API
+            input_text = prompt + (system or "")
+            input_tokens = len(input_text) // 4
+            output_tokens = len(response) // 4
+            
+            # Extract metadata
+            agent_name = metadata.get("agent") if metadata else None
+            purpose = metadata.get("purpose") if metadata else None
+            
+            # Record metrics
+            record_llm_call(
+                model=self.model,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                latency_ms=latency_ms,
+                agent_name=agent_name,
+                purpose=purpose
+            )
+            
+            return response
+            
+        except Exception as e:
+            # Record failed call with minimal data
+            latency_ms = (time.time() - start_time) * 1000
+            record_llm_call(
+                model=self.model,
+                input_tokens=len(prompt) // 4,
+                output_tokens=0,
+                latency_ms=latency_ms,
+                agent_name=metadata.get("agent") if metadata else "unknown",
+                purpose="error"
+            )
+            raise
     
     async def list_models(self) -> Dict[str, Any]:
         """
