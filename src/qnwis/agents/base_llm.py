@@ -6,15 +6,16 @@ All agents inherit from this and implement:
 - _build_prompt(): How to format prompt for LLM
 """
 
+import json
 import logging
 from abc import ABC, abstractmethod
 from typing import AsyncIterator, Dict, Optional
 from datetime import datetime, timezone
 
-from src.qnwis.agents.base import DataClient, AgentReport, Insight, evidence_from
-from src.qnwis.llm.client import LLMClient
-from src.qnwis.llm.parser import LLMResponseParser, AgentFinding
-from src.qnwis.llm.exceptions import LLMError, LLMParseError
+from qnwis.agents.base import DataClient, AgentReport, Insight, evidence_from
+from qnwis.llm.client import LLMClient
+from qnwis.llm.parser import LLMResponseParser, AgentFinding
+from qnwis.llm.exceptions import LLMError, LLMParseError
 
 logger = logging.getLogger(__name__)
 
@@ -89,41 +90,21 @@ class LLMAgent(ABC):
         question: str,
         context: Optional[Dict] = None
     ) -> AsyncIterator[dict]:
-        """
-        Run agent with streaming output.
-        
-        Yields events:
-        - {"type": "status", "content": "Status message"}
-        - {"type": "token", "content": "LLM token"}
-        - {"type": "warning", "content": "Warning message"}
-        - {"type": "complete", "report": AgentReport, "latency_ms": float}
-        - {"type": "error", "content": "Error message"}
-        
-        Args:
-            question: User's question
-            context: Additional context (classification, prefetch, etc.)
-            
-        Yields:
-            Stream events
-        """
+        """Run agent with streaming output and stage-level error events."""
         context = context or {}
         start_time = datetime.now(timezone.utc)
-        
+
         try:
-            # 1. Fetch data from deterministic layer
-            yield {
-                "type": "status",
-                "content": f"🔍 {self.agent_name} fetching data..."
-            }
-            
-            data = await self._fetch_data(question, context)
-            
+            yield {"type": "stage", "stage": "data_fetch", "message": f"{self.agent_name} fetching data"}
+            try:
+                data = await self._fetch_data(question, context)
+            except Exception as exc:
+                logger.error("%s data fetch failed: %s", self.agent_name, exc, exc_info=True)
+                yield {"type": "error", "content": f"Data fetch failed: {exc}"}
+                return
+
             if not data:
-                yield {
-                    "type": "warning",
-                    "content": f"⚠️ {self.agent_name} found no relevant data"
-                }
-                # Return empty report
+                yield {"type": "warning", "content": f"?? {self.agent_name} found no relevant data"}
                 empty_report = AgentReport(
                     agent=self.agent_name,
                     findings=[],
@@ -132,149 +113,121 @@ class LLMAgent(ABC):
                 latency_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
                 yield {"type": "complete", "report": empty_report, "latency_ms": latency_ms}
                 return
-            
-            # 2. Build prompt with data
-            yield {
-                "type": "status",
-                "content": f"🤔 {self.agent_name} analyzing..."
-            }
-            
-            system_prompt, user_prompt = self._build_prompt(question, data, context)
-            
-            # 3. Stream LLM response
+
+            yield {"type": "stage", "stage": "prompt_build", "message": f"{self.agent_name} building prompt"}
+            try:
+                system_prompt, user_prompt = self._build_prompt(question, data, context)
+            except Exception as exc:
+                logger.error("%s prompt build failed: %s", self.agent_name, exc, exc_info=True)
+                yield {"type": "error", "content": f"Prompt build failed: {exc}"}
+                return
+
+            yield {"type": "stage", "stage": "llm_call", "message": f"{self.agent_name} calling LLM"}
             response_text = ""
             token_count = 0
-            
-            async for token in self.llm.generate_stream(
-                prompt=user_prompt,
-                system=system_prompt,
-                temperature=0.3,
-                max_tokens=2000
-            ):
-                response_text += token
-                token_count += 1
-                
-                # Yield tokens for UI display
-                yield {"type": "token", "content": token}
-            
-            logger.info(
-                f"{self.agent_name} generated {token_count} tokens "
-                f"in {(datetime.now(timezone.utc) - start_time).total_seconds():.1f}s"
-            )
-            
-            # 4. Parse response
-            yield {
-                "type": "status",
-                "content": f"✅ {self.agent_name} parsing results..."
-            }
-            
+            try:
+                async for token in self.llm.generate_stream(
+                    prompt=user_prompt,
+                    system=system_prompt,
+                    temperature=0.3,
+                    max_tokens=4096,  # Increased from 2000 to allow full analysis
+                ):
+                    response_text += token
+                    token_count += 1
+                    yield {"type": "token", "content": token}
+            except LLMError as exc:
+                logger.error("%s LLM call failed: %s", self.agent_name, exc, exc_info=True)
+                yield {"type": "error", "content": f"LLM call failed: {exc}"}
+                return
+
+            logger.info("%s generated %d tokens in %.1fs", self.agent_name, token_count, (datetime.now(timezone.utc) - start_time).total_seconds())
+
+            yield {"type": "stage", "stage": "parse", "message": f"{self.agent_name} parsing results"}
             try:
                 finding = self.parser.parse_agent_response(response_text)
-            except LLMParseError as e:
-                logger.error(f"{self.agent_name} parse failed: {e}")
-                yield {
-                    "type": "error",
-                    "content": f"❌ {self.agent_name} failed to parse LLM response: {e}"
-                }
-                # Return error report
-                error_report = AgentReport(
-                    agent=self.agent_name,
-                    findings=[],
-                    narrative=f"Failed to parse LLM response: {e}"
+            except (LLMParseError, ValueError) as exc:
+                logger.warning("%s JSON parse failed, falling back to raw text: %s", self.agent_name, exc)
+                # Graceful degradation: Construct a finding from raw text
+                # We assume the raw text contains the analysis in markdown
+                finding = AgentFinding(
+                     title=f"{self.agent_name} Analysis (Fallback)",
+                     summary="Analysis provided below (JSON parse failed)",
+                     metrics={},
+                     analysis=response_text, # Raw text as narrative
+                     recommendations=[],
+                     confidence=0.5, # Low confidence due to parse failure
+                     citations=[],
+                     data_quality_notes=f"JSON parse failed - showing raw output. Error: {exc}"
                 )
-                latency_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
-                yield {"type": "complete", "report": error_report, "latency_ms": latency_ms}
-                return
-            
-            # 5. Validate numbers against source data
+                yield {"type": "warning", "content": f"JSON parse failed - showing raw output"}
+
             allowed_numbers = self.parser.extract_numbers_from_query_results(data)
-            is_valid, violations = self.parser.validate_numbers(
-                finding,
-                allowed_numbers,
-                tolerance=0.02  # 2% tolerance for rounding
-            )
-            
+            is_valid, violations = self.parser.validate_numbers(finding, allowed_numbers, tolerance=0.02)
+
             if not is_valid:
-                logger.warning(
-                    f"{self.agent_name} number validation failed: "
-                    f"{len(violations)} violations"
-                )
-                yield {
-                    "type": "warning",
-                    "content": f"⚠️ {self.agent_name}: {len(violations)} number validation warnings"
-                }
-            
-            # 6. Convert to AgentReport
+                logger.warning("%s number validation failed: %d violation(s)", self.agent_name, len(violations))
+                yield {"type": "warning", "content": f"?? {self.agent_name}: {len(violations)} number validation warnings"}
+
             insight = Insight(
                 title=finding.title,
                 summary=finding.summary,
-                metrics=finding.metrics,
+                metrics=finding.metrics or {},
                 evidence=[evidence_from(qr) for qr in data.values()],
-                warnings=violations if not is_valid else []
+                warnings=violations if not is_valid else [],
             )
-            # Note: confidence_score is auto-computed in __post_init__ based on warnings
-            
+
             report = AgentReport(
                 agent=self.agent_name,
                 findings=[insight],
-                narrative=finding.analysis
+                narrative=finding.analysis,
             )
-            
+
             latency_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
-            
-            logger.info(
-                f"{self.agent_name} completed in {latency_ms:.0f}ms "
-                f"(confidence: {finding.confidence:.2f})"
-            )
-            
-            yield {
-                "type": "complete",
-                "report": report,
-                "latency_ms": latency_ms
-            }
-            
-        except LLMError as e:
-            logger.error(f"{self.agent_name} LLM error: {e}", exc_info=True)
-            yield {
-                "type": "error",
-                "content": f"❌ {self.agent_name} LLM error: {str(e)}"
-            }
-            
-        except Exception as e:
-            logger.error(f"{self.agent_name} unexpected error: {e}", exc_info=True)
-            yield {
-                "type": "error",
-                "content": f"❌ {self.agent_name} error: {str(e)}"
-            }
-    
+            logger.info("%s completed in %.0fms (confidence: %.2f)", self.agent_name, latency_ms, finding.confidence)
+
+            yield {"type": "complete", "report": report, "latency_ms": latency_ms}
+
+        except Exception as exc:
+            logger.error("%s unexpected error: %s", self.agent_name, exc, exc_info=True)
+            yield {"type": "error", "content": f"{self.agent_name} error: {exc}"}
+
     async def run(
         self,
         question: str,
         context: Optional[Dict] = None
     ) -> AgentReport:
-        """
-        Run agent without streaming (for backward compatibility).
-        
-        Args:
-            question: User's question
-            context: Additional context
-            
-        Returns:
-            AgentReport
-            
-        Raises:
-            RuntimeError: If agent fails to produce report
-        """
-        report = None
-        
-        async for event in self.run_stream(question, context):
-            if event["type"] == "complete":
-                report = event["report"]
-                break
-        
+        """Run agent without streaming while surfacing detailed error context."""
+        context = context or {}
+        logger.info("%s starting run()", self.agent_name)
+
+        report: Optional[AgentReport] = None
+        error_messages: list[str] = []
+
+        try:
+            async for event in self.run_stream(question, context):
+                event_type = event.get("type")
+                if event_type == "complete":
+                    report = event["report"]
+                    break
+                if event_type == "error":
+                    message = event.get("content", "Unknown error")
+                    error_messages.append(str(message))
+                    logger.error("%s error event: %s", self.agent_name, message)
+        except Exception as exc:
+            logger.error("%s run_stream exception: %s", self.agent_name, exc, exc_info=True)
+            raise RuntimeError(f"{self.agent_name} failed: {exc}") from exc
+
         if report is None:
-            raise RuntimeError(f"{self.agent_name} failed to produce report")
-        
+            details = {
+                "question_preview": (question or "")[:120],
+                "context_keys": sorted(context.keys()),
+                "errors": error_messages,
+            }
+            raise RuntimeError(
+                f"{self.agent_name} failed to produce report. Details: {json.dumps(details, ensure_ascii=False)}"
+            )
+
+        logger.info("%s completed run()", self.agent_name)
         return report
     
     @abstractmethod

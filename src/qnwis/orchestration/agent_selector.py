@@ -27,9 +27,9 @@ class AgentSelector:
     # Agent expertise mapping
     AGENT_EXPERTISE = {
         "LabourEconomist": {
-            "intents": ["unemployment", "employment", "trends", "economy"],
-            "entities": ["unemployment", "employment", "jobs", "economy"],
-            "always_include": False,
+            "intents": ["unemployment", "employment", "trends", "economy", "statistics"],
+            "entities": ["unemployment", "employment", "jobs", "economy", "market"],
+            "always_include": True,  # Always include the economist for baseline data
             "description": "Employment trends & economic indicators"
         },
         "Nationalization": {
@@ -39,30 +39,73 @@ class AgentSelector:
             "description": "Qatarization & GCC benchmarking"
         },
         "SkillsAgent": {
-            "intents": ["skills", "education", "training", "workforce_development"],
-            "entities": ["skills", "education", "training", "qualification"],
+            "intents": ["skills", "education", "training", "workforce_development", "talent"],
+            "entities": ["skills", "education", "training", "qualification", "talent"],
             "always_include": False,
             "description": "Skills gaps & workforce development"
         },
         "PatternDetective": {
-            "intents": [],  # Data quality agent - selective
-            "entities": ["anomaly", "pattern", "trend", "quality"],
+            "intents": ["anomaly", "pattern", "trend", "quality", "investigation"],
+            "entities": ["anomaly", "pattern", "trend", "quality", "outlier"],
             "always_include": False,
-            "description": "Data quality & pattern detection"
+            "description": "Data quality & pattern detection (LLM)"
+        },
+        "NationalStrategyLLM": {
+            "intents": ["strategy", "policy", "vision_2030", "planning", "recommendation"],
+            "entities": ["strategy", "policy", "vision", "2030", "plan"],
+            "always_include": False,
+            "description": "Strategic planning & Vision 2030 alignment (LLM)"
+        },
+        # Deterministic Agents
+        "TimeMachine": {
+            "intents": ["history", "past", "trend", "evolution", "change"],
+            "entities": ["year", "past", "historical", "trend", "since"],
+            "always_include": False,
+            "description": "Historical data analysis"
+        },
+        "Predictor": {
+            "intents": ["forecast", "prediction", "future", "outlook", "projection"],
+            "entities": ["future", "forecast", "prediction", "2025", "2030"],
+            "always_include": False,
+            "description": "Forecasting & predictive analytics"
+        },
+        "Scenario": {
+            "intents": ["scenario", "what_if", "impact", "simulation", "effect"],
+            "entities": ["if", "scenario", "impact", "effect", "assume"],
+            "always_include": False,
+            "description": "Scenario planning & impact simulation"
+        },
+        "PatternDetectiveAgent": {
+            "intents": ["correlation", "statistics", "data_check", "verify"],
+            "entities": ["correlation", "stat", "check", "verify"],
+            "always_include": False,
+            "description": "Deterministic pattern & correlation checking"
+        },
+        "PatternMiner": {
+            "intents": ["deep_dive", "mining", "hidden", "insight"],
+            "entities": ["mining", "hidden", "insight", "root_cause"],
+            "always_include": False,
+            "description": "Deep data mining"
         },
         "NationalStrategy": {
-            "intents": ["strategy", "policy", "vision_2030", "planning"],
-            "entities": ["strategy", "policy", "vision", "2030", "planning"],
+            "intents": ["kpi", "target", "benchmark", "goal"],
+            "entities": ["target", "kpi", "goal", "benchmark"],
             "always_include": False,
-            "description": "Strategic planning & Vision 2030 alignment"
+            "description": "Strategic KPI tracking (Deterministic)"
+        },
+        "AlertCenter": {
+            "intents": ["alert", "warning", "risk", "critical"],
+            "entities": ["risk", "warning", "alert", "danger"],
+            "always_include": True,  # Always check for alerts
+            "description": "Critical alerts & risk monitoring"
         }
     }
     
     # Minimum agents to always run (baseline)
-    MIN_AGENTS = 2
+    MIN_AGENTS = 4  # Never compromise on quality
     
-    # Maximum agents to run
-    MAX_AGENTS = 4
+    # Maximum agents to run - USE ALL AVAILABLE FOR LEGENDARY DEPTH
+    MAX_AGENTS = 11  # All 4 LLM + All 7 deterministic agents
     
     # Always-include agents for any question
     BASELINE_AGENTS: Set[str] = set()  # Can be configured
@@ -91,7 +134,7 @@ class AgentSelector:
         
         # Extract classification data
         intent = classification.get("intent", "").lower()
-        entities = classification.get("entities", {})
+        entities = classification.get("entities") or {}  # Handle None
         complexity = classification.get("complexity", "medium")
         question_text = classification.get("question", "").lower()
         

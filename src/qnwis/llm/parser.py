@@ -11,7 +11,7 @@ import logging
 from typing import List, Set, Optional, Union
 from pydantic import BaseModel, Field, field_validator
 
-from src.qnwis.llm.exceptions import LLMParseError
+from qnwis.llm.exceptions import LLMParseError
 
 logger = logging.getLogger(__name__)
 
@@ -98,12 +98,70 @@ class LLMResponseParser:
             return AgentFinding(**data)
         except json.JSONDecodeError as e:
             logger.error(f"Invalid JSON in LLM response: {e}")
-            logger.debug(f"JSON string: {json_str[:500]}")
+            logger.error(f"JSON string (first 1000 chars): {json_str[:1000]}")
+            logger.error(f"JSON string (last 500 chars): {json_str[-500:]}")
+            # Debug: show characters around error position
+            if hasattr(e, 'pos'):
+                start = max(0, e.pos - 20)
+                end = min(len(json_str), e.pos + 20)
+                context = json_str[start:end]
+                logger.error(f"Error context (pos {e.pos}): {repr(context)}")
+                logger.error(f"Character codes: {[ord(c) for c in json_str[:10]]}")
             raise LLMParseError(f"Invalid JSON: {e}") from e
         except Exception as e:
             logger.error(f"Failed to parse AgentFinding: {e}")
             raise LLMParseError(f"Failed to parse response: {e}") from e
     
+    def _repair_json(self, json_str: str) -> str:
+        """Attempt to repair common JSON syntax errors from LLM output.
+
+        The main issue: LLMs include literal newlines INSIDE string values,
+        which is invalid JSON. We need to escape those but NOT the formatting newlines.
+        """
+
+        # Strategy: Walk through the string and escape control characters only when inside quotes
+        result = []
+        in_string = False
+        escape_next = False
+
+        for i, char in enumerate(json_str):
+            # Handle escape sequences
+            if escape_next:
+                result.append(char)
+                escape_next = False
+                continue
+
+            if char == '\\':
+                result.append(char)
+                escape_next = True
+                continue
+
+            # Track whether we're inside a string
+            if char == '"':
+                in_string = not in_string
+                result.append(char)
+                continue
+
+            # Escape control characters ONLY inside strings
+            if in_string:
+                if char == '\n':
+                    result.append('\\n')
+                elif char == '\r':
+                    result.append('\\r')
+                elif char == '\t':
+                    result.append('\\t')
+                else:
+                    result.append(char)
+            else:
+                result.append(char)
+
+        json_str = ''.join(result)
+
+        # Remove trailing commas before closing braces/brackets
+        json_str = re.sub(r',\s*([}\]])', r'\1', json_str)
+
+        return json_str
+
     def _extract_json(self, text: str) -> Optional[str]:
         """
         Extract JSON object from text.
@@ -117,21 +175,61 @@ class LLMResponseParser:
         Returns:
             JSON string or None
         """
-        # Try to find JSON in code blocks first
+        # Try to find JSON in code blocks first (with or without 'json' language tag)
         code_block_pattern = r'```(?:json)?\s*(\{.*?\})\s*```'
         match = re.search(code_block_pattern, text, re.DOTALL)
         if match:
-            return match.group(1)
+            return self._repair_json(match.group(1))
         
-        # Try to find raw JSON object
-        json_pattern = r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}'
-        matches = re.findall(json_pattern, text, re.DOTALL)
-        
-        # Return the longest match (most likely to be complete)
-        if matches:
-            return max(matches, key=len)
-        
-        return None
+        # Try to find raw JSON object with balanced braces
+        try:
+            start_idx = text.find('{')
+            if start_idx == -1:
+                return None
+            
+            brace_count = 0
+            in_string = False
+            escape_next = False
+            
+            for i in range(start_idx, len(text)):
+                char = text[i]
+                
+                if escape_next:
+                    escape_next = False
+                    continue
+                    
+                if char == '\\':
+                    escape_next = True
+                    continue
+                    
+                if char == '"' and not escape_next:
+                    in_string = not in_string
+                    continue
+                    
+                if not in_string:
+                    if char == '{':
+                        brace_count += 1
+                    elif char == '}':
+                        brace_count -= 1
+                        if brace_count == 0:
+                            return self._repair_json(text[start_idx:i+1])
+            
+            # Fallback: If strict balancing failed (e.g. bad escaping), try outermost braces
+            last_idx = text.rfind('}')
+            if last_idx > start_idx:
+                return self._repair_json(text[start_idx:last_idx+1])
+                
+            return None
+        except Exception:
+            # Ultimate fallback: outermost braces
+            try:
+                s = text.find('{')
+                e = text.rfind('}')
+                if s != -1 and e > s:
+                    return self._repair_json(text[s:e+1])
+            except:
+                pass
+            return None
     
     def extract_numbers(self, text: str) -> List[float]:
         """
@@ -179,9 +277,9 @@ class LLMResponseParser:
             (is_valid, list_of_violations)
         """
         violations = []
-        
+
         # Check metrics
-        for key, value in finding.metrics.items():
+        for key, value in (finding.metrics or {}).items():
             if not self._number_exists(value, allowed_numbers, tolerance):
                 violations.append(
                     f"Metric '{key}' has value {value} not found in source data"
