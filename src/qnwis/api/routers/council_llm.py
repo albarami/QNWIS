@@ -174,6 +174,12 @@ def _serialize_sse(event: StreamEventResponse) -> str:
     return f"data: {event.model_dump_json(exclude_none=True)}\n\n"
 
 
+@router.options("/council/stream")
+async def council_stream_options():
+    """Handle CORS preflight for council stream endpoint."""
+    return {}
+
+
 @router.post(
     "/council/stream",
     responses={
@@ -184,7 +190,9 @@ def _serialize_sse(event: StreamEventResponse) -> str:
     },
 )
 # @limiter.limit("10/hour")  # 10 LLM queries per hour per user/IP (cost control)  # TEMPORARILY DISABLED FOR DEBUGGING
-async def council_stream_llm(req: CouncilRequest) -> StreamingResponse:
+async def council_stream_llm(
+    req: CouncilRequest = FastAPIBody(...),
+) -> StreamingResponse:
     """
     Stream the multi-stage LLM council via Server-Sent Events (SSE).
 
@@ -291,15 +299,18 @@ async def council_stream_llm(req: CouncilRequest) -> StreamingResponse:
         )
     except asyncio.CancelledError:
         raise
-    except Exception:
+    except Exception as exc:
         logger.exception(
             "council_stream_llm failed (request_id=%s, provider=%s)",
             request_id,
             req.provider,
         )
+        # Return detailed error message for debugging
+        error_detail = _error_detail(request_id).model_dump()
+        error_detail["debug_error"] = str(exc)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=_error_detail(request_id).model_dump(),
+            detail=error_detail,
         ) from None
 
 
@@ -314,7 +325,9 @@ async def council_stream_llm(req: CouncilRequest) -> StreamingResponse:
     },
 )
 @limiter.limit("10/hour")  # 10 LLM queries per hour per user/IP (cost control)
-async def council_run_llm(request: Request, req: CouncilRequest) -> CouncilRunLLMResponse:
+async def council_run_llm(
+    request: Request, req: CouncilRequest = FastAPIBody(...)
+) -> CouncilRunLLMResponse:
     """
     Execute the LLM council and return a structured JSON payload.
 

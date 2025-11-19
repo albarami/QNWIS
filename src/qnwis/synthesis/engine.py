@@ -77,7 +77,7 @@ def _build_synthesis_prompt(question: str, reports: List[AgentReport]) -> str:
             if finding.metrics:
                 prompt_parts.append("")
                 prompt_parts.append("Key metrics:")
-                for key, value in finding.metrics.items():
+                for key, value in (finding.metrics or {}).items():
                     prompt_parts.append(f"- {key}: {value}")
             
             # Add warnings

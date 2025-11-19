@@ -715,7 +715,7 @@ class Coordinator:
         # Key Findings
         findings_text = "\n\n".join(
             f"### {finding.title}\n\n{finding.summary}\n\n"
-            f"**Metrics**: {', '.join(f'{k}={v:.2f}' for k, v in finding.metrics.items())}"
+            f"**Metrics**: {', '.join(f'{k}={v:.2f}' for k, v in (finding.metrics or {}).items())}"
             for finding in agent_report.findings
         )
         if findings_text:

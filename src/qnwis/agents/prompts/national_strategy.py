@@ -59,29 +59,19 @@ ANALYSIS INSTRUCTIONS:
 EVERY numeric claim in your analysis MUST include inline citation in the exact format:
 [Per extraction: '{{exact_value}}' from {{source}} {{period}}]
 
-Example:
-"Qatar ranks [Per extraction: '#1' from GCC-STAT 2024] in the region"
-
 If a metric is NOT in the provided data, write:
-"NOT IN DATA - cannot provide {{metric_name}} figure"
+"NOT IN DATA - cannot provide metric_name figure"
 
 OUTPUT FORMAT (JSON):
-{{
-  "title": "Brief, descriptive title",
-  "summary": "2-3 sentence executive summary with [Per extraction: ...] citations",
-  "metrics": {{
-    "employment_male_percent": value,
-    "employment_female_percent": value,
-    "gcc_unemployment_min": value,
-    "gcc_unemployment_max": value,
-    ...
-  }},
-  "analysis": "Detailed analysis paragraph with [Per extraction: ...] citations for EVERY number",
-  "recommendations": ["Recommendation 1", "Recommendation 2", ...],
-  "confidence": 0.0-1.0,
-  "data_quality_notes": "Any concerns about data quality",
-  "citations": ["data_source_1", "data_source_2", ...]
-}}
+Return a valid JSON object with these fields:
+- title: Brief, descriptive title
+- summary: 2-3 sentence executive summary with citations
+- metrics: Dictionary of numeric findings
+- analysis: Detailed analysis paragraph with citations for EVERY number
+- recommendations: List of recommendations
+- confidence: Float 0.0-1.0
+- data_quality_notes: Any concerns about data quality
+- citations: List of data sources
 
 CRITICAL: All numbers MUST have [Per extraction: ...] citations. No exceptions."""
 
@@ -102,7 +92,7 @@ def build_national_strategy_prompt(
     Returns:
         (system_prompt, user_prompt) tuple
     """
-    from src.qnwis.agents.prompts.labour_economist import (
+    from qnwis.agents.prompts.labour_economist import (
         _format_data_summary_with_sources,
         _format_data_tables,
         _format_context
@@ -123,5 +113,33 @@ def build_national_strategy_prompt(
         data_tables=data_tables,
         context=context_str
     )
+
+    # Append JSON schema example AFTER format
+    json_example = '''
+
+CRITICAL JSON FORMATTING RULES:
+1. Use \\n (escaped newline) for line breaks in the analysis field
+2. Escape all quotes inside strings with \\"
+3. Do not include trailing commas
+4. Ensure all braces and brackets are balanced
+5. Return ONLY the JSON object - no markdown code blocks, no explanatory text
+
+EXAMPLE JSON OUTPUT:
+{
+  "title": "Vision 2030 Workforce Alignment Assessment",
+  "summary": "Strategic analysis reveals strong progress toward Vision 2030 goals with 90% confidence. Key metrics show improving employment trends across sectors.",
+  "metrics": {
+    "employment_male_percent": 85.2,
+    "employment_female_percent": 58.1,
+    "gcc_unemployment_min": 1.2
+  },
+  "analysis": "### Vision 2030 Alignment\\n\\nEmployment data shows [Per extraction: '85.2%' from LMIS Q1-2024] male participation rate.\\n\\n### Strategic Recommendations\\n\\nContinue current trajectory with focused investments.",
+  "recommendations": ["Accelerate female workforce participation initiatives", "Monitor GCC competitive positioning quarterly"],
+  "confidence": 0.90,
+  "data_quality_notes": "Comprehensive data coverage across key metrics",
+  "citations": ["employment_gender", "gcc_unemployment"]
+}
+'''
+    user_prompt += json_example
 
     return system_prompt, user_prompt

@@ -175,22 +175,22 @@ async def run_workflow_stream(
                 findings_payload = []
                 for finding in report.findings:
                     findings_payload.append({
-                        "title": finding.title,
-                        "summary": finding.summary,
-                        "metrics": finding.metrics,
+                        "title": finding.title if hasattr(finding, 'title') else finding.get('title', ''),
+                        "summary": finding.summary if hasattr(finding, 'summary') else finding.get('summary', ''),
+                        "metrics": (finding.metrics or {}) if hasattr(finding, 'metrics') else finding.get('metrics', {}),
                         "evidence": [
                             {
-                                "query_id": e.query_id,
-                                "dataset_id": e.dataset_id,
-                                "locator": e.locator,
-                                "fields": e.fields,
-                                "freshness_as_of": e.freshness_as_of,
-                                "freshness_updated_at": e.freshness_updated_at,
+                                "query_id": e.query_id if hasattr(e, 'query_id') else e.get('query_id', ''),
+                                "dataset_id": e.dataset_id if hasattr(e, 'dataset_id') else e.get('dataset_id', ''),
+                                "locator": e.locator if hasattr(e, 'locator') else e.get('locator', ''),
+                                "fields": e.fields if hasattr(e, 'fields') else e.get('fields', []),
+                                "freshness_as_of": e.freshness_as_of if hasattr(e, 'freshness_as_of') else e.get('freshness_as_of'),
+                                "freshness_updated_at": e.freshness_updated_at if hasattr(e, 'freshness_updated_at') else e.get('freshness_updated_at'),
                             }
-                            for e in finding.evidence
+                            for e in (finding.evidence if hasattr(finding, 'evidence') else finding.get('evidence', []))
                         ],
-                        "warnings": finding.warnings,
-                        "confidence_score": finding.confidence_score,
+                        "warnings": finding.warnings if hasattr(finding, 'warnings') else finding.get('warnings', []),
+                        "confidence_score": finding.confidence_score if hasattr(finding, 'confidence_score') else finding.get('confidence_score', 0.8),
                     })
                 
                 yield StageEvent(
@@ -237,7 +237,8 @@ async def run_workflow_stream(
         all_confidences = []
         for report in agent_reports:
             for finding in report.findings:
-                all_confidences.append(finding.confidence_score)
+                conf_score = finding.confidence_score if hasattr(finding, 'confidence_score') else finding.get('confidence_score', 0.8)
+                all_confidences.append(conf_score)
         
         confidence_stats = {}
         if all_confidences:
@@ -305,9 +306,14 @@ async def run_workflow_stream(
         
         for report in agent_reports:
             for finding in report.findings:
-                for evidence in finding.evidence:
-                    all_query_ids.add(evidence.query_id)
-                    all_sources.add(evidence.dataset_id)
+                evidence_list = finding.evidence if hasattr(finding, 'evidence') else finding.get('evidence', [])
+                for evidence in evidence_list:
+                    query_id = evidence.query_id if hasattr(evidence, 'query_id') else evidence.get('query_id')
+                    dataset_id = evidence.dataset_id if hasattr(evidence, 'dataset_id') else evidence.get('dataset_id')
+                    if query_id:
+                        all_query_ids.add(query_id)
+                    if dataset_id:
+                        all_sources.add(dataset_id)
         
         yield StageEvent(
             stage="done",
@@ -316,10 +322,10 @@ async def run_workflow_stream(
                     "agents": council_report.agents,
                     "findings": [
                         {
-                            "title": f.title,
-                            "summary": f.summary,
-                            "metrics": f.metrics,
-                            "confidence_score": f.confidence_score,
+                            "title": f.title if hasattr(f, 'title') else f.get('title', ''),
+                            "summary": f.summary if hasattr(f, 'summary') else f.get('summary', ''),
+                            "metrics": (f.metrics or {}) if hasattr(f, 'metrics') else f.get('metrics', {}),
+                            "confidence_score": f.confidence_score if hasattr(f, 'confidence_score') else f.get('confidence_score', 0.8),
                         }
                         for f in council_report.findings
                     ],

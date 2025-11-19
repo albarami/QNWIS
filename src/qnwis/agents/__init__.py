@@ -11,8 +11,10 @@ from .base import (
 )
 from .labour_economist import LabourEconomistAgent
 from .national_strategy import NationalStrategyAgent
+from .national_strategy_llm import NationalStrategyLLMAgent
 from .nationalization import NationalizationAgent
 from .pattern_detective import PatternDetectiveAgent
+from .pattern_detective_llm import PatternDetectiveLLMAgent
 from .pattern_miner import PatternMinerAgent
 from .predictor import PredictorAgent
 from .reporting.jsonl import write_report
@@ -31,8 +33,10 @@ __all__ = [
     "QueryRegistryView",
     "LabourEconomistAgent",
     "NationalStrategyAgent",
+    "NationalStrategyLLMAgent",
     "NationalizationAgent",
     "PatternDetectiveAgent",
+    "PatternDetectiveLLMAgent",
     "PatternMinerAgent",
     "PredictorAgent",
     "ResearchScientistAgent",

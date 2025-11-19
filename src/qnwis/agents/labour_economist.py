@@ -5,10 +5,14 @@ Labour Economist agent with Dr. Fatima Al-Mansoori persona.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
-from qnwis.agents.base import (
+from .base import (
+    AgentReport,
+    DataClient,
+    Insight,
     coerce_llm_response_text,
+    evidence_from,
     extract_assumptions,
     extract_citations_from_narrative,
     extract_data_gaps,
@@ -16,11 +20,6 @@ from qnwis.agents.base import (
     resolve_response_model,
 )
 from qnwis.agents.prompts.base import ANTI_FABRICATION_RULES, format_extracted_facts
-
-# Import AgentReport from typing to avoid circular dependency
-# (runtime will use dict[str, Any] from base.py's TYPE_CHECKING block)
-from typing import Any
-AgentReport = dict[str, Any]
 
 LABOUR_ECONOMIST_PERSONA = """
 ═══════════════════════════════════════════════════
@@ -115,7 +114,7 @@ async def analyze(
     query: str,
     extracted_facts: List[Dict[str, Any]],
     llm_client: Any,
-) -> AgentReport:
+) -> dict[str, Any]:
     """Labour Economist analysis with mandatory citation enforcement."""
 
     facts_formatted = format_extracted_facts(extracted_facts)
@@ -218,15 +217,133 @@ def extract_confidence_from_response(response: str) -> float:
     return 0.4
 
 
-class LabourEconomistAgent:  # pragma: no cover - compatibility shim
+class LabourEconomistAgent:
     """
-    Legacy shim preserved for older imports.
-    
-    Usage has shifted to the module-level `analyze` coroutine.
+    Deterministic labour economist that tracks gender employment trends.
+
+    The agent operates purely on the deterministic catalog (no LLM calls) so
+    that the orchestration workflow and existing unit tests continue to work
+    after the module-level `analyze` coroutine was introduced for LangGraph.
     """
-    
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        raise RuntimeError(
-            "LabourEconomistAgent class has been replaced. "
-            "Use qnwis.agents.labour_economist.analyze(...) instead."
+
+    DEFAULT_QUERY_ID = "syn_employment_share_by_gender_latest"
+
+    def __init__(self, client: DataClient, query_id: str | None = None) -> None:
+        self.client = client
+        self.query_id = query_id or self.DEFAULT_QUERY_ID
+
+    def _numeric(self, value: Any) -> float | None:
+        if isinstance(value, (int, float)):
+            return float(value)
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return None
+
+    def _year(self, value: Any) -> int | None:
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return None
+
+    def _sorted_rows(self, rows: List[Any]) -> List[Any]:
+        enumerated = list(enumerate(rows))
+
+        def sort_key(item: tuple[int, Any]) -> tuple[int, int]:
+            idx, row = item
+            yr = self._year(row.data.get("year"))
+            if yr is None:
+                return (1, idx)
+            return (0, yr)
+
+        enumerated.sort(key=sort_key)
+        return [row for _, row in enumerated]
+
+    def _build_metrics(self, rows: List[Any]) -> dict[str, float]:
+        metrics: dict[str, float] = {}
+        if not rows:
+            return metrics
+
+        latest = rows[-1]
+        previous = rows[-2] if len(rows) >= 2 else None
+
+        for key in ("male_percent", "female_percent", "total_percent"):
+            val = self._numeric(latest.data.get(key))
+            if val is not None:
+                metrics[key] = round(val, 2)
+
+        latest_year = self._year(latest.data.get("year"))
+        if latest_year is not None:
+            metrics["latest_year"] = float(latest_year)
+
+        if previous is not None:
+            latest_female = self._numeric(latest.data.get("female_percent"))
+            prev_female = self._numeric(previous.data.get("female_percent"))
+            if latest_female is not None and prev_female is not None:
+                metrics["yoy_percent"] = round(latest_female - prev_female, 2)
+
+        return metrics
+
+    def _summarize(self, rows: List[Any], metrics: dict[str, float]) -> str:
+        if not rows:
+            return "No employment share data is available for labour analysis."
+
+        latest = rows[-1]
+        latest_year = self._year(latest.data.get("year"))
+        male = self._numeric(latest.data.get("male_percent"))
+        female = self._numeric(latest.data.get("female_percent"))
+
+        parts: list[str] = []
+        period = f"{latest_year}" if latest_year is not None else "the latest reported period"
+
+        if male is not None and female is not None:
+            parts.append(
+                f"Female participation is {female:.1f}% versus {male:.1f}% for males in {period}."
+            )
+        elif female is not None:
+            parts.append(f"Female participation stands at {female:.1f}% in {period}.")
+        elif male is not None:
+            parts.append(f"Male participation stands at {male:.1f}% in {period}.")
+        else:
+            parts.append(f"Employment share data for {period} is missing numeric values.")
+
+        yoy = metrics.get("yoy_percent")
+        if yoy is not None and len(rows) >= 2:
+            prev_year = self._year(rows[-2].data.get("year"))
+            direction = "increased" if yoy >= 0 else "fell"
+            change = abs(yoy)
+            if prev_year is not None:
+                parts.append(
+                    f"Female share {direction} by {change:.1f} percentage points compared to {prev_year}."
+                )
+            else:
+                parts.append(
+                    f"Female share {direction} by {change:.1f} percentage points versus the prior observation."
+                )
+
+        return " ".join(parts)
+
+    def run(self) -> AgentReport:
+        result = self.client.run(self.query_id)
+        rows = self._sorted_rows(list(result.rows))
+        metrics = self._build_metrics(rows)
+        summary = self._summarize(rows, metrics)
+        warnings = list(result.warnings)
+
+        finding = Insight(
+            title="Gender employment share trend",
+            summary=summary,
+            metrics=metrics,
+            evidence=[evidence_from(result)] if rows else [],
+            warnings=warnings,
+        )
+
+        return AgentReport(
+            agent="LabourEconomist",
+            findings=[finding],
+            warnings=warnings,
+            metadata={
+                "query_id": result.query_id,
+                "row_count": len(rows),
+            },
         )

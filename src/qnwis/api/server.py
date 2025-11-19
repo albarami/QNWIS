@@ -10,6 +10,10 @@ from collections.abc import Callable
 from contextlib import asynccontextmanager
 from typing import Any
 
+# Load environment variables from .env file
+from dotenv import load_dotenv
+load_dotenv()
+
 import jwt
 from brotli_asgi import BrotliMiddleware
 from fastapi import FastAPI, HTTPException, Request, Response, status
@@ -86,6 +90,17 @@ async def lifespan(app: FastAPI):
 
     app.state.data_client_factory = factory
 
+    # Pre-warm embedder model to avoid first-request delay
+    if _env_flag("QNWIS_WARM_EMBEDDER", True):  # Default to True
+        try:
+            from ..rag.embeddings import get_embedder
+            logger.info("Pre-warming sentence embedder model...")
+            loop = asyncio.get_running_loop()
+            loop.run_in_executor(None, lambda: get_embedder())
+            logger.info("Embedder warm-up scheduled")
+        except Exception as e:
+            logger.warning(f"Failed to warm embedder: {e}")
+    
     if _env_flag("QNWIS_WARM_CACHE", False):
         warm_ids = _warm_targets()
         if warm_ids:
@@ -135,7 +150,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.api_cors_origins or ["*"],
+        allow_origins=["http://localhost:3000", "http://localhost:3001", "http://localhost:5173"],
         allow_methods=["*"],
         allow_headers=["*"],
         allow_credentials=True,

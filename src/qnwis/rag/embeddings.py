@@ -20,6 +20,9 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
+# Global cache for embedder instances to avoid reloading models
+_EMBEDDER_CACHE = {}
+
 
 class SentenceEmbedder:
     """
@@ -170,12 +173,17 @@ class SentenceEmbedder:
 
 def get_embedder(model_name: str = "all-mpnet-base-v2") -> SentenceEmbedder:
     """
-    Get or create a sentence embedder instance.
+    Get or create a sentence embedder instance (cached to avoid reloading models).
     
     Args:
         model_name: Model name to load
         
     Returns:
-        SentenceEmbedder instance
+        SentenceEmbedder instance (cached)
     """
-    return SentenceEmbedder(model_name=model_name)
+    if model_name not in _EMBEDDER_CACHE:
+        logger.info(f"Creating new embedder for model: {model_name}")
+        _EMBEDDER_CACHE[model_name] = SentenceEmbedder(model_name=model_name)
+    else:
+        logger.debug(f"Reusing cached embedder for model: {model_name}")
+    return _EMBEDDER_CACHE[model_name]

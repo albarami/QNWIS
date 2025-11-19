@@ -1,13 +1,13 @@
 <pre># Readiness Report: Steps 1-33
 
-**Generated:** 2025-11-16T21:22:27.473339
+**Generated:** 2025-11-19T12:14:31.949292
 **Overall Status:** FAIL
-**Execution Time:** 347 ms
+**Execution Time:** 23 ms
 
 ## Summary
 
-- **Total Gates:** 2
-- **Passed:** 1
+- **Total Gates:** 1
+- **Passed:** 0
 - **Failed:** 1
 
 ## Previously failing gates now PASS
@@ -16,7 +16,7 @@
 
 ## Gate Results
 
-### step_completeness [PASS]
+### step_completeness [FAIL]
 - **Duration:** 15 ms
 - **Severity:** ERROR
 ```json
@@ -134,11 +134,13 @@
     },
     &quot;step_11&quot;: {
       &quot;name&quot;: &quot;UI demos&quot;,
-      &quot;code_ok&quot;: true,
+      &quot;code_ok&quot;: false,
       &quot;tests_ok&quot;: true,
       &quot;smoke_ok&quot;: true,
       &quot;missing&quot;: {
-        &quot;code&quot;: [],
+        &quot;code&quot;: [
+          &quot;qnwis-ui/src/App.tsx&quot;
+        ],
         &quot;tests&quot;: [],
         &quot;smoke&quot;: []
       }
@@ -353,180 +355,17 @@
       }
     }
   },
-  &quot;missing&quot;: {}
+  &quot;missing&quot;: {
+    &quot;step_11&quot;: {
+      &quot;code&quot;: [
+        &quot;qnwis-ui/src/App.tsx&quot;
+      ],
+      &quot;tests&quot;: [],
+      &quot;smoke&quot;: []
+    }
+  }
 }
 ```
 **Evidence:**
 - `docs/IMPLEMENTATION_ROADMAP.md`
-
-### no_placeholders [FAIL]
-- **Duration:** 327 ms
-- **Severity:** ERROR
-```json
-{
-  &quot;patterns&quot;: [
-    &quot;^\\s*(?:#\\s*)?TODO\\b.*$&quot;,
-    &quot;^\\s*(?:#\\s*)?FIXME\\b.*$&quot;,
-    &quot;^\\s*(?:#\\s*)?HACK\\b.*$&quot;,
-    &quot;^\\s*(?:#\\s*)?XXX\\b.*$&quot;,
-    &quot;^\\s*pass\\s*$&quot;,
-    &quot;^\\s*NotImplemented\\b.*$&quot;,
-    &quot;^\\s*raise\\s+NotImplementedError\\b.*$&quot;
-  ],
-  &quot;violations&quot;: [
-    {
-      &quot;file&quot;: &quot;src/qnwis/agents/base_llm.py&quot;,
-      &quot;line&quot;: 298,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/agents/base_llm.py&quot;,
-      &quot;line&quot;: 318,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/classification/classifier.py&quot;,
-      &quot;line&quot;: 73,
-      &quot;pattern&quot;: &quot;^\\s*(?:#\\s*)?TODO\\b.*$&quot;,
-      &quot;snippet&quot;: &quot;# TODO: Implement smart classification after system is proven&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/cli/qnwis_continuity.py&quot;,
-      &quot;line&quot;: 37,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/cli/qnwis_dr.py&quot;,
-      &quot;line&quot;: 436,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/continuity/executor.py&quot;,
-      &quot;line&quot;: 148,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/continuity/executor.py&quot;,
-      &quot;line&quot;: 165,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/continuity/executor.py&quot;,
-      &quot;line&quot;: 182,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/continuity/executor.py&quot;,
-      &quot;line&quot;: 199,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/continuity/executor.py&quot;,
-      &quot;line&quot;: 212,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/continuity/executor.py&quot;,
-      &quot;line&quot;: 229,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/dr/storage.py&quot;,
-      &quot;line&quot;: 47,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/dr/storage.py&quot;,
-      &quot;line&quot;: 63,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/dr/storage.py&quot;,
-      &quot;line&quot;: 76,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/dr/storage.py&quot;,
-      &quot;line&quot;: 89,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/dr/storage.py&quot;,
-      &quot;line&quot;: 102,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/llm/exceptions.py&quot;,
-      &quot;line&quot;: 8,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/llm/exceptions.py&quot;,
-      &quot;line&quot;: 13,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/llm/exceptions.py&quot;,
-      &quot;line&quot;: 18,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/llm/exceptions.py&quot;,
-      &quot;line&quot;: 23,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/llm/exceptions.py&quot;,
-      &quot;line&quot;: 28,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/llm/exceptions.py&quot;,
-      &quot;line&quot;: 33,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/orchestration/graph_llm.py&quot;,
-      &quot;line&quot;: 1215,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/orchestration/prefetch_apis.py&quot;,
-      &quot;line&quot;: 77,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/orchestration/streaming.py&quot;,
-      &quot;line&quot;: 173,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    }
-  ]
-}
-```
-**Evidence:**
-- `src/qnwis/scripts/qa/grep_rules.yml`
 </pre>

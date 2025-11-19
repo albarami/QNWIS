@@ -15,9 +15,7 @@ from typing import Any, Protocol, TypedDict
 from ..agents.base import AgentReport, DataClient
 from ..agents.labour_economist import LabourEconomistAgent
 from ..agents.national_strategy import NationalStrategyAgent
-from ..agents.nationalization import NationalizationAgent
 from ..agents.pattern_detective import PatternDetectiveAgent
-from ..agents.skills import SkillsAgent
 from .synthesis import CouncilReport, synthesize
 from .verification import VerificationIssue, verify_report
 
@@ -46,7 +44,7 @@ class CouncilConfig:
 
 def default_agents(client: DataClient) -> list[Agent]:
     """
-    Create default set of 5 agents for council execution.
+    Create the deterministic agent set used by the classic council workflow.
 
     Args:
         client: DataClient instance for agent initialization
@@ -56,8 +54,6 @@ def default_agents(client: DataClient) -> list[Agent]:
     """
     return [
         LabourEconomistAgent(client),
-        NationalizationAgent(client),
-        SkillsAgent(client),
         PatternDetectiveAgent(client),
         NationalStrategyAgent(client),
     ]
@@ -116,12 +112,12 @@ def _assemble_response(
     """Serialize council output and verification results into JSON-safe structure."""
     findings_payload = [
         {
-            "title": finding.title,
-            "summary": finding.summary,
-            "metrics": finding.metrics,
-            "evidence": [vars(evi) for evi in finding.evidence],
-            "warnings": finding.warnings,
-            "confidence_score": getattr(finding, "confidence_score", 1.0),
+            "title": finding.title if hasattr(finding, 'title') else finding.get('title', ''),
+            "summary": finding.summary if hasattr(finding, 'summary') else finding.get('summary', ''),
+            "metrics": (finding.metrics or {}) if hasattr(finding, 'metrics') else finding.get('metrics', {}),
+            "evidence": [vars(evi) if hasattr(evi, '__dict__') else evi for evi in (finding.evidence if hasattr(finding, 'evidence') else finding.get('evidence', []))],
+            "warnings": finding.warnings if hasattr(finding, 'warnings') else finding.get('warnings', []),
+            "confidence_score": getattr(finding, "confidence_score", 1.0) if hasattr(finding, 'confidence_score') else finding.get('confidence_score', 1.0),
         }
         for finding in council.findings
     ]

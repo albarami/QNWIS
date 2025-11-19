@@ -71,20 +71,15 @@ VALIDATION RULES:
 - Dates: Should be valid and recent
 
 OUTPUT FORMAT (JSON):
-{{
-  "title": "Brief, descriptive title",
-  "summary": "2-3 sentence executive summary with [Per extraction: ...] citations",
-  "metrics": {{
-    "validation_checks_passed": value,
-    "anomalies_detected": value,
-    ...
-  }},
-  "analysis": "Detailed analysis paragraph with [Per extraction: ...] citations for EVERY number",
-  "recommendations": ["Recommendation 1", "Recommendation 2", ...],
-  "confidence": 0.0-1.0,
-  "data_quality_notes": "Any concerns about data quality",
-  "citations": ["data_source_1", "data_source_2", ...]
-}}
+Return a valid JSON object with these fields:
+- title: Brief, descriptive title
+- summary: 2-3 sentence executive summary with citations
+- metrics: Dictionary of numeric findings (validation checks passed, anomalies detected, etc.)
+- analysis: Detailed analysis paragraph with citations for EVERY number
+- recommendations: List of recommendations
+- confidence: Float 0.0-1.0
+- data_quality_notes: Any concerns about data quality
+- citations: List of data sources
 
 CRITICAL: All numbers MUST have [Per extraction: ...] citations. No exceptions."""
 
@@ -105,7 +100,7 @@ def build_pattern_detective_prompt(
     Returns:
         (system_prompt, user_prompt) tuple
     """
-    from src.qnwis.agents.prompts.labour_economist import (
+    from qnwis.agents.prompts.labour_economist import (
         _format_data_summary_with_sources,
         _format_data_tables,
         _format_context
@@ -126,5 +121,32 @@ def build_pattern_detective_prompt(
         data_tables=data_tables,
         context=context_str
     )
+
+    # Append JSON schema example AFTER format
+    json_example = '''
+
+CRITICAL JSON FORMATTING RULES:
+1. Use \\n (escaped newline) for line breaks in the analysis field
+2. Escape all quotes inside strings with \\"
+3. Do not include trailing commas
+4. Ensure all braces and brackets are balanced
+5. Return ONLY the JSON object - no markdown code blocks, no explanatory text
+
+EXAMPLE JSON OUTPUT:
+{
+  "title": "Data Quality Assessment for Employment Data",
+  "summary": "Validation reveals high data quality with 2 minor anomalies detected. Analysis based on Q1-2024 data with 85% confidence.",
+  "metrics": {
+    "validation_checks_passed": 10,
+    "anomalies_detected": 2
+  },
+  "analysis": "### Data Consistency Validation\\n\\nPerformed 10 validation checks on employment data.\\n\\n### Anomalies Detected\\n\\nIdentified [Per extraction: '15.2%' from GCC-STAT Q2-2024] as outlier.",
+  "recommendations": ["Investigate identified anomalies", "Enhance data quality monitoring"],
+  "confidence": 0.85,
+  "data_quality_notes": "High quality overall with minor outliers",
+  "citations": ["gcc_unemployment", "employment_gender"]
+}
+'''
+    user_prompt += json_example
 
     return system_prompt, user_prompt

@@ -138,7 +138,7 @@ def _format_key_findings(report: AgentReport, max_findings: int = 10) -> ReportS
             body += "**Metrics**:\n\n"
             body += "| Metric | Value |\n"
             body += "|--------|-------|\n"
-            for key, value in finding.metrics.items():
+            for key, value in (finding.metrics or {}).items():
                 # Redact if key suggests PII
                 if any(term in key.lower() for term in ["name", "email", "id", "user"]):
                     display_value = f"[REDACTED] ({_hash_id(str(value))})"

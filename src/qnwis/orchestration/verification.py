@@ -127,9 +127,14 @@ def verify_insight(ins: Insight) -> VerificationResult:
         VerificationResult with list of discovered issues
     """
     issues: list[VerificationIssue] = []
-    issues += _check_percent_bounds(ins.metrics)
-    issues += _check_yoy(ins.metrics)
-    issues += _check_sum_to_one(ins.metrics)
+    # Handle both dict and dataclass Insight objects
+    if isinstance(ins, dict):
+        metrics = ins.get('metrics') or {}
+    else:
+        metrics = ins.metrics or {}
+    issues += _check_percent_bounds(metrics)
+    issues += _check_yoy(metrics)
+    issues += _check_sum_to_one(metrics)
     return VerificationResult(issues=issues)
 
 

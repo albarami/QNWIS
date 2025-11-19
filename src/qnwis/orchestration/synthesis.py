@@ -43,7 +43,7 @@ def _collect_metrics(reports: list[AgentReport]) -> dict[str, list[float]]:
     bag: dict[str, list[float]] = {}
     for rep in reports:
         for ins in rep.findings:
-            for k, v in ins.metrics.items():
+            for k, v in (ins.metrics or {}).items():
                 if isinstance(v, (int, float)):
                     bag.setdefault(k, []).append(float(v))
     return bag
