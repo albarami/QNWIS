@@ -459,7 +459,8 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
                     0,
                 )
 
-            print(f"\n✅ Prefetch Complete: {len(extracted_facts)} facts")
+            # Prefetch complete - log via logger instead of print to avoid Unicode errors
+            logger.info(f"Prefetch Complete: {len(extracted_facts)} facts")
             sources: Dict[str, int] = {}
             for fact in extracted_facts:
                 if isinstance(fact, dict):
@@ -467,14 +468,12 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
                     sources[source] = sources.get(source, 0) + 1
 
             for source, count in sources.items():
-                print(f"   • {source}: {count} facts")
+                logger.debug(f"Source {source}: {count} facts")
 
             return updated_state
 
         except Exception as e:
-            print(f"❌ Prefetch error: {e}")
-            import traceback
-            traceback.print_exc()
+            logger.error(f"Prefetch error: {e}", exc_info=True)
 
             if state.get("event_callback"):
                 await state["event_callback"]("prefetch", "error", {"error": str(e)})
@@ -658,21 +657,26 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
             }
 
             selected_agent_names = state.get("selected_agents", []) or list(self.agents.keys())
-            normalized_selection: list[str] = []
-            seen: set[str] = set()
-            for name in selected_agent_names:
-                normalized = self._normalize_agent_name(name)
-                if normalized and normalized not in seen:
-                    normalized_selection.append(normalized)
-                    seen.add(normalized)
-            selected_agent_names = normalized_selection or list(self.agents.keys())
-
+            
+            # Map normalized names back to actual agent keys
+            # This fixes the duplicate agent bug by ensuring we use the actual keys
             agents_to_invoke: list[str] = []
             invoked_set: set[str] = set()
+            
             for name in selected_agent_names:
-                if name not in invoked_set and (name in self.agents or name in self.deterministic_agents):
-                    agents_to_invoke.append(name)
-                    invoked_set.add(name)
+                # Try both the original name and lowercase version
+                actual_key = None
+                if name in self.agents:
+                    actual_key = name
+                elif name.lower() in self.agents:
+                    actual_key = name.lower()
+                elif name in self.deterministic_agents:
+                    actual_key = name
+                
+                if actual_key and actual_key not in invoked_set:
+                    agents_to_invoke.append(actual_key)
+                    invoked_set.add(actual_key)
+            
             if not agents_to_invoke:
                 agents_to_invoke = list(self.agents.keys())
 
@@ -680,10 +684,20 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
 
             event_cb = state.get("event_callback")
             if event_cb:
+                # Send normalized agent names to match event emissions
+                normalized_names = [self._normalize_agent_name(name) for name in agents_to_invoke]
+                # Remove duplicates while preserving order
+                seen_emitted = set()
+                unique_names = []
+                for name in normalized_names:
+                    if name not in seen_emitted:
+                        unique_names.append(name)
+                        seen_emitted.add(name)
+                
                 await event_cb(
                     "agents",
                     "running",
-                    {"agents": agents_to_invoke, "count": len(agents_to_invoke)},
+                    {"agents": unique_names, "count": len(unique_names)},
                     0,
                 )
 
@@ -698,7 +712,11 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
                             await event_cb(f"agent:{display_name}", "running")
                         start_time = datetime.now(timezone.utc)
                         try:
-                            report = await self.agents[name].run(question, context)
+                            # Add timeout per agent (180 seconds) to prevent hanging
+                            report = await asyncio.wait_for(
+                                self.agents[name].run(question, context),
+                                timeout=180.0
+                            )
                             report.agent = getattr(report, "agent", display_name) or display_name
                             latency_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
                             if event_cb:
@@ -709,6 +727,11 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
                                     latency_ms,
                                 )
                             return report
+                        except asyncio.TimeoutError:
+                            logger.error(f"LLM agent {display_name} timed out after 60s")
+                            if event_cb:
+                                await event_cb(f"agent:{display_name}", "error", {"error": "Agent execution timeout"})
+                            return None
                         except Exception as exc:
                             logger.error(f"LLM agent {display_name} failed: {exc}", exc_info=True)
                             if event_cb:
@@ -749,7 +772,19 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
 
                 task_names.append(agent_name)
 
-            results = await asyncio.gather(*tasks, return_exceptions=True)
+            # Execute agents with 30-minute timeout for PhD-level deep analysis
+            # Individual LLM calls have 3-minute timeout, so 30 minutes total allows for retries and parallel execution
+            try:
+                results = await asyncio.wait_for(
+                    asyncio.gather(*tasks, return_exceptions=True),
+                    timeout=1800  # 30 minutes total for all 12 agents in parallel
+                )
+            except asyncio.TimeoutError:
+                logger.error("Agent execution timed out after 10 minutes")
+                if event_cb:
+                    await event_cb("agents", "error", {"error": "Agent execution timeout after 10 minutes - may indicate hung agent"})
+                # Return partial results - treat all as failed
+                results = [Exception("Timeout") for _ in tasks]
 
             reasoning_chain = list(state.get("reasoning_chain", []))
             summary_agents = ', '.join(task_names[:5]) + ('...' if len(task_names) > 5 else '')
@@ -758,14 +793,22 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
             )
 
             for agent_name, result in zip(task_names, results):
+                display_name = self._normalize_agent_name(agent_name)
+
                 if isinstance(result, Exception):
                     logger.error("%s failed", agent_name, exc_info=result)
                     reasoning_chain.append(f"✗ {agent_name} failed: {result}")
+                    # Ensure error event is emitted if not already
+                    if event_cb:
+                        await event_cb(f"agent:{display_name}", "error", {"error": str(result)})
                     continue
                 
                 if result is None:
                     logger.warning(f"{agent_name} returned None (failed gracefully)")
                     reasoning_chain.append(f"✗ {agent_name} failed gracefully")
+                    # Ensure error event is emitted
+                    if event_cb:
+                        await event_cb(f"agent:{display_name}", "error", {"error": "Agent returned no results"})
                     continue
 
                 report = result
@@ -820,7 +863,7 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
                         else:
                             updated_findings.append(finding)
 
-                report.findings = updated_findings
+                    report.findings = updated_findings
 
             logger.info("Citation injection complete")
 
@@ -1391,102 +1434,125 @@ OUTPUT FORMAT (JSON):
 
     async def _debate_node(self, state: WorkflowState) -> WorkflowState:
         """
-        Conduct multi-agent debate to resolve contradictions.
-
-        Args:
-            state: Current workflow state with agent_reports
-
-        Returns:
-            Updated state with debate_results and adjusted reports
+        Conduct legendary multi-turn debate between agents.
+        
+        Uses new LegendaryDebateOrchestrator for 80-125 turn conversations.
         """
         if state.get("event_callback"):
             await state["event_callback"]("debate", "running")
-
+        
         start_time = datetime.now(timezone.utc)
         reports = state.get("agent_reports", [])
-
+        
         # 1. Detect contradictions
         contradictions = self._detect_contradictions(reports)
-
+        
         if not contradictions:
-            logger.info("No contradictions detected - skipping debate")
+            logger.info("No contradictions detected - but running legendary debate anyway for depth")
+            # We will continue to legendary debate even without contradictions
+            # The orchestrator handles this by creating a "policy debate" topic
+        
+        logger.info(f"Starting legendary debate with {len(contradictions)} contradictions")
+        
+        # Import debate orchestrator
+        from .legendary_debate_orchestrator import LegendaryDebateOrchestrator
+        
+        # Create orchestrator with event callback
+        orchestrator = LegendaryDebateOrchestrator(
+            emit_event_fn=state.get("event_callback"),
+            llm_client=self.llm_client
+        )
+        
+        # Build agents map (both LLM and deterministic)
+        agents_map = {}
+        
+        # Add LLM agents
+        for name, agent in self.agents.items():
+            agents_map[name] = agent
+        
+        # Add deterministic agents (they'll contribute data-backed points)
+        for name, agent in self.deterministic_agents.items():
+            agents_map[name] = agent
+        
+        # Build agent reports map for deterministic agents to access their narratives
+        agent_reports_map = {}
+        for report in reports:
+            agent_name = getattr(report, 'agent', None)
+            if agent_name:
+                agent_reports_map[agent_name] = report
+        
+        # Conduct legendary debate
+        try:
+            debate_results = await orchestrator.conduct_legendary_debate(
+                question=state["question"],
+                contradictions=contradictions,
+                agents_map=agents_map,
+                agent_reports_map=agent_reports_map,
+                llm_client=self.llm_client
+            )
+        except Exception as exc:
+            logger.exception("Legendary debate failed")
 
             if state.get("event_callback"):
-                await state["event_callback"](
-                    "debate",
-                    "complete",
-                    {"contradictions": 0, "status": "skipped"},
-                    0
-                )
+                try:
+                    await state["event_callback"](
+                        "debate",
+                        "error",
+                        {"error": str(exc)}
+                    )
+                except Exception:
+                    logger.exception("Failed to emit debate error event")
 
-            # Update reasoning chain (explicitly record that debate was skipped)
-            reasoning_chain = list(state.get("reasoning_chain", []))
-            reasoning_chain.append("Γ£ô Debate: no contradictions detected; debate skipped")
-
-            return {
-                **state,
-                "debate_results": {
-                    "contradictions_found": 0,
-                    "status": "skipped",
-                    "latency_ms": 0,
-                },
-                "reasoning_chain": reasoning_chain,
-            }
-
-        logger.info(f"Detected {len(contradictions)} contradictions - starting debate")
-
-        # 2. Conduct structured debates
-        resolutions = []
-        for contradiction in contradictions:
-            resolution = await self._conduct_debate(contradiction)
-            resolutions.append(resolution)
-
-        # 3. Build consensus
-        consensus = self._build_consensus(resolutions)
-
-        # 4. Adjust agent reports based on debate
-        adjusted_reports = self._apply_debate_resolutions(reports, resolutions)
-
+            raise
+        
         latency_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
-
+        
         logger.info(
-            f"Debate complete: {consensus['resolved_contradictions']} resolved, "
-            f"{consensus['flagged_for_review']} flagged, latency={latency_ms:.0f}ms"
+            f"Debate complete: {debate_results['total_turns']} turns, "
+            f"latency={latency_ms:.0f}ms"
         )
-
+        
         if state.get("event_callback"):
             await state["event_callback"](
                 "debate",
                 "complete",
                 {
                     "contradictions": len(contradictions),
-                    "resolved": consensus["resolved_contradictions"],
-                    "flagged": consensus["flagged_for_review"]
+                    "total_turns": debate_results["total_turns"],
+                    "resolutions": debate_results["resolutions"],
+                    "consensus": debate_results["consensus"],
+                    "final_report": debate_results["final_report"]
                 },
                 latency_ms
             )
-
+        
         # Update reasoning chain
         reasoning_chain = list(state.get("reasoning_chain", []))
         reasoning_chain.append(
-            "Γ£ô Debate: "
-            f"{consensus['resolved_contradictions']} contradiction(s) resolved, "
-            f"{consensus['flagged_for_review']} flagged for review"
+            f"Γ£ô Legendary Debate: {debate_results['total_turns']} turns, "
+            f"{len(contradictions)} contradictions debated, 6 phases completed"
         )
-
+        
+        # We update the synthesis with the final report from the debate
+        # This replaces the need for a separate synthesis step if the debate is comprehensive
+        # But the workflow has a synthesis node next. We can pass the debate report as a finding.
+        
         return {
             **state,
-            "agent_reports": adjusted_reports,
             "debate_results": {
                 "contradictions_found": len(contradictions),
-                "resolved": consensus["resolved_contradictions"],
-                "flagged_for_review": consensus["flagged_for_review"],
-                "consensus_narrative": consensus["consensus_narrative"],
+                "total_turns": debate_results["total_turns"],
+                "conversation_history": debate_results["conversation_history"],
+                "resolutions": debate_results["resolutions"],
+                "consensus": debate_results["consensus"],
                 "latency_ms": latency_ms,
                 "status": "complete",
-                "contradictions": contradictions,  # Add this so frontend can render debate cards
+                "contradictions": contradictions,
+                "final_report": debate_results["final_report"]
             },
             "reasoning_chain": reasoning_chain,
+            # Optional: Pre-fill synthesis if the debate report is good enough
+            "synthesis": debate_results["final_report"] 
         }
 
     async def _critique_node(self, state: WorkflowState) -> WorkflowState:
@@ -1627,9 +1693,12 @@ OUTPUT FORMAT (JSON):
                     "critique",
                     "complete",
                     {
-                        "critiques": len(critique.get("critiques", [])),
+                        "num_critiques": len(critique.get("critiques", [])),
                         "red_flags": len(critique.get("red_flags", [])),
-                        "strengthened": critique.get("strengthened_by_critique", False)
+                        "strengthened": critique.get("strengthened_by_critique", False),
+                        "critiques": critique.get("critiques", []),  # Include actual critiques
+                        "overall_assessment": critique.get("overall_assessment", ""),
+                        "full_critique": critique  # Include full critique for display
                     },
                     latency_ms
                 )
@@ -1637,8 +1706,7 @@ OUTPUT FORMAT (JSON):
             # Update reasoning chain
             reasoning_chain = list(state.get("reasoning_chain", []))
             reasoning_chain.append(
-                "Γ£ô Critique: "
-                f"{len(critique.get('critiques', []))} critique(s), "
+                f"Γ£ô Critique: {len(critique.get('critiques', []))} critique(s), "
                 f"{len(critique.get('red_flags', []))} red flag(s)"
             )
 

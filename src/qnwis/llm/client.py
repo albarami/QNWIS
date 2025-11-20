@@ -54,7 +54,7 @@ class LLMClient:
         self.model = model or self.config.get_model(self.provider)
         configured_timeout = self.config.timeout_seconds
         effective_timeout = timeout_s if timeout_s is not None else configured_timeout
-        self.timeout_s = min(effective_timeout, 60)
+        self.timeout_s = min(effective_timeout, 180)  # 3 minutes for PhD-level deep analysis
         self.max_retries = self.config.max_retries
         self._stub_delay_s = self.config.stub_token_delay_ms / 1000.0
         
@@ -452,7 +452,7 @@ class LLMClient:
         message = str(exc).lower()
         if "rate limit" in message or "too many requests" in message:
             return "rate_limit"
-        if any(term in message for term in ("timeout", "temporarily unavailable", "retry later")):
+        if any(term in message for term in ("timeout", "temporarily unavailable", "retry later", "overloaded", "overloaded_error")):
             return "retryable"
         return "fatal"
     

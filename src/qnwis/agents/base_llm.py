@@ -9,7 +9,7 @@ All agents inherit from this and implement:
 import json
 import logging
 from abc import ABC, abstractmethod
-from typing import AsyncIterator, Dict, Optional
+from typing import AsyncIterator, Dict, Optional, List, Any
 from datetime import datetime, timezone
 
 from qnwis.agents.base import DataClient, AgentReport, Insight, evidence_from
@@ -269,3 +269,239 @@ class LLMAgent(ABC):
             (system_prompt, user_prompt) tuple
         """
         pass
+
+    # --- Legendary Debate Conversation Methods ---
+
+    async def present_case(self, topic: str, conversation_history: list) -> str:
+        """Present opening statement on a topic."""
+        prompt = f"""You are {self.agent_name}.
+        
+Present your position on: {topic}
+
+Use evidence from your previous analysis. Be specific and cite sources.
+Keep it concise (2-3 paragraphs).
+
+Your position:"""
+        
+        return await self.llm.generate(
+            prompt=prompt,
+            system=f"You are {self.agent_name}, presenting your expert analysis.",
+            temperature=0.3,
+            max_tokens=500
+        )
+
+    async def challenge_position(
+        self, 
+        opponent_name: str,
+        opponent_claim: str,
+        conversation_history: list
+    ) -> str:
+        """Challenge another agent's position."""
+        history_text = self._format_history(conversation_history[-5:])
+        
+        prompt = f"""You are {self.agent_name}.
+
+{opponent_name} claims: "{opponent_claim}"
+
+Recent conversation:
+{history_text}
+
+Challenge this position by:
+- Pointing out potential weaknesses
+- Presenting alternative interpretations
+- Questioning assumptions
+- Citing conflicting evidence from your analysis
+
+Your challenge:"""
+        
+        return await self.llm.generate(
+            prompt=prompt,
+            system=f"You are {self.agent_name}, critically examining claims.",
+            temperature=0.4,
+            max_tokens=400
+        )
+
+    async def respond_to_challenge(
+        self,
+        challenger_name: str, 
+        challenge: str,
+        conversation_history: list
+    ) -> str:
+        """Respond to a challenge."""
+        history_text = self._format_history(conversation_history[-5:])
+        
+        prompt = f"""You are {self.agent_name}.
+
+{challenger_name} challenged you: "{challenge}"
+
+Recent conversation:
+{history_text}
+
+Respond by:
+- Defending your position with evidence
+- Acknowledging valid points
+- Clarifying misunderstandings
+- Finding common ground where possible
+
+Use phrases like "I acknowledge...", "However...", "We agree that..." when appropriate.
+
+Your response:"""
+        
+        return await self.llm.generate(
+            prompt=prompt,
+            system=f"You are {self.agent_name}, responding to critique.",
+            temperature=0.3,
+            max_tokens=400
+        )
+
+    async def contribute_to_discussion(
+        self,
+        conversation_history: list
+    ) -> str:
+        """Contribute to ongoing discussion."""
+        history_text = self._format_history(conversation_history[-8:])
+        
+        prompt = f"""You are {self.agent_name}.
+
+Ongoing debate:
+{history_text}
+
+Contribute your perspective by:
+- Offering insights both sides may have missed
+- Presenting additional evidence
+- Proposing synthesis or middle ground
+- Highlighting implications
+
+Your contribution:"""
+        
+        return await self.llm.generate(
+            prompt=prompt,
+            system=f"You are {self.agent_name}, contributing expertise.",
+            temperature=0.4,
+            max_tokens=400
+        )
+
+    async def analyze_edge_case(
+        self, 
+        scenario: Dict,
+        conversation_history: List[Dict]
+    ) -> str:
+        """Analyze edge case scenario from domain perspective."""
+        
+        prompt = f"""You are {self.agent_name}.
+
+Edge Case Scenario:
+- Description: {scenario.get('description', 'Unknown')}
+- Severity: {scenario.get('severity', 'Unknown')}
+- Probability: {scenario.get('probability_pct', 'Unknown')}%
+
+Based on your domain expertise and the debate so far, analyze:
+1. How would this scenario impact your domain?
+2. Would your recommendations still hold?
+3. What contingency measures are needed?
+4. What early warning indicators should we monitor?
+
+Be specific with numbers and timelines."""
+        
+        return await self.llm.generate(prompt=prompt, temperature=0.4)
+
+    async def identify_catastrophic_risks(
+        self,
+        conversation_history: List[Dict],
+        mode: str = "pessimistic"
+    ) -> str:
+        """Identify worst-case catastrophic failure in your domain."""
+        
+        debate_summary = self._summarize_recent_debate(conversation_history)
+        
+        prompt = f"""You are {self.agent_name}.
+
+Debate summary: {debate_summary}
+
+You are now playing DEVIL'S ADVOCATE in {mode} mode.
+
+Identify the WORST-CASE CATASTROPHIC FAILURE in your domain:
+1. What is the 1% tail risk everyone is ignoring?
+2. What hidden assumption, if wrong, causes total failure?
+3. What is the nightmare scenario that keeps you awake?
+4. What combination of factors creates a perfect storm?
+
+Be paranoid. Be specific. Use data to support your worst case."""
+        
+        return await self.llm.generate(prompt=prompt, temperature=0.5)
+
+    async def assess_risk_likelihood(
+        self,
+        risk_description: str,
+        conversation_history: List[Dict]
+    ) -> str:
+        """Assess likelihood and impact of identified risk."""
+        
+        prompt = f"""You are {self.agent_name}.
+
+Another agent identified this risk:
+{risk_description}
+
+Assess from your domain perspective:
+1. Likelihood (% probability in next 2 years)
+2. Impact severity if it occurs (1-10 scale)
+3. Early warning indicators
+4. Mitigation strategies
+5. Your confidence in this assessment
+
+Be objective but critical."""
+        
+        return await self.llm.generate(prompt=prompt, temperature=0.3)
+
+    async def state_final_position(
+        self,
+        debate_history: List[Dict],
+        confidence_level: bool = True
+    ) -> str:
+        """State final position after debate."""
+        history_text = self._format_history(debate_history[-10:])
+        
+        prompt = f"""You are {self.agent_name}.
+
+The debate is concluding.
+Recent conversation:
+{history_text}
+
+State your final position:
+1. Your core recommendation
+2. Key caveats or risks
+3. Your final confidence level (0-100%)
+4. What would change your mind?
+
+Be decisive."""
+        
+        return await self.llm.generate(prompt=prompt, temperature=0.3)
+
+    def _format_history(self, history: list) -> str:
+        """Format conversation history for prompts."""
+        lines = []
+        for turn in history:
+            agent = turn.get("agent", "Unknown")
+            message = turn.get("message", "")
+            lines.append(f"{agent}: {message[:200]}...")
+        return "\n".join(lines)
+
+    def _should_contribute(self, conversation_history: list) -> bool:
+        """Decide if this agent should contribute to discussion."""
+        # Contribute if: relevant keywords in recent conversation
+        # For MVP, use simple keyword matching
+        history_text = self._format_history(conversation_history[-3:])
+        keywords = self._get_agent_keywords()
+        
+        return any(keyword.lower() in history_text.lower() for keyword in keywords)
+
+    def _get_agent_keywords(self) -> list:
+        """Get keywords relevant to this agent."""
+        # Override in subclasses for better relevance detection
+        return [self.agent_name.lower()]
+
+    def _summarize_recent_debate(self, history: list) -> str:
+        """Summarize recent debate turns."""
+        if not history:
+            return "No prior debate."
+        return self._format_history(history[-10:])

@@ -1,4 +1,5 @@
 import type { DebateResults } from '../../types/workflow'
+import { DebateConversation } from './DebateConversation'
 
 interface DebatePanelProps {
   debate: DebateResults | null
@@ -25,11 +26,46 @@ export function DebatePanel({ debate }: DebatePanelProps) {
         <span className="text-xs text-slate-500">{(debate.latency_ms / 1000).toFixed(1)}s</span>
       </div>
 
+      <div className="border-b border-slate-700 pb-4">
+        <DebateConversation turns={debate.conversation_history || []} />
+      </div>
+
       <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 text-sm text-slate-200 whitespace-pre-wrap">
         {debate.consensus_narrative}
       </div>
 
-      {debate.contradictions?.length ? (
+      {debate.resolutions?.length ? (
+        <div className="space-y-3">
+          <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Debate Arbitration (LLM Analysis)</p>
+          <div className="space-y-3">
+            {debate.resolutions.map((resolution: any, index: number) => (
+              <div key={index} className="rounded-xl border border-purple-400/30 bg-slate-900/70 p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-purple-300">
+                    Resolution {index + 1}
+                  </span>
+                  <span className={`text-xs px-2 py-1 rounded ${
+                    resolution.action === 'use_agent1' || resolution.action === 'use_agent2' ? 'bg-green-500/20 text-green-300' :
+                    resolution.action === 'flag_for_review' ? 'bg-yellow-500/20 text-yellow-300' :
+                    'bg-blue-500/20 text-blue-300'
+                  }`}>
+                    {resolution.action}
+                  </span>
+                </div>
+                <div className="text-sm text-slate-200">
+                  <p className="font-semibold mb-1">LLM Arbitration:</p>
+                  <p className="text-slate-300 whitespace-pre-wrap">{resolution.explanation}</p>
+                </div>
+                {resolution.recommended_value && (
+                  <div className="text-xs text-slate-400 mt-2 pt-2 border-t border-slate-800">
+                    Recommended: {resolution.recommended_value} (confidence: {(resolution.confidence * 100).toFixed(0)}%)
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : debate.contradictions?.length ? (
         <div className="space-y-3">
           <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Active contradictions</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

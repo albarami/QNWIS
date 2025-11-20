@@ -94,12 +94,20 @@ async def lifespan(app: FastAPI):
     if _env_flag("QNWIS_WARM_EMBEDDER", True):  # Default to True
         try:
             from ..rag.embeddings import get_embedder
-            logger.info("Pre-warming sentence embedder model...")
+            from ..rag.retriever import get_document_store
+            
+            logger.info("Pre-warming RAG components (embedder + document store)...")
             loop = asyncio.get_running_loop()
+            
+            # Warm up generic embedder
             loop.run_in_executor(None, lambda: get_embedder())
-            logger.info("Embedder warm-up scheduled")
+            
+            # Warm up document store (loads knowledge base + specific embedder)
+            loop.run_in_executor(None, lambda: get_document_store())
+            
+            logger.info("RAG components warm-up scheduled")
         except Exception as e:
-            logger.warning(f"Failed to warm embedder: {e}")
+            logger.warning(f"Failed to warm RAG components: {e}")
     
     if _env_flag("QNWIS_WARM_CACHE", False):
         warm_ids = _warm_targets()
@@ -150,7 +158,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:3000", "http://localhost:3001", "http://localhost:5173"],
+        allow_origins=["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:3003", "http://localhost:5173"],
         allow_methods=["*"],
         allow_headers=["*"],
         allow_credentials=True,
