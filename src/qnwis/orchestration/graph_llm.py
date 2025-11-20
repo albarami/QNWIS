@@ -1024,11 +1024,19 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
             from .verification import verify_report
 
             reports = state.get("agent_reports", [])
-            # Try both possible keys for prefetch data
+            # Try both possible keys for prefetch data - defensive access
             prefetch_data = state.get("prefetch_data", {})
             if not prefetch_data:
                 prefetch_info = state.get("prefetch", {})
-                prefetch_data = prefetch_info.get("data", {})
+                if isinstance(prefetch_info, dict):
+                    prefetch_data = prefetch_info.get("data", {})
+                else:
+                    prefetch_data = {}
+            
+            # Defensive: ensure all required state keys exist with defaults
+            debate_results = state.get("debate_results", {})
+            if not isinstance(debate_results, dict):
+                debate_results = {}
 
             logger.info(f"VERIFICATION START: Checking {len(reports)} reports with {len(prefetch_data)} prefetch results")
 

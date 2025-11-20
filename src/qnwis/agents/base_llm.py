@@ -272,20 +272,26 @@ class LLMAgent(ABC):
 
     # --- Legendary Debate Conversation Methods ---
 
-    async def present_case(self, topic: str, conversation_history: list) -> str:
+    async def present_case(self, topic: str, context: list) -> str:
         """Present opening statement on a topic."""
-        prompt = f"""You are {self.agent_name}.
         
-Present your position on: {topic}
+        prompt = f"""{topic}
 
-Use evidence from your previous analysis. Be specific and cite sources.
-Keep it concise (2-3 paragraphs).
+Based on your expertise as {self.agent_name}, analyze this query and present your position.
 
-Your position:"""
+CRITICAL INSTRUCTIONS:
+- Address the specific query mentioned above
+- Use evidence from available data
+- Be specific and cite sources when possible
+- Focus on your domain of expertise
+- Keep response concise (2-3 paragraphs)
+- If the query is unclear, analyze what information IS available
+
+Your expert analysis:"""
         
         return await self.llm.generate(
             prompt=prompt,
-            system=f"You are {self.agent_name}, presenting your expert analysis.",
+            system=f"You are {self.agent_name}, providing expert analysis on the given query.",
             temperature=0.3,
             max_tokens=500
         )
@@ -299,24 +305,39 @@ Your position:"""
         """Challenge another agent's position."""
         history_text = self._format_history(conversation_history[-5:])
         
+        # Extract original query from conversation history if available
+        original_query = "Policy analysis"
+        if conversation_history and len(conversation_history) > 0:
+            first_turn = conversation_history[0]
+            if isinstance(first_turn, dict) and 'message' in first_turn:
+                msg = first_turn['message']
+                if 'QUERY BEING ANALYZED:' in msg:
+                    lines = msg.split('\n')
+                    for i, line in enumerate(lines):
+                        if 'QUERY BEING ANALYZED:' in line and i + 1 < len(lines):
+                            original_query = lines[i + 1].strip()
+                            break
+        
         prompt = f"""You are {self.agent_name}.
 
-{opponent_name} claims: "{opponent_claim}"
+ORIGINAL QUERY: {original_query}
+
+{opponent_name} stated: "{opponent_claim[:300]}..."
 
 Recent conversation:
 {history_text}
 
 Challenge this position by:
-- Pointing out potential weaknesses
-- Presenting alternative interpretations
-- Questioning assumptions
-- Citing conflicting evidence from your analysis
+- Pointing out potential weaknesses IN THEIR SPECIFIC CLAIMS
+- Presenting alternative interpretations of the data
+- Questioning assumptions related to the original query
+- Citing conflicting evidence or perspectives
 
 Your challenge:"""
         
         return await self.llm.generate(
             prompt=prompt,
-            system=f"You are {self.agent_name}, critically examining claims.",
+            system=f"You are {self.agent_name}, critically examining claims about the query.",
             temperature=0.4,
             max_tokens=400
         )

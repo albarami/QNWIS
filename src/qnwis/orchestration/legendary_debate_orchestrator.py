@@ -48,6 +48,7 @@ class LegendaryDebateOrchestrator:
         self.phase_turn_counters = defaultdict(int)
         self.resolutions = []  # Track resolutions from Phase 2
         self.agent_reports_map = {}  # Map agent names to their reports
+        self.question = ""  # Store the actual query being debated
     
     async def conduct_legendary_debate(
         self,
@@ -58,9 +59,19 @@ class LegendaryDebateOrchestrator:
         llm_client: LLMClient
     ) -> Dict:
         """
-        Execute complete 6-phase debate.
-        Returns legendary intelligence report.
+        Execute complete 6-phase legendary debate.
+        
+        Args:
+            question: The original query being analyzed
+            contradictions: List of contradictions to debate
+            agents_map: Map of agent names to agent instances
+            agent_reports_map: Map of agent names to their reports
+            llm_client: LLM client for debate operations
+            
+        Returns:
+            Dictionary with debate results and conversation history
         """
+        self.question = question  # Store the query for use in all phases
         self.start_time = datetime.now()
         self.conversation_history = []
         self.turn_counter = 0
@@ -144,39 +155,51 @@ class LegendaryDebateOrchestrator:
     ) -> str:
         """
         Get statement from agent (LLM or deterministic).
-        HANDLES BOTH TYPES - NO PLACEHOLDERS.
+        NOW INCLUDES THE ACTUAL QUERY AND EXTRACTED FACTS.
         """
-        if hasattr(agent, 'present_case'):
-            # LLM agent with conversation methods
-            return await agent.present_case(topic, self.conversation_history)
         
-        # Deterministic agent - extract meaningful content from their pre-computed report
-        report = self.agent_reports_map.get(agent_name)
+        # Build context with query and facts
+        context = {
+            "query": self.question,  # Include actual query
+            "phase": phase,
+            "topic": topic
+        }
         
-        if report:
-            narrative = getattr(report, 'narrative', '')
-            findings = getattr(report, 'findings', [])
+        if hasattr(agent, "present_case"):
+            # LLM agent - pass query in topic
+            enhanced_topic = f"""QUERY BEING ANALYZED:
+{self.question}
+
+YOUR ROLE: {topic}
+
+Provide your expert analysis based on this specific query."""
             
-            if narrative:
-                if phase == "opening":
-                    # Extract first substantive sentence
-                    sentences = narrative.split('. ')
-                    return f"[{agent_name} Data Analysis]: {'. '.join(sentences[:3])}."
-                elif phase == "edge_case":
-                    return f"From a data perspective: {narrative[:250]}. This provides historical context for the scenario."
-                elif phase == "risk":
-                    return f"Based on historical trends: {narrative[:250]}. This informs the risk assessment."
-                else:
-                    return narrative[:300]
+            return await agent.present_case(enhanced_topic, self.conversation_history)
+        else:
+            # Deterministic agent - extract from report
+            report = self.agent_reports_map.get(agent_name)
             
-            # If no narrative, try findings
-            if findings and len(findings) > 0:
-                finding = findings[0]
-                if hasattr(finding, 'summary'):
-                    return f"[{agent_name}]: {finding.summary[:200]}"
-        
-        # Fallback - still meaningful
-        return f"{agent_name}: Analysis indicates key patterns in the data. Detailed metrics available in full report."
+            if report:
+                narrative = getattr(report, 'narrative', '')
+                findings = getattr(report, 'findings', [])
+                
+                if narrative:
+                    if phase == "opening":
+                        return f"[{agent_name} Analysis]: Regarding '{self.question}' - {narrative[:300]}"
+                    elif phase == "edge_case":
+                        return f"[{agent_name} Data]: Historical patterns show: {narrative[:200]}"
+                    elif phase == "risk":
+                        return f"[{agent_name} Assessment]: Risk indicators: {narrative[:200]}"
+                    else:
+                        return f"[{agent_name}]: {narrative[:250]}"
+                
+                if findings and len(findings) > 0:
+                    finding = findings[0]
+                    if hasattr(finding, 'summary'):
+                        findings_text = finding.summary[:200]
+                        return f"[{agent_name} Findings]: {findings_text}"
+            
+            return f"[{agent_name}]: Analysis completed for query: {self.question[:100]}..."
 
     async def _phase_2_challenge_defense(
         self,
@@ -282,40 +305,43 @@ class LegendaryDebateOrchestrator:
                     "message": response
                 })
                 
-                # CONSENSUS DETECTION - BREAKS LOOP IF REACHED
-                if self._detect_consensus(response):
-                    logger.info(f"Consensus detected after round {round_num + 1}")
-                    consensus_reached = True
-                    break
+            # SOPHISTICATED consensus detection
+            if self._detect_consensus(response):
+                logger.info(f"✓ Consensus reached on round {round_num}")
+                consensus_reached = True
+                break
             
-            # Other agents can contribute (limit to 2 per round)
-            contributions = 0
-            for other_name, other_agent in agents_map.items():
-                if other_name in [agent1_name, agent2_name]:
-                    continue
-                if contributions >= 2:  # Limit contributions
-                    break
-                if not self._can_emit_turn():
-                    break
+            # Check for meta-debate loop after 10 rounds
+            if round_num >= 10 and self._detect_meta_debate():
+                logger.warning(f"⚠️ Meta-debate detected at round {round_num}. Refocusing.")
+                refocus_message = f"""
+Let's refocus on the core policy question: {self.question}
+
+Based on the analysis so far, what is your final recommendation?
+- Should Qatar proceed with the 50% target?
+- Should it be revised? If so, to what target and timeline?
+- What are the key risks and contingencies?
+
+Provide a concise final position."""
                 
-                if hasattr(other_agent, '_should_contribute') and other_agent._should_contribute(self.conversation_history):
-                    if hasattr(other_agent, 'contribute_to_discussion'):
-                        contribution = await other_agent.contribute_to_discussion(
-                            self.conversation_history
-                        )
-                        
-                        await self._emit_turn(
-                            other_name,
-                            "contribution",
-                            contribution
-                        )
-                        
-                        debate_turns.append({
-                            "agent": other_name,
-                            "type": "contribution",
-                            "message": contribution
-                        })
-                        contributions += 1
+                await self._emit_turn(
+                    "Moderator",
+                    "refocus",
+                    refocus_message
+                )
+                # Give each agent ONE more turn to provide final position then break
+                break
+            
+            # Check for substantive completion
+            if self._detect_substantive_completion():
+                logger.info(f"✓ Substantive completion detected at round {round_num}")
+                await self._emit_turn(
+                    "Moderator",
+                    "completion",
+                    "Debate has reached substantive completion. Proceeding to synthesis."
+                )
+                consensus_reached = True
+                break
         
         # Synthesize resolution using LLM
         resolution = await self._synthesize_resolution_llm(
@@ -870,9 +896,92 @@ Include:
         for turn in history:
             agent = turn.get("agent", "Unknown")
             message = turn.get("message", "")
-            turn_type = turn.get("type", "")
-            lines.append(f"{agent} ({turn_type}): {message}")
+            lines.append(f"{agent}: {message[:200]}...")
         return "\n".join(lines)
+    
+    def _detect_meta_debate(self, recent_turn_count: int = 10) -> bool:
+        """
+        Detect when debate has become too meta-analytical.
+        Returns True if agents are debating methodology instead of policy.
+        """
+        if len(self.conversation_history) < recent_turn_count:
+            return False
+        
+        recent_turns = self.conversation_history[-recent_turn_count:]
+        
+        # Meta-debate indicators
+        meta_phrases = [
+            "methodological",
+            "analytical framework",
+            "epistemological",
+            "performative contradiction",
+            "meta-analysis",
+            "evidence hierarchy",
+            "analytical capability",
+            "demonstrate analysis",
+            "policy analysis itself",
+            "nature of analysis",
+            "what constitutes",
+            "framework collapse"
+        ]
+        
+        # Count how many recent turns contain meta-debate language
+        meta_count = 0
+        for turn in recent_turns:
+            message = turn.get("message", "").lower()
+            if any(phrase in message for phrase in meta_phrases):
+                meta_count += 1
+        
+        # If 7+ of last 10 turns are meta-debate, we've lost focus
+        return meta_count >= 7
+    
+    def _detect_substantive_completion(self, recent_turn_count: int = 8) -> bool:
+        """
+        Detect when debate has reached substantive completion.
+        Returns True if agents are repeating themselves or have nothing new to add.
+        """
+        if len(self.conversation_history) < recent_turn_count * 2:
+            return False
+        
+        recent_turns = self.conversation_history[-recent_turn_count:]
+        
+        # Completion indicators
+        completion_phrases = [
+            "we agree that",
+            "we both recognize",
+            "common ground",
+            "I acknowledge your point",
+            "you are correct",
+            "valid point",
+            "I accept that",
+            "we concur",
+            "shared understanding",
+            "I must concede"
+        ]
+        
+        # Also look for repetition
+        repetition_phrases = [
+            "as I previously stated",
+            "as mentioned before",
+            "I've already addressed",
+            "repeating myself",
+            "reiterating"
+        ]
+        
+        agreement_count = 0
+        repetition_count = 0
+        
+        for turn in recent_turns:
+            message = turn.get("message", "").lower()
+            
+            if any(phrase in message for phrase in completion_phrases):
+                agreement_count += 1
+            
+            if any(phrase in message for phrase in repetition_phrases):
+                repetition_count += 1
+        
+        # If 6+ of last 8 turns show agreement, or 3+ show repetition, debate is complete
+        return agreement_count >= 6 or repetition_count >= 3
 
     def _summarize_debate(self, history: list) -> str:
         """Summarize debate for prompts."""
