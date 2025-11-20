@@ -11,6 +11,8 @@ from datetime import datetime
 import aiohttp
 import requests
 
+from .data_quality import calculate_data_quality, identify_missing_data
+
 # Safe printing helper to avoid UnicodeEncodeError on limited consoles
 def _safe_print(message: str) -> None:
     try:
@@ -18,6 +20,115 @@ def _safe_print(message: str) -> None:
     except UnicodeEncodeError:
         sanitized = message.encode("ascii", errors="ignore").decode("ascii", errors="ignore")
         print(sanitized)
+
+CRITICAL_DATA_CHECKLISTS = {
+    "food_security": {
+        "required": [
+            "current_food_import_costs",
+            "food_self_sufficiency_percentage",
+            "agricultural_water_consumption",
+            "energy_costs_for_agriculture",
+        ],
+        "nice_to_have": ["gcc_food_security_investments", "vertical_farming_costs"],
+    },
+    "labor_market": {
+        "required": [
+            "unemployment_rate",
+            "labor_force_participation",
+            "qatarization_rates",
+            "sector_employment_distribution",
+        ],
+        "nice_to_have": ["wage_levels", "skills_gaps"],
+    },
+    "investment_decision": {
+        "required": [
+            "project_costs",
+            "comparable_project_outcomes",
+            "risk_factors",
+            "economic_impact_estimates",
+        ],
+        "nice_to_have": ["financing_options", "public_opinion"],
+    },
+}
+
+TARGETED_SEARCH_STRATEGIES = {
+    "current_food_import_costs": [
+        ("world_bank", "NE.IMP.GNFS.CD", {"country": "QAT"}),
+        ("perplexity", "Qatar annual food import costs 2024", "cost_data"),
+        ("brave_search", "Qatar food import statistics 2024 billion")
+    ],
+    "food_self_sufficiency_percentage": [
+        ("qatar_open_data", "food production agriculture domestic"),
+        ("perplexity", "Qatar food self-sufficiency rate percentage 2024", "statistics"),
+        ("gcc_stat", "agriculture production value qatar")
+    ],
+    "energy_costs_for_agriculture": [
+        ("world_bank", "EG.ELC.COST.KH", {"country": "QAT"}),
+        ("perplexity", "Qatar electricity cost industrial agriculture 2024", "cost_data"),
+        ("brave_search", "qatar energy subsidies agriculture sector")
+    ],
+    "agricultural_water_consumption": [
+        ("world_bank", "ER.H2O.FWAG.ZS", {"country": "QAT"}),
+        ("perplexity", "Qatar water consumption agriculture sector cubic meters", "statistics"),
+        ("gcc_stat", "water consumption by sector qatar")
+    ],
+    "vertical_farming_costs": [
+        ("perplexity", "vertical farming production cost per kilogram 2024", "cost_data"),
+        ("semantic_scholar", "controlled environment agriculture economics cost analysis"),
+        ("brave_search", "vertical farming energy costs middle east UAE")
+    ],
+    "gcc_food_security_investments": [
+        ("gcc_stat", "agriculture investment government spending"),
+        ("perplexity", "GCC countries food security investment 2024 Saudi UAE", "comparative"),
+        ("brave_search", "GCC food security megaprojects 2024")
+    ]
+}
+
+PERPLEXITY_PROMPT_TEMPLATES = {
+    "cost_data": """Find the most recent, specific cost data for: {query}
+REQUIRED FORMAT:
+- Exact figures with currency (USD, QAR, etc.)
+- Time period (year/quarter/month)
+- Authoritative source citation (World Bank, government, industry report)
+CRITICAL: If specific data not available, respond "No specific data found" rather than estimating.
+Do NOT provide approximate figures without clear source attribution.""",
+    
+    "statistics": """Find official statistics for: {query}
+REQUIRED FORMAT:
+- Exact numbers/percentages with precision
+- Official source (government statistics, World Bank, IMF, UN, GCC-STAT)
+- Year/period of data
+- Methodology if available
+PRIORITIZE: Government statistics > International organizations > Peer-reviewed research > Industry reports > News""",
+    
+    "comparative": """Find comparative data for: {query}
+REQUIRED FORMAT:
+- Multiple countries/entities with SAME METRICS
+- Same time period for fair comparison
+- Clear data sources for each entity
+- Note any methodology differences
+If not directly comparable, explain why and what adjustments would be needed."""
+}
+
+def classify_query_for_extraction(query: str) -> List[str]:
+    """Determine what types of data we need"""
+    query_lower = query.lower()
+    
+    query_types = []
+    
+    # Food security keywords
+    if any(kw in query_lower for kw in ["food", "agriculture", "farming", "self-sufficiency"]):
+        query_types.append("food_security")
+    
+    # Labor market keywords
+    if any(kw in query_lower for kw in ["employment", "labor", "workforce", "qatarization"]):
+        query_types.append("labor_market")
+    
+    # Investment decision keywords
+    if any(kw in query_lower for kw in ["invest", "project", "megaproject", "should we"]):
+        query_types.append("investment_decision")
+    
+    return query_types if query_types else ["general"]
 
 # Import your existing API clients (with fallbacks for legacy class names)
 try:
@@ -76,6 +187,51 @@ except ImportError:  # pragma: no cover - legacy fallback
     class SemanticScholarAPI(SemanticScholarAPIMixin):
         pass
 
+try:
+    from src.data.apis.qatar_opendata import QatarOpenDataScraperV2 # type: ignore
+except ImportError:
+    class QatarOpenDataScraperV2:
+        def search_catalog(self, *args, **kwargs):
+            return []
+
+class QatarOpenDataAPI(QatarOpenDataScraperV2):
+    async def search_datasets(self, query: str, limit: int = 5) -> List[Dict[str, Any]]:
+        """Asynchronous wrapper around the synchronous catalog API."""
+        query_lower = query.lower()
+
+        def _search() -> List[Dict[str, Any]]:
+            datasets = self.get_all_datasets(limit=limit, max_results=limit * 2)
+            matches: list[dict[str, Any]] = []
+            for dataset in datasets:
+                default_meta = dataset.get("metas", {}).get("default", {})
+                haystack = f"{default_meta.get('title', '')} {default_meta.get('description', '')}".lower()
+                if query_lower in haystack:
+                    matches.append(dataset)
+                if len(matches) >= limit:
+                    break
+            return matches
+
+        return await asyncio.to_thread(_search)
+
+    async def simple_search(self, query: str) -> List[Dict[str, Any]]:
+        """Return lightweight facts for UI display when Qatar Open Data is used."""
+        _safe_print(f"Qatar Open Data: searching for '{query}'")
+        datasets = await self.search_datasets(query, limit=5)
+        facts: list[dict[str, Any]] = []
+        for dataset in datasets:
+            meta = dataset.get("metas", {}).get("default", {})
+            facts.append(
+                {
+                    "metric": meta.get("title", dataset.get("dataset_id", "dataset")),
+                    "value": (meta.get("description") or "")[:200],
+                    "source": "Qatar Open Data",
+                    "data_type": "open_data",
+                    "confidence": 0.65,
+                }
+            )
+        return facts
+
+
 
 class CompletePrefetchLayer:
     """Prefetch data from ALL available sources for agent analysis."""
@@ -85,6 +241,7 @@ class CompletePrefetchLayer:
         self.gcc_stat = GCCStatAPI()
         self.world_bank = WorldBankAPI()
         self.semantic_scholar = SemanticScholarAPI()
+        self.qatar_open_data = QatarOpenDataAPI()
         
         # Get API keys from environment
         self.brave_api_key = os.getenv("BRAVE_API_KEY")
@@ -832,6 +989,178 @@ class CompletePrefetchLayer:
 
             traceback.print_exc()
             return []
+
+
+    async def fetch_all_sources_with_gaps(self, query: str) -> Dict[str, Any]:
+        """
+        Multi-pass extraction that identifies and fills critical data gaps
+        """
+        # Classify query to determine data needs
+        query_types = classify_query_for_extraction(query)
+        
+        # Build combined checklist
+        required_data = []
+        for qtype in query_types:
+            if qtype in CRITICAL_DATA_CHECKLISTS:
+                required_data.extend(CRITICAL_DATA_CHECKLISTS[qtype]["required"])
+        
+        # PASS 1: Quick extraction from structured sources
+        structured_facts = await self.fetch_all_sources(query)
+        
+        # PASS 2: Check what's missing
+        data_gaps = identify_missing_data(structured_facts, required_data)
+        
+        if data_gaps:
+            _safe_print(f"⚠️ CRITICAL DATA GAPS DETECTED: {data_gaps}")
+            
+            # PASS 3: Target searches for missing data
+            for gap in data_gaps:
+                strategies = TARGETED_SEARCH_STRATEGIES.get(gap, [])
+                for strategy in strategies:
+                    try:
+                        additional_facts = await self._execute_targeted_search(gap, strategy)
+                        if additional_facts:
+                            structured_facts.extend(additional_facts)
+                    except Exception as e:
+                        _safe_print(f"Failed strategy {strategy} for {gap}: {e}")
+        
+        # PASS 4: Final gap check and scoring
+        remaining_gaps = identify_missing_data(structured_facts, required_data)
+        quality_score = calculate_data_quality(structured_facts, required_data)
+        
+        return {
+            "extracted_facts": structured_facts,
+            "data_quality_score": quality_score,
+            "critical_gaps": remaining_gaps,
+            "total_facts_extracted": len(structured_facts)
+        }
+
+    async def _execute_targeted_search(self, data_gap: str, strategy: tuple) -> List[Dict[str, Any]]:
+        """Execute a specific targeted search strategy."""
+        source, query_or_id, params_or_type = strategy
+        results = []
+        
+        try:
+            if source == "world_bank":
+                # query_or_id is indicator, params_or_type is dict params
+                params = params_or_type if isinstance(params_or_type, dict) else {}
+                country = params.get("country", "QAT")
+                
+                df = await self.world_bank.get_indicator(
+                    indicator=query_or_id,
+                    country=country
+                )
+                if not df.empty:
+                    latest = df.iloc[0]
+                    results.append({
+                        "metric": data_gap,
+                        "value": latest['value'],
+                        "source": "World Bank (Targeted)",
+                        "data_type": data_gap,
+                        "confidence": 0.9,
+                        "timestamp": datetime.now().isoformat()
+                    })
+            
+            elif source == "perplexity":
+                # query_or_id is search query, params_or_type is search_type
+                search_type = params_or_type if isinstance(params_or_type, str) else "general"
+                results = await self._fetch_perplexity_targeted(query_or_id, search_type)
+                # Add data_type
+                for res in results:
+                    res["data_type"] = data_gap
+                    
+            elif source == "brave_search":
+                 if self.brave_api_key:
+                    url = "https://api.search.brave.com/res/v1/web/search"
+                    headers = {"Accept": "application/json", "X-Subscription-Token": self.brave_api_key}
+                    params = {"q": query_or_id, "count": 5}
+                    async with aiohttp.ClientSession() as session:
+                        async with session.get(url, headers=headers, params=params) as response:
+                            if response.status == 200:
+                                data = await response.json()
+                                for result in data.get('web', {}).get('results', [])[:1]:
+                                    results.append({
+                                        "metric": data_gap,
+                                        "value": result.get('title'),
+                                        "source": "Brave Search (Targeted)",
+                                        "data_type": data_gap,
+                                        "confidence": 0.7,
+                                        "raw_text": result.get('description', ''),
+                                        "timestamp": datetime.now().isoformat()
+                                    })
+
+            elif source == "qatar_open_data":
+                if hasattr(self.qatar_open_data, "simple_search"):
+                    od_results = await self.qatar_open_data.simple_search(query_or_id)
+                    for item in od_results:
+                        results.append(
+                            {
+                                "metric": item.get("metric", data_gap),
+                                "value": item.get("value"),
+                                "source": item.get("source", "Qatar Open Data"),
+                                "data_type": data_gap,
+                                "confidence": item.get("confidence", 0.6),
+                            }
+                        )
+            
+            elif source == "gcc_stat":
+                if hasattr(self.gcc_stat, "get_labour_market_indicators"):
+                    df = await asyncio.to_thread(self.gcc_stat.get_labour_market_indicators)
+                    if hasattr(df, "head"):
+                        sample = df.head(3).to_dict(orient="records")
+                        for row in sample:
+                            results.append(
+                                {
+                                    "metric": data_gap,
+                                    "value": row,
+                                    "source": "GCC-STAT Synthetic",
+                                    "data_type": data_gap,
+                                    "confidence": 0.7,
+                                }
+                            )
+                 
+        except Exception as e:
+            _safe_print(f"Targeted search error ({source}): {e}")
+            
+        return results
+
+    async def _fetch_perplexity_targeted(self, query: str, search_type: str) -> List[Dict[str, Any]]:
+        """Targeted Perplexity search with specific prompts."""
+        if not self.perplexity_api_key:
+            return []
+            
+        prompt_template = PERPLEXITY_PROMPT_TEMPLATES.get(search_type, PERPLEXITY_PROMPT_TEMPLATES["statistics"])
+        prompt = prompt_template.replace("{query}", query)
+        
+        try:
+            url = "https://api.perplexity.ai/chat/completions"
+            headers = {
+                "Authorization": f"Bearer {self.perplexity_api_key}",
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "model": "sonar-pro",
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": 500
+            }
+            
+            async with aiohttp.ClientSession() as session:
+                async with session.post(url, headers=headers, json=payload) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        content = data["choices"][0]["message"]["content"]
+                        return [{
+                            "metric": "targeted_research",
+                            "value": content[:200],
+                            "raw_text": content,
+                            "source": "Perplexity (Targeted)",
+                            "confidence": 0.85,
+                            "timestamp": datetime.now().isoformat()
+                        }]
+        except Exception as e:
+            _safe_print(f"Perplexity targeted error: {e}")
+            
+        return []
 
 
 # Singleton instance

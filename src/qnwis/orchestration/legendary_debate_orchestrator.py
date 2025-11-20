@@ -11,6 +11,7 @@ from datetime import datetime
 from collections import defaultdict
 
 from ..llm.client import LLMClient
+from .debate import detect_debate_convergence
 
 logger = logging.getLogger(__name__)
 
@@ -1160,49 +1161,17 @@ Include:
     def _check_convergence(self) -> bool:
         """
         Check if all agents have converged on a consensus position.
-        Returns True if recent turns show broad agreement.
+        Uses enhanced detection with semantic similarity.
         """
-        if len(self.conversation_history) < 12:
-            return False
+        result = detect_debate_convergence(self.conversation_history)
         
-        recent_turns = self.conversation_history[-12:]
-        
-        # Convergence indicators
-        convergence_phrases = [
-            "we agree",
-            "consensus",
-            "we concur",
-            "shared view",
-            "common conclusion",
-            "all recognize",
-            "aligned on",
-            "general agreement"
-        ]
-        
-        # Strong agreement phrases
-        strong_agreement_phrases = [
-            "I agree with",
-            "I support",
-            "that's correct",
-            "you're right",
-            "exactly",
-            "precisely"
-        ]
-        
-        convergence_count = 0
-        agreement_count = 0
-        
-        for turn in recent_turns:
-            message = turn.get("message", "").lower()
+        if result.get("converged"):
+            reason = result.get("reason", "unknown")
+            msg = result.get("message", "")
+            logger.info(f"Convergence detected: {reason} - {msg}")
+            return True
             
-            if any(phrase in message for phrase in convergence_phrases):
-                convergence_count += 1
-            
-            if any(phrase in message for phrase in strong_agreement_phrases):
-                agreement_count += 1
-        
-        # Convergence if 40%+ of recent turns show convergence OR 50%+ show strong agreement
-        return convergence_count >= 5 or agreement_count >= 6
+        return False
 
     def _summarize_debate(self, history: list) -> str:
         """Summarize debate for prompts."""

@@ -14,11 +14,14 @@ from typing import Any, Literal, cast
 from langgraph.graph import END, StateGraph
 
 from ..agents.base import DataClient
+from ..ui.agent_status import display_agent_execution_status
+from ..verification.citation_enforcer import verify_agent_output_with_retry
 from .metrics import MetricsObserver, ensure_observer
 from .nodes import error_handler, format_report, invoke_agent, route_intent, verify_structure
 from .prefetch import Prefetcher
+from .quality_metrics import calculate_analysis_confidence
 from .registry import AgentRegistry
-from .schemas import OrchestrationResult, OrchestrationTask, WorkflowState
+from .schemas import OrchestrationResult, OrchestrationTask, ReportSection, WorkflowState
 from .types import PrefetchSpec
 
 logger = logging.getLogger(__name__)
@@ -234,7 +237,7 @@ class QNWISGraph:
         transient: Iterable[str] = retry_cfg.get(
             "transient", ["TimeoutError", "ConnectionError"]
         )
-        return invoke_agent(
+        invoked_state = invoke_agent(
             state,
             self.registry,
             timeout_ms=timeout_ms,
@@ -242,12 +245,14 @@ class QNWISGraph:
             max_retries=max_retries,
             transient_exceptions=transient,
         )
+        return self._record_agent_status(invoked_state)
 
-    def _verify_node(self, state: dict[str, Any]) -> dict[str, Any]:
-        """Verify node wrapper."""
+    async def _verify_node(self, state: dict[str, Any]) -> dict[str, Any]:
+        """Verify node wrapper with strict citation enforcement."""
         validation_cfg = self.config.get("validation", {})
         strict = bool(validation_cfg.get("strict", False))
-        return verify_structure(
+
+        verified_state = verify_structure(
             state,
             strict=strict,
             require_evidence=validation_cfg.get("require_evidence", True),
@@ -255,10 +260,68 @@ class QNWISGraph:
             observer=self.observer,
         )
 
+        # Bail early if an upstream error already occurred
+        if verified_state.get("error"):
+            return verified_state
+
+        output_text = self._resolve_output_text(verified_state.get("agent_output"))
+        if not output_text:
+            return verified_state
+
+        agent_name = verified_state.get("metadata", {}).get("agent", "Unknown")
+        extracted_facts = self._collect_prefetched_facts(verified_state.get("prefetch_cache"))
+
+        try:
+            verification_result = await verify_agent_output_with_retry(
+                agent_name,
+                output_text,
+                extracted_facts,
+                max_retries=3,
+            )
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.error("Strict verification error: %s", exc)
+            return verified_state
+
+        metadata = dict(verified_state.get("metadata") or {})
+        violations = verification_result.get("violations", [])
+        metadata["citation_report"] = {
+            "status": verification_result.get("status", "passed"),
+            "violations": violations,
+            "violation_count": verification_result.get("violation_count", len(violations)),
+            "attempts": verification_result.get("attempts", 1),
+        }
+        verified_state["metadata"] = metadata
+
+        if verification_result["status"] == "rejected":
+            reason = verification_result.get("reason", "citation_violations")
+            error_msg = f"Strict verification failed: {reason}"
+            rejected_agents = list(metadata.get("rejected_agents", []))
+            rejected_agents.append(agent_name)
+            metadata["rejected_agents"] = rejected_agents
+            verified_state["metadata"] = metadata
+            verified_state = self._record_agent_status(verified_state, status="failed", reason=error_msg)
+            return {
+                **verified_state,
+                "error": error_msg,
+                "verification_details": verification_result,
+                "logs": verified_state.get("logs", []) + [f"ERROR: {error_msg}"],
+            }
+
+        if verification_result.get("output") and verification_result["output"] != output_text:
+            verified_state["agent_output"] = verification_result["output"]
+
+        return verified_state
+
     def _format_node(self, state: dict[str, Any]) -> dict[str, Any]:
         """Format node wrapper."""
         formatting_cfg = self.config.get("formatting", {})
-        return format_report(state, formatting_config=formatting_cfg, observer=self.observer)
+        enriched_state = self._apply_confidence_metadata(state)
+        formatted_state = format_report(
+            enriched_state,
+            formatting_config=formatting_cfg,
+            observer=self.observer,
+        )
+        return self._append_agent_status_section(formatted_state)
 
     def _error_node(self, state: dict[str, Any]) -> dict[str, Any]:
         """Error handler node wrapper."""
@@ -313,6 +376,130 @@ class QNWISGraph:
 
         # Ready to format
         return "format"
+
+    def _record_agent_status(
+        self,
+        state: dict[str, Any],
+        status: str | None = None,
+        reason: str | None = None,
+    ) -> dict[str, Any]:
+        """Append an agent execution record for UI transparency."""
+        metadata = dict(state.get("metadata") or {})
+        agent_name = metadata.get("agent")
+        if not agent_name:
+            return state
+        elapsed_ms = metadata.get("elapsed_ms")
+        entry: dict[str, Any] = {
+            "name": agent_name,
+            "status": status or ("failed" if state.get("error") else "invoked"),
+        }
+        if isinstance(elapsed_ms, (int, float)):
+            entry["duration"] = elapsed_ms / 1000.0
+        if reason:
+            entry["reason"] = reason
+        agent_status = list(metadata.get("agent_status", []))
+        agent_status.append(entry)
+        metadata["agent_status"] = agent_status
+        state["metadata"] = metadata
+        return state
+
+    def _collect_prefetched_facts(self, cache: Any) -> list[dict[str, Any]]:
+        """Normalize prefetched QueryResults into lightweight fact dictionaries."""
+        facts: list[dict[str, Any]] = []
+        if not isinstance(cache, dict):
+            return facts
+        for cache_key, value in cache.items():
+            rows = getattr(value, "rows", None)
+            if rows:
+                for row in rows[:5]:
+                    payload = getattr(row, "data", {}) or {}
+                    facts.append(
+                        {
+                            "metric": cache_key,
+                            "data_type": cache_key,
+                            "value": payload,
+                        }
+                    )
+            elif isinstance(value, list):
+                for item in value:
+                    if isinstance(item, dict):
+                        facts.append(item)
+        return facts
+
+    def _resolve_output_text(self, output: Any) -> str | None:
+        """Extract narrative text from assorted agent output types."""
+        if isinstance(output, str):
+            return output
+        narrative = getattr(output, "narrative", None)
+        if isinstance(narrative, str):
+            return narrative
+        return None
+
+    def _apply_confidence_metadata(self, state: dict[str, Any]) -> dict[str, Any]:
+        """Attach confidence scoring metadata if not already computed."""
+        metadata = dict(state.get("metadata") or {})
+        if metadata.get("confidence_breakdown"):
+            state["metadata"] = metadata
+            return state
+
+        facts = self._collect_prefetched_facts(state.get("prefetch_cache"))
+        agent_outputs = {}
+        if state.get("agent_output") is not None:
+            agent_outputs["primary"] = state["agent_output"]
+        citation_report = metadata.get("citation_report") or {}
+        citation_count = citation_report.get("violation_count") or len(
+            citation_report.get("violations", [])
+        )
+
+        confidence = calculate_analysis_confidence(
+            facts,
+            metadata.get("required_data_types", []),
+            agent_outputs,
+            citation_count,
+        )
+        band = self._score_to_band(confidence["overall_confidence"])
+        metadata["confidence_details"] = confidence
+        metadata["confidence_breakdown"] = {
+            "score": int(confidence["overall_confidence"] * 100),
+            "band": band,
+            "components": {
+                "citation": confidence["components"]["citation_compliance"] * 100,
+                "numbers": confidence["components"]["data_quality"] * 100,
+                "cross": confidence["components"]["agent_agreement"] * 100,
+            },
+            "reasons": [confidence["recommendation"]],
+            "coverage": confidence["components"]["data_quality"],
+            "freshness": 1.0,
+            "dashboard_payload": {
+                "score": confidence["overall_confidence"],
+                "band": band,
+                "facts": confidence["facts_extracted"],
+                "violations": confidence["citation_violations"],
+            },
+        }
+        state["metadata"] = metadata
+        return state
+
+    def _score_to_band(self, score: float) -> str:
+        if score >= 0.85:
+            return "GREEN"
+        if score >= 0.55:
+            return "AMBER"
+        return "RED"
+
+    def _append_agent_status_section(self, state: dict[str, Any]) -> dict[str, Any]:
+        """Add the agent status summary as a new report section when available."""
+        result = state.get("agent_output")
+        if not isinstance(result, OrchestrationResult):
+            return state
+        metadata = state.get("metadata") or {}
+        agent_status = metadata.get("agent_status")
+        if agent_status:
+            status_md = display_agent_execution_status(agent_status)
+            result.sections.append(
+                ReportSection(title="Agent Execution Status", body_md=status_md)
+            )
+        return {**state, "agent_output": result}
 
     def run(self, task: OrchestrationTask) -> OrchestrationResult:
         """

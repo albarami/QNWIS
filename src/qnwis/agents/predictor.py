@@ -48,6 +48,23 @@ class PredictorAgent:
     - scenario_compare: Compare multiple methods' forecasts and backtests
     """
 
+    REQUIRED_DATA_TYPES = ["time_series_employment"]
+
+    def can_analyze(self, query_context: dict[str, Any]) -> bool:
+        """Check if agent has necessary data before attempting analysis."""
+        available_data = query_context.get("available_data_types", [])
+        
+        has_required_data = any(
+            data_type in available_data 
+            for data_type in self.REQUIRED_DATA_TYPES
+        )
+        
+        if not has_required_data:
+            logger.info(f"{self.__class__.__name__} skipping: insufficient data")
+            return False
+        
+        return True
+
     def __init__(
         self,
         client: DataClient,

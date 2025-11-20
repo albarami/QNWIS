@@ -17,6 +17,36 @@ from typing import Any, Dict, List, Set
 logger = logging.getLogger(__name__)
 
 
+def classify_data_availability(query: str, extracted_facts: List[Dict] | None = None) -> List[str]:
+    """
+    Determine what types of data we have available for this query.
+    """
+    available_types = []
+    facts = extracted_facts or []
+    
+    # Check for time series data
+    if any("time_series" in str(fact.get("type", fact.get("data_type", ""))) for fact in facts):
+        available_types.append("time_series_employment")
+    
+    # Check for historical trends
+    if any("historical" in str(fact.get("type", fact.get("data_type", ""))) for fact in facts):
+        available_types.append("historical_trends")
+    
+    # Check for sector-specific data
+    if any("sector" in str(fact.get("category", fact.get("data_type", ""))) for fact in facts):
+        available_types.append("sector_metrics")
+    
+    # Check for labor market data
+    if any(keyword in query.lower() for keyword in ["employment", "labor", "workforce", "qatarization"]):
+        available_types.append("labor_market")
+
+    # Check for economic data
+    if any(keyword in query.lower() for keyword in ["gdp", "economy", "trade", "investment"]):
+        available_types.append("economic_indicators")
+    
+    return available_types
+
+
 class AgentSelector:
     """
     Intelligent agent selection based on question classification.
@@ -115,7 +145,8 @@ class AgentSelector:
         cls,
         classification: Dict[str, Any],
         min_agents: int = MIN_AGENTS,
-        max_agents: int = MAX_AGENTS
+        max_agents: int = MAX_AGENTS,
+        extracted_facts: List[Dict[str, Any]] | None = None,
     ) -> List[str]:
         """
         Select relevant agents based on question classification.
@@ -125,6 +156,7 @@ class AgentSelector:
                 Expected keys: intent, entities, complexity
             min_agents: Minimum number of agents to select
             max_agents: Maximum number of agents to select
+            extracted_facts: Optional list of extracted fact dictionaries
             
         Returns:
             List of agent names to invoke
@@ -137,6 +169,7 @@ class AgentSelector:
         entities = classification.get("entities") or {}  # Handle None
         complexity = classification.get("complexity", "medium")
         question_text = classification.get("question", "").lower()
+        fact_payload = extracted_facts or classification.get("extracted_facts")
         
         # Score each agent
         for agent_name, expertise in cls.AGENT_EXPERTISE.items():
@@ -210,7 +243,38 @@ class AgentSelector:
                 selected.add("NationalStrategy")
                 logger.debug("Added NationalStrategy for high complexity")
         
-        result = list(selected)
+        # FILTER: Deterministic Agent Graceful Degradation
+        available_data = classify_data_availability(question_text, fact_payload)
+        
+        deterministic_requirements = {
+            "TimeMachine": ["time_series_employment", "historical_trends"],
+            "Predictor": ["time_series_employment"],
+            "Scenario": ["sector_metrics", "labor_market"],
+            "PatternDetectiveAgent": ["sector_metrics", "labor_market"],
+            "PatternMiner": ["time_series_employment", "sector_metrics"],
+            "NationalStrategy": ["labor_market", "economic_indicators"],
+            "AlertCenter": ["sector_metrics", "labor_market"]
+        }
+        
+        filtered_selected = []
+        for agent in selected:
+            # Check if agent is deterministic and needs specific data
+            if agent in deterministic_requirements:
+                reqs = deterministic_requirements[agent]
+                if not any(r in available_data for r in reqs):
+                    logger.info(f"Skipping {agent}: requires {reqs}, have {available_data}")
+                    continue
+            filtered_selected.append(agent)
+            
+        # Ensure we didn't filter everything out (keep at least LLM agents)
+        if not filtered_selected and selected:
+            # Restore LLM agents
+            llm_agents = ["LabourEconomistLLM", "NationalizationLLM", "SkillsAgentLLM", "PatternDetectiveLLM", "NationalStrategyLLM"]
+            for agent in selected:
+                if agent in llm_agents:
+                    filtered_selected.append(agent)
+        
+        result = filtered_selected
         
         logger.info(
             f"Agent selection: {len(result)}/{len(cls.AGENT_EXPERTISE)} agents "
@@ -278,7 +342,8 @@ class AgentSelector:
 def select_agents_for_question(
     classification: Dict[str, Any],
     min_agents: int = 2,
-    max_agents: int = 4
+    max_agents: int = 4,
+    extracted_facts: List[Dict[str, Any]] | None = None,
 ) -> Dict[str, Any]:
     """
     Convenience function for agent selection.
@@ -287,12 +352,18 @@ def select_agents_for_question(
         classification: Question classification
         min_agents: Minimum agents to select
         max_agents: Maximum agents to select
+        extracted_facts: Optional list of extracted facts for data availability checks
         
     Returns:
         Dictionary with selected agents and explanation
     """
     selector = AgentSelector()
-    selected = selector.select_agents(classification, min_agents, max_agents)
+    selected = selector.select_agents(
+        classification,
+        min_agents,
+        max_agents,
+        extracted_facts=extracted_facts,
+    )
     explanation = selector.explain_selection(selected, classification)
     
     return {
