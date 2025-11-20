@@ -112,9 +112,19 @@ export interface DebateResults {
   flagged_for_review: number
   consensus_narrative: string
   latency_ms: number
-  status: 'complete' | 'skipped'
+  status: 'complete' | 'skipped' | 'running'
   contradictions?: Contradiction[]
   resolutions?: Resolution[]
+  total_turns?: number
+  conversation_history?: ConversationTurn[]
+}
+
+export interface ConversationTurn {
+  agent: string
+  turn: number
+  type: 'opening_statement' | 'challenge' | 'response' | 'contribution' | 'final_position' | 'resolution' | 'consensus' | 'edge_case_analysis' | 'risk_identification' | 'risk_assessment' | 'consensus_synthesis'
+  message: string
+  timestamp: string
 }
 
 export interface Contradiction {
