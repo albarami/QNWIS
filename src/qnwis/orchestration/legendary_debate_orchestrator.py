@@ -125,6 +125,23 @@ class LegendaryDebateOrchestrator:
             f"All agents presenting positions"
         )
         
+        # Validate data quality before debate (FIX #3)
+        data_warnings = self._validate_suspicious_data()
+        if data_warnings:
+            logger.warning(f"⚠️ Found {len(data_warnings)} suspicious data points")
+            
+            # Add warning to conversation
+            warning_summary = "; ".join([
+                f"{w['metric']}={w['value']}{w.get('unit', '')} (expected {w['expected_range']})"
+                for w in data_warnings[:3]  # Show first 3
+            ])
+            
+            await self._emit_turn(
+                "DataValidator",
+                "data_quality_warning",
+                f"⚠️ {len(data_warnings)} suspicious data points detected. Validation required before analysis.\n\nExamples: {warning_summary}"
+            )
+        
         for agent_name, agent in agents_map.items():
             # Check turn limit
             if not self._can_emit_turn():
@@ -206,36 +223,168 @@ Provide your expert analysis based on this specific query."""
         contradictions: List[Dict],
         agents_map: Dict[str, Any]
     ):
-        """Phase 2: Multi-turn challenge/defense for each contradiction."""
+        """Phase 2: MULTI-AGENT debate - ALL LLM agents participate."""
         self.current_phase = "challenge_defense"
         await self._emit_phase(
             "challenge_defense",
-            f"Debating {len(contradictions)} contradiction(s)"
+            f"Multi-agent debate on policy question"
         )
         
-        for i, contradiction in enumerate(contradictions):
-            if not self._can_emit_turn():
-                break
-                
-            if self.emit_event:
-                await self.emit_event(
-                    "debate:contradiction",
-                    "running",
-                    {
-                        "message": f"Contradiction {i+1}/{len(contradictions)}",
-                        "contradiction_index": i + 1,
-                        "total_contradictions": len(contradictions)
-                    }
-                )
-            
-            # Debate and TRACK resolution
-            resolution = await self._debate_contradiction(
-                contradiction,
-                agents_map
+        # Get LLM agents that succeeded in Phase 1
+        llm_agent_names = ['Nationalization', 'SkillsAgent', 'PatternDetective', 'NationalStrategyLLM']
+        active_llm_agents = [
+            agent_name for agent_name in llm_agent_names
+            if agent_name in agents_map
+            and hasattr(agents_map[agent_name], 'present_case')
+            and any(
+                turn.get("agent") == agent_name 
+                and turn.get("type") == "opening_statement"
+                and "failed" not in str(turn.get("message", "")).lower()
+                and "error" not in str(turn.get("message", "")).lower()
+                for turn in self.conversation_history
             )
+        ]
+        
+        logger.info(f"✅ Active LLM agents for debate: {active_llm_agents}")
+        
+        if len(active_llm_agents) < 2:
+            logger.warning("Not enough LLM agents for multi-agent debate")
+            return
+        
+        max_debate_rounds = 8  # 8 rounds x N agents = substantial debate
+        meta_debate_count = 0
+        
+        for round_num in range(1, max_debate_rounds + 1):
+            logger.info(f"📢 Debate Round {round_num}/{max_debate_rounds}")
             
-            if resolution:
-                self.resolutions.append(resolution)
+            # Each active agent gets a turn this round
+            for agent_name in active_llm_agents:
+                if not self._can_emit_turn():
+                    break
+                    
+                logger.info(f"  🎤 {agent_name} (Turn {self.turn_counter + 1})")
+                
+                try:
+                    # Determine action: challenge, respond, or weigh-in
+                    recent_turns = self.conversation_history[-10:]
+                    agent_recent_count = sum(
+                        1 for t in recent_turns if t.get("agent") == agent_name
+                    )
+                    
+                    # If hasn't spoken in 5+ turns, weigh in
+                    if agent_recent_count == 0 and len(recent_turns) >= 5:
+                        action = "weigh_in"
+                    else:
+                        # Alternate between challenge and weigh-in
+                        action = "challenge" if self.turn_counter % 2 == 0 else "weigh_in"
+                    
+                    if action == "challenge":
+                        # Pick different agent to challenge
+                        other_agents = [a for a in active_llm_agents if a != agent_name]
+                        if not other_agents:
+                            continue
+                        
+                        target = other_agents[self.turn_counter % len(other_agents)]
+                        
+                        # Get target's recent position
+                        target_turns = [
+                            t for t in self.conversation_history[-5:]
+                            if t.get("agent") == target
+                        ]
+                        
+                        if not target_turns:
+                            continue
+                        
+                        target_position = target_turns[-1].get("message", "")[:800]
+                        
+                        # Generate challenge using agent's method
+                        agent = agents_map[agent_name]
+                        if hasattr(agent, 'challenge_position'):
+                            challenge_text = await agent.challenge_position(
+                                opponent_name=target,
+                                opponent_claim=target_position,
+                                conversation_history=self.conversation_history
+                            )
+                            
+                            await self._emit_turn(
+                                agent_name,
+                                "challenge",
+                                challenge_text
+                            )
+                    
+                    elif action == "weigh_in":
+                        # Summarize recent debate
+                        recent_summary = "\n".join([
+                            f"{t.get('agent')}: {t.get('message', '')[:300]}..."
+                            for t in recent_turns[-3:]
+                        ])
+                        
+                        # Use agent's respond method as weigh-in
+                        agent = agents_map[agent_name]
+                        if hasattr(agent, 'respond_to_challenge'):
+                            weighin_text = await agent.respond_to_challenge(
+                                challenger_name="Moderator",
+                                challenge=f"Recent debate:\n{recent_summary}\n\nAdd your unique perspective from your expertise.",
+                                conversation_history=self.conversation_history
+                            )
+                            
+                            await self._emit_turn(
+                                agent_name,
+                                "weigh_in",
+                                weighin_text
+                            )
+                        
+                except Exception as e:
+                    logger.error(f"❌ {agent_name} debate error: {e}")
+                    continue
+            
+            # Check for convergence after each round
+            if self._check_convergence():
+                logger.info("✅ Consensus reached across all agents")
+                break
+            
+            # Check for meta-debate (enhanced detection)
+            if self._detect_meta_debate():
+                meta_debate_count += 1
+                logger.warning(f"⚠️ Meta-debate detected ({meta_debate_count}/2)")
+                
+                if meta_debate_count >= 2:
+                    logger.warning("🛑 Breaking meta-debate loop with refocus")
+                    
+                    # Inject refocus for ALL agents
+                    for agent_name in active_llm_agents:
+                        if not self._can_emit_turn():
+                            break
+                            
+                        refocus_message = f"""REFOCUS: Stop methodological discussion.
+
+DIRECT POLICY QUESTION: Should Qatar proceed with 50% Qatarization by 2030?
+
+Provide:
+1. Your final recommendation (proceed/revise/delay)
+2. If revise, what target and timeline?
+3. Top 3 risks and mitigations
+
+Be DIRECT. No meta-analysis."""
+                        
+                        try:
+                            agent = agents_map[agent_name]
+                            if hasattr(agent, 'state_final_position'):
+                                final = await agent.state_final_position(
+                                    debate_history=self.conversation_history,
+                                    confidence_level=True
+                                )
+                            else:
+                                final = "Refocused on core policy question."
+                            
+                            await self._emit_turn(
+                                agent_name,
+                                "refocus",
+                                final
+                            )
+                        except Exception as e:
+                            logger.error(f"Refocus error for {agent_name}: {e}")
+                    break
 
     async def _debate_contradiction(
         self,
@@ -832,11 +981,22 @@ Include:
 - Confidence Level
 - Go/No-Go Decision"""
         
-        return await llm_client.generate(
+        synthesis_text = await llm_client.generate(
             prompt=prompt,
             temperature=0.3,
             max_tokens=3000
         )
+        
+        # Check confidence levels (FIX #4)
+        confidence_flags = self._flag_low_confidence_recommendations(conversation_history)
+        
+        if confidence_flags:
+            synthesis_text += "\n\n## ⚠️ DATA QUALITY WARNINGS\n\n"
+            for flag in confidence_flags:
+                synthesis_text += f"- **{flag['agent']}**: {flag['message']}\n"
+            synthesis_text += "\n**RECOMMENDATION:** Commission comprehensive data audit before policy implementation.\n"
+        
+        return synthesis_text
 
     def _can_emit_turn(self) -> bool:
         """
@@ -899,41 +1059,55 @@ Include:
             lines.append(f"{agent}: {message[:200]}...")
         return "\n".join(lines)
     
-    def _detect_meta_debate(self, recent_turn_count: int = 10) -> bool:
+    def _detect_meta_debate(self, window: int = 10) -> bool:
         """
-        Detect when debate has become too meta-analytical.
-        Returns True if agents are debating methodology instead of policy.
+        Detect when agents are stuck in methodological loops.
+        Enhanced to detect MULTIPLE meta-phrases per turn.
         """
-        if len(self.conversation_history) < recent_turn_count:
+        if len(self.conversation_history) < window:
             return False
         
-        recent_turns = self.conversation_history[-recent_turn_count:]
+        recent_turns = self.conversation_history[-window:]
         
-        # Meta-debate indicators
+        # Meta-analysis warning phrases (EXPANDED LIST)
         meta_phrases = [
+            "i acknowledge",
+            "you're correct that",
+            "valid points",
             "methodological",
             "analytical framework",
+            "your critique",
             "epistemological",
-            "performative contradiction",
             "meta-analysis",
+            "analytical approach",
+            "performative contradiction",
             "evidence hierarchy",
             "analytical capability",
             "demonstrate analysis",
             "policy analysis itself",
             "nature of analysis",
             "what constitutes",
-            "framework collapse"
+            "framework collapse",
+            "your observation",
+            "you raise",
+            "that's a fair point",
+            "i must concede"
         ]
         
-        # Count how many recent turns contain meta-debate language
+        # Count turns with MULTIPLE meta-phrases (stronger signal)
         meta_count = 0
         for turn in recent_turns:
             message = turn.get("message", "").lower()
-            if any(phrase in message for phrase in meta_phrases):
+            phrase_count = sum(1 for phrase in meta_phrases if phrase in message)
+            if phrase_count >= 2:  # 2+ meta phrases in one turn = meta-debate
                 meta_count += 1
         
-        # If 7+ of last 10 turns are meta-debate, we've lost focus
-        return meta_count >= 7
+        # If 7+ of last 10 turns are meta, flag it
+        if meta_count >= 7:
+            logger.warning(f"🔍 Meta-debate: {meta_count}/{window} turns meta-analytical")
+            return True
+        
+        return False
     
     def _detect_substantive_completion(self, recent_turn_count: int = 8) -> bool:
         """
@@ -982,9 +1156,222 @@ Include:
         
         # If 6+ of last 8 turns show agreement, or 3+ show repetition, debate is complete
         return agreement_count >= 6 or repetition_count >= 3
+    
+    def _check_convergence(self) -> bool:
+        """
+        Check if all agents have converged on a consensus position.
+        Returns True if recent turns show broad agreement.
+        """
+        if len(self.conversation_history) < 12:
+            return False
+        
+        recent_turns = self.conversation_history[-12:]
+        
+        # Convergence indicators
+        convergence_phrases = [
+            "we agree",
+            "consensus",
+            "we concur",
+            "shared view",
+            "common conclusion",
+            "all recognize",
+            "aligned on",
+            "general agreement"
+        ]
+        
+        # Strong agreement phrases
+        strong_agreement_phrases = [
+            "I agree with",
+            "I support",
+            "that's correct",
+            "you're right",
+            "exactly",
+            "precisely"
+        ]
+        
+        convergence_count = 0
+        agreement_count = 0
+        
+        for turn in recent_turns:
+            message = turn.get("message", "").lower()
+            
+            if any(phrase in message for phrase in convergence_phrases):
+                convergence_count += 1
+            
+            if any(phrase in message for phrase in strong_agreement_phrases):
+                agreement_count += 1
+        
+        # Convergence if 40%+ of recent turns show convergence OR 50%+ show strong agreement
+        return convergence_count >= 5 or agreement_count >= 6
 
     def _summarize_debate(self, history: list) -> str:
         """Summarize debate for prompts."""
         if not history:
             return "No debate history yet."
         return self._format_history(history[-20:])
+    
+    def _validate_suspicious_data(self) -> List[Dict]:
+        """
+        Flag obviously wrong data before agents use it.
+        Validates data from agent reports.
+        """
+        SANITY_CHECKS = {
+            "unemployment_rate": {"min": 0.5, "max": 30.0, "unit": "%"},
+            "unemployment": {"min": 0.5, "max": 30.0, "unit": "%"},
+            "gdp_growth": {"min": -15.0, "max": 25.0, "unit": "%"},
+            "gdp": {"min": -15.0, "max": 25.0, "unit": "%"},
+            "inflation_rate": {"min": -5.0, "max": 50.0, "unit": "%"},
+            "inflation": {"min": -5.0, "max": 50.0, "unit": "%"},
+            "labour_force_participation": {"min": 40.0, "max": 95.0, "unit": "%"},
+            "labor_force": {"min": 40.0, "max": 95.0, "unit": "%"},
+            "participation_rate": {"min": 40.0, "max": 95.0, "unit": "%"},
+            "qatarization": {"min": 0.0, "max": 100.0, "unit": "%"},
+            "wage_growth": {"min": -20.0, "max": 50.0, "unit": "%"},
+            "employment_growth": {"min": -30.0, "max": 50.0, "unit": "%"}
+        }
+        
+        warnings = []
+        
+        # Extract values from agent reports
+        for agent_name, report in self.agent_reports_map.items():
+            if not report:
+                continue
+            
+            # Check narrative for numeric values
+            narrative = getattr(report, 'narrative', '')
+            if not narrative:
+                continue
+            
+            # Simple extraction of percentages and numbers
+            import re
+            
+            # Find patterns like "unemployment 0.1%" or "GDP growth 3.5%"
+            patterns = [
+                r'(\w+(?:\s+\w+)?)\s*:?\s*(\d+\.?\d*)\s*%',  # metric: X%
+                r'(\w+(?:\s+\w+)?)\s+of\s+(\d+\.?\d*)\s*%',  # metric of X%
+                r'(\w+(?:\s+\w+)?)\s+at\s+(\d+\.?\d*)\s*%',  # metric at X%
+            ]
+            
+            for pattern in patterns:
+                matches = re.findall(pattern, narrative.lower())
+                for metric_text, value_str in matches:
+                    try:
+                        value = float(value_str)
+                        
+                        # Check against sanity bounds
+                        for metric_key, bounds in SANITY_CHECKS.items():
+                            if metric_key in metric_text.replace('_', ' '):
+                                if value < bounds["min"] or value > bounds["max"]:
+                                    warning = {
+                                        "type": "SUSPICIOUS_DATA",
+                                        "agent": agent_name,
+                                        "metric": metric_text,
+                                        "value": value,
+                                        "unit": bounds["unit"],
+                                        "expected_range": f"{bounds['min']}-{bounds['max']}{bounds['unit']}",
+                                        "action": "⚠️ Verify data source before using in analysis"
+                                    }
+                                    warnings.append(warning)
+                                    logger.warning(
+                                        f"🚨 SUSPICIOUS: {agent_name} reports {metric_text}={value}{bounds['unit']} "
+                                        f"(expected {bounds['min']}-{bounds['max']})"
+                                    )
+                    except (ValueError, TypeError):
+                        continue
+        
+        return warnings
+    
+    def _flag_low_confidence_recommendations(self, conversation_history: List[Dict]) -> List[Dict]:
+        """
+        Flag when agents make recommendations despite low confidence.
+        Extracts confidence from agent statements and warns if low.
+        """
+        flags = []
+        
+        for turn in conversation_history:
+            agent_name = turn.get("agent", "")
+            message = turn.get("message", "").lower()
+            turn_type = turn.get("type", "")
+            
+            # Skip non-agent turns
+            if agent_name in ["Moderator", "DataValidator"]:
+                continue
+            
+            # Check if this is a recommendation
+            recommendation_keywords = [
+                "recommend", "should", "must", "advise",
+                "suggest", "propose", "target", "proceed",
+                "my recommendation", "i recommend", "we should",
+                "go forward", "move ahead", "implement"
+            ]
+            
+            is_recommendation = any(kw in message for kw in recommendation_keywords)
+            
+            if not is_recommendation:
+                continue
+            
+            # Try to extract confidence from message
+            confidence = None
+            
+            # Look for explicit confidence statements
+            import re
+            confidence_patterns = [
+                r'(\d+)%?\s*confidence',
+                r'confidence\s*(?:of\s*)?(\d+)%?',
+                r'(\d+)%?\s*certain',
+                r'certainty\s*(?:of\s*)?(\d+)%?'
+            ]
+            
+            for pattern in confidence_patterns:
+                match = re.search(pattern, message)
+                if match:
+                    try:
+                        conf_value = float(match.group(1))
+                        if conf_value > 1:  # Assume percentage
+                            confidence = conf_value / 100.0
+                        else:
+                            confidence = conf_value
+                        break
+                    except (ValueError, IndexError):
+                        continue
+            
+            # If no explicit confidence, use heuristics
+            if confidence is None:
+                # Check for uncertainty phrases
+                uncertainty_phrases = [
+                    "uncertain", "unclear", "limited data", "insufficient",
+                    "may be", "might be", "possibly", "perhaps",
+                    "tentatively", "cautiously"
+                ]
+                
+                certainty_phrases = [
+                    "clearly", "definitely", "certainly", "confidently",
+                    "strongly", "firmly", "absolutely"
+                ]
+                
+                uncertainty_count = sum(1 for phrase in uncertainty_phrases if phrase in message)
+                certainty_count = sum(1 for phrase in certainty_phrases if phrase in message)
+                
+                if uncertainty_count > 0:
+                    confidence = max(0.3, 0.6 - (uncertainty_count * 0.1))
+                elif certainty_count > 0:
+                    confidence = min(0.9, 0.7 + (certainty_count * 0.1))
+                else:
+                    confidence = 0.7  # Default moderate confidence
+            
+            # Flag if recommendation with low confidence
+            if confidence < 0.6:
+                flag = {
+                    "type": "LOW_CONFIDENCE_RECOMMENDATION",
+                    "agent": agent_name,
+                    "confidence": confidence,
+                    "turn": turn.get("turn", 0),
+                    "message": f"⚠️ {agent_name} made recommendations with only {confidence*100:.0f}% confidence",
+                    "action": "Request additional data before implementation"
+                }
+                flags.append(flag)
+                logger.warning(
+                    f"⚠️ {agent_name}: {confidence*100:.0f}% confidence recommendation (Turn {turn.get('turn', 0)})"
+                )
+        
+        return flags
