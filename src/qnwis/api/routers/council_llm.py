@@ -29,7 +29,7 @@ from ..middleware.rate_limit import limiter
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["council-llm"])
-STREAM_TIMEOUT_SECONDS = 180
+STREAM_TIMEOUT_SECONDS = 3600  # 60 minutes - allows deep analysis with complete synthesis
 
 try:
     _async_timeout = asyncio.timeout  # Python 3.11+

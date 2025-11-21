@@ -11,7 +11,7 @@ import logging
 from typing import List, Set, Optional, Union
 from pydantic import BaseModel, Field, field_validator
 
-from qnwis.llm.exceptions import LLMParseError
+from src.qnwis.llm.exceptions import LLMParseError
 
 logger = logging.getLogger(__name__)
 
@@ -304,12 +304,10 @@ class LLMResponseParser:
         is_valid = len(violations) == 0
         
         if not is_valid:
-            logger.warning(
+            logger.debug(
                 f"Number validation failed for finding '{finding.title}': "
-                f"{len(violations)} violations"
+                f"{len(violations)} violations (first 3: {violations[:3]})"
             )
-            for violation in violations[:3]:  # Log first 3
-                logger.warning(f"  - {violation}")
         
         return is_valid, violations
     

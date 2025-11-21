@@ -73,7 +73,7 @@ class IMFConnector:
         try:
             response = await self.client.get(url)
             response.raise_for_status()
-            data = await response.json()
+            data = response.json()
             
             # Extract values
             values = data.get("values", {}).get(indicator_code, {}).get(country_code, {})

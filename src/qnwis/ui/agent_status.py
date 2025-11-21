@@ -73,15 +73,47 @@ def format_active_agents(invoked: List[AgentStatus]) -> str:
     if not invoked:
         return "None"
 
-    lines: list[str] = []
+    # Split into core debaters and supporting analysts
+    core_debaters = []
+    supporting_analysts = []
+    
     for agent in invoked:
         name = agent.get("name", "Unknown")
-        duration = agent.get("duration")
-        stage = agent.get("status", "invoked").capitalize()
-        if isinstance(duration, (int, float)):
-            lines.append(f"- **{name}**: {stage} ({duration:.1f}s)")
+        if name in {"MicroEconomist", "MacroEconomist"}:
+            core_debaters.append(agent)
         else:
-            lines.append(f"- **{name}**: {stage}")
+            supporting_analysts.append(agent)
+            
+    lines: list[str] = []
+    
+    # Render Core Debaters
+    if core_debaters:
+        lines.append("#### ⚔️ Core Debaters")
+        for agent in core_debaters:
+            name = agent.get("name", "Unknown")
+            duration = agent.get("duration")
+            stage = agent.get("status", "invoked").capitalize()
+            
+            # Add specific icons
+            icon = "🏢" if name == "MicroEconomist" else "🌍"
+            
+            if isinstance(duration, (int, float)):
+                lines.append(f"- {icon} **{name}**: {stage} ({duration:.1f}s)")
+            else:
+                lines.append(f"- {icon} **{name}**: {stage}")
+        lines.append("")  # Spacer
+
+    # Render Supporting Analysts
+    if supporting_analysts:
+        lines.append("#### 🔍 Supporting Analysts")
+        for agent in supporting_analysts:
+            name = agent.get("name", "Unknown")
+            duration = agent.get("duration")
+            stage = agent.get("status", "invoked").capitalize()
+            if isinstance(duration, (int, float)):
+                lines.append(f"- **{name}**: {stage} ({duration:.1f}s)")
+            else:
+                lines.append(f"- **{name}**: {stage}")
 
     return "\n".join(lines)
 

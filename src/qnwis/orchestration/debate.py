@@ -144,8 +144,12 @@ def _semantic_similarity(recent_turns: List[Dict[str, Any]]) -> float | None:
         logger.warning("sentence-transformers not available; skipping semantic similarity.")
         return None
 
-    model = SentenceTransformer("all-MiniLM-L6-v2")
-    embeddings = model.encode(texts)
+    try:
+        model = SentenceTransformer("all-MiniLM-L6-v2")
+        embeddings = model.encode(texts)
+    except Exception as e:
+        logger.warning(f"Failed to load SentenceTransformer model: {e}")
+        return None
     similarities = []
     for idx in range(len(embeddings) - 1):
         a = embeddings[idx]

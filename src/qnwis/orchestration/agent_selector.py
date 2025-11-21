@@ -55,80 +55,99 @@ class AgentSelector:
     """
     
     # Agent expertise mapping
-    AGENT_EXPERTISE = {
-        "LabourEconomist": {
-            "intents": ["unemployment", "employment", "trends", "economy", "statistics"],
-            "entities": ["unemployment", "employment", "jobs", "economy", "market"],
-            "always_include": True,  # Always include the economist for baseline data
-            "description": "Employment trends & economic indicators"
+    AGENT_REGISTRY = {
+        "llm_agents": {
+            "MicroEconomist": {
+                "type": "llm",
+                "requires": None,
+                "description": "Project-level cost-benefit analysis, market efficiency, ROI",
+                "focus": "Firm-level economic rationality",
+                "module": "qnwis.agents.micro_economist",
+                "class": "MicroEconomist",
+            },
+            "MacroEconomist": {
+                "type": "llm",
+                "requires": None,
+                "description": "National-level strategy, aggregate impacts, strategic security",
+                "focus": "National welfare and systemic resilience",
+                "module": "qnwis.agents.macro_economist",
+                "class": "MacroEconomist",
+            },
+            "SkillsAgent": {
+                "type": "llm",
+                "requires": None,
+                "description": "Human capital, workforce development, skills gaps",
+                "focus": "Labor market and capability building",
+                "module": "qnwis.agents.skills_agent",
+                "class": "SkillsAgent",
+            },
+            "Nationalization": {
+                "type": "llm",
+                "requires": None,
+                "description": "State ownership, sovereignty, public vs private sector",
+                "focus": "Political economy and governance",
+                "module": "qnwis.agents.nationalization",
+                "class": "NationalizationAgent",
+            },
+            "PatternDetective": {
+                "type": "llm",
+                "requires": None,
+                "description": "Cross-domain patterns, historical precedents, system dynamics",
+                "focus": "Meta-analysis and pattern recognition",
+                "module": "qnwis.agents.pattern_detective_llm",
+                "class": "PatternDetectiveLLM",
+            },
         },
-        "Nationalization": {
-            "intents": ["qatarization", "gcc_comparison", "nationalization", "vision_2030"],
-            "entities": ["qatari", "gcc", "nationalization", "vision", "2030"],
-            "always_include": False,
-            "description": "Qatarization & GCC benchmarking"
+        "deterministic_agents": {
+            "TimeMachine": {
+                "type": "deterministic",
+                "requires": ["time_series_employment", "historical_trends"],
+                "description": "Historical labor market trend analysis",
+                "queries": ["timeseries_employment_all_12m"],
+                "module": "qnwis.agents.time_machine",
+                "class": "TimeMachineAgent",
+            },
+            "Predictor": {
+                "type": "deterministic",
+                "requires": ["time_series_employment"],
+                "description": "Workforce forecasting and retention prediction",
+                "queries": ["ts_retention_by_sector"],
+                "module": "qnwis.agents.predictor",
+                "class": "PredictorAgent",
+            },
+            "Scenario": {
+                "type": "deterministic",
+                "requires": ["sector_metrics", "labor_market"],
+                "description": "Labor market scenario modeling",
+                "queries": ["syn_sector_metrics"],
+                "module": "qnwis.agents.scenario_agent",
+                "class": "ScenarioAgent",
+            },
+            "PatternDetectiveAgent": {
+                "type": "deterministic",
+                "requires": ["sector_metrics", "labor_market"],
+                "description": "Statistical pattern detection in labor data",
+                "queries": ["syn_attrition_by_sector_latest"],
+                "module": "qnwis.agents.pattern_detective",
+                "class": "PatternDetectiveAgent",
+            },
+            "PatternMiner": {
+                "type": "deterministic",
+                "requires": ["time_series", "sector_metrics"],
+                "description": "Automated pattern mining algorithms",
+                "queries": ["timeseries_retention_all_12m"],
+                "module": "qnwis.agents.pattern_miner",
+                "class": "PatternMinerAgent",
+            },
+            "AlertCenter": {
+                "type": "deterministic",
+                "requires": ["alert_rules", "sector_metrics"],
+                "description": "Threshold monitoring and alert evaluation",
+                "queries": [],
+                "module": "qnwis.agents.alert_center",
+                "class": "AlertCenterAgent",
+            },
         },
-        "SkillsAgent": {
-            "intents": ["skills", "education", "training", "workforce_development", "talent"],
-            "entities": ["skills", "education", "training", "qualification", "talent"],
-            "always_include": False,
-            "description": "Skills gaps & workforce development"
-        },
-        "PatternDetective": {
-            "intents": ["anomaly", "pattern", "trend", "quality", "investigation"],
-            "entities": ["anomaly", "pattern", "trend", "quality", "outlier"],
-            "always_include": False,
-            "description": "Data quality & pattern detection (LLM)"
-        },
-        "NationalStrategyLLM": {
-            "intents": ["strategy", "policy", "vision_2030", "planning", "recommendation"],
-            "entities": ["strategy", "policy", "vision", "2030", "plan"],
-            "always_include": False,
-            "description": "Strategic planning & Vision 2030 alignment (LLM)"
-        },
-        # Deterministic Agents
-        "TimeMachine": {
-            "intents": ["history", "past", "trend", "evolution", "change"],
-            "entities": ["year", "past", "historical", "trend", "since"],
-            "always_include": False,
-            "description": "Historical data analysis"
-        },
-        "Predictor": {
-            "intents": ["forecast", "prediction", "future", "outlook", "projection"],
-            "entities": ["future", "forecast", "prediction", "2025", "2030"],
-            "always_include": False,
-            "description": "Forecasting & predictive analytics"
-        },
-        "Scenario": {
-            "intents": ["scenario", "what_if", "impact", "simulation", "effect"],
-            "entities": ["if", "scenario", "impact", "effect", "assume"],
-            "always_include": False,
-            "description": "Scenario planning & impact simulation"
-        },
-        "PatternDetectiveAgent": {
-            "intents": ["correlation", "statistics", "data_check", "verify"],
-            "entities": ["correlation", "stat", "check", "verify"],
-            "always_include": False,
-            "description": "Deterministic pattern & correlation checking"
-        },
-        "PatternMiner": {
-            "intents": ["deep_dive", "mining", "hidden", "insight"],
-            "entities": ["mining", "hidden", "insight", "root_cause"],
-            "always_include": False,
-            "description": "Deep data mining"
-        },
-        "NationalStrategy": {
-            "intents": ["kpi", "target", "benchmark", "goal"],
-            "entities": ["target", "kpi", "goal", "benchmark"],
-            "always_include": False,
-            "description": "Strategic KPI tracking (Deterministic)"
-        },
-        "AlertCenter": {
-            "intents": ["alert", "warning", "risk", "critical"],
-            "entities": ["risk", "warning", "alert", "danger"],
-            "always_include": True,  # Always check for alerts
-            "description": "Critical alerts & risk monitoring"
-        }
     }
     
     # Minimum agents to always run (baseline)
