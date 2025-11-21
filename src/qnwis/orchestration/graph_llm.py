@@ -9,16 +9,16 @@ import asyncio
 import logging
 import re
 import textwrap
-from typing import TypedDict, Annotated, Sequence, Optional, Dict, Any, AsyncIterator
+from typing import TypedDict, Annotated, Sequence, Optional, Dict, Any, AsyncIterator, List
 from datetime import datetime, timezone, date, timedelta
 
 from langgraph.graph import StateGraph, END
 
-from ..agents.labour_economist import LabourEconomistAgent
+from ..agents.micro_economist import MicroEconomist
+from ..agents.macro_economist import MacroEconomist
 from ..agents.nationalization import NationalizationAgent
 from ..agents.skills import SkillsAgent
 from ..agents.pattern_detective_llm import PatternDetectiveLLMAgent
-from ..agents.national_strategy_llm import NationalStrategyLLMAgent
 from ..agents.pattern_detective import PatternDetectiveAgent
 from ..agents.pattern_miner import PatternMinerAgent
 from ..agents.national_strategy import NationalStrategyAgent
@@ -82,19 +82,22 @@ class LLMWorkflow:
         
         # Initialize LLM agents (PascalCase keys for reporting)
         self.agents = {
+            "MicroEconomist": MicroEconomist(data_client, llm_client),
+            "MacroEconomist": MacroEconomist(data_client, llm_client),
             "Nationalization": NationalizationAgent(data_client, llm_client),
             "SkillsAgent": SkillsAgent(data_client, llm_client),
             "PatternDetective": PatternDetectiveLLMAgent(data_client, llm_client),
-            "NationalStrategyLLM": NationalStrategyLLMAgent(data_client, llm_client),
         }
         self.agent_key_map = {
-            "laboureconomist": "LabourEconomist",
+            "microeconomist": "MicroEconomist",
+            "micro": "MicroEconomist",
+            "macroeconomist": "MacroEconomist",
+            "macro": "MacroEconomist",
             "nationalization": "Nationalization",
             "skills": "SkillsAgent",
             "skillsagent": "SkillsAgent",
             "patterndetective": "PatternDetective",
-            "nationalstrategy": "NationalStrategy", # Default to deterministic
-            "nationalstrategyllm": "NationalStrategyLLM",
+            "nationalstrategy": "NationalStrategy",  # Default to deterministic
             "timemachine": "TimeMachine",
             "predictor": "Predictor",
             "scenario": "Scenario",
@@ -105,7 +108,6 @@ class LLMWorkflow:
 
         # Initialize deterministic agents for LEGENDARY depth mode
         self.deterministic_agents = {
-            "LabourEconomist": LabourEconomistAgent(data_client),
             "TimeMachine": TimeMachineAgent(data_client),
             "Predictor": PredictorAgent(data_client),
             "Scenario": ScenarioAgent(data_client),
@@ -551,11 +553,11 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
 
             if complexity in {"complex", "critical"}:
                 selected_agent_names = [
-                    "LabourEconomist",
+                    "MicroEconomist",
+                    "MacroEconomist",
                     "Nationalization",
                     "SkillsAgent",
                     "PatternDetective",
-                    "NationalStrategyLLM",
                 ]
                 deterministic_names = list(self.deterministic_agents.keys())
                 selected_agent_names.extend(deterministic_names)
@@ -634,7 +636,7 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
                 await state["event_callback"]("agent_selection", "error", {"error": str(e)})
             
             # Fallback to a minimal set of agents
-            fallback_agents = ["LabourEconomist", "Nationalization"]
+            fallback_agents = ["MicroEconomist", "MacroEconomist"]
             
             reasoning_chain = list(state.get("reasoning_chain", []))
             reasoning_chain.append(f"⚠️ Agent selection failed ({e}), falling back to default agents")
@@ -683,6 +685,8 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
             reports: list[AgentReport] = []
 
             event_cb = state.get("event_callback")
+            # Placeholder for upcoming debate context until Phase 5 populates it
+            state.setdefault("debate_context", "")
             if event_cb:
                 # Send normalized agent names to match event emissions
                 normalized_names = [self._normalize_agent_name(name) for name in agents_to_invoke]
@@ -711,10 +715,15 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
                         if event_cb:
                             await event_cb(f"agent:{display_name}", "running")
                         start_time = datetime.now(timezone.utc)
+                        debate_context = state.get("debate_context", "")
                         try:
                             # Add timeout per agent (180 seconds) to prevent hanging
                             report = await asyncio.wait_for(
-                                self.agents[name].run(question, context),
+                                self.agents[name].run(
+                                    question,
+                                    context,
+                                    debate_context=debate_context
+                                ),
                                 timeout=180.0
                             )
                             report.agent = getattr(report, "agent", display_name) or display_name
@@ -956,6 +965,14 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
                 narrative=f"{agent_name} is not configured for direct execution.",
             )
 
+        except ValueError as exc:  # Expected data unavailability
+            logger.warning("Deterministic agent %s skipped: %s", agent_name, exc)
+            return AgentReport(
+                agent=agent_name,
+                findings=[],
+                warnings=[f"Data unavailable: {exc}"],
+                narrative=f"{agent_name} skipped: {exc}",
+            )
         except Exception as exc:  # pragma: no cover - defensive
             logger.error("Deterministic agent %s failed: %s", agent_name, exc, exc_info=True)
             return AgentReport(
@@ -1924,6 +1941,7 @@ Synthesis:"""
     ) -> Dict[str, Any]:
         """
         Run workflow with streaming events.
+        Now includes emergency synthesis for timeout scenarios.
         
         Args:
             question: User's question
@@ -1953,6 +1971,8 @@ Synthesis:"""
         }
         
         try:
+            # Execute workflow WITHOUT timeout - let debate and synthesis complete naturally
+            # API endpoint has 60-minute timeout which is the only limit
             final_state = await self.graph.ainvoke(initial_state)
             
             # Emit done event
@@ -1972,7 +1992,7 @@ Synthesis:"""
         except Exception as e:
             logger.error(f"Streaming workflow failed: {e}", exc_info=True)
             if event_callback:
-                await event_callback("error", "error", {"error": str(e)})
+                await event_callback("error", "error", {"error": str(e)}, 0)
             raise e
 
 

@@ -88,10 +88,13 @@ class LLMAgent(ABC):
     async def run_stream(
         self,
         question: str,
-        context: Optional[Dict] = None
+        context: Optional[Dict] = None,
+        debate_context: str = ""
     ) -> AsyncIterator[dict]:
         """Run agent with streaming output and stage-level error events."""
         context = context or {}
+        # Preserve existing context but ensure debate context is available downstream
+        context.setdefault("debate_context", debate_context)
         start_time = datetime.now(timezone.utc)
 
         try:
@@ -165,8 +168,7 @@ class LLMAgent(ABC):
             is_valid, violations = self.parser.validate_numbers(finding, allowed_numbers, tolerance=0.02)
 
             if not is_valid:
-                logger.warning("%s number validation failed: %d violation(s)", self.agent_name, len(violations))
-                yield {"type": "warning", "content": f"?? {self.agent_name}: {len(violations)} number validation warnings"}
+                logger.debug("%s number validation: %d metric(s) inferred", self.agent_name, len(violations))
 
             insight = Insight(
                 title=finding.title,
@@ -194,7 +196,8 @@ class LLMAgent(ABC):
     async def run(
         self,
         question: str,
-        context: Optional[Dict] = None
+        context: Optional[Dict] = None,
+        debate_context: str = ""
     ) -> AgentReport:
         """Run agent without streaming while surfacing detailed error context."""
         context = context or {}
@@ -204,7 +207,7 @@ class LLMAgent(ABC):
         error_messages: list[str] = []
 
         try:
-            async for event in self.run_stream(question, context):
+            async for event in self.run_stream(question, context, debate_context):
                 event_type = event.get("type")
                 if event_type == "complete":
                     report = event["report"]

@@ -8,9 +8,11 @@ all numeric claims are properly cited with source prefixes and query IDs.
 from __future__ import annotations
 
 import logging
+import re
 import time
 from bisect import bisect_right
 from dataclasses import dataclass
+from typing import Any
 
 from ..data.deterministic.models import QueryResult
 from .citation_patterns import (
@@ -429,3 +431,181 @@ def enforce_citations(
         sources_used=sources_used,
         runtime_ms=duration_ms,
     )
+
+
+VALID_CITATION_PATTERNS = [
+    r'\[Per extraction:\s*["\'].*?["\']\s*from\s+.*?\]',
+    r'\[Per\s+\w+\s+analysis:\s*["\'].*?["\']\]',
+    r'\[Source:\s+.*?\]',
+    r'\[From\s+.*?\s+data\]',
+    r'according to \w+\s+(?:data|statistics|report)',
+]
+
+WEASEL_WORDS_PATTERNS = [
+    r"\bapproximately\s+\$?\d+",
+    r"\baround\s+\$?\d+",
+    r"\bestimated?\s+\$?\d+",
+    r"\broughly\s+\$?\d+",
+    r"\babout\s+\$?\d+",
+    r"\bnearly\s+\$?\d+",
+    r"\balmost\s+\$?\d+",
+    r"\bclose to\s+\$?\d+",
+]
+
+NUMBER_PATTERN = r"\$?\d+(?:,\d{3})*(?:\.\d+)?(?:\s*(?:billion|million|thousand|B|M|K|bn|mn|k))?\b"
+
+
+def verify_citations_strict(
+    agent_output: str,
+    extracted_facts: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """
+    Strict verification pass – any missing citation is treated as fatal.
+    """
+    if not agent_output:
+        return {"passed": True, "violations": [], "violation_count": 0}
+
+    violations: list[dict[str, Any]] = []
+    fact_values = {
+        str(fact.get("value", "")).lower()
+        for fact in (extracted_facts or [])
+    }
+
+    for match in re.finditer(NUMBER_PATTERN, agent_output):
+        number = match.group(0)
+        if re.fullmatch(r"(19|20)\d{2}", number):
+            continue  # treat years as descriptive, not quantitative claims
+
+        window_start = max(0, match.start() - 100)
+        window_end = min(len(agent_output), match.end() + 100)
+        context = agent_output[window_start:window_end]
+
+        if not any(re.search(pattern, context, re.IGNORECASE) for pattern in VALID_CITATION_PATTERNS):
+            violations.append(
+                {
+                    "type": "missing_citation",
+                    "number": number,
+                    "context": context.strip(),
+                    "severity": "CRITICAL",
+                }
+            )
+            continue
+
+        # Optional: flag if number does not map to known facts
+        if fact_values and number.replace(",", "").lower() not in fact_values:
+            violations.append(
+                {
+                    "type": "unknown_fact",
+                    "number": number,
+                    "severity": "MEDIUM",
+                }
+            )
+
+    for pattern in WEASEL_WORDS_PATTERNS:
+        for match in re.finditer(pattern, agent_output, re.IGNORECASE):
+            lookahead = agent_output[match.end() : match.end() + 120]
+            if any(re.search(cit_pattern, lookahead, re.IGNORECASE) for cit_pattern in VALID_CITATION_PATTERNS):
+                continue
+            violations.append(
+                {
+                    "type": "weasel_word_without_citation",
+                    "text": match.group(0),
+                    "severity": "HIGH",
+                }
+            )
+
+    return {
+        "passed": not violations,
+        "violations": violations,
+        "violation_count": len(violations),
+    }
+
+
+async def verify_agent_output_with_retry(
+    agent_name: str,
+    agent_output: str,
+    extracted_facts: list[dict[str, Any]] | None = None,
+    max_retries: int = 3,
+) -> dict[str, Any]:
+    """
+    Attempt strict citation verification with limited retries.
+    """
+    if not isinstance(agent_output, str):
+        return {"status": "passed", "output": agent_output, "attempts": 0}
+
+    attempts = 0
+    latest_output = agent_output
+    facts = extracted_facts or []
+
+    while attempts < max_retries:
+        attempts += 1
+        report = verify_citations_strict(latest_output, facts)
+        if report["passed"]:
+            return {
+                "status": "passed",
+                "output": latest_output,
+                "attempts": attempts,
+                "violations": [],
+            }
+
+        logger.warning(
+            "%s failed strict verification (attempt %d/%d, %d violations)",
+            agent_name,
+            attempts,
+            max_retries,
+            report["violation_count"],
+        )
+
+        if attempts >= max_retries:
+            return {
+                "status": "rejected",
+                "reason": "citation_violations",
+                "violations": report["violations"],
+                "attempts": attempts,
+            }
+
+        latest_output = await re_prompt_agent_with_violations(
+            agent_name,
+            latest_output,
+            report["violations"],
+            facts,
+        )
+
+    return {
+        "status": "rejected",
+        "reason": "citation_violations",
+        "violations": [],
+        "attempts": attempts,
+    }
+
+
+async def re_prompt_agent_with_violations(
+    agent_name: str,
+    original_output: str,
+    violations: list[dict[str, Any]],
+    extracted_facts: list[dict[str, Any]],
+) -> str:
+    """
+    Produce deterministic guidance that downstream agents can act upon.
+
+    This does not call the original agent again – instead it appends a reminder
+    instructing the moderator to regenerate the section with proper citations.
+    """
+    reminders = [
+        f"- Missing citation for {violation.get('number', violation.get('text', 'value'))}"
+        for violation in violations[:5]
+    ]
+    facts_hint = ""
+    if extracted_facts:
+        facts_hint = "\nSuggested facts to cite:\n" + "\n".join(
+            f"  * {fact.get('metric')}: {fact.get('value')}"
+            for fact in extracted_facts[:3]
+        )
+
+    appendix = (
+        "\n\n[Citation Reminder]\n"
+        f"{agent_name} must address the following issues:\n"
+        + "\n".join(reminders)
+        + facts_hint
+    )
+    return f"{original_output.strip()}{appendix}"

@@ -1,35 +1,102 @@
-"""
-Orchestrates multi-turn agent debates.
-COMPLETE enterprise-grade implementation - NO PLACEHOLDERS.
-"""
+"""Orchestrates multi-turn agent debates for the QNWIS council."""
 
-import logging
 import json
+import logging
 import re
-from typing import Any, Callable, Dict, List, Optional
-from datetime import datetime
 from collections import defaultdict
+from datetime import datetime
+from typing import Any, Callable, Dict, List, Optional
 
 from ..llm.client import LLMClient
+from .debate import detect_debate_convergence
 
 logger = logging.getLogger(__name__)
 
 
+def create_debate_context(turn_number: int, debate_history: List[Dict]) -> str:
+    """Create debate context that highlights recent micro vs macro arguments."""
+    if turn_number == 1:
+        return """
+# DEBATE FRAMEWORK
+
+This analysis includes both MICROECONOMIC and MACROECONOMIC perspectives:
+
+**MicroEconomist** focuses on:
+- Project-level costs and returns
+- Market efficiency and price signals
+- Opportunity costs
+- ROI, NPV, financial viability
+
+**MacroEconomist** focuses on:
+- National-level aggregate effects
+- Strategic security and resilience
+- Systemic risks and externalities
+- Long-term structural transformation
+
+**YOUR ROLE**:
+- Provide your perspective through your analytical lens
+- Engage with other perspectives when they challenge your analysis
+- Acknowledge valid points from other analysts
+- Help synthesize the tension between efficiency and strategy
+"""
+
+    recent_turns = debate_history[-3:] if len(debate_history) > 3 else debate_history
+    context = "\n# PREVIOUS DEBATE TURNS:\n\n"
+    for turn in recent_turns:
+        agent = turn.get("agent", "Unknown")
+        content = turn.get("content", "")[:500]
+        context += f"**{agent}**: {content}...\n\n"
+
+    context += "\nBuild on these perspectives. Challenge assumptions if warranted. Find synthesis where possible.\n"
+    return context
+
+
 class LegendaryDebateOrchestrator:
     """
-    COMPLETE 6-phase legendary debate system.
-    Target: 80-125 turns over 20-30 minutes.
+    ADAPTIVE 6-phase legendary debate system.
+    Adjusts depth based on question complexity.
+    
+    SIMPLE questions (factual): 10-15 turns, 2-3 minutes
+    COMPLEX questions (strategic): 80-125 turns, 20-30 minutes
     """
     
-    # Turn limits per phase to prevent runaway generation
-    MAX_TURNS_TOTAL = 125
-    MAX_TURNS_PER_PHASE = {
-        "opening_statements": 12,
-        "challenge_defense": 50,
-        "edge_cases": 25,
-        "risk_analysis": 25,
-        "consensus_building": 13
+    # Debate configurations by complexity
+    DEBATE_CONFIGS = {
+        "simple": {
+            "max_turns": 15,
+            "phases": {
+                "opening_statements": 4,
+                "challenge_defense": 6,
+                "edge_cases": 2,
+                "risk_analysis": 2,
+                "consensus_building": 1
+            }
+        },
+        "standard": {
+            "max_turns": 40,
+            "phases": {
+                "opening_statements": 8,
+                "challenge_defense": 18,
+                "edge_cases": 8,
+                "risk_analysis": 4,
+                "consensus_building": 2
+            }
+        },
+        "complex": {
+            "max_turns": 125,
+            "phases": {
+                "opening_statements": 12,
+                "challenge_defense": 50,
+                "edge_cases": 25,
+                "risk_analysis": 25,
+                "consensus_building": 13
+            }
+        }
     }
+    
+    # Default configuration (will be overridden by classification)
+    MAX_TURNS_TOTAL = 40
+    MAX_TURNS_PER_PHASE = DEBATE_CONFIGS["standard"]["phases"]
     
     def __init__(self, emit_event_fn: Callable, llm_client: LLMClient):
         """
@@ -49,6 +116,50 @@ class LegendaryDebateOrchestrator:
         self.resolutions = []  # Track resolutions from Phase 2
         self.agent_reports_map = {}  # Map agent names to their reports
         self.question = ""  # Store the actual query being debated
+        self.extracted_facts: List[Dict[str, Any]] = []
+        self.debate_complexity = "standard"  # Track debate complexity level
+    
+    def _detect_question_complexity(self, question: str) -> str:
+        """
+        Detect question complexity to determine debate depth.
+        
+        Returns:
+            "simple", "standard", or "complex"
+        """
+        question_lower = question.lower()
+        
+        # SIMPLE: Factual queries, single metrics, status checks
+        simple_indicators = [
+            "what is", "what are", "how many", "when did", "who is",
+            "unemployment rate", "latest data", "current status"
+        ]
+        if any(indicator in question_lower for indicator in simple_indicators):
+            if len(question.split()) < 15:  # Short factual questions
+                return "simple"
+        
+        # COMPLEX: Strategic decisions, large investments, multi-year planning
+        complex_indicators = [
+            "$", "billion", "investment", "should qatar", "strategic",
+            "policy", "food security", "self-sufficiency", "by 20",
+            "long-term", "national", "economic development"
+        ]
+        complex_count = sum(1 for indicator in complex_indicators if indicator in question_lower)
+        if complex_count >= 3:  # Multiple complex indicators
+            return "complex"
+        
+        # STANDARD: Everything else
+        return "standard"
+    
+    def _apply_debate_config(self, complexity: str):
+        """Apply debate configuration based on complexity."""
+        config = self.DEBATE_CONFIGS.get(complexity, self.DEBATE_CONFIGS["standard"])
+        self.MAX_TURNS_TOTAL = config["max_turns"]
+        self.MAX_TURNS_PER_PHASE = config["phases"]
+        self.debate_complexity = complexity
+        logger.info(
+            f"Debate configuration: {complexity.upper()} "
+            f"(max_turns={self.MAX_TURNS_TOTAL})"
+        )
     
     async def conduct_legendary_debate(
         self,
@@ -56,7 +167,8 @@ class LegendaryDebateOrchestrator:
         contradictions: List[Dict],
         agents_map: Dict[str, Any],
         agent_reports_map: Dict[str, Any],
-        llm_client: LLMClient
+        llm_client: LLMClient,
+        extracted_facts: Optional[List[Dict[str, Any]]] = None
     ) -> Dict:
         """
         Execute complete 6-phase legendary debate.
@@ -77,14 +189,24 @@ class LegendaryDebateOrchestrator:
         self.turn_counter = 0
         self.resolutions = []
         self.agent_reports_map = agent_reports_map
+        self.extracted_facts = extracted_facts or []
         
-        # Phase 1: Opening Statements (12 agents, 2 min)
+        # Detect question complexity and apply appropriate debate configuration
+        complexity = self._detect_question_complexity(question)
+        self._apply_debate_config(complexity)
+        
+        # Phase 1: Opening Statements
         await self._phase_1_opening_statements(agents_map)
         
-        # Phase 2: Challenge/Defense (30 turns, 8 min) - NOW TRACKS RESOLUTIONS
+        # Phase 2: Challenge/Defense (reduced for production)
         await self._phase_2_challenge_defense(contradictions, agents_map)
         
-        # Phase 3: Edge Case Exploration (20 turns, 6 min) - OPTIMIZED
+        # Circuit breaker after Phase 2
+        if self.turn_counter >= self.MAX_TURNS_TOTAL:
+            logger.warning(f"Hit MAX_TURNS_TOTAL ({self.MAX_TURNS_TOTAL}) after Phase 2, ending debate")
+            return self._generate_summary()
+        
+        # Phase 3: Edge Case Exploration (reduced for production)
         edge_cases = await self._generate_edge_cases_llm(
             question, 
             self.conversation_history,
@@ -162,6 +284,62 @@ class LegendaryDebateOrchestrator:
                 "opening_statement",
                 statement
             )
+
+        # Phase 2A: targeted Micro vs Macro exchange
+        micro_agent = agents_map.get("MicroEconomist")
+        macro_agent = agents_map.get("MacroEconomist")
+        if micro_agent and macro_agent:
+            logger.info("🔥 PHASE 2A: Micro vs Macro Cross-Examination")
+            for _ in range(2):
+                if not self._can_emit_turn():
+                    break
+
+                challenge_context = create_debate_context(self.turn_counter + 1, self.conversation_history)
+                challenge_context += """
+
+**SPECIAL INSTRUCTION FOR MICROECONOMIST**:
+MacroEconomist has argued for strategic benefits. Challenge their assumptions:
+- Are strategic benefits quantified or vague claims?
+- What is the probability of the scenarios they describe?
+- Could cheaper alternatives achieve similar strategic goals?
+- What opportunity costs are they ignoring?
+"""
+                micro_report = await micro_agent.run(
+                    self.question,
+                    {"extracted_facts": self.extracted_facts},
+                    debate_context=challenge_context
+                )
+                micro_message = getattr(micro_report, "narrative", str(micro_report))
+                await self._emit_turn(
+                    "MicroEconomist",
+                    "micro_macro_challenge",
+                    micro_message
+                )
+
+                if not self._can_emit_turn():
+                    break
+
+                response_context = create_debate_context(self.turn_counter + 1, self.conversation_history)
+                response_context += """
+
+**SPECIAL INSTRUCTION FOR MACROECONOMIST**:
+MicroEconomist has challenged your strategic benefit claims. Respond:
+- Quantify strategic benefits where possible (insurance value, option value)
+- Provide probability estimates for risk scenarios
+- Acknowledge valid efficiency concerns
+- Explain where market failures justify intervention
+"""
+                macro_report = await macro_agent.run(
+                    self.question,
+                    {"extracted_facts": self.extracted_facts},
+                    debate_context=response_context
+                )
+                macro_message = getattr(macro_report, "narrative", str(macro_report))
+                await self._emit_turn(
+                    "MacroEconomist",
+                    "micro_macro_response",
+                    macro_message
+                )
 
     async def _get_agent_statement(
         self,
@@ -1160,49 +1338,17 @@ Include:
     def _check_convergence(self) -> bool:
         """
         Check if all agents have converged on a consensus position.
-        Returns True if recent turns show broad agreement.
+        Uses enhanced detection with semantic similarity.
         """
-        if len(self.conversation_history) < 12:
-            return False
+        result = detect_debate_convergence(self.conversation_history)
         
-        recent_turns = self.conversation_history[-12:]
-        
-        # Convergence indicators
-        convergence_phrases = [
-            "we agree",
-            "consensus",
-            "we concur",
-            "shared view",
-            "common conclusion",
-            "all recognize",
-            "aligned on",
-            "general agreement"
-        ]
-        
-        # Strong agreement phrases
-        strong_agreement_phrases = [
-            "I agree with",
-            "I support",
-            "that's correct",
-            "you're right",
-            "exactly",
-            "precisely"
-        ]
-        
-        convergence_count = 0
-        agreement_count = 0
-        
-        for turn in recent_turns:
-            message = turn.get("message", "").lower()
+        if result.get("converged"):
+            reason = result.get("reason", "unknown")
+            msg = result.get("message", "")
+            logger.info(f"Convergence detected: {reason} - {msg}")
+            return True
             
-            if any(phrase in message for phrase in convergence_phrases):
-                convergence_count += 1
-            
-            if any(phrase in message for phrase in strong_agreement_phrases):
-                agreement_count += 1
-        
-        # Convergence if 40%+ of recent turns show convergence OR 50%+ show strong agreement
-        return convergence_count >= 5 or agreement_count >= 6
+        return False
 
     def _summarize_debate(self, history: list) -> str:
         """Summarize debate for prompts."""

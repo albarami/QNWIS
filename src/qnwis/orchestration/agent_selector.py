@@ -17,6 +17,36 @@ from typing import Any, Dict, List, Set
 logger = logging.getLogger(__name__)
 
 
+def classify_data_availability(query: str, extracted_facts: List[Dict] | None = None) -> List[str]:
+    """
+    Determine what types of data we have available for this query.
+    """
+    available_types = []
+    facts = extracted_facts or []
+    
+    # Check for time series data
+    if any("time_series" in str(fact.get("type", fact.get("data_type", ""))) for fact in facts):
+        available_types.append("time_series_employment")
+    
+    # Check for historical trends
+    if any("historical" in str(fact.get("type", fact.get("data_type", ""))) for fact in facts):
+        available_types.append("historical_trends")
+    
+    # Check for sector-specific data
+    if any("sector" in str(fact.get("category", fact.get("data_type", ""))) for fact in facts):
+        available_types.append("sector_metrics")
+    
+    # Check for labor market data
+    if any(keyword in query.lower() for keyword in ["employment", "labor", "workforce", "qatarization"]):
+        available_types.append("labor_market")
+
+    # Check for economic data
+    if any(keyword in query.lower() for keyword in ["gdp", "economy", "trade", "investment"]):
+        available_types.append("economic_indicators")
+    
+    return available_types
+
+
 class AgentSelector:
     """
     Intelligent agent selection based on question classification.
@@ -25,80 +55,99 @@ class AgentSelector:
     """
     
     # Agent expertise mapping
-    AGENT_EXPERTISE = {
-        "LabourEconomist": {
-            "intents": ["unemployment", "employment", "trends", "economy", "statistics"],
-            "entities": ["unemployment", "employment", "jobs", "economy", "market"],
-            "always_include": True,  # Always include the economist for baseline data
-            "description": "Employment trends & economic indicators"
+    AGENT_REGISTRY = {
+        "llm_agents": {
+            "MicroEconomist": {
+                "type": "llm",
+                "requires": None,
+                "description": "Project-level cost-benefit analysis, market efficiency, ROI",
+                "focus": "Firm-level economic rationality",
+                "module": "qnwis.agents.micro_economist",
+                "class": "MicroEconomist",
+            },
+            "MacroEconomist": {
+                "type": "llm",
+                "requires": None,
+                "description": "National-level strategy, aggregate impacts, strategic security",
+                "focus": "National welfare and systemic resilience",
+                "module": "qnwis.agents.macro_economist",
+                "class": "MacroEconomist",
+            },
+            "SkillsAgent": {
+                "type": "llm",
+                "requires": None,
+                "description": "Human capital, workforce development, skills gaps",
+                "focus": "Labor market and capability building",
+                "module": "qnwis.agents.skills_agent",
+                "class": "SkillsAgent",
+            },
+            "Nationalization": {
+                "type": "llm",
+                "requires": None,
+                "description": "State ownership, sovereignty, public vs private sector",
+                "focus": "Political economy and governance",
+                "module": "qnwis.agents.nationalization",
+                "class": "NationalizationAgent",
+            },
+            "PatternDetective": {
+                "type": "llm",
+                "requires": None,
+                "description": "Cross-domain patterns, historical precedents, system dynamics",
+                "focus": "Meta-analysis and pattern recognition",
+                "module": "qnwis.agents.pattern_detective_llm",
+                "class": "PatternDetectiveLLM",
+            },
         },
-        "Nationalization": {
-            "intents": ["qatarization", "gcc_comparison", "nationalization", "vision_2030"],
-            "entities": ["qatari", "gcc", "nationalization", "vision", "2030"],
-            "always_include": False,
-            "description": "Qatarization & GCC benchmarking"
+        "deterministic_agents": {
+            "TimeMachine": {
+                "type": "deterministic",
+                "requires": ["time_series_employment", "historical_trends"],
+                "description": "Historical labor market trend analysis",
+                "queries": ["timeseries_employment_all_12m"],
+                "module": "qnwis.agents.time_machine",
+                "class": "TimeMachineAgent",
+            },
+            "Predictor": {
+                "type": "deterministic",
+                "requires": ["time_series_employment"],
+                "description": "Workforce forecasting and retention prediction",
+                "queries": ["ts_retention_by_sector"],
+                "module": "qnwis.agents.predictor",
+                "class": "PredictorAgent",
+            },
+            "Scenario": {
+                "type": "deterministic",
+                "requires": ["sector_metrics", "labor_market"],
+                "description": "Labor market scenario modeling",
+                "queries": ["syn_sector_metrics"],
+                "module": "qnwis.agents.scenario_agent",
+                "class": "ScenarioAgent",
+            },
+            "PatternDetectiveAgent": {
+                "type": "deterministic",
+                "requires": ["sector_metrics", "labor_market"],
+                "description": "Statistical pattern detection in labor data",
+                "queries": ["syn_attrition_by_sector_latest"],
+                "module": "qnwis.agents.pattern_detective",
+                "class": "PatternDetectiveAgent",
+            },
+            "PatternMiner": {
+                "type": "deterministic",
+                "requires": ["time_series", "sector_metrics"],
+                "description": "Automated pattern mining algorithms",
+                "queries": ["timeseries_retention_all_12m"],
+                "module": "qnwis.agents.pattern_miner",
+                "class": "PatternMinerAgent",
+            },
+            "AlertCenter": {
+                "type": "deterministic",
+                "requires": ["alert_rules", "sector_metrics"],
+                "description": "Threshold monitoring and alert evaluation",
+                "queries": [],
+                "module": "qnwis.agents.alert_center",
+                "class": "AlertCenterAgent",
+            },
         },
-        "SkillsAgent": {
-            "intents": ["skills", "education", "training", "workforce_development", "talent"],
-            "entities": ["skills", "education", "training", "qualification", "talent"],
-            "always_include": False,
-            "description": "Skills gaps & workforce development"
-        },
-        "PatternDetective": {
-            "intents": ["anomaly", "pattern", "trend", "quality", "investigation"],
-            "entities": ["anomaly", "pattern", "trend", "quality", "outlier"],
-            "always_include": False,
-            "description": "Data quality & pattern detection (LLM)"
-        },
-        "NationalStrategyLLM": {
-            "intents": ["strategy", "policy", "vision_2030", "planning", "recommendation"],
-            "entities": ["strategy", "policy", "vision", "2030", "plan"],
-            "always_include": False,
-            "description": "Strategic planning & Vision 2030 alignment (LLM)"
-        },
-        # Deterministic Agents
-        "TimeMachine": {
-            "intents": ["history", "past", "trend", "evolution", "change"],
-            "entities": ["year", "past", "historical", "trend", "since"],
-            "always_include": False,
-            "description": "Historical data analysis"
-        },
-        "Predictor": {
-            "intents": ["forecast", "prediction", "future", "outlook", "projection"],
-            "entities": ["future", "forecast", "prediction", "2025", "2030"],
-            "always_include": False,
-            "description": "Forecasting & predictive analytics"
-        },
-        "Scenario": {
-            "intents": ["scenario", "what_if", "impact", "simulation", "effect"],
-            "entities": ["if", "scenario", "impact", "effect", "assume"],
-            "always_include": False,
-            "description": "Scenario planning & impact simulation"
-        },
-        "PatternDetectiveAgent": {
-            "intents": ["correlation", "statistics", "data_check", "verify"],
-            "entities": ["correlation", "stat", "check", "verify"],
-            "always_include": False,
-            "description": "Deterministic pattern & correlation checking"
-        },
-        "PatternMiner": {
-            "intents": ["deep_dive", "mining", "hidden", "insight"],
-            "entities": ["mining", "hidden", "insight", "root_cause"],
-            "always_include": False,
-            "description": "Deep data mining"
-        },
-        "NationalStrategy": {
-            "intents": ["kpi", "target", "benchmark", "goal"],
-            "entities": ["target", "kpi", "goal", "benchmark"],
-            "always_include": False,
-            "description": "Strategic KPI tracking (Deterministic)"
-        },
-        "AlertCenter": {
-            "intents": ["alert", "warning", "risk", "critical"],
-            "entities": ["risk", "warning", "alert", "danger"],
-            "always_include": True,  # Always check for alerts
-            "description": "Critical alerts & risk monitoring"
-        }
     }
     
     # Minimum agents to always run (baseline)
@@ -115,7 +164,8 @@ class AgentSelector:
         cls,
         classification: Dict[str, Any],
         min_agents: int = MIN_AGENTS,
-        max_agents: int = MAX_AGENTS
+        max_agents: int = MAX_AGENTS,
+        extracted_facts: List[Dict[str, Any]] | None = None,
     ) -> List[str]:
         """
         Select relevant agents based on question classification.
@@ -125,6 +175,7 @@ class AgentSelector:
                 Expected keys: intent, entities, complexity
             min_agents: Minimum number of agents to select
             max_agents: Maximum number of agents to select
+            extracted_facts: Optional list of extracted fact dictionaries
             
         Returns:
             List of agent names to invoke
@@ -137,6 +188,7 @@ class AgentSelector:
         entities = classification.get("entities") or {}  # Handle None
         complexity = classification.get("complexity", "medium")
         question_text = classification.get("question", "").lower()
+        fact_payload = extracted_facts or classification.get("extracted_facts")
         
         # Score each agent
         for agent_name, expertise in cls.AGENT_EXPERTISE.items():
@@ -210,7 +262,38 @@ class AgentSelector:
                 selected.add("NationalStrategy")
                 logger.debug("Added NationalStrategy for high complexity")
         
-        result = list(selected)
+        # FILTER: Deterministic Agent Graceful Degradation
+        available_data = classify_data_availability(question_text, fact_payload)
+        
+        deterministic_requirements = {
+            "TimeMachine": ["time_series_employment", "historical_trends"],
+            "Predictor": ["time_series_employment"],
+            "Scenario": ["sector_metrics", "labor_market"],
+            "PatternDetectiveAgent": ["sector_metrics", "labor_market"],
+            "PatternMiner": ["time_series_employment", "sector_metrics"],
+            "NationalStrategy": ["labor_market", "economic_indicators"],
+            "AlertCenter": ["sector_metrics", "labor_market"]
+        }
+        
+        filtered_selected = []
+        for agent in selected:
+            # Check if agent is deterministic and needs specific data
+            if agent in deterministic_requirements:
+                reqs = deterministic_requirements[agent]
+                if not any(r in available_data for r in reqs):
+                    logger.info(f"Skipping {agent}: requires {reqs}, have {available_data}")
+                    continue
+            filtered_selected.append(agent)
+            
+        # Ensure we didn't filter everything out (keep at least LLM agents)
+        if not filtered_selected and selected:
+            # Restore LLM agents
+            llm_agents = ["LabourEconomistLLM", "NationalizationLLM", "SkillsAgentLLM", "PatternDetectiveLLM", "NationalStrategyLLM"]
+            for agent in selected:
+                if agent in llm_agents:
+                    filtered_selected.append(agent)
+        
+        result = filtered_selected
         
         logger.info(
             f"Agent selection: {len(result)}/{len(cls.AGENT_EXPERTISE)} agents "
@@ -278,7 +361,8 @@ class AgentSelector:
 def select_agents_for_question(
     classification: Dict[str, Any],
     min_agents: int = 2,
-    max_agents: int = 4
+    max_agents: int = 4,
+    extracted_facts: List[Dict[str, Any]] | None = None,
 ) -> Dict[str, Any]:
     """
     Convenience function for agent selection.
@@ -287,12 +371,18 @@ def select_agents_for_question(
         classification: Question classification
         min_agents: Minimum agents to select
         max_agents: Maximum agents to select
+        extracted_facts: Optional list of extracted facts for data availability checks
         
     Returns:
         Dictionary with selected agents and explanation
     """
     selector = AgentSelector()
-    selected = selector.select_agents(classification, min_agents, max_agents)
+    selected = selector.select_agents(
+        classification,
+        min_agents,
+        max_agents,
+        extracted_facts=extracted_facts,
+    )
     explanation = selector.explain_selection(selected, classification)
     
     return {
