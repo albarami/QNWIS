@@ -116,7 +116,7 @@ class WorldBankAPI:
         try:
             response = await self.client.get(url, params=params)
             response.raise_for_status()
-            data = await response.json()
+            data = response.json()
             
             # World Bank returns [metadata, data]
             if len(data) < 2 or not data[1]:
