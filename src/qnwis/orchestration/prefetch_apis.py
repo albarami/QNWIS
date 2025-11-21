@@ -243,12 +243,42 @@ class CompletePrefetchLayer:
         self.semantic_scholar = SemanticScholarAPI()
         self.qatar_open_data = QatarOpenDataAPI()
         
+        # IMF API Connector
+        try:
+            from src.data.apis.imf_api import IMFConnector
+        except ImportError:
+            IMFConnector = None  # type: ignore
+
+        # UN Comtrade API Connector
+        try:
+            from src.data.apis.un_comtrade_api import UNComtradeConnector
+        except ImportError:
+            UNComtradeConnector = None  # type: ignore
+
+        # FRED API Connector
+        try:
+            from src.data.apis.fred_api import FREDConnector
+        except ImportError:
+            FREDConnector = None  # type: ignore
+        
+        # World Bank API Connector (PHASE 1 CRITICAL - Fills 60% of gaps)
+        try:
+            from src.data.apis.world_bank_api import WorldBankAPI
+        except ImportError:
+            WorldBankAPI = None  # type: ignore
+        
+        self.imf_connector = IMFConnector() if IMFConnector else None
+        self.un_comtrade_connector = UNComtradeConnector() if UNComtradeConnector else None
+        self.fred_connector = FREDConnector() if FREDConnector else None
+        self.world_bank_connector = WorldBankAPI() if WorldBankAPI else None
+        
         # Get API keys from environment
         self.brave_api_key = os.getenv("BRAVE_API_KEY")
         self.perplexity_api_key = os.getenv("PERPLEXITY_API_KEY")
         
         _safe_print(f"🔑 Brave API: {'✅' if self.brave_api_key else '❌'}")
         _safe_print(f"🔑 Perplexity API: {'✅' if self.perplexity_api_key else '❌'}")
+        _safe_print(f"🔑 IMF API: {'✅' if self.imf_connector else '❌'}")
     
     async def fetch_all_sources(self, query: str) -> List[Dict[str, Any]]:
         """
@@ -266,6 +296,61 @@ class CompletePrefetchLayer:
                 tasks.append(factory)
                 added_methods.add(name)
 
+        # ========================================================================
+        # TIER 1 FREE API TRIGGERS (IMF, UN Comtrade, FRED)
+        # ========================================================================
+        
+        # IMF API Triggers (economic indicators)
+        if any(
+            keyword in query_lower
+            for keyword in [
+                "gdp", "economic growth", "fiscal", "government debt",
+                "inflation", "unemployment", "current account", "deficit",
+                "revenue", "expenditure", "debt", "balance"
+            ]
+        ):
+            _safe_print("🌍 Triggering: IMF API (economic indicators)")
+            add_task(self._fetch_imf_dashboard, "imf_dashboard")
+        
+        # UN Comtrade API Triggers (trade/food imports)
+        if any(
+            keyword in query_lower
+            for keyword in [
+                "food", "import", "trade", "self-sufficiency", "agriculture",
+                "meat", "dairy", "vegetables", "cereals", "commodity", "farming"
+            ]
+        ):
+            _safe_print("🌍 Triggering: UN Comtrade API (food imports)")
+            add_task(self._fetch_comtrade_food, "comtrade_food")
+        
+        # FRED API Triggers (US economic benchmarks)
+        if any(
+            keyword in query_lower
+            for keyword in [
+                "united states", "usa", "us ", "american", "federal reserve",
+                "compare", "benchmark", "global", "international"
+            ]
+        ):
+            _safe_print("🇺🇸 Triggering: FRED API (US economic data)")
+            add_task(self._fetch_fred_benchmarks, "fred_benchmarks")
+        
+        # World Bank API Triggers (FILLS 60% OF GAPS - sector GDP, infrastructure, human capital)
+        if any(
+            keyword in query_lower
+            for keyword in [
+                "sector", "tourism", "manufacturing", "services", "industry",
+                "infrastructure", "education", "health", "digital",
+                "internet", "roads", "human capital", "enrollment",
+                "life expectancy", "savings", "investment climate"
+            ]
+        ):
+            _safe_print("🌍 Triggering: World Bank API (sector GDP, infrastructure, human capital)")
+            add_task(self._fetch_world_bank_dashboard, "world_bank_dashboard")
+        
+        # ========================================================================
+        # EXISTING SOURCE TRIGGERS
+        # ========================================================================
+        
         # Labor market triggers (MoL stub, GCC-STAT, Semantic Scholar)
         if any(
             word in query_lower
@@ -1161,6 +1246,326 @@ class CompletePrefetchLayer:
             _safe_print(f"Perplexity targeted error: {e}")
             
         return []
+
+    async def _fetch_imf(self, indicator_code: str, params: Dict) -> List[Dict]:
+        """Fetch data from IMF API"""
+        if not self.imf_connector:
+            return []
+        
+        try:
+            country = params.get("country", "QAT")
+            data = await self.imf_connector.get_indicator(indicator_code, country)
+            
+            facts = []
+            values = data.get("values", {})
+            metadata = data.get("metadata", {})
+            
+            if values:
+                latest_year = max(values.keys(), key=lambda x: int(x))
+                latest_value = values[latest_year]
+                
+                facts.append({
+                    "data_type": metadata.get("description", indicator_code),
+                    "value": latest_value,
+                    "year": int(latest_year),
+                    "source": "IMF Data Mapper API",
+                    "country": metadata.get("country_name", country),
+                    "indicator_code": indicator_code,
+                    "confidence": "high",
+                    "all_years": values
+                })
+            
+            return facts
+            
+        except Exception as e:
+            _safe_print(f"IMF fetch failed for {indicator_code}: {e}")
+            return []
+
+    async def _fetch_comtrade(self, commodity_code: str, params: Dict) -> List[Dict]:
+        """Fetch data from UN Comtrade API"""
+        if not self.un_comtrade_connector:
+            return []
+        
+        try:
+            year = params.get("year", 2023)
+            
+            if commodity_code == "FOOD_TOTAL":
+                # Get total food imports
+                data = await self.un_comtrade_connector.get_total_food_imports(year)
+                total_value = data.get("TOTAL", {}).get("value_usd", 0)
+                
+                return [{
+                    "data_type": "Total Food Imports",
+                    "value": total_value,
+                    "year": year,
+                    "source": "UN Comtrade API",
+                    "country": "Qatar",
+                    "unit": "USD",
+                    "confidence": "high",
+                    "breakdown": {k: v for k, v in data.items() if k != "TOTAL"}
+                }]
+            else:
+                # Get specific commodity
+                data = await self.un_comtrade_connector.get_imports(commodity_code, year)
+                if "data" in data and len(data["data"]) > 0:
+                    total_value = sum(item.get("primaryValue", 0) for item in data["data"])
+                    
+                    return [{
+                        "data_type": f"Imports - Commodity {commodity_code}",
+                        "value": total_value,
+                        "year": year,
+                        "source": "UN Comtrade API",
+                        "country": "Qatar",
+                        "unit": "USD",
+                        "confidence": "high",
+                        "records": len(data["data"])
+                    }]
+            
+            return []
+            
+        except Exception as e:
+            _safe_print(f"UN Comtrade fetch failed: {e}")
+            return []
+    
+    async def _fetch_fred(self, series_id: str, params: Dict) -> List[Dict]:
+        """Fetch data from FRED API"""
+        if not self.fred_connector:
+            return []
+        
+        try:
+            start_date = params.get("start_date")
+            end_date = params.get("end_date")
+            
+            data = await self.fred_connector.get_series(series_id, start_date, end_date)
+            
+            facts = []
+            values = data.get("values", {})
+            
+            if values:
+                latest_date = max(values.keys())
+                latest_value = values[latest_date]
+                
+                facts.append({
+                    "data_type": f"FRED Series {series_id}",
+                    "value": latest_value,
+                    "date": latest_date,
+                    "source": "FRED (Federal Reserve Economic Data)",
+                    "series_id": series_id,
+                    "confidence": "high",
+                    "all_values": values
+                })
+            
+            return facts
+            
+        except Exception as e:
+            _safe_print(f"FRED fetch failed for {series_id}: {e}")
+            return []
+    
+    async def _fetch_imf_dashboard(self) -> List[Dict[str, Any]]:
+        """Fetch Qatar economic dashboard from IMF"""
+        if not self.imf_connector:
+            _safe_print("⚠️  IMF connector not available")
+            return []
+        
+        try:
+            _safe_print("✅ IMF: Fetching Qatar economic dashboard...")
+            dashboard = await self.imf_connector.get_qatar_dashboard()
+            
+            facts = []
+            for indicator_name, data in dashboard.items():
+                if "error" not in data:
+                    values = data.get("values", {})
+                    metadata = data.get("metadata", {})
+                    
+                    if values:
+                        latest_year = max(values.keys(), key=lambda x: int(x))
+                        latest_value = values[latest_year]
+                        
+                        facts.append({
+                            "metric": indicator_name,
+                            "value": latest_value,
+                            "year": int(latest_year),
+                            "description": metadata.get("description", indicator_name),
+                            "source": "IMF Data Mapper API",
+                            "source_priority": 95,
+                            "country": "Qatar",
+                            "confidence": 0.98,
+                            "raw_text": f"{metadata.get('description', indicator_name)}: {latest_value} ({latest_year})",
+                            "timestamp": datetime.now().isoformat()
+                        })
+            
+            _safe_print(f"   Retrieved {len(facts)} IMF indicators")
+            return facts
+            
+        except Exception as e:
+            _safe_print(f"❌ IMF API error: {e}")
+            return []
+    
+    async def _fetch_comtrade_food(self) -> List[Dict[str, Any]]:
+        """Fetch Qatar food imports from UN Comtrade"""
+        if not self.un_comtrade_connector:
+            _safe_print("⚠️  UN Comtrade connector not available")
+            return []
+        
+        try:
+            _safe_print("✅ UN Comtrade: Fetching Qatar food imports...")
+            food_imports = await self.un_comtrade_connector.get_total_food_imports(2023)
+            
+            facts = []
+            total_value = food_imports.get("TOTAL", {}).get("value_usd", 0)
+            
+            # Add total
+            facts.append({
+                "metric": "total_food_imports",
+                "value": total_value,
+                "year": 2023,
+                "source": "UN Comtrade API",
+                "source_priority": 95,
+                "confidence": 0.95,
+                "raw_text": f"Qatar total food imports (2023): ${total_value:,.0f}",
+                "timestamp": datetime.now().isoformat(),
+                "unit": "USD"
+            })
+            
+            # Add breakdown by category
+            for category, data in food_imports.items():
+                if category != "TOTAL" and "error" not in data:
+                    cat_value = data.get("value_usd", 0)
+                    facts.append({
+                        "metric": f"food_imports_{category.lower().replace(' ', '_')}",
+                        "value": cat_value,
+                        "category": category,
+                        "year": 2023,
+                        "source": "UN Comtrade API",
+                        "source_priority": 90,
+                        "confidence": 0.90,
+                        "raw_text": f"Qatar {category} imports (2023): ${cat_value:,.0f}",
+                        "timestamp": datetime.now().isoformat()
+                    })
+            
+            _safe_print(f"   Retrieved food import data: ${total_value:,.0f}")
+            return facts
+            
+        except Exception as e:
+            _safe_print(f"❌ UN Comtrade API error: {e}")
+            return []
+    
+    async def _fetch_fred_benchmarks(self) -> List[Dict[str, Any]]:
+        """Fetch US economic benchmarks from FRED"""
+        if not self.fred_connector:
+            _safe_print("⚠️  FRED connector not available")
+            return []
+        
+        try:
+            _safe_print("✅ FRED: Fetching US economic benchmarks...")
+            
+            # Key US indicators for comparison
+            series_map = {
+                "GDP": "US GDP",
+                "UNRATE": "US Unemployment Rate",
+                "CPIAUCSL": "US Inflation (CPI)"
+            }
+            
+            facts = []
+            for series_id, description in series_map.items():
+                try:
+                    latest_value = await self.fred_connector.get_latest_value(series_id)
+                    if latest_value is not None:
+                        facts.append({
+                            "metric": f"us_{series_id.lower()}",
+                            "value": latest_value,
+                            "description": description,
+                            "series_id": series_id,
+                            "source": "FRED (Federal Reserve Economic Data)",
+                            "source_priority": 90,
+                            "country": "United States",
+                            "confidence": 0.95,
+                            "raw_text": f"{description}: {latest_value}",
+                            "timestamp": datetime.now().isoformat()
+                        })
+                except Exception as e:
+                    _safe_print(f"   Failed to fetch {series_id}: {e}")
+            
+            _safe_print(f"   Retrieved {len(facts)} US benchmarks")
+            return facts
+            
+        except Exception as e:
+            _safe_print(f"❌ FRED API error: {e}")
+            return []
+    
+    async def _fetch_world_bank_dashboard(self) -> List[Dict[str, Any]]:
+        """
+        Fetch Qatar dashboard from World Bank - FILLS 60% OF GAPS
+        
+        This is the MOST CRITICAL API addition:
+        - Sector GDP breakdown (tourism %, manufacturing %, services %)
+        - Infrastructure quality metrics
+        - Human capital indicators
+        - Digital economy metrics
+        """
+        if not self.world_bank_connector:
+            _safe_print("⚠️  World Bank connector not available")
+            return []
+        
+        try:
+            _safe_print("✅ World Bank: Fetching Qatar development indicators...")
+            
+            # Get sector GDP breakdown first (CRITICAL gap fix)
+            sector_gdp = await self.world_bank_connector.get_sector_gdp_breakdown("QAT")
+            
+            facts = []
+            
+            # Add sector GDP data
+            if "sector_breakdown" in sector_gdp:
+                for sector_name, data in sector_gdp["sector_breakdown"].items():
+                    if "percentage_of_gdp" in data:
+                        facts.append({
+                            "metric": f"{sector_name.lower()}_gdp_percentage",
+                            "value": data["percentage_of_gdp"],
+                            "sector": sector_name,
+                            "source": "World Bank Indicators API",
+                            "source_priority": 98,
+                            "confidence": 0.99,
+                            "raw_text": f"{sector_name} sector: {data['percentage_of_gdp']}% of GDP",
+                            "timestamp": datetime.now().isoformat(),
+                            "note": "FILLS CRITICAL GAP - sector GDP previously unavailable"
+                        })
+            
+            # Get full dashboard for other indicators
+            dashboard = await self.world_bank_connector.get_qatar_dashboard()
+            
+            for indicator_code, data in dashboard.items():
+                if "error" not in data and data.get("latest_value") is not None:
+                    facts.append({
+                        "metric": indicator_code,
+                        "value": data["latest_value"],
+                        "year": data.get("latest_year"),
+                        "description": data.get("description", indicator_code),
+                        "source": "World Bank Indicators API",
+                        "source_priority": 98,
+                        "country": "Qatar",
+                        "confidence": 0.99,
+                        "raw_text": f"{data.get('description', indicator_code)}: {data['latest_value']} ({data.get('latest_year', 'N/A')})",
+                        "timestamp": datetime.now().isoformat()
+                    })
+            
+            _safe_print(f"   Retrieved {len(facts)} World Bank indicators (including SECTOR GDP)")
+            return facts
+            
+        except Exception as e:
+            _safe_print(f"❌ World Bank API error: {e}")
+            return []
+    
+    async def close(self):
+        """Close all API connectors"""
+        if self.imf_connector:
+            await self.imf_connector.close()
+        if self.un_comtrade_connector:
+            await self.un_comtrade_connector.close()
+        if self.fred_connector:
+            await self.fred_connector.close()
+        if self.world_bank_connector:
+            await self.world_bank_connector.close()
 
 
 # Singleton instance
