@@ -8,22 +8,26 @@ from typing import Dict, List, Any
 # Import the full catalog from data module
 # This file provides the structure - actual catalog is in separate module for maintainability
 
-# Phase 1 Critical APIs (Implementing NOW)
+# Phase 1 Critical APIs (✅ IMPLEMENTED)
 PHASE_1_CRITICAL_APIS = [
-    "world_bank_indicators",  # Fills 60% of gaps
-    "unctad",                 # Investment/FDI critical
-    "ilo_ilostat"             # International labor benchmarks
+    "world_bank_indicators",  # ✅ Fills 60% of gaps - IMPLEMENTED
+    "unctad",                 # ✅ Investment/FDI critical - IMPLEMENTED
+    "ilo_ilostat"             # ✅ International labor benchmarks - IMPLEMENTED
 ]
 
-# Phase 2 Specialized APIs (Next priority)
+# Phase 2 Specialized APIs (✅ IMPLEMENTED)
 PHASE_2_APIS = [
-    "fao_stat",               # Food security
-    "unwto_tourism",          # Tourism statistics
-    "iea_energy"              # Energy sector
+    "fao_stat",               # ✅ Food security - IMPLEMENTED
+    "unwto_tourism",          # ✅ Tourism statistics - IMPLEMENTED (requires subscription)
+    "iea_energy"              # ✅ Energy sector - IMPLEMENTED (requires subscription)
 ]
 
-# Currently Available
-TIER_1_AVAILABLE = ["imf", "un_comtrade", "fred", "mol_lmis", "gcc_stat", "qatar_open_data"]
+# Currently Available (ALL APIs)
+TIER_1_AVAILABLE = [
+    "imf", "un_comtrade", "fred", "mol_lmis", "gcc_stat", "qatar_open_data",  # Original
+    "world_bank_indicators", "unctad", "ilo_ilostat",  # Phase 1
+    "fao_stat", "unwto_tourism", "iea_energy"  # Phase 2
+]
 
 # Domain to API mapping
 DOMAIN_TO_API_MAPPING = {
