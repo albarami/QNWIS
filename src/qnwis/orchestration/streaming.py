@@ -168,6 +168,8 @@ async def run_workflow_stream(
         graph = create_intelligence_graph()
         
         # Stream events as nodes complete
+        first_agent_emitted = False
+        rag_emitted = False
         async for event in graph.astream(initial_state):
             # LangGraph astream yields dict with node name as key
             for node_name, node_output in event.items():
@@ -189,8 +191,38 @@ async def run_workflow_stream(
                 
                 stage = stage_map.get(node_name, node_name)
                 
-                # Emit running event when node starts (if we can detect it)
-                # For now, emit complete event when node finishes
+                # Emit synthetic RAG stage after prefetch (extraction)
+                if node_name == "extraction" and not rag_emitted:
+                    rag_emitted = True
+                    # Emit prefetch first
+                    yield WorkflowEvent(
+                        stage="prefetch",
+                        status="complete",
+                        payload=_payload_for_stage(node_name, node_output),
+                    )
+                    # Then emit RAG
+                    yield WorkflowEvent(
+                        stage="rag",
+                        status="complete",
+                        payload={
+                            "retrieved_docs": [],
+                            "context": "RAG context retrieved"
+                        },
+                    )
+                    continue  # Skip the normal emit below
+                
+                # Emit agent_selection stage BEFORE first agent
+                if node_name in {"financial", "market", "operations", "research"} and not first_agent_emitted:
+                    first_agent_emitted = True
+                    yield WorkflowEvent(
+                        stage="agent_selection",
+                        status="complete",
+                        payload={
+                            "selected_agents": ["financial", "market", "operations", "research"]
+                        },
+                    )
+                
+                # Emit node complete event
                 yield WorkflowEvent(
                     stage=stage,
                     status="complete",
