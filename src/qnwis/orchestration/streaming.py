@@ -226,6 +226,7 @@ async def run_workflow_stream(
                 if node_name == "debate":
                     debate_results = node_output.get("debate_results", {})
                     contradictions = debate_results.get("contradictions", [])
+                    logger.info(f"Debate node: emitting {len(contradictions)} contradictions as conversation turns")
                     
                     # Emit each contradiction as debate conversation turns
                     for turn_num, contradiction in enumerate(contradictions, 1):

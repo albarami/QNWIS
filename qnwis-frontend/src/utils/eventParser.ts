@@ -27,8 +27,14 @@ function normalizeStage(stage: string): WorkflowStage | string {
     return STANDARD_STAGES[normalized as WorkflowStage]
   }
 
-  if (normalized.startsWith('agent:')) {
-    return normalized
+  // Keep agent stages in original case to match agent_selection payload
+  if (trimmed.startsWith('agent:')) {
+    return trimmed
+  }
+
+  // Keep debate turn stages for conversation streaming
+  if (trimmed.startsWith('debate:turn')) {
+    return trimmed
   }
 
   return trimmed

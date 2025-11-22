@@ -84,6 +84,7 @@ function reduceEvent(state: AppState, event: WorkflowEvent): AppState {
 
   // Handle debate turn events (streaming conversation)
   if (event.stage.startsWith('debate:turn') && event.status === 'streaming') {
+    console.log('🎯 DEBATE TURN RECEIVED:', event.stage, event.payload)
     next.debateTurns.push(event.payload)
     return next
   }
