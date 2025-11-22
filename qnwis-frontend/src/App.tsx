@@ -123,6 +123,8 @@ function App() {
 
         <ExecutiveSummary synthesis={state.synthesis} />
 
+        <RAGContextPanel context={state.ragContext} />
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <ExtractedFacts facts={state.prefetchFacts} />
           <VerificationPanel verification={state.verification} />
