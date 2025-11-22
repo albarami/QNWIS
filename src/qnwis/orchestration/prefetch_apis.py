@@ -404,7 +404,7 @@ class CompletePrefetchLayer:
             add_task(self._fetch_fred_benchmarks, "fred_benchmarks")
         
         # World Bank API Triggers (PHASE 1 - HIGH PRIORITY)
-        # ENHANCED: Added more manufacturing and infrastructure keywords
+        # ENHANCED: Added manufacturing, infrastructure, energy, and food keywords
         if any(
             keyword in query_lower
             for keyword in [
@@ -420,10 +420,16 @@ class CompletePrefetchLayer:
                 "metro", "transport", "railway", "rail", "highway",
                 "port", "airport", "construction", "public works",
                 "utilities", "water", "electricity", "telecom", "logistics",
-                "connectivity", "broadband"
+                "connectivity", "broadband",
+                # Energy additions (to get full dashboard + targeted subset)
+                "energy", "renewable", "solar", "power", "oil", "gas",
+                "lng", "petroleum", "emission", "carbon", "fossil",
+                # Food/agriculture additions (to get full dashboard + targeted subset)
+                "food", "agriculture", "farming", "self-sufficiency",
+                "agricultural", "food security", "import dependency"
             ]
         ):
-            _safe_print("🌍 Triggering: World Bank API (sector GDP, infrastructure, human capital)")
+            _safe_print("🌍 Triggering: World Bank API (comprehensive 128-indicator dashboard)")
             add_task(self._fetch_world_bank_dashboard, "world_bank_dashboard")
         
         # UNCTAD Investment/FDI Triggers (PHASE 1)
@@ -449,6 +455,7 @@ class CompletePrefetchLayer:
             add_task(self._fetch_ilo_benchmarks, "ilo_benchmarks")
         
         # FAO Food Security Triggers (PHASE 2)
+        # ENHANCED: Added Perplexity real-time data with citations
         if any(
             keyword in query_lower
             for keyword in [
@@ -458,6 +465,9 @@ class CompletePrefetchLayer:
         ):
             _safe_print("🌾 Triggering: FAO STAT API (food security, agriculture)")
             add_task(self._fetch_fao_food_security, "fao_food_security")
+            if self.perplexity_api_key:
+                _safe_print("🤖 Triggering: Perplexity AI (food security with citations)")
+                add_task(lambda: self._fetch_perplexity_food_security(query), "perplexity_food_security")
         
         # UNWTO Tourism Triggers (PHASE 2)
         if any(
@@ -471,7 +481,7 @@ class CompletePrefetchLayer:
             add_task(self._fetch_unwto_tourism, "unwto_tourism")
         
         # IEA Energy Triggers (PHASE 2)
-        # ENHANCED: Added oil, gas, and more energy keywords
+        # ENHANCED: Added oil, gas, and more energy keywords + Perplexity real-time data
         if any(
             keyword in query_lower
             for keyword in [
@@ -484,6 +494,9 @@ class CompletePrefetchLayer:
         ):
             _safe_print("⚡ Triggering: IEA API (energy sector, transition)")
             add_task(self._fetch_iea_energy, "iea_energy")
+            if self.perplexity_api_key:
+                _safe_print("🤖 Triggering: Perplexity AI (energy sector with citations)")
+                add_task(lambda: self._fetch_perplexity_energy(query), "perplexity_energy")
         
         # ========================================================================
         # EXISTING SOURCE TRIGGERS
@@ -1219,6 +1232,172 @@ class CompletePrefetchLayer:
             import traceback
 
             traceback.print_exc()
+            return []
+    
+    async def _fetch_perplexity_energy(self, query: str) -> List[Dict[str, Any]]:
+        """Fetch energy sector analysis from Perplexity with real-time data and citations."""
+        if not self.perplexity_api_key:
+            _safe_print("⚠️  Perplexity: No API key")
+            return []
+
+        try:
+            _safe_print("🤖 Perplexity: Analyzing energy sector with real-time data...")
+
+            url = "https://api.perplexity.ai/chat/completions"
+            headers = {
+                "Authorization": f"Bearer {self.perplexity_api_key}",
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "model": "sonar-pro",
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": (
+                            f"Provide detailed, sourced data on Qatar's energy sector related to: {query[:200]}\n\n"
+                            "Include SPECIFIC DATA with citations:\n"
+                            "1. Current renewable energy capacity (MW) and percentage of total energy mix\n"
+                            "2. Oil and gas production volumes and export revenues (recent year)\n"
+                            "3. Energy transition investment commitments and timelines\n"
+                            "4. Carbon emissions data and reduction targets\n"
+                            "5. Comparison with GCC peers (Saudi, UAE)\n"
+                            "6. Recent energy sector projects and their costs\n\n"
+                            "Cite all sources and provide exact figures where available."
+                        ),
+                    }
+                ],
+                "max_tokens": 800
+            }
+
+            async with aiohttp.ClientSession() as session:
+                async with session.post(url, headers=headers, json=payload) as response:
+                    _safe_print(f"   Perplexity energy status: {response.status}")
+
+                    if response.status == 200:
+                        data = await response.json()
+                        answer = data["choices"][0]["message"]["content"]
+                        citations = data.get("citations", [])
+
+                        _safe_print(f"   Perplexity energy response: {answer[:100]}...")
+                        _safe_print(f"   Retrieved {len(citations)} citations")
+
+                        facts = [
+                            {
+                                "metric": "energy_sector_analysis",
+                                "value": answer[:500],
+                                "source": "Perplexity AI (energy analysis with citations)",
+                                "source_priority": 85,
+                                "confidence": 0.85,
+                                "raw_text": answer,
+                                "citations": citations,
+                                "timestamp": datetime.now().isoformat(),
+                            }
+                        ]
+                        
+                        # Extract citations as separate facts
+                        for i, citation in enumerate(citations[:5]):
+                            facts.append({
+                                "metric": f"energy_citation_{i+1}",
+                                "value": citation,
+                                "source": "Perplexity AI (verified citation)",
+                                "source_priority": 80,
+                                "confidence": 0.80,
+                                "raw_text": f"Citation: {citation}",
+                                "timestamp": datetime.now().isoformat(),
+                            })
+                        
+                        return facts
+
+                    error_text = await response.text()
+                    _safe_print(f"   ❌ Perplexity energy error: {response.status} - {error_text[:200]}")
+
+            return []
+
+        except Exception as e:
+            _safe_print(f"⚠️  Perplexity energy error: {e}")
+            return []
+    
+    async def _fetch_perplexity_food_security(self, query: str) -> List[Dict[str, Any]]:
+        """Fetch food security analysis from Perplexity with real-time data and citations."""
+        if not self.perplexity_api_key:
+            _safe_print("⚠️  Perplexity: No API key")
+            return []
+
+        try:
+            _safe_print("🤖 Perplexity: Analyzing food security with real-time data...")
+
+            url = "https://api.perplexity.ai/chat/completions"
+            headers = {
+                "Authorization": f"Bearer {self.perplexity_api_key}",
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "model": "sonar-pro",
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": (
+                            f"Provide detailed, sourced data on Qatar's food security related to: {query[:200]}\n\n"
+                            "Include SPECIFIC DATA with citations:\n"
+                            "1. Current food import dependency percentage by category (meat, dairy, vegetables, cereals)\n"
+                            "2. Recent food import costs (annual, in billions)\n"
+                            "3. Local agricultural production capacity and percentage of consumption met\n"
+                            "4. Food security investments and strategic reserves\n"
+                            "5. Comparison with GCC peers on food self-sufficiency\n"
+                            "6. Recent government initiatives and their budgets\n\n"
+                            "Cite all sources and provide exact figures where available."
+                        ),
+                    }
+                ],
+                "max_tokens": 800
+            }
+
+            async with aiohttp.ClientSession() as session:
+                async with session.post(url, headers=headers, json=payload) as response:
+                    _safe_print(f"   Perplexity food security status: {response.status}")
+
+                    if response.status == 200:
+                        data = await response.json()
+                        answer = data["choices"][0]["message"]["content"]
+                        citations = data.get("citations", [])
+
+                        _safe_print(f"   Perplexity food security response: {answer[:100]}...")
+                        _safe_print(f"   Retrieved {len(citations)} citations")
+
+                        facts = [
+                            {
+                                "metric": "food_security_analysis",
+                                "value": answer[:500],
+                                "source": "Perplexity AI (food security analysis with citations)",
+                                "source_priority": 85,
+                                "confidence": 0.85,
+                                "raw_text": answer,
+                                "citations": citations,
+                                "timestamp": datetime.now().isoformat(),
+                            }
+                        ]
+                        
+                        # Extract citations as separate facts
+                        for i, citation in enumerate(citations[:5]):
+                            facts.append({
+                                "metric": f"food_security_citation_{i+1}",
+                                "value": citation,
+                                "source": "Perplexity AI (verified citation)",
+                                "source_priority": 80,
+                                "confidence": 0.80,
+                                "raw_text": f"Citation: {citation}",
+                                "timestamp": datetime.now().isoformat(),
+                            })
+                        
+                        return facts
+
+                    error_text = await response.text()
+                    _safe_print(f"   ❌ Perplexity food security error: {response.status} - {error_text[:200]}")
+
+            return []
+
+        except Exception as e:
+            _safe_print(f"⚠️  Perplexity food security error: {e}")
             return []
 
 
