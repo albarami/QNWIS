@@ -1,0 +1,36 @@
+{
+  "query": "Should Qatar invest QAR 20B in AI and tech sector by 2030?",
+  "domain": "Digital/AI",
+  "execution_time": 28.33261013031006,
+  "facts_count": 157,
+  "sources": [
+    "Brave Search (real-time)",
+    "GCC-STAT (live API)",
+    "MoL Education Data (stub)",
+    "MoL LMIS (stub)",
+    "Perplexity AI (policy analysis)",
+    "Perplexity AI (real-time analysis)",
+    "Semantic Scholar (2024)",
+    "Semantic Scholar (2025)",
+    "World Bank (PostgreSQL cache)"
+  ],
+  "confidence": 0.44,
+  "nodes": [
+    "classifier",
+    "extraction",
+    "financial",
+    "market",
+    "operations",
+    "research",
+    "debate",
+    "critique",
+    "verification",
+    "synthesis"
+  ],
+  "warnings": [
+    "Fact check flagged missing citations or low confidence."
+  ],
+  "errors": [],
+  "synthesis": "## Ministerial Intelligence Brief\n\n### Financial\n\u26a0\ufe0f ANALYSIS REJECTED - No citations found. Agent violated citation requirements.\n\n{\n  \"title\": \"Test Finding\",\n  \"summary\": \"This is a test finding from the stub LLM.\",\n  \"metrics\": {\n    \"test_metric\": 42.0\n  },\n  \"analysis\": \"Detailed analysis would go here, including Qatar's unemployment rate of 0.10% compared to peers.\",\n  \"recommendations\": [\n    \"Test recommendation 1\",\n    \"Test recommendation 2\"\n  ],\n  \"confidence\": 0.85,\n  \"citations\": [\n",
+  "passed": false
+}
