@@ -40,20 +40,55 @@ def _extract_perspectives(state: IntelligenceState) -> List[AgentPerspective]:
     """Return normalized perspectives from agent reports."""
 
     perspectives: List[AgentPerspective] = []
-    for bundle in state.get("agent_reports", []):
-        report = bundle.get("report", {})
-        narrative = report.get("narrative") or ""
-        confidence = float(report.get("confidence") or 0.0)
-        facts_used = report.get("facts_used") or []
-
-        perspectives.append(
-            AgentPerspective(
-                name=bundle.get("agent", "unknown"),
-                narrative=narrative,
-                confidence=confidence,
-                facts_used=facts_used,
+    
+    # NEW modular workflow: extract from individual agent analysis fields
+    agent_analyses = {
+        "financial": state.get("financial_analysis"),
+        "market": state.get("market_analysis"),
+        "operations": state.get("operations_analysis"),
+        "research": state.get("research_analysis"),
+    }
+    
+    for agent_name, analysis in agent_analyses.items():
+        if analysis:
+            # Analysis is the text report itself
+            narrative = str(analysis) if analysis else ""
+            
+            # Extract confidence if mentioned (simple heuristic)
+            confidence = 0.0
+            if "confidence" in narrative.lower():
+                # Try to find confidence percentage
+                import re
+                match = re.search(r'confidence[:\s]+(\d+)%', narrative.lower())
+                if match:
+                    confidence = float(match.group(1)) / 100.0
+            
+            perspectives.append(
+                AgentPerspective(
+                    name=agent_name,
+                    narrative=narrative,
+                    confidence=confidence or 0.5,  # Default to 0.5 if not found
+                    facts_used=[],  # Will be populated from narrative analysis
+                )
             )
-        )
+    
+    # Fallback to OLD format if new format empty
+    if not perspectives:
+        for bundle in state.get("agent_reports", []):
+            report = bundle.get("report", {})
+            narrative = report.get("narrative") or ""
+            confidence = float(report.get("confidence") or 0.0)
+            facts_used = report.get("facts_used") or []
+
+            perspectives.append(
+                AgentPerspective(
+                    name=bundle.get("agent", "unknown"),
+                    narrative=narrative,
+                    confidence=confidence,
+                    facts_used=facts_used,
+                )
+            )
+    
     return perspectives
 
 
@@ -139,9 +174,20 @@ def debate_node(state: IntelligenceState) -> IntelligenceState:
 
     state["debate_synthesis"] = synthesis
     state["debate_results"] = {
+        "contradictions": contradictions,
         "contradictions_found": len(contradictions),
         "details": contradictions,
-        "status": "complete" if contradictions else "skipped",
+        "status": "resolved" if contradictions else "consensus",
+        "consensus_narrative": synthesis,
+        "resolutions": [
+            {
+                "contradiction": c,
+                "action": "use_agent1" if c.get("winning_agent") == c.get("agent_a") else "use_agent2",
+                "explanation": f"{c.get('winning_agent')} position adopted based on {c.get('sentiment_delta')} sentiment delta and confidence differential",
+                "confidence": 0.7,
+            }
+            for c in contradictions
+        ],
     }
 
     reasoning_chain.append(
