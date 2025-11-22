@@ -49,6 +49,11 @@ def classify_query_node(state: IntelligenceState) -> IntelligenceState:
         r"evaluate.*decision",
         r"diversification.*progress",
         r"assess.*security",
+        r"implications? of",         # "What are the implications of..."
+        r"impact of",                # "What is the impact of..."
+        r"effects? of",              # "What are the effects of..."
+        r"consequences? of",         # "What are the consequences of..."
+        r"pros and cons",            # "What are pros and cons..."
     ]
 
     # Medium: Single domain analysis
