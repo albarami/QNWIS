@@ -403,14 +403,24 @@ class CompletePrefetchLayer:
             _safe_print("🇺🇸 Triggering: FRED API (US economic data)")
             add_task(self._fetch_fred_benchmarks, "fred_benchmarks")
         
-        # World Bank API Triggers (FILLS 60% OF GAPS - sector GDP, infrastructure, human capital)
+        # World Bank API Triggers (PHASE 1 - HIGH PRIORITY)
+        # ENHANCED: Added more manufacturing and infrastructure keywords
         if any(
             keyword in query_lower
             for keyword in [
                 "sector", "tourism", "manufacturing", "services", "industry",
                 "infrastructure", "education", "health", "digital",
                 "internet", "roads", "human capital", "enrollment",
-                "life expectancy", "savings", "investment climate"
+                "life expectancy", "savings", "investment climate",
+                # Manufacturing additions
+                "industrial", "factory", "production", "competitiveness",
+                "export", "value-add", "value added", "industrial zone",
+                "plant", "processing", "assembly",
+                # Infrastructure additions
+                "metro", "transport", "railway", "rail", "highway",
+                "port", "airport", "construction", "public works",
+                "utilities", "water", "electricity", "telecom", "logistics",
+                "connectivity", "broadband"
             ]
         ):
             _safe_print("🌍 Triggering: World Bank API (sector GDP, infrastructure, human capital)")
@@ -461,11 +471,15 @@ class CompletePrefetchLayer:
             add_task(self._fetch_unwto_tourism, "unwto_tourism")
         
         # IEA Energy Triggers (PHASE 2)
+        # ENHANCED: Added oil, gas, and more energy keywords
         if any(
             keyword in query_lower
             for keyword in [
                 "energy", "renewable", "solar", "power", "electricity",
-                "transition", "wind", "clean energy", "carbon"
+                "transition", "wind", "clean energy", "carbon",
+                # Oil & gas additions
+                "oil", "gas", "lng", "natural gas", "petroleum", "hydrocarbon",
+                "fossil fuel", "crude", "refinery", "emission", "co2"
             ]
         ):
             _safe_print("⚡ Triggering: IEA API (energy sector, transition)")
@@ -1786,6 +1800,33 @@ class CompletePrefetchLayer:
             _safe_print(f"❌ World Bank API error: {e}")
             return []
     
+    async def _fetch_world_bank_indicators_subset(self, country: str = "QAT", indicator_codes: List[str] = None) -> List[Dict[str, Any]]:
+        """
+        Fetch specific World Bank indicators from cache
+        Used for targeted data extraction (energy, agriculture, manufacturing, infrastructure)
+        """
+        if not indicator_codes:
+            return []
+        
+        try:
+            # Query PostgreSQL cache for specific indicators
+            cached_facts = self._query_postgres_cache("world_bank", country)
+            
+            if not cached_facts:
+                return []
+            
+            # Filter for requested indicators
+            filtered_facts = [
+                fact for fact in cached_facts 
+                if fact.get("metric") in indicator_codes
+            ]
+            
+            return filtered_facts
+            
+        except Exception as e:
+            _safe_print(f"❌ World Bank subset query error: {e}")
+            return []
+    
     async def _fetch_unctad_investment(self, country: str = "QAT") -> List[Dict[str, Any]]:
         """
         Fetch UNCTAD FDI and investment data - CACHE-FIRST
@@ -1871,80 +1912,82 @@ class CompletePrefetchLayer:
     
     async def _fetch_fao_food_security(self, country: str = "QAT") -> List[Dict[str, Any]]:
         """
-        Fetch FAO food security and agriculture data - CACHE-FIRST
+        Fetch FAO food security and agriculture data with World Bank supplement
         FILLS GAP: Food security analysis
+        FIX: FAO returns limited data, use World Bank agriculture indicators as primary source
         """
-        if not self.fao_connector:
-            _safe_print("⚠️  FAO connector not available")
-            return []
+        facts = []
         
+        # PRIMARY: Use World Bank agriculture indicators (always available from cache)
         try:
-            _safe_print("📡 FAO: Fetching food security data...")
+            _safe_print("📡 World Bank: Fetching agriculture/food indicators...")
             
-            # Fetch food security dashboard (returns nested dict)
-            dashboard = await self.fao_connector.get_food_security_dashboard("634")  # Qatar code
+            # Comprehensive agriculture and food security indicators from World Bank
+            agriculture_indicators = [
+                'AG.LND.AGRI.ZS',       # Agricultural land (% of land area)
+                'AG.PRD.FOOD.XD',       # Food production index
+                'AG.LND.ARBL.HA.PC',    # Arable land per person (hectares)
+                'AG.YLD.CREL.KG',       # Cereal yield (kg per hectare)
+                'NV.AGR.TOTL.ZS',       # Agriculture value added (% of GDP)
+                'AG.CON.FERT.ZS',       # Fertilizer consumption (kg per hectare)
+                'AG.LND.CROP.ZS',       # Crop land (% of land area)
+                'AG.LND.IRIG.AG.ZS',    # Irrigated land (% of cropland)
+                'SN.ITK.DEFC.ZS',       # Prevalence of undernourishment
+                'SP.DYN.LE00.IN',       # Life expectancy (food security impact)
+                'TM.VAL.FOOD.ZS.UN',    # Food imports (% of merchandise imports)
+                'TX.VAL.FOOD.ZS.UN',    # Food exports (% of merchandise exports)
+            ]
             
-            facts = []
+            # Get from World Bank cache (PostgreSQL)
+            wb_facts = await self._fetch_world_bank_indicators_subset(country, agriculture_indicators)
             
-            if dashboard and "error" not in dashboard:
-                # Extract food balance data
-                food_balance = dashboard.get("food_balance", {})
-                if food_balance and "error" not in food_balance:
-                    facts.append({
-                        "metric": "food_balance_available",
-                        "value": 1.0 if food_balance else 0.0,
-                        "year": 2023,
-                        "country": "Qatar",
-                        "source": "FAO STAT - Food Balance",
-                        "source_priority": 96,
-                        "confidence": 0.97,
-                        "raw_text": "Food balance data available from FAO",
-                        "timestamp": datetime.now().isoformat()
-                    })
-                
-                # Extract food security indicators
-                food_security = dashboard.get("food_security", {})
-                if food_security and "error" not in food_security:
-                    facts.append({
-                        "metric": "food_security_indicators_available",
-                        "value": 1.0 if food_security else 0.0,
-                        "year": 2023,
-                        "country": "Qatar",
-                        "source": "FAO STAT - Food Security",
-                        "source_priority": 96,
-                        "confidence": 0.97,
-                        "raw_text": "Food security indicators available from FAO",
-                        "timestamp": datetime.now().isoformat()
-                    })
-                
-                # Extract production data
-                production = dashboard.get("production", {})
-                if production and "error" not in production:
-                    facts.append({
-                        "metric": "agricultural_production_data",
-                        "value": 1.0 if production else 0.0,
-                        "year": 2023,
-                        "country": "Qatar",
-                        "source": "FAO STAT - Production",
-                        "source_priority": 96,
-                        "confidence": 0.97,
-                        "raw_text": "Agricultural production data available from FAO",
-                        "timestamp": datetime.now().isoformat()
-                    })
-                
-                # If we have any component, it's successful
-                if facts:
-                    _safe_print(f"   Retrieved {len(facts)} FAO data components")
-                else:
-                    _safe_print("   ⚠️  FAO dashboard returned but no parseable data")
-            else:
-                _safe_print("   ⚠️  FAO dashboard request failed or returned error")
+            # Convert to agriculture facts format
+            for fact in wb_facts:
+                facts.append({
+                    "metric": fact.get("metric", "unknown"),
+                    "value": fact.get("value"),
+                    "year": fact.get("year"),
+                    "country": country,
+                    "source": "World Bank Agriculture Indicators",
+                    "source_priority": 95,
+                    "confidence": 0.95,
+                    "raw_text": fact.get("raw_text", ""),
+                    "timestamp": datetime.now().isoformat()
+                })
             
-            return facts
+            _safe_print(f"   Retrieved {len(facts)} World Bank agriculture indicators")
             
         except Exception as e:
-            _safe_print(f"❌ FAO error: {e}")
-            return []
+            _safe_print(f"❌ World Bank agriculture error: {e}")
+        
+        # SECONDARY: Try FAO if available (but extract properly structured data only)
+        if self.fao_connector and len(facts) < 5:
+            try:
+                _safe_print("📡 FAO: Fetching food security data (supplement)...")
+                dashboard = await self.fao_connector.get_food_security_dashboard("634")  # Qatar code
+                
+                if dashboard and "error" not in dashboard:
+                    # Only add if we can extract real data (not just availability flags)
+                    food_balance = dashboard.get("food_balance", {})
+                    if food_balance and "error" not in food_balance and food_balance.get("food_balance"):
+                        facts.append({
+                            "metric": "food_balance_available",
+                            "value": 1.0,
+                            "year": 2023,
+                            "country": "Qatar",
+                            "source": "FAO STAT - Food Balance",
+                            "source_priority": 96,
+                            "confidence": 0.97,
+                            "raw_text": "Food balance data available from FAO",
+                            "timestamp": datetime.now().isoformat()
+                        })
+                
+                _safe_print(f"   Retrieved {len(facts)} total food/agriculture indicators")
+                
+            except Exception as e:
+                _safe_print(f"⚠️  FAO supplement failed: {e}")
+        
+        return facts
     
     async def _fetch_unwto_tourism(self, country: str = "QAT") -> List[Dict[str, Any]]:
         """
@@ -1987,42 +2030,81 @@ class CompletePrefetchLayer:
     
     async def _fetch_iea_energy(self, country: str = "QAT") -> List[Dict[str, Any]]:
         """
-        Fetch IEA energy sector and transition data - CACHE-FIRST
+        Fetch IEA energy sector and transition data with World Bank fallback
         FILLS GAP: Energy transition tracking
+        FIX: IEA requires API key, use World Bank energy indicators as primary source
         """
-        if not self.iea_connector:
-            _safe_print("⚠️  IEA connector not available")
-            return []
+        facts = []
         
+        # PRIMARY: Use World Bank energy indicators (always available from cache)
         try:
-            _safe_print("📡 IEA: Fetching energy sector data...")
+            _safe_print("📡 World Bank: Fetching energy indicators...")
             
-            # Fetch energy dashboard
-            dashboard = await self.iea_connector.get_energy_dashboard(country)
+            # Comprehensive energy indicators from World Bank
+            energy_indicators = [
+                'EG.USE.PCAP.KG.OE',    # Energy use per capita (kg of oil equivalent)
+                'EG.USE.ELEC.KH.PC',    # Electric power consumption (kWh per capita)
+                'EG.ELC.ACCS.ZS',       # Access to electricity (% of population)
+                'EG.FEC.RNEW.ZS',       # Renewable energy consumption (% of total)
+                'EG.USE.COMM.FO.ZS',    # Fossil fuel energy consumption (% of total)
+                'EN.ATM.CO2E.PC',       # CO2 emissions per capita (metric tons)
+                'EN.ATM.CO2E.KT',       # CO2 emissions (kt)
+                'EG.ELC.FOSL.ZS',       # Electricity from fossil fuels (% of total)
+                'EG.ELC.RNWX.ZS',       # Electricity from renewables (% of total)
+                'EG.IMP.CONS.ZS',       # Energy imports (% of energy use)
+                'NV.IND.TOTL.ZS',       # Industry value added (% of GDP) - energy intensive
+                'EG.GDP.PUSE.KO.PP',    # GDP per unit of energy use
+            ]
             
-            facts = []
+            # Get from World Bank cache (PostgreSQL)
+            wb_facts = await self._fetch_world_bank_indicators_subset(country, energy_indicators)
             
-            if dashboard and "error" not in dashboard:
-                for indicator, data in dashboard.items():
-                    if isinstance(data, dict) and "latest_value" in data:
-                        facts.append({
-                            "metric": indicator,
-                            "value": data["latest_value"],
-                            "year": data.get("latest_year"),
-                            "country": country,
-                            "source": "IEA Energy Statistics",
-                            "source_priority": 96,
-                            "confidence": 0.97,
-                            "raw_text": f"{indicator}: {data['latest_value']} ({data.get('latest_year')})",
-                            "timestamp": datetime.now().isoformat()
-                        })
+            # Convert to energy facts format
+            for fact in wb_facts:
+                facts.append({
+                    "metric": fact.get("metric", "unknown"),
+                    "value": fact.get("value"),
+                    "year": fact.get("year"),
+                    "country": country,
+                    "source": "World Bank Energy Indicators",
+                    "source_priority": 95,
+                    "confidence": 0.95,
+                    "raw_text": fact.get("raw_text", ""),
+                    "timestamp": datetime.now().isoformat()
+                })
             
-            _safe_print(f"   Retrieved {len(facts)} IEA indicators")
-            return facts
+            _safe_print(f"   Retrieved {len(facts)} World Bank energy indicators")
             
         except Exception as e:
-            _safe_print(f"❌ IEA error: {e}")
-            return []
+            _safe_print(f"❌ World Bank energy error: {e}")
+        
+        # SECONDARY: Try IEA if available (requires API key)
+        if self.iea_connector and len(facts) == 0:
+            try:
+                _safe_print("📡 IEA: Fetching energy sector data (fallback)...")
+                dashboard = await self.iea_connector.get_energy_dashboard(country)
+                
+                if dashboard and "error" not in dashboard:
+                    for indicator, data in dashboard.items():
+                        if isinstance(data, dict) and "latest_value" in data:
+                            facts.append({
+                                "metric": indicator,
+                                "value": data["latest_value"],
+                                "year": data.get("latest_year"),
+                                "country": country,
+                                "source": "IEA Energy Statistics",
+                                "source_priority": 96,
+                                "confidence": 0.97,
+                                "raw_text": f"{indicator}: {data['latest_value']} ({data.get('latest_year')})",
+                                "timestamp": datetime.now().isoformat()
+                            })
+                
+                _safe_print(f"   Retrieved {len(facts)} IEA indicators")
+                
+            except Exception as e:
+                _safe_print(f"⚠️  IEA fallback failed: {e}")
+        
+        return facts
     
     def _write_facts_to_postgres(self, facts: List[Dict], source: str):
         """
