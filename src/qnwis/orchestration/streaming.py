@@ -222,6 +222,61 @@ async def run_workflow_stream(
                         },
                     )
                 
+                # Special handling for debate node - emit conversation turns
+                if node_name == "debate":
+                    debate_results = node_output.get("debate_results", {})
+                    contradictions = debate_results.get("contradictions", [])
+                    
+                    # Emit each contradiction as debate conversation turns
+                    for turn_num, contradiction in enumerate(contradictions, 1):
+                        agent_a = contradiction.get("agent_a", "agent1")
+                        agent_b = contradiction.get("agent_b", "agent2")
+                        topic = contradiction.get("topic", "policy analysis")
+                        winner = contradiction.get("winning_agent", "undetermined")
+                        sentiment = contradiction.get("sentiment_delta", "0")
+                        
+                        from datetime import datetime, timezone
+                        timestamp = datetime.now(timezone.utc).isoformat()
+                        
+                        # Turn 1: Agent A challenges with their position
+                        yield WorkflowEvent(
+                            stage=f"debate:turn{turn_num*2-1}",
+                            status="streaming",
+                            payload={
+                                "agent": agent_a,
+                                "turn": turn_num * 2 - 1,
+                                "type": "challenge",
+                                "message": f"⚔️ {agent_a.upper()} challenges the analysis on {topic}. Sentiment: {sentiment}. Confidence: {contradiction.get('agent_a_confidence', 'unknown')}",
+                                "timestamp": timestamp,
+                            }
+                        )
+                        
+                        # Turn 2: Agent B responds
+                        yield WorkflowEvent(
+                            stage=f"debate:turn{turn_num*2}",
+                            status="streaming",
+                            payload={
+                                "agent": agent_b,
+                                "turn": turn_num * 2,
+                                "type": "response",
+                                "message": f"🛡️ {agent_b.upper()} responds. Confidence: {contradiction.get('agent_b_confidence', 'unknown')}",
+                                "timestamp": timestamp,
+                            }
+                        )
+                        
+                        # Turn 3: Resolution
+                        yield WorkflowEvent(
+                            stage=f"debate:turn{turn_num*2+1}",
+                            status="streaming",
+                            payload={
+                                "agent": winner,
+                                "turn": turn_num * 2 + 1,
+                                "type": "resolution",
+                                "message": f"⚖️ RESOLUTION: {winner.upper()}'s position adopted based on {sentiment} sentiment delta and confidence differential",
+                                "timestamp": timestamp,
+                            }
+                        )
+                
                 # Emit node complete event
                 yield WorkflowEvent(
                     stage=stage,
