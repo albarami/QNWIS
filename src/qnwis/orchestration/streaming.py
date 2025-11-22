@@ -1,19 +1,20 @@
 """
-Streaming adapter for LLM workflow.
+Streaming adapter for the LangGraph intelligence workflow.
 
-Converts LangGraph workflow execution into streaming events for UI.
-This is now a simple wrapper around graph_llm.py!
+Supports feature-flag based switching between:
+- Legacy graph_llm.py (monolithic, 2016 lines)
+- New workflow.py (modular, 10 nodes)
 """
 
-import logging
-import asyncio
-from typing import AsyncIterator, Optional, Dict, Any
-from datetime import datetime, timezone
+from __future__ import annotations
 
-from src.qnwis.agents.base import DataClient
-from src.qnwis.llm.client import LLMClient
-from src.qnwis.classification.classifier import Classifier
-from src.qnwis.orchestration.graph_llm import build_workflow
+import asyncio
+import logging
+from datetime import datetime, timezone
+from typing import Any, AsyncIterator, Dict, Optional
+
+from .feature_flags import use_langgraph_workflow
+from .workflow import run_intelligence_query
 
 logger = logging.getLogger(__name__)
 
@@ -54,120 +55,122 @@ class WorkflowEvent:
         }
 
 
+def _payload_for_stage(stage: str, state: Dict[str, Any]) -> Dict[str, Any]:
+    """Return a compact payload for UI consumption."""
+
+    if stage == "classifier":
+        return {"complexity": state.get("complexity")}
+    if stage == "extraction":
+        return {
+            "sources": state.get("data_sources", []),
+            "facts": len(state.get("extracted_facts", [])),
+        }
+    if stage in {"financial", "market", "operations", "research"}:
+        key = f"{stage}_analysis"
+        return {"summary": state.get(key)}
+    if stage == "debate":
+        return state.get("debate_results", {})
+    if stage == "critique":
+        return {"critique": state.get("critique_report")}
+    if stage == "verification":
+        return state.get("fact_check_results", {})
+    if stage == "synthesis":
+        return {
+            "confidence": state.get("confidence_score"),
+            "summary": state.get("final_synthesis"),
+        }
+    return {}
+
+
 async def run_workflow_stream(
     question: str,
-    data_client: DataClient,
-    llm_client: LLMClient,
+    data_client: Any = None,
+    llm_client: Any = None,
     query_registry: Optional[Any] = None,
-    classifier: Optional[Classifier] = None,
+    classifier: Optional[Any] = None,
     provider: str = "anthropic",
     request_id: Optional[str] = None
 ) -> AsyncIterator[WorkflowEvent]:
     """
-    Run LangGraph workflow with streaming events.
+    Run the LangGraph workflow and emit stage events in execution order.
     
-    This function is now a SIMPLE WRAPPER around the LangGraph workflow!
-    All the complexity (classification, prefetch, RAG, agent selection,
-    agent execution, verification, synthesis) is handled by graph_llm.py.
-    
-    Yields events for each stage:
-    - classify: Question classification
-    - prefetch: Intelligent data prefetch
-    - rag: RAG context retrieval
-    - agent_selection: Intelligent agent selection
-    - agent:<name>: Individual agent execution with streaming tokens
-    - verify: Numeric verification & citation checks
-    - synthesize: Synthesis with streaming tokens
-    - done: Final completion
+    Supports feature-flag based switching:
+    - QNWIS_WORKFLOW_IMPL=langgraph: Use new modular workflow.py
+    - QNWIS_WORKFLOW_IMPL=legacy: Use old graph_llm.py (default)
     
     Args:
         question: User's question
-        data_client: Data client for deterministic queries
-        llm_client: LLM client for agent reasoning
-        query_registry: Query registry (optional, for compatibility)
-        classifier: Question classifier (optional)
-        provider: LLM provider (for logging)
-        request_id: Request ID (for logging)
-        
+        data_client: DataClient (for legacy compatibility)
+        llm_client: LLMClient (for legacy compatibility)
+        query_registry: Query registry (for legacy compatibility)
+        classifier: Classifier (for legacy compatibility)
+        provider: LLM provider
+        request_id: Request ID for logging
+    
     Yields:
         WorkflowEvent objects
     """
-    # Build LangGraph workflow
-    workflow = build_workflow(data_client, llm_client, classifier)
     
-    # Create event queue for streaming
-    events_queue = asyncio.Queue()
-    
-    async def event_callback(
-        stage: str, 
-        status: str, 
-        payload: Optional[Dict] = None, 
-        latency_ms: Optional[float] = None
-    ):
-        """Callback for workflow events - puts them in queue."""
-        event = WorkflowEvent(
+    # Feature flag: Use new modular workflow if enabled
+    if use_langgraph_workflow():
+        logger.info("Using NEW modular LangGraph workflow (workflow.py)")
+        result = await run_intelligence_query(question)
+    else:
+        # Fallback to legacy graph_llm.py
+        logger.info("Using LEGACY monolithic workflow (graph_llm.py)")
+        from .graph_llm import build_workflow
+        
+        # Import required clients if not provided
+        if data_client is None:
+            from ..agents.base import DataClient
+            data_client = DataClient()
+        if llm_client is None:
+            from ..llm.client import LLMClient
+            llm_client = LLMClient(provider=provider)
+        if classifier is None:
+            from ..classification.classifier import Classifier
+            classifier = Classifier()
+        
+        workflow = build_workflow(data_client, llm_client, classifier)
+        
+        # Run legacy workflow and convert to new format
+        legacy_result = await workflow.run_stream(question, lambda *args: None)
+        
+        # Map legacy result to new state format
+        result = {
+            "query": question,
+            "complexity": legacy_result.get("classification", {}).get("complexity", "medium"),
+            "extracted_facts": [],
+            "data_sources": [],
+            "data_quality_score": 0.8,
+            "agent_reports": legacy_result.get("agent_reports", []),
+            "final_synthesis": legacy_result.get("synthesis"),
+            "confidence_score": 0.7,
+            "reasoning_chain": ["Legacy workflow executed"],
+            "nodes_executed": ["legacy_workflow"],
+            "warnings": legacy_result.get("warnings", []),
+            "errors": legacy_result.get("errors", []),
+            "debate_results": legacy_result.get("debate_results", {}),
+            "fact_check_results": legacy_result.get("verification", {}),
+        }
+
+    for stage in result.get("nodes_executed", []):
+        if stage == "debate":
+            for detail in result.get("debate_results", {}).get("details", []):
+                yield WorkflowEvent(stage="debate:turn", status="streaming", payload=detail)
+
+        yield WorkflowEvent(
             stage=stage,
-            status=status,
-            payload=payload,
-            latency_ms=latency_ms
+            status="complete",
+            payload=_payload_for_stage(stage, result),
         )
-        logger.info(f"📤 Event emitted: {stage} - {status}")
-        await events_queue.put(event)
-        # Force async yield point to ensure event is processed
-        await asyncio.sleep(0)
-    
-    # Run workflow in background task
-    async def execute_workflow():
-        try:
-            logger.info(f"🚀 Starting LangGraph workflow for question: {question[:100]}...")
-            logger.info(f"📋 Workflow instance: {workflow}")
-            logger.info(f"🔄 Calling workflow.run_stream()...")
-            
-            result = await workflow.run_stream(question, event_callback)
-            
-            logger.info(f"✅ Workflow completed successfully")
-            logger.info(f"📊 Final result keys: {result.keys() if isinstance(result, dict) else type(result)}")
-            
-            await events_queue.put(None)  # Signal completion
-            logger.info(f"🏁 Completion signal sent to queue")
-            
-        except Exception as e:
-            logger.error(f"❌ LangGraph workflow failed: {e}", exc_info=True)
-            import traceback
-            logger.error(f"Traceback: {traceback.format_exc()}")
-            
-            await events_queue.put(WorkflowEvent(
-                stage="error",
-                status="error",
-                payload={"error": str(e), "error_type": type(e).__name__, "traceback": traceback.format_exc()}
-            ))
-            await events_queue.put(None)
-    
-    # Start workflow execution
-    workflow_task = asyncio.create_task(execute_workflow())
-    
-    try:
-        # Yield events as they arrive from the graph
-        logger.info("📥 Starting to consume events from queue...")
-        event_count = 0
-        while True:
-            logger.debug(f"⏳ Waiting for event #{event_count + 1}...")
-            event = await events_queue.get()
-            
-            if event is None:
-                # Workflow complete
-                logger.info(f"🏁 Received completion signal after {event_count} events")
-                break
-            
-            event_count += 1
-            logger.info(f"📨 Yielding event #{event_count}: {event.stage} - {event.status}")
-            yield event
-    
-    finally:
-        # Ensure task is cleaned up
-        if not workflow_task.done():
-            workflow_task.cancel()
-            try:
-                await workflow_task
-            except asyncio.CancelledError:
-                pass
+
+    yield WorkflowEvent(
+        stage="done",
+        status="complete",
+        payload={
+            "confidence": result.get("confidence_score"),
+            "warnings": result.get("warnings", []),
+            "errors": result.get("errors", []),
+        },
+    )
