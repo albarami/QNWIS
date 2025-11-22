@@ -22,14 +22,13 @@ def _split_models(raw: Optional[str]) -> tuple[str, ...]:
 class LLMConfig:
     """LLM configuration."""
     
-    provider: str  # "anthropic", "openai", or "stub"
+    provider: str  # "anthropic" or "openai"
     anthropic_model: Optional[str]
     openai_model: Optional[str]
     anthropic_api_key: Optional[str]
     openai_api_key: Optional[str]
     timeout_seconds: int
     max_retries: int
-    stub_token_delay_ms: int = 10
     anthropic_model_choices: tuple[str, ...] = field(default_factory=tuple)
     openai_model_choices: tuple[str, ...] = field(default_factory=tuple)
     
@@ -50,9 +49,10 @@ class LLMConfig:
                     "when using the OpenAI provider"
                 )
             return self.openai_model
-        if p == "stub":
-            return "stub-model"
-        raise ValueError(f"Unknown provider: {p}")
+        raise ValueError(
+            f"Unknown provider: {p}. "
+            "Use 'anthropic' or 'openai'. Stub mode is deleted."
+        )
     
     def get_api_key(self, provider: Optional[str] = None) -> Optional[str]:
         """Get API key for specified provider."""
@@ -61,13 +61,14 @@ class LLMConfig:
             return self.anthropic_api_key
         if p == "openai":
             return self.openai_api_key
-        if p == "stub":
-            return None
-        raise ValueError(f"Unknown provider: {p}")
+        raise ValueError(
+            f"Unknown provider: {p}. "
+            "Use 'anthropic' or 'openai'. Stub mode is deleted."
+        )
     
     def configured_models(self) -> dict[str, list[str]]:
         """Return configured models per provider (for diagnostics)."""
-        models: dict[str, list[str]] = {"stub": ["stub-model"]}
+        models: dict[str, list[str]] = {}
         if self.anthropic_model_choices:
             models["anthropic"] = list(self.anthropic_model_choices)
         elif self.anthropic_model:
@@ -84,7 +85,7 @@ def get_llm_config() -> LLMConfig:
     Load LLM configuration from environment.
     
     Environment variables:
-    - QNWIS_LLM_PROVIDER: "anthropic", "openai", or "stub" (default: stub)
+    - QNWIS_LLM_PROVIDER: "anthropic" or "openai" (default: anthropic)
     - QNWIS_ANTHROPIC_MODEL: Anthropic model name (required if provider=anthropic)
     - QNWIS_ANTHROPIC_MODELS: CSV list of allowed Anthropic models (optional)
     - QNWIS_OPENAI_MODEL: OpenAI model name (required if provider=openai)
@@ -93,12 +94,11 @@ def get_llm_config() -> LLMConfig:
     - OPENAI_API_KEY: OpenAI API key
     - QNWIS_LLM_TIMEOUT: Timeout in seconds (default: 60, capped at 60)
     - QNWIS_LLM_MAX_RETRIES: Max retries for retryable errors (default: 3)
-    - QNWIS_STUB_TOKEN_DELAY_MS: Stub token delay in ms for deterministic tests (default: 10)
     
     Returns:
         LLMConfig instance
     """
-    provider = os.getenv("QNWIS_LLM_PROVIDER", "stub").lower()
+    provider = os.getenv("QNWIS_LLM_PROVIDER", "anthropic").lower()
     anthropic_choices = _split_models(os.getenv("QNWIS_ANTHROPIC_MODELS"))
     openai_choices = _split_models(os.getenv("QNWIS_OPENAI_MODELS"))
     
@@ -111,7 +111,6 @@ def get_llm_config() -> LLMConfig:
     
     timeout = min(int(os.getenv("QNWIS_LLM_TIMEOUT", "60")), 60)
     max_retries = max(0, int(os.getenv("QNWIS_LLM_MAX_RETRIES", "3")))
-    stub_delay_ms = max(0, int(os.getenv("QNWIS_STUB_TOKEN_DELAY_MS", "10")))
     
     return LLMConfig(
         provider=provider,
@@ -121,7 +120,6 @@ def get_llm_config() -> LLMConfig:
         openai_api_key=os.getenv("OPENAI_API_KEY"),
         timeout_seconds=timeout,
         max_retries=max_retries,
-        stub_token_delay_ms=stub_delay_ms,
         anthropic_model_choices=anthropic_choices,
         openai_model_choices=openai_choices,
     )

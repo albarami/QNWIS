@@ -1,8 +1,10 @@
 """
 Unified LLM client for QNWIS.
 
-Supports Anthropic Claude, OpenAI GPT, and a deterministic stub provider with
-streaming, bounded timeouts, jittered retries, and safe logging.
+Supports Anthropic Claude and OpenAI GPT with streaming, bounded timeouts,
+jittered retries, and safe logging.
+
+CRITICAL: Stub mode is DELETED. System requires real LLM.
 """
 
 from __future__ import annotations
@@ -44,7 +46,7 @@ class LLMClient:
         Initialize LLM client.
         
         Args:
-            provider: "anthropic", "openai", or "stub" (default from config)
+            provider: "anthropic" or "openai" (default from config)
             model: Model name (default from config)
             timeout_s: Timeout in seconds
             config: LLMConfig instance (default: load from env)
@@ -56,17 +58,17 @@ class LLMClient:
         effective_timeout = timeout_s if timeout_s is not None else configured_timeout
         self.timeout_s = min(effective_timeout, 180)  # 3 minutes for PhD-level deep analysis
         self.max_retries = self.config.max_retries
-        self._stub_delay_s = self.config.stub_token_delay_ms / 1000.0
         
         # Initialize provider client
         if self.provider == "anthropic":
             self._init_anthropic()
         elif self.provider == "openai":
             self._init_openai()
-        elif self.provider == "stub":
-            self._init_stub()
         else:
-            raise ValueError(f"Unknown provider: {self.provider}")
+            raise ValueError(
+                f"Unknown provider: {self.provider}. "
+                "Use 'anthropic' or 'openai'. Stub mode is deleted."
+            )
         
         logger.info(
             "Initialized LLM client (provider=%s, model=%s, timeout=%ss, max_retries=%s)",
@@ -113,11 +115,6 @@ class LLMClient:
                 "openai package not installed. "
                 "Run: pip install openai"
             )
-    
-    def _init_stub(self):
-        """Initialize stub client for testing."""
-        self.client = None
-        logger.info("Using stub LLM client (for testing)")
     
     async def generate_stream(
         self,
@@ -226,11 +223,11 @@ class LLMClient:
                 prompt, system, temperature, max_tokens, stop, extra
             ):
                 yield token
-        elif self.provider == "stub":
-            async for token in self._stream_stub(prompt):
-                yield token
         else:
-            raise ValueError(f"Unknown provider: {self.provider}")
+            raise ValueError(
+                f"Unknown provider: {self.provider}. "
+                "Use 'anthropic' or 'openai'. Stub mode is deleted."
+            )
     
     async def _stream_anthropic(
         self,
@@ -284,30 +281,6 @@ class LLMClient:
         async for chunk in stream:
             if chunk.choices[0].delta.content:
                 yield chunk.choices[0].delta.content
-    
-    async def _stream_stub(self, prompt: str) -> AsyncIterator[str]:
-        """Stub streaming for testing."""
-        # Simulate streaming with realistic timing
-        response = {
-            "title": "Test Finding",
-            "summary": "This is a test finding from the stub LLM.",
-            "metrics": {"test_metric": 42.0},
-            # Include a numeric unemployment value that should be cited
-            # based on the synthetic deterministic data (0.10 → 10.0%).
-            "analysis": "Detailed analysis would go here, including Qatar's unemployment rate of 0.10% compared to peers.",
-            "recommendations": ["Test recommendation 1", "Test recommendation 2"],
-            "confidence": 0.85,
-            "citations": ["test_query_id"],
-            "data_quality_notes": "Test data quality note"
-        }
-        
-        response_text = json.dumps(response, indent=2)
-        
-        # Stream character by character with configurable delays for deterministic tests
-        for char in response_text:
-            yield char
-            if self._stub_delay_s:
-                await asyncio.sleep(self._stub_delay_s)
     
     async def generate(
         self,

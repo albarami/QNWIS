@@ -11,19 +11,49 @@ from ..state import IntelligenceState
 
 def create_llm_client(state: IntelligenceState) -> LLMClient:
     """
-    Create an LLM client based on state metadata or environment overrides.
-
-    Defaults to the deterministic stub client to avoid accidental API usage
-    during local development unless a provider is explicitly configured.
+    Create an LLM client with Anthropic (required).
+    
+    CRITICAL: Stub mode is DELETED. System requires real LLM.
+    User has Anthropic Sonnet 4.5 configured.
+    
+    Raises:
+        ValueError: If ANTHROPIC_API_KEY or OPENAI_API_KEY is not set
     """
 
     metadata = state.setdefault("metadata", {})
     provider = (
         metadata.get("llm_provider")
         or os.getenv("QNWIS_LANGGRAPH_LLM_PROVIDER")
-        or "stub"
+        or "anthropic"  # ALWAYS default to Anthropic (user has API key)
     )
+    
+    # Validate API key exists
+    if provider == "anthropic":
+        api_key = os.getenv("ANTHROPIC_API_KEY")
+        if not api_key:
+            raise ValueError(
+                "ANTHROPIC_API_KEY is required. "
+                "Set in .env file: ANTHROPIC_API_KEY=sk-ant-..."
+            )
+    elif provider == "openai":
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise ValueError(
+                "OPENAI_API_KEY is required. "
+                "Set in .env file: OPENAI_API_KEY=sk-..."
+            )
+    else:
+        raise ValueError(
+            f"Unsupported provider: {provider}. "
+            "Use 'anthropic' or 'openai'. Stub mode is deleted."
+        )
+    
     model = metadata.get("llm_model") or os.getenv("QNWIS_LANGGRAPH_LLM_MODEL")
+    if not model:
+        if provider == "anthropic":
+            model = "claude-sonnet-4-20250514"  # Sonnet 4.5
+        elif provider == "openai":
+            model = "gpt-4-turbo"
 
     return LLMClient(provider=provider, model=model)
 

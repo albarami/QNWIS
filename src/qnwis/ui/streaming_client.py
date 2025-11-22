@@ -61,13 +61,13 @@ class SSEClient:
     Example:
         ```python
         client = SSEClient("http://localhost:8001")
-        async for event in client.stream(question="Test", provider="stub"):
+        async for event in client.stream(question="Test", provider="anthropic"):
             if event.status == "streaming":
                 print(event.payload.get("token"), end="", flush=True)
         ```
     """
 
-    _ALLOWED_PROVIDERS = {"anthropic", "openai", "stub"}
+    _ALLOWED_PROVIDERS = {"anthropic", "openai"}
     _MIN_QUESTION_LEN = 3
     _MAX_QUESTION_LEN = 5000
 
@@ -97,7 +97,7 @@ class SSEClient:
 
         Args:
             question: User question to analyze
-            provider: LLM provider (anthropic, openai, stub)
+            provider: LLM provider (anthropic, openai)
             model: Optional model override
             request_id: Optional correlation ID to propagate (auto-generated if omitted)
 
