@@ -3,15 +3,42 @@ import { DebateConversation } from './DebateConversation'
 
 interface DebatePanelProps {
   debate: DebateResults | null
+  debateTurns?: any[]
 }
 
-export function DebatePanel({ debate }: DebatePanelProps) {
-  if (!debate) {
+export function DebatePanel({ debate, debateTurns = [] }: DebatePanelProps) {
+  // Show live turns while streaming, even if debate isn't complete yet
+  if (!debate && debateTurns.length === 0) {
     return (
       <div className="rounded-2xl border border-slate-700 bg-slate-900/40 p-6 text-slate-400" data-testid="debate-panel">
         Debate telemetry will appear here once contradictions are detected.
       </div>
     )
+  }
+
+  // If streaming but not complete, show live turns
+  if (!debate && debateTurns.length > 0) {
+    return (
+      <div className="rounded-2xl border border-purple-400/40 bg-slate-900/50 p-6 space-y-4" data-testid="debate-panel">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] text-purple-300">Multi-agent debate (streaming)</p>
+            <p className="text-sm text-slate-300">
+              {debateTurns.length} turns · In progress...
+            </p>
+          </div>
+        </div>
+
+        <div className="border-b border-slate-700 pb-4">
+          <DebateConversation turns={debateTurns} />
+        </div>
+      </div>
+    )
+  }
+
+  // If we get here, debate must be truthy (TypeScript needs explicit check)
+  if (!debate) {
+    return null
   }
 
   return (

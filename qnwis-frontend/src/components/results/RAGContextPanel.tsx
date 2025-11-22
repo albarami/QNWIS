@@ -5,7 +5,7 @@ interface RAGContextPanelProps {
 }
 
 export function RAGContextPanel({ context }: RAGContextPanelProps) {
-  if (!context || context.sources.length === 0) {
+  if (!context || !context.sources || context.sources.length === 0) {
     return null
   }
 

@@ -20,7 +20,7 @@ export function VerificationPanel({ verification }: VerificationPanelProps) {
         </div>
       </div>
 
-      {verification.citation_violations.length > 0 && (
+      {verification.citation_violations && verification.citation_violations.length > 0 && (
         <div className="space-y-2">
           <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Citation Issues</p>
           <ul className="space-y-2 text-sm text-slate-200">
