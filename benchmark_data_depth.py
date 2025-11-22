@@ -68,7 +68,7 @@ async def benchmark_depth():
         sources_found = [s for s in expected if any(s.lower() in src.lower() for src in sources)]
         coverage = len(sources_found) / len(expected) * 100 if expected else 0
         
-        print(f"\n📊 RESULTS:")
+        print(f"\nRESULTS:")
         print(f"  Facts extracted: {facts_count}")
         print(f"  Data sources: {len(sources)} ({', '.join(sources)})")
         print(f"  Expected source coverage: {coverage:.0f}% ({len(sources_found)}/{len(expected)})")

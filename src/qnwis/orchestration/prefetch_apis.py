@@ -799,7 +799,8 @@ class CompletePrefetchLayer:
 
                     if filtered:
                         facts: List[Dict[str, Any]] = []
-                        for paper in filtered[:3]:
+                        # Use TOP 10 papers instead of 3 for ministerial-grade depth
+                        for paper in filtered[:10]:
                             facts.append(
                                 {
                                     "metric": "research_finding",
@@ -817,7 +818,7 @@ class CompletePrefetchLayer:
                             )
 
                         _safe_print(f"   ✅ Success! Found {len(facts)} papers via Recommendations")
-                        await asyncio.sleep(1)
+                        await asyncio.sleep(1)  # Respect 1/second rate limit
                         return facts
                 else:
                     _safe_print(f"   Recommendations API: HTTP {response.status_code}")
@@ -945,7 +946,8 @@ class CompletePrefetchLayer:
 
                     if filtered:
                         facts: List[Dict[str, Any]] = []
-                        for paper in filtered[:3]:
+                        # Use TOP 10 papers instead of 3 for ministerial-grade depth
+                        for paper in filtered[:10]:
                             facts.append(
                                 {
                                     "metric": "policy_research",
@@ -963,7 +965,7 @@ class CompletePrefetchLayer:
                             )
 
                         _safe_print(f"   ✅ Success! Found {len(facts)} papers via Recommendations")
-                        await asyncio.sleep(1)
+                        await asyncio.sleep(1)  # Respect 1/second rate limit
                         return facts
                 else:
                     _safe_print(f"   Recommendations API: HTTP {response.status_code}")
