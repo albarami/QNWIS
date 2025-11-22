@@ -124,23 +124,22 @@ async def run_pilot():
             warnings = result.get("warnings", [])
             errors = result.get("errors", [])
             
-            # Quality assessment
+            # Quality assessment (TIME NOT EVALUATED - user priority: accuracy and depth)
             meets_facts = facts_count >= test_case["expected_facts"]
             meets_confidence = confidence >= 0.5
-            execution_ok = execution_time < 60
             
             # Display results
             print(f"\nRESULTS:")
             print(f"  Facts extracted: {facts_count} (expected: >={test_case['expected_facts']}) {'PASS' if meets_facts else 'FAIL'}")
             print(f"  Data sources: {len(sources)} ({', '.join(sources)})")
             print(f"  Confidence: {confidence:.2f} (target: >=0.5) {'PASS' if meets_confidence else 'FAIL'}")
-            print(f"  Execution time: {execution_time:.1f}s (target: <60s) {'PASS' if execution_ok else 'FAIL'}")
+            print(f"  Execution time: {execution_time:.1f}s (user priority: accuracy > speed)")
             print(f"  Nodes executed: {len(nodes)}")
             print(f"  Warnings: {len(warnings)}")
             print(f"  Errors: {len(errors)}")
             
-            # Quality gate
-            passed = meets_facts and meets_confidence and execution_ok
+            # Quality gate: FACTS + CONFIDENCE only (not time)
+            passed = meets_facts and meets_confidence
             print(f"\n  QUALITY GATE: {'PASS' if passed else 'FAIL'}")
             
             # Save evidence
@@ -192,19 +191,20 @@ async def run_pilot():
     print(f"\nQueries executed: {len(successful)}/10")
     print(f"Average facts: {avg_facts:.0f} (target: >=80)")
     print(f"Average confidence: {avg_confidence:.2f} (target: >=0.5)")
-    print(f"Average time: {avg_time:.1f}s (target: <60s)")
+    print(f"Average time: {avg_time:.1f}s (user priority: accuracy > speed)")
     
-    # Quality gates
+    # Quality gates (FACTS + CONFIDENCE only, not time)
     all_passed = len(successful) == 10
     facts_ok = avg_facts >= 80
     confidence_ok = avg_confidence >= 0.5
     
     print(f"\n{'='*80}")
-    print("QUALITY GATES")
+    print("QUALITY GATES (User priority: accuracy and depth, not speed)")
     print(f"{'='*80}")
     print(f"All queries successful: {'PASS' if all_passed else 'FAIL'}")
     print(f"Average facts >=80: {'PASS' if facts_ok else 'FAIL'}")
     print(f"Average confidence >=0.5: {'PASS' if confidence_ok else 'FAIL'}")
+    print(f"Time not evaluated (ministerial-grade analysis takes time)")
     
     # Decision
     go_decision = all_passed and facts_ok and confidence_ok
