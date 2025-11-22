@@ -59,25 +59,43 @@ def _payload_for_stage(stage: str, state: Dict[str, Any]) -> Dict[str, Any]:
     """Return a compact payload for UI consumption."""
 
     if stage == "classifier":
-        return {"complexity": state.get("complexity")}
+        return {
+            "complexity": state.get("complexity"),
+            "reasoning": state.get("reasoning_chain", [])
+        }
     if stage == "extraction":
         return {
-            "sources": state.get("data_sources", []),
-            "facts": len(state.get("extracted_facts", [])),
+            "extracted_facts": state.get("extracted_facts", []),
+            "data_sources": state.get("data_sources", []),
+            "facts_count": len(state.get("extracted_facts", [])),
         }
     if stage in {"financial", "market", "operations", "research"}:
         key = f"{stage}_analysis"
-        return {"summary": state.get(key)}
+        analysis = state.get(key)
+        return {
+            "agent_name": stage,
+            "analysis": analysis,
+            "report": analysis  # For compatibility
+        }
     if stage == "debate":
-        return state.get("debate_results", {})
+        debate_results = state.get("debate_results", {})
+        # Return full debate with conversation turns
+        return debate_results
     if stage == "critique":
-        return {"critique": state.get("critique_report")}
+        return {
+            "critique": state.get("critique_report"),
+            "critique_report": state.get("critique_report")  # For compatibility
+        }
     if stage == "verification":
-        return state.get("fact_check_results", {})
+        return {
+            "verification": state.get("fact_check_results", {}),
+            "fact_check_results": state.get("fact_check_results", {})  # For compatibility
+        }
     if stage == "synthesis":
         return {
-            "confidence": state.get("confidence_score"),
-            "summary": state.get("final_synthesis"),
+            "confidence_score": state.get("confidence_score"),
+            "final_synthesis": state.get("final_synthesis"),
+            "text": state.get("final_synthesis"),  # For compatibility
         }
     return {}
 
@@ -113,8 +131,83 @@ async def run_workflow_stream(
     
     # Feature flag: Use new modular workflow if enabled
     if use_langgraph_workflow():
-        logger.info("Using NEW modular LangGraph workflow (workflow.py)")
-        result = await run_intelligence_query(question)
+        logger.info("Using NEW modular LangGraph workflow (workflow.py) with LIVE streaming")
+        
+        # Import workflow components
+        from .workflow import create_intelligence_graph
+        from .state import IntelligenceState
+        
+        # Initialize state
+        initial_state: IntelligenceState = {
+            "query": question,
+            "complexity": "",
+            "agent_reports": [],
+            "extracted_facts": [],
+            "data_sources": [],
+            "data_quality_score": 0.0,
+            "financial_analysis": None,
+            "market_analysis": None,
+            "operations_analysis": None,
+            "research_analysis": None,
+            "debate_synthesis": None,
+            "debate_results": None,
+            "critique_report": None,
+            "fact_check_results": None,
+            "fabrication_detected": False,
+            "final_synthesis": None,
+            "confidence_score": 0.0,
+            "reasoning_chain": [],
+            "nodes_executed": [],
+            "metadata": {},
+            "execution_time": None,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "warnings": [],
+            "errors": [],
+        }
+        
+        graph = create_intelligence_graph()
+        
+        # Stream events as nodes complete
+        async for event in graph.astream(initial_state):
+            # LangGraph astream yields dict with node name as key
+            for node_name, node_output in event.items():
+                logger.info(f"Node '{node_name}' completed, emitting event")
+                
+                # Map node names to stage names
+                stage_map = {
+                    "classifier": "classify",
+                    "extraction": "prefetch",
+                    "financial": "agent:financial",
+                    "market": "agent:market",
+                    "operations": "agent:operations",
+                    "research": "agent:research",
+                    "debate": "debate",
+                    "critique": "critique",
+                    "verification": "verify",
+                    "synthesis": "synthesize",
+                }
+                
+                stage = stage_map.get(node_name, node_name)
+                
+                # Emit running event when node starts (if we can detect it)
+                # For now, emit complete event when node finishes
+                yield WorkflowEvent(
+                    stage=stage,
+                    status="complete",
+                    payload=_payload_for_stage(node_name, node_output),
+                )
+        
+        # Emit final done event
+        yield WorkflowEvent(
+            stage="done",
+            status="complete",
+            payload={
+                "confidence": initial_state.get("confidence_score", 0.0),
+                "warnings": initial_state.get("warnings", []),
+                "errors": initial_state.get("errors", []),
+            },
+        )
+        return  # Exit early for langgraph workflow
     else:
         # Fallback to legacy graph_llm.py
         logger.info("Using LEGACY monolithic workflow (graph_llm.py)")
