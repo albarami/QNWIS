@@ -12,7 +12,7 @@ import { safeParseWorkflowEvent } from '../utils/eventParser'
 
 interface ConnectParams {
   question: string
-  provider?: 'stub' | 'anthropic' | 'openai'
+  provider?: 'anthropic' | 'openai'
 }
 
 interface UseWorkflowStreamResult {
@@ -75,10 +75,17 @@ function reduceEvent(state: AppState, event: WorkflowEvent): AppState {
     completedStages: new Set(state.completedStages),
     stageTiming: new Map(state.stageTiming),
     agentStatuses: new Map(state.agentStatuses),
+    debateTurns: [...state.debateTurns],
   }
 
   if (isAgentStage(event.stage)) {
     return handleAgentEvent(next, event)
+  }
+
+  // Handle debate turn events (streaming conversation)
+  if (event.stage.startsWith('debate:turn') && event.status === 'streaming') {
+    next.debateTurns.push(event.payload)
+    return next
   }
 
   if (event.stage === 'classify' && event.payload) {
@@ -159,7 +166,7 @@ export function useWorkflowStream(): UseWorkflowStreamResult {
     setState((prev) => ({ ...prev, connectionStatus: 'idle', isStreaming: false }))
   }, [])
 
-  const connect = useCallback(async ({ question, provider = 'stub' }: ConnectParams) => {
+  const connect = useCallback(async ({ question, provider = 'anthropic' }: ConnectParams) => {
     if (!question.trim()) {
       throw new Error('Question is required')
     }

@@ -16,7 +16,7 @@ import { ErrorBanner } from './components/common/ErrorBanner'
 function App() {
   const { state, connect, cancel } = useWorkflowStream()
   const [question, setQuestion] = useState('What are the implications of raising minimum wage?')
-  const [provider, setProvider] = useState<'stub' | 'anthropic' | 'openai'>('stub')
+  const [provider, setProvider] = useState<'anthropic' | 'openai'>('anthropic')
   const currentStageStatus = useMemo(() => {
     if (!state.currentStage) {
       return state.connectionStatus
@@ -63,7 +63,7 @@ function App() {
           <div className="flex flex-wrap items-center gap-4">
             <label className="text-sm font-semibold text-slate-300">LLM Provider</label>
             <div className="flex gap-2">
-              {['stub', 'anthropic', 'openai'].map((option) => (
+              {['anthropic', 'openai'].map((option) => (
                 <button
                   key={option}
                   type="button"
@@ -117,7 +117,7 @@ function App() {
 
         <AgentGrid agents={state.agentStatuses} />
 
-        <DebatePanel debate={state.debateResults} />
+        <DebatePanel debate={state.debateResults} debateTurns={state.debateTurns} />
 
         <CritiquePanel critique={state.critiqueResults} />
 
