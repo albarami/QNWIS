@@ -7,6 +7,8 @@ interface DebatePanelProps {
 }
 
 export function DebatePanel({ debate, debateTurns = [] }: DebatePanelProps) {
+  console.log('🎭 DebatePanel render:', { debate, debateTurnsCount: debateTurns.length, debateTurns })
+  
   // Show live turns while streaming, even if debate isn't complete yet
   if (!debate && debateTurns.length === 0) {
     return (
