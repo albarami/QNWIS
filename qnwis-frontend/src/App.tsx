@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import React, { useState, useMemo, Component, ErrorInfo, ReactNode } from 'react'
 import { useWorkflowStream } from './hooks/useWorkflowStream'
 import { StageProgress } from './components/workflow/StageProgress'
 import { CurrentStageCard } from './components/workflow/CurrentStageCard'
@@ -13,10 +13,55 @@ import { VerificationPanel } from './components/results/VerificationPanel'
 import { ReasoningLog } from './components/workflow/ReasoningLog'
 import { ErrorBanner } from './components/common/ErrorBanner'
 
+class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: Error | null }> {
+  constructor(props: { children: ReactNode }) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error }
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('React Error Boundary caught:', error, errorInfo)
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-slate-900 flex items-center justify-center p-6">
+          <div className="bg-red-900/20 border border-red-500 rounded-xl p-8 max-w-2xl">
+            <h1 className="text-2xl font-bold text-red-400 mb-4">Application Error</h1>
+            <p className="text-slate-300 mb-4">The application encountered an error:</p>
+            <pre className="bg-slate-950 p-4 rounded text-red-300 text-sm overflow-auto">
+              {this.state.error?.message || 'Unknown error'}
+            </pre>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-6 px-6 py-2 bg-cyan-500 text-slate-900 rounded-lg font-semibold hover:bg-cyan-400"
+            >
+              Reload Page
+            </button>
+          </div>
+        </div>
+      )
+    }
+
+    return this.props.children
+  }
+}
+
 function App() {
   const { state, connect, cancel } = useWorkflowStream()
   const [question, setQuestion] = useState('What are the implications of raising minimum wage?')
   const [provider, setProvider] = useState<'anthropic' | 'openai'>('anthropic')
+  
+  // Safety check: ensure state exists
+  if (!state) {
+    return <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">Loading...</div>
+  }
+  
   const currentStageStatus = useMemo(() => {
     if (!state.currentStage) {
       return state.connectionStatus
@@ -29,7 +74,12 @@ function App() {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
-    await connect({ question, provider })
+    try {
+      await connect({ question, provider })
+    } catch (error) {
+      console.error('Submit error:', error)
+      // Error is already handled by useWorkflowStream
+    }
   }
 
   return (
@@ -143,4 +193,12 @@ function TelemetryCard({ label, value, isAlert = false }: { label: string; value
   )
 }
 
-export default App
+function AppWithErrorBoundary() {
+  return (
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
+  )
+}
+
+export default AppWithErrorBoundary
