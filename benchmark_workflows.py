@@ -70,26 +70,53 @@ async def benchmark_query(query: str, workflow_impl: str) -> Dict[str, Any]:
     # Set environment variable for workflow selection
     os.environ["QNWIS_WORKFLOW_IMPL"] = workflow_impl
     
-    # Import after setting env var
-    from qnwis.orchestration.workflow import run_intelligence_query
-    
     # Execute and measure
     start_time = time.time()
     
     try:
-        result = await run_intelligence_query(query)
+        # Import after setting env var to ensure it picks up the right implementation
+        if workflow_impl == "langgraph":
+            from qnwis.orchestration.workflow import run_intelligence_query
+            result = await run_intelligence_query(query)
+        else:
+            # Use legacy workflow
+            from qnwis.orchestration.graph_llm import build_workflow
+            from qnwis.agents.base import DataClient
+            from qnwis.llm.client import LLMClient
+            from qnwis.classification.classifier import Classifier
+            
+            data_client = DataClient()
+            llm_client = LLMClient(provider="anthropic")
+            classifier = Classifier()
+            
+            workflow = build_workflow(data_client, llm_client, classifier)
+            result = await workflow.run_stream(query, lambda *args: None)
+        
         execution_time = time.time() - start_time
         
-        return {
-            "success": True,
-            "execution_time": execution_time,
-            "nodes_executed": len(result.get("nodes_executed", [])),
-            "facts_extracted": len(result.get("extracted_facts", [])),
-            "confidence_score": result.get("confidence_score", 0.0),
-            "synthesis_length": len(result.get("final_synthesis", "")),
-            "warnings": len(result.get("warnings", [])),
-            "errors": len(result.get("errors", [])),
-        }
+        # Normalize result format (legacy might return different structure)
+        if isinstance(result, dict):
+            return {
+                "success": True,
+                "execution_time": execution_time,
+                "nodes_executed": len(result.get("nodes_executed", [])),
+                "facts_extracted": len(result.get("extracted_facts", [])),
+                "confidence_score": result.get("confidence_score", 0.0),
+                "synthesis_length": len(str(result.get("final_synthesis", ""))),
+                "warnings": len(result.get("warnings", [])),
+                "errors": len(result.get("errors", [])),
+            }
+        else:
+            return {
+                "success": True,
+                "execution_time": execution_time,
+                "nodes_executed": 0,
+                "facts_extracted": 0,
+                "confidence_score": 0.0,
+                "synthesis_length": 0,
+                "warnings": 0,
+                "errors": 0,
+            }
     except Exception as e:
         execution_time = time.time() - start_time
         return {
