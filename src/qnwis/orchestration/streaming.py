@@ -235,7 +235,6 @@ async def run_workflow_stream(
                         winner = contradiction.get("winning_agent", "undetermined")
                         sentiment = contradiction.get("sentiment_delta", "0")
                         
-                        from datetime import datetime, timezone
                         timestamp = datetime.now(timezone.utc).isoformat()
                         
                         # Turn 1: Agent A challenges with their position
