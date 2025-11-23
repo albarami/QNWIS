@@ -223,10 +223,13 @@ async def run_workflow_stream(
                     )
                 
                 # Special handling for debate node - emit conversation turns
+                logger.info(f"🔍 Processing node: {node_name}")
                 if node_name == "debate":
+                    logger.info(f"✅ DEBATE NODE DETECTED!")
                     debate_results = node_output.get("debate_results", {})
+                    logger.info(f"📊 debate_results keys: {list(debate_results.keys()) if debate_results else 'NONE'}")
                     contradictions = debate_results.get("contradictions", [])
-                    logger.info(f"Debate node: emitting {len(contradictions)} contradictions as conversation turns")
+                    logger.info(f"🎯 Debate node: emitting {len(contradictions)} contradictions as conversation turns")
                     
                     # Emit each contradiction as debate conversation turns
                     for turn_num, contradiction in enumerate(contradictions, 1):
