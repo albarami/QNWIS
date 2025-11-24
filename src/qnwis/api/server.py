@@ -92,22 +92,56 @@ async def lifespan(app: FastAPI):
 
     # Pre-warm embedder model to avoid first-request delay
     if _env_flag("QNWIS_WARM_EMBEDDER", True):  # Default to True
+        # TEMPORARILY DISABLED - Embedding warm-up causing meta tensor errors
+        # Will load on-demand when first request arrives
+        logger.info("RAG warm-up disabled (on-demand loading enabled)")
+    
+    # Pre-index documents for fact verification (Bug #3 FIX - CRITICAL)
+    # This prevents 30-60 second delay on first query
+    if _env_flag("QNWIS_ENABLE_FACT_VERIFICATION", True):
         try:
-            from ..rag.embeddings import get_embedder
-            from ..rag.retriever import get_document_store
+            logger.info("="*60)
+            logger.info("Initializing GPU-accelerated fact verification system...")
+            logger.info("="*60)
             
-            logger.info("Pre-warming RAG components (embedder + document store)...")
-            loop = asyncio.get_running_loop()
+            from ..rag.gpu_verifier import GPUFactVerifier
+            from ..rag.document_loader import load_source_documents
+            from ..rag import initialize_fact_verifier
             
-            # Warm up generic embedder
-            loop.run_in_executor(None, lambda: get_embedder())
+            # Initialize verifier on GPU 6 (shared with embeddings)
+            verifier = GPUFactVerifier(gpu_id=6)
             
-            # Warm up document store (loads knowledge base + specific embedder)
-            loop.run_in_executor(None, lambda: get_document_store())
+            # Load documents from configured sources
+            logger.info("Loading documents for fact verification...")
+            documents = load_source_documents()
+            logger.info(f"Loaded {len(documents):,} documents")
             
-            logger.info("RAG components warm-up scheduled")
+            # Index documents (this is expensive, ~30-60s for 70K docs)
+            logger.info(f"Indexing {len(documents):,} documents on GPU 6 (this may take 30-60s)...")
+            verifier.index_documents(documents)
+            
+            # Store globally for access during queries
+            initialize_fact_verifier(verifier)
+            
+            # Also store in app state for backward compatibility
+            app.state.fact_verifier = verifier
+            
+            logger.info("="*60)
+            logger.info("✅ Fact verification system ready - documents pre-indexed")
+            logger.info("="*60)
+            
         except Exception as e:
-            logger.warning(f"Failed to warm RAG components: {e}")
+            logger.error("="*60)
+            logger.error(f"⚠️ Fact verification initialization failed: {e}", exc_info=True)
+            logger.error("="*60)
+            logger.warning("Continuing without fact verification - queries will work but won't have verification")
+            app.state.fact_verifier = None
+            
+            from ..rag import initialize_fact_verifier
+            initialize_fact_verifier(None)
+    else:
+        logger.info("Fact verification disabled (set QNWIS_ENABLE_FACT_VERIFICATION=true to enable)")
+        app.state.fact_verifier = None
     
     if _env_flag("QNWIS_WARM_CACHE", False):
         warm_ids = _warm_targets()
@@ -292,7 +326,81 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/health", response_class=JSONResponse, tags=["observability"])
     async def health_alias():
-        return await health_ready()
+        """
+        Enhanced health check with GPU and system status.
+        
+        Returns comprehensive system health including:
+        - GPU count and status
+        - Agent count
+        - Fact verification status
+        - Parallel scenarios status
+        - Document indexing status
+        """
+        import torch
+        from ..rag import get_fact_verifier
+        
+        # Get basic health
+        health = check_health(readiness=True)
+        health_dict = health.to_dict()
+        
+        # Add GPU information
+        gpu_info = {
+            "available": torch.cuda.is_available(),
+            "count": torch.cuda.device_count() if torch.cuda.is_available() else 0
+        }
+        
+        if torch.cuda.is_available():
+            try:
+                gpu_info["devices"] = [
+                    {
+                        "id": i,
+                        "name": torch.cuda.get_device_name(i),
+                        "memory_allocated_gb": round(torch.cuda.memory_allocated(i) / 1e9, 2),
+                        "memory_total_gb": round(torch.cuda.get_device_properties(i).total_memory / 1e9, 1)
+                    }
+                    for i in range(min(8, torch.cuda.device_count()))
+                ]
+            except Exception as e:
+                logger.warning(f"Could not get GPU details: {e}")
+        
+        # Add fact verification status
+        verifier = get_fact_verifier()
+        if verifier:
+            fact_verification_status = {
+                "ready": verifier.is_indexed,
+                "documents_indexed": len(verifier.doc_texts) if verifier.is_indexed else 0,
+                "gpu_id": verifier.gpu_id,
+                "model": "all-mpnet-base-v2"
+            }
+        else:
+            fact_verification_status = {
+                "ready": False,
+                "documents_indexed": 0
+            }
+        
+        # Add parallel scenarios status
+        parallel_scenarios_status = {
+            "enabled": os.getenv("QNWIS_ENABLE_PARALLEL_SCENARIOS", "false").lower() == "true",
+            "num_scenarios": 6,
+            "gpus_allocated": [0, 1, 2, 3, 4, 5]
+        }
+        
+        # Enhanced response
+        enhanced_response = {
+            **health_dict,
+            "gpus": gpu_info["count"],
+            "gpu_details": gpu_info,
+            "agents": 12,  # 5 LLM + 7 deterministic
+            "fact_verification": "ready" if fact_verification_status["ready"] else "not_ready",
+            "fact_verification_details": fact_verification_status,
+            "parallel_scenarios": "enabled" if parallel_scenarios_status["enabled"] else "disabled",
+            "parallel_scenarios_details": parallel_scenarios_status,
+            "documents_indexed": fact_verification_status["documents_indexed"],
+            "workflow": os.getenv("QNWIS_WORKFLOW_IMPL", "langgraph")
+        }
+        
+        status_code = status.HTTP_200_OK if health.status.value == "healthy" else status.HTTP_503_SERVICE_UNAVAILABLE
+        return JSONResponse(content=enhanced_response, status_code=status_code)
 
     @app.get("/metrics", response_class=PlainTextResponse, tags=["observability"])
     async def metrics():

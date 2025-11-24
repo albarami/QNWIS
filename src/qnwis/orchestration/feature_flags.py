@@ -19,21 +19,23 @@ def get_workflow_implementation() -> WorkflowImplementation:
     
     Returns:
         "legacy": Use graph_llm.py (monolithic, 2016 lines)
-        "langgraph": Use workflow.py (modular, 10 nodes)
+        "langgraph": Use workflow.py (modular, 10 nodes with GPU fact verification)
     
     Configuration:
         Set QNWIS_WORKFLOW_IMPL environment variable to:
         - "legacy" or "graph_llm" for old implementation
-        - "langgraph" or "modular" for new implementation
+        - "langgraph" or "modular" for new implementation (DEFAULT)
         
-    Default: "legacy" (safe default during migration)
+    Default: "langgraph" (production-ready as of 2025-11-24)
     """
     
-    env_value = os.getenv("QNWIS_WORKFLOW_IMPL", "legacy").lower()
+    # Default to langgraph (modular workflow with GPU fact verification)
+    env_value = os.getenv("QNWIS_WORKFLOW_IMPL", "langgraph").lower()
     
     if env_value in ("langgraph", "modular", "new"):
         return "langgraph"
     
+    # Only use legacy if explicitly requested
     return "legacy"
 
 
@@ -49,9 +51,9 @@ def use_langgraph_workflow() -> bool:
 
 # Migration status tracking
 MIGRATION_STATUS = {
-    "current_default": "legacy",
+    "current_default": "langgraph",  # Changed from legacy on 2025-11-24
     "target_default": "langgraph",
-    "migration_complete_date": None,  # Set when fully migrated
-    "deprecation_date": None,  # Set when legacy is removed
+    "migration_complete_date": "2025-11-24",  # LangGraph now default
+    "deprecation_date": None,  # Legacy still available via env var
 }
 

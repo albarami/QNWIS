@@ -28,6 +28,11 @@ from ..models import StreamEventResponse
 from ..middleware.rate_limit import limiter
 
 logger = logging.getLogger(__name__)
+
+# DIAGNOSTIC LOGGING - Verify correct import source
+import inspect
+logger.info(f"🔍 run_workflow_stream source file: {inspect.getfile(run_workflow_stream)}")
+logger.info(f"🔍 run_workflow_stream module: {run_workflow_stream.__module__}")
 router = APIRouter(tags=["council-llm"])
 STREAM_TIMEOUT_SECONDS = 3600  # 60 minutes - allows deep analysis with complete synthesis
 
@@ -177,7 +182,12 @@ def _serialize_sse(event: StreamEventResponse) -> str:
 @router.options("/council/stream")
 async def council_stream_options():
     """Handle CORS preflight for council stream endpoint."""
-    return {}
+    from fastapi.responses import Response
+    return Response(status_code=200, headers={
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "*",
+    })
 
 
 @router.post(
@@ -220,10 +230,12 @@ async def council_stream_llm(
         classifier = Classifier()
 
         async def event_generator() -> AsyncIterator[str]:
+            logger.info(f"🎬 event_generator STARTED for question: {req.question[:50]}")
             heartbeat = StreamEventResponse.heartbeat()
             heartbeat.timestamp = datetime.now(timezone.utc).isoformat()
             yield f"event: heartbeat\n{_serialize_sse(heartbeat)}"
 
+            logger.info(f"🔄 About to call run_workflow_stream from streaming.py")
             try:
                 async with _async_timeout(STREAM_TIMEOUT_SECONDS):
                     async for event in run_workflow_stream(
@@ -232,6 +244,7 @@ async def council_stream_llm(
                         llm_client=llm_client,
                         classifier=classifier,
                     ):
+                        logger.info(f"📥 Received event from run_workflow_stream: {event.stage}")
                         try:
                             # Clean payload - remove non-serializable objects like callbacks
                             clean_payload = event.payload.copy() if event.payload else {}

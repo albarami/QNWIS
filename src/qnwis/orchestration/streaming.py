@@ -17,6 +17,7 @@ from .feature_flags import use_langgraph_workflow
 from .workflow import run_intelligence_query
 
 logger = logging.getLogger(__name__)
+logger.info("📦 streaming.py MODULE LOADED!")
 
 
 class WorkflowEvent:
@@ -91,6 +92,24 @@ def _payload_for_stage(stage: str, state: Dict[str, Any]) -> Dict[str, Any]:
             "verification": state.get("fact_check_results", {}),
             "fact_check_results": state.get("fact_check_results", {})  # For compatibility
         }
+    if stage == "scenario_gen":
+        return {
+            "scenarios": state.get("scenarios", []),
+            "num_scenarios": len(state.get("scenarios", []))
+        }
+    if stage == "parallel_exec":
+        return {
+            "scenario_results": state.get("scenario_results", []),
+            "scenarios_completed": len(state.get("scenario_results", [])),
+            "scenarios": state.get("scenarios", [])
+        }
+    if stage == "meta_synthesis":
+        return {
+            "meta_synthesis": state.get("meta_synthesis"),
+            "final_synthesis": state.get("final_synthesis"),
+            "scenario_results": state.get("scenario_results", []),
+            "confidence_score": state.get("confidence_score", 0)
+        }
     if stage == "synthesis":
         return {
             "confidence_score": state.get("confidence_score"),
@@ -111,11 +130,11 @@ async def run_workflow_stream(
 ) -> AsyncIterator[WorkflowEvent]:
     """
     Run the LangGraph workflow and emit stage events in execution order.
-    
+
     Supports feature-flag based switching:
     - QNWIS_WORKFLOW_IMPL=langgraph: Use new modular workflow.py
     - QNWIS_WORKFLOW_IMPL=legacy: Use old graph_llm.py (default)
-    
+
     Args:
         question: User's question
         data_client: DataClient (for legacy compatibility)
@@ -124,20 +143,48 @@ async def run_workflow_stream(
         classifier: Classifier (for legacy compatibility)
         provider: LLM provider
         request_id: Request ID for logging
-    
+
     Yields:
         WorkflowEvent objects
     """
+
+    # DIAGNOSTIC - REMOVE AFTER VERIFICATION
+    import os
+    import sys
+    logger.critical("🔥🔥🔥 STREAMING.PY FUNCTION EXECUTING - FRESH CODE! 🔥🔥🔥")
+    logger.critical(f"🔥 Python PID: {os.getpid()}, Bytecode tag: {sys.implementation.cache_tag}")
+    # END DIAGNOSTIC
+
+    logger.info(f"🚀 run_workflow_stream CALLED! QNWIS_WORKFLOW_IMPL={os.getenv('QNWIS_WORKFLOW_IMPL', 'NOT SET')}")
+    logger.info(f"🎯 use_langgraph_workflow()={use_langgraph_workflow()}")
     
     # Feature flag: Use new modular workflow if enabled
     if use_langgraph_workflow():
         logger.info("Using NEW modular LangGraph workflow (workflow.py) with LIVE streaming")
-        
+
         # Import workflow components
         from .workflow import create_intelligence_graph
         from .state import IntelligenceState
-        
-        # Initialize state
+
+        # Create event queue for real-time debate turn streaming
+        event_queue = asyncio.Queue()
+        workflow_complete = False
+
+        async def emit_event_fn(stage: str, status: str, payload=None, latency_ms=None):
+            """
+            Event callback for nodes to emit real-time events (e.g., debate turns).
+            This allows LegendaryDebateOrchestrator to stream conversation turns live.
+            """
+            event = WorkflowEvent(
+                stage=stage,
+                status=status,
+                payload=payload or {},
+                latency_ms=latency_ms
+            )
+            await event_queue.put(event)
+            logger.info(f"📤 Queued debate event: {stage} - {status}")  # Changed to INFO level
+
+        # Initialize state with emit callback
         initial_state: IntelligenceState = {
             "query": question,
             "complexity": "",
@@ -163,130 +210,126 @@ async def run_workflow_stream(
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "warnings": [],
             "errors": [],
+            "emit_event_fn": emit_event_fn,  # Pass callback to nodes for real-time events
         }
-        
+
         graph = create_intelligence_graph()
-        
-        # Stream events as nodes complete
+
+        # Run workflow in background task
+        async def run_workflow():
+            nonlocal workflow_complete
+            try:
+                async for event in graph.astream(initial_state):
+                    # Forward node completion events to queue
+                    for node_name, node_output in event.items():
+                        await event_queue.put(("node_complete", node_name, node_output))
+            except Exception as e:
+                logger.error(f"Workflow execution error: {e}", exc_info=True)
+                await event_queue.put(("error", str(e), None))
+            finally:
+                workflow_complete = True
+                await event_queue.put(("done", None, None))
+
+        # Start workflow in background
+        workflow_task = asyncio.create_task(run_workflow())
+
+        # Stream events from queue as they arrive (real-time!)
         first_agent_emitted = False
         rag_emitted = False
-        async for event in graph.astream(initial_state):
-            # LangGraph astream yields dict with node name as key
-            for node_name, node_output in event.items():
-                logger.info(f"Node '{node_name}' completed, emitting event")
-                
-                # Map node names to stage names
-                stage_map = {
-                    "classifier": "classify",
-                    "extraction": "prefetch",
-                    "financial": "agent:financial",
-                    "market": "agent:market",
-                    "operations": "agent:operations",
-                    "research": "agent:research",
-                    "debate": "debate",
-                    "critique": "critique",
-                    "verification": "verify",
-                    "synthesis": "synthesize",
-                }
-                
-                stage = stage_map.get(node_name, node_name)
-                
-                # Emit synthetic RAG stage after prefetch (extraction)
-                if node_name == "extraction" and not rag_emitted:
-                    rag_emitted = True
-                    # Emit prefetch first
-                    yield WorkflowEvent(
-                        stage="prefetch",
-                        status="complete",
-                        payload=_payload_for_stage(node_name, node_output),
-                    )
-                    # Then emit RAG
-                    yield WorkflowEvent(
-                        stage="rag",
-                        status="complete",
-                        payload={
-                            "retrieved_docs": [],
-                            "context": "RAG context retrieved"
-                        },
-                    )
-                    continue  # Skip the normal emit below
-                
-                # Emit agent_selection stage BEFORE first agent
-                if node_name in {"financial", "market", "operations", "research"} and not first_agent_emitted:
-                    first_agent_emitted = True
-                    yield WorkflowEvent(
-                        stage="agent_selection",
-                        status="complete",
-                        payload={
-                            "selected_agents": ["financial", "market", "operations", "research"]
-                        },
-                    )
-                
-                # Special handling for debate node - emit conversation turns
-                logger.info(f"🔍 Processing node: {node_name}")
-                if node_name == "debate":
-                    logger.info(f"✅ DEBATE NODE DETECTED!")
-                    debate_results = node_output.get("debate_results", {})
-                    logger.info(f"📊 debate_results keys: {list(debate_results.keys()) if debate_results else 'NONE'}")
-                    contradictions = debate_results.get("contradictions", [])
-                    logger.info(f"🎯 Debate node: emitting {len(contradictions)} contradictions as conversation turns")
-                    
-                    # Emit each contradiction as debate conversation turns
-                    for turn_num, contradiction in enumerate(contradictions, 1):
-                        agent_a = contradiction.get("agent_a", "agent1")
-                        agent_b = contradiction.get("agent_b", "agent2")
-                        topic = contradiction.get("topic", "policy analysis")
-                        winner = contradiction.get("winning_agent", "undetermined")
-                        sentiment = contradiction.get("sentiment_delta", "0")
-                        
-                        timestamp = datetime.now(timezone.utc).isoformat()
-                        
-                        # Turn 1: Agent A challenges with their position
-                        yield WorkflowEvent(
-                            stage=f"debate:turn{turn_num*2-1}",
-                            status="streaming",
-                            payload={
-                                "agent": agent_a,
-                                "turn": turn_num * 2 - 1,
-                                "type": "challenge",
-                                "message": f"⚔️ {agent_a.upper()} challenges the analysis on {topic}. Sentiment: {sentiment}. Confidence: {contradiction.get('agent_a_confidence', 'unknown')}",
-                                "timestamp": timestamp,
-                            }
-                        )
-                        
-                        # Turn 2: Agent B responds
-                        yield WorkflowEvent(
-                            stage=f"debate:turn{turn_num*2}",
-                            status="streaming",
-                            payload={
-                                "agent": agent_b,
-                                "turn": turn_num * 2,
-                                "type": "response",
-                                "message": f"🛡️ {agent_b.upper()} responds. Confidence: {contradiction.get('agent_b_confidence', 'unknown')}",
-                                "timestamp": timestamp,
-                            }
-                        )
-                        
-                        # Turn 3: Resolution
-                        yield WorkflowEvent(
-                            stage=f"debate:turn{turn_num*2+1}",
-                            status="streaming",
-                            payload={
-                                "agent": winner,
-                                "turn": turn_num * 2 + 1,
-                                "type": "resolution",
-                                "message": f"⚖️ RESOLUTION: {winner.upper()}'s position adopted based on {sentiment} sentiment delta and confidence differential",
-                                "timestamp": timestamp,
-                            }
-                        )
-                
-                # Emit node complete event
+
+        while True:
+            # Get next event from queue (blocks until available)
+            queue_item = await event_queue.get()
+
+            # Handle different event types
+            if isinstance(queue_item, WorkflowEvent):
+                # Direct event from emit_event_fn (e.g., debate turns)
+                logger.info(f"🎪 Yielding debate event to SSE: {queue_item.stage}")
+                yield queue_item
+                continue
+
+            # Unpack node completion event
+            event_type, data1, data2 = queue_item
+
+            if event_type == "done":
+                # Workflow complete
+                break
+
+            if event_type == "error":
+                # Workflow error
                 yield WorkflowEvent(
-                    stage=stage,
+                    stage="error",
+                    status="error",
+                    payload={"error": data1}
+                )
+                break
+
+            # Node completion event
+            node_name = data1
+            node_output = data2
+
+            logger.info(f"Node '{node_name}' completed, emitting event")
+
+            # Map node names to stage names
+            stage_map = {
+                "classifier": "classify",
+                "extraction": "prefetch",
+                "scenario_gen": "scenario_gen",
+                "parallel_exec": "parallel_exec",
+                "meta_synthesis": "meta_synthesis",
+                "financial": "agent:financial",
+                "market": "agent:market",
+                "operations": "agent:operations",
+                "research": "agent:research",
+                "debate": "debate",
+                "critique": "critique",
+                "verification": "verify",
+                "synthesis": "synthesize",
+            }
+
+            stage = stage_map.get(node_name, node_name)
+
+            # Emit synthetic RAG stage after prefetch (extraction)
+            if node_name == "extraction" and not rag_emitted:
+                rag_emitted = True
+                # Emit prefetch first
+                yield WorkflowEvent(
+                    stage="prefetch",
                     status="complete",
                     payload=_payload_for_stage(node_name, node_output),
                 )
-        
+                # Then emit RAG
+                yield WorkflowEvent(
+                    stage="rag",
+                    status="complete",
+                    payload={
+                        "retrieved_docs": [],
+                        "context": "RAG context retrieved"
+                    },
+                )
+                continue  # Skip the normal emit below
+
+            # Emit agent_selection stage BEFORE first agent
+            if node_name in {"financial", "market", "operations", "research"} and not first_agent_emitted:
+                first_agent_emitted = True
+                yield WorkflowEvent(
+                    stage="agent_selection",
+                    status="complete",
+                    payload={
+                        "selected_agents": ["financial", "market", "operations", "research"]
+                    },
+                )
+
+            # Emit node complete event
+            yield WorkflowEvent(
+                stage=stage,
+                status="complete",
+                payload=_payload_for_stage(node_name, node_output),
+            )
+
+        # Ensure workflow task completes
+        await workflow_task
+
         # Emit final done event
         yield WorkflowEvent(
             stage="done",
