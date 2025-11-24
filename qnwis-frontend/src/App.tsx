@@ -150,12 +150,17 @@ function App() {
         </form>
 
         <section className="space-y-6">
-          <StageProgress currentStage={state.currentStage} completedStages={state.completedStages} />
+          <StageProgress 
+            currentStage={state.currentStage} 
+            completedStages={state.completedStages}
+            startTime={state.startTime}
+          />
           <CurrentStageCard stage={state.currentStage} status={currentStageStatus} startedAt={state.startTime} />
           <StageTimeline
             stageTiming={state.stageTiming}
             completedStages={state.completedStages}
             currentStage={state.currentStage}
+            insightPreview={state.reasoningChain.length > 0 ? state.reasoningChain[state.reasoningChain.length - 1] : undefined}
           />
           
           <ReasoningLog chain={state.reasoningChain || []} />
