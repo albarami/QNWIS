@@ -1,18 +1,15 @@
-import React, { useState, useMemo, Component, ErrorInfo, ReactNode } from 'react'
+import React, { useState, Component, ErrorInfo, ReactNode } from 'react'
 import { useWorkflowStream } from './hooks/useWorkflowStream'
 import { StageProgress } from './components/workflow/StageProgress'
-import { CurrentStageCard } from './components/workflow/CurrentStageCard'
 import { StageTimeline } from './components/workflow/StageTimeline'
 import { AgentGrid } from './components/agents/AgentGrid'
 import { DebatePanel } from './components/debate/DebatePanel'
 import { CritiquePanel } from './components/critique/CritiquePanel'
 import { ExecutiveSummary } from './components/results/ExecutiveSummary'
 import { ExtractedFacts } from './components/results/ExtractedFacts'
-import { RAGContextPanel } from './components/results/RAGContextPanel'
 import { ParallelScenarios } from './components/results/ParallelScenarios'
 import { ParallelExecutionProgress } from './components/workflow/ParallelExecutionProgress'
 import { VerificationPanel } from './components/results/VerificationPanel'
-import { ReasoningLog } from './components/workflow/ReasoningLog'
 import { ErrorBanner } from './components/common/ErrorBanner'
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: Error | null }> {
@@ -54,6 +51,19 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   }
 }
 
+// Connection status indicator component
+function ConnectionStatus({ status, isStreaming }: { status: string; isStreaming: boolean }) {
+  const isConnected = status === 'connected' || isStreaming
+  return (
+    <div className="flex items-center gap-2">
+      <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`} />
+      <span className="text-sm text-slate-400">
+        {isStreaming ? 'Live' : isConnected ? 'Connected' : status === 'connecting' ? 'Connecting...' : 'Ready'}
+      </span>
+    </div>
+  )
+}
+
 function App() {
   const { state, connect, cancel } = useWorkflowStream()
   const [question, setQuestion] = useState('What are the implications of raising minimum wage?')
@@ -63,16 +73,6 @@ function App() {
   if (!state) {
     return <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">Loading...</div>
   }
-  
-  const currentStageStatus = useMemo(() => {
-    if (!state.currentStage) {
-      return state.connectionStatus
-    }
-    if (state.completedStages.has(state.currentStage)) {
-      return 'complete'
-    }
-    return state.isStreaming ? 'running' : 'pending'
-  }, [state.connectionStatus, state.currentStage, state.completedStages, state.isStreaming])
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -80,151 +80,239 @@ function App() {
       await connect({ question, provider })
     } catch (error) {
       console.error('Submit error:', error)
-      // Error is already handled by useWorkflowStream
     }
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-slate-100">
-      <div className="max-w-6xl mx-auto py-12 px-6 space-y-8">
-        <header className="text-center space-y-2">
-          <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Qatar Ministry of Labour</p>
-          <h1 className="text-4xl font-bold">QNWIS Enterprise Frontend</h1>
-          <p className="text-slate-300">Phase 2 · Live workflow instrumentation</p>
-        </header>
+  // Determine if we should show the two-column layout (analysis in progress)
+  const showTwoColumnLayout = state.isStreaming || state.completedStages.size > 0
 
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100">
+      {/* ============================================
+          HEADER - Always visible
+          ============================================ */}
+      <header className="sticky top-0 z-50 bg-slate-950/90 backdrop-blur-sm border-b border-slate-800">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-maroon-600 to-maroon-800 flex items-center justify-center text-white font-bold" style={{ background: 'linear-gradient(135deg, #8B1538, #5a0d24)' }}>
+                Q
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Qatar Ministry of Labour</p>
+                <h1 className="text-lg font-semibold text-white">QNWIS Enterprise Intelligence</h1>
+              </div>
+            </div>
+            <ConnectionStatus status={state.connectionStatus} isStreaming={state.isStreaming} />
+          </div>
+        </div>
+      </header>
+
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Error Banner */}
         {state.error && <ErrorBanner message={state.error} onRetry={() => connect({ question, provider })} />}
 
-        <form
-          onSubmit={handleSubmit}
-          className="bg-slate-800/60 border border-slate-700 rounded-2xl p-6 space-y-4"
-        >
-          <div className="space-y-2">
-            <label htmlFor="question" className="text-sm font-semibold text-slate-300">
-              Ministerial Question
-            </label>
-            <textarea
-              id="question"
-              value={question}
-              onChange={(event) => setQuestion(event.target.value)}
-              rows={4}
-              className="w-full rounded-xl border border-slate-600 bg-slate-900/50 p-4 text-slate-100 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500"
-            />
-          </div>
-
-          <div className="flex flex-wrap items-center gap-4">
-            <label className="text-sm font-semibold text-slate-300">LLM Provider</label>
-            <div className="flex gap-2">
-              {['anthropic', 'openai'].map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => setProvider(option as typeof provider)}
-                  className={`rounded-full px-4 py-1.5 text-sm font-semibold transition border ${{
-                    true: 'bg-cyan-500 text-slate-900 border-cyan-400',
-                    false: 'border-slate-600 text-slate-200 hover:border-cyan-300',
-                  }[String(provider === option) as 'true' | 'false']}`}
-                >
-                  {option}
-                </button>
-              ))}
+        {/* ============================================
+            QUESTION INPUT SECTION
+            ============================================ */}
+        <section className="mb-8">
+          <form onSubmit={handleSubmit} className="bg-slate-900/60 border border-slate-700 rounded-2xl p-6 space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="question" className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                Ministerial Question
+              </label>
+              <textarea
+                id="question"
+                value={question}
+                onChange={(event) => setQuestion(event.target.value)}
+                rows={3}
+                className="w-full rounded-xl border border-slate-600 bg-slate-950/50 p-4 text-slate-100 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20 transition"
+                placeholder="Enter your policy question..."
+              />
             </div>
-          </div>
 
-          <div className="flex gap-3">
-            <button
-              type="submit"
-              className="flex-1 rounded-xl bg-cyan-500 px-6 py-3 text-slate-900 font-semibold hover:bg-cyan-400 transition disabled:opacity-40"
-              disabled={state.isStreaming}
-            >
-              {state.isStreaming ? 'Streaming…' : 'Submit to Intelligence Council'}
-            </button>
-            <button
-              type="button"
-              onClick={cancel}
-              className="rounded-xl border border-slate-600 px-4 py-3 text-sm font-semibold hover:border-cyan-300"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-slate-500">Provider:</span>
+                <div className="flex gap-2">
+                  {['anthropic', 'openai'].map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => setProvider(option as typeof provider)}
+                      className={`rounded-lg px-3 py-1.5 text-xs font-medium transition border ${
+                        provider === option
+                          ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50'
+                          : 'border-slate-600 text-slate-400 hover:border-slate-500'
+                      }`}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-        <section className="space-y-6">
-          <StageProgress 
-            currentStage={state.currentStage} 
-            completedStages={state.completedStages}
-            startTime={state.startTime}
-          />
-          <CurrentStageCard stage={state.currentStage} status={currentStageStatus} startedAt={state.startTime} />
-          <StageTimeline
-            stageTiming={state.stageTiming}
-            completedStages={state.completedStages}
-            currentStage={state.currentStage}
-            insightPreview={state.reasoningChain.length > 0 ? state.reasoningChain[state.reasoningChain.length - 1] : undefined}
-          />
-          
-          <ReasoningLog chain={state.reasoningChain || []} />
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <TelemetryCard label="Connection" value={state.connectionStatus} />
-            <TelemetryCard 
-              label="Agents Selected" 
-              value={state.parallelExecutionActive ? 
-                `${state.agentStatuses.size} (parallel)` : 
-                state.selectedAgents.length} 
-            />
-            <TelemetryCard label="Errors" value={state.error ?? 'none'} isAlert={!!state.error} />
-          </div>
+              <div className="flex gap-3">
+                <button
+                  type="submit"
+                  className="rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-600 px-8 py-3 text-slate-900 font-semibold hover:from-cyan-400 hover:to-cyan-500 transition disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-cyan-500/20"
+                  disabled={state.isStreaming}
+                >
+                  {state.isStreaming ? (
+                    <span className="flex items-center gap-2">
+                      <span className="w-4 h-4 border-2 border-slate-900/30 border-t-slate-900 rounded-full animate-spin" />
+                      Analyzing...
+                    </span>
+                  ) : (
+                    'Submit to Intelligence Council'
+                  )}
+                </button>
+                {state.isStreaming && (
+                  <button
+                    type="button"
+                    onClick={cancel}
+                    className="rounded-xl border border-red-500/50 px-4 py-3 text-sm font-medium text-red-400 hover:bg-red-500/10 transition"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+            </div>
+          </form>
         </section>
 
-        <ParallelExecutionProgress
-          scenarios={state.scenarios || []}
-          scenariosCompleted={state.scenariosCompleted || 0}
-          totalScenarios={state.totalScenarios || 0}
-          isActive={state.parallelExecutionActive || false}
-          scenarioProgress={state.scenarioProgress}
-          agentsExpected={state.agentsExpected || 0}
-          agentsRunning={state.agentsRunning || false}
-        />
+        {/* ============================================
+            MAIN CONTENT - Two Column Layout
+            ============================================ */}
+        {showTwoColumnLayout && (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* ----------------------------------------
+                LEFT SIDEBAR (4 cols) - Progress & Facts
+                ---------------------------------------- */}
+            <aside className="lg:col-span-4 space-y-6">
+              {/* Progress Dashboard */}
+              <div className="content-section">
+                <StageProgress 
+                  currentStage={state.currentStage} 
+                  completedStages={state.completedStages}
+                  startTime={state.startTime}
+                />
+              </div>
 
-        <AgentGrid 
-          agents={state.agentStatuses} 
-          agentsExpected={state.agentsExpected || 0}
-          agentsRunning={state.agentsRunning || false}
-        />
+              {/* Stage Timeline */}
+              <div className="content-section">
+                <StageTimeline
+                  stageTiming={state.stageTiming}
+                  completedStages={state.completedStages}
+                  currentStage={state.currentStage}
+                  insightPreview={state.reasoningChain.length > 0 ? state.reasoningChain[state.reasoningChain.length - 1] : undefined}
+                />
+              </div>
 
-        <DebatePanel 
-          debate={state.debateResults} 
-          debateTurns={state.debateTurns}
-          isStreaming={state.isStreaming && state.currentStage === 'debate'}
-        />
+              {/* Extracted Facts */}
+              <div className="content-section">
+                <ExtractedFacts facts={state.prefetchFacts} />
+              </div>
+            </aside>
 
-        <CritiquePanel critique={state.critiqueResults} />
+            {/* ----------------------------------------
+                MAIN AREA (8 cols) - Analysis & Debate
+                ---------------------------------------- */}
+            <main className="lg:col-span-8 space-y-6">
+              {/* Parallel Scenario Execution */}
+              <ParallelExecutionProgress
+                scenarios={state.scenarios || []}
+                scenariosCompleted={state.scenariosCompleted || 0}
+                totalScenarios={state.totalScenarios || 0}
+                isActive={state.parallelExecutionActive || false}
+                scenarioProgress={state.scenarioProgress}
+                agentsExpected={state.agentsExpected || 0}
+                agentsRunning={state.agentsRunning || false}
+              />
 
-        <ParallelScenarios 
-          scenarios={state.scenarios || []}
-          scenarioResults={state.scenarioResults || []}
-          metaSynthesis={state.metaSynthesis}
-        />
+              {/* Agent Execution Grid */}
+              <AgentGrid 
+                agents={state.agentStatuses} 
+                agentsExpected={state.agentsExpected || 0}
+                agentsRunning={state.agentsRunning || false}
+              />
 
-        <ExecutiveSummary synthesis={state.synthesis} />
+              {/* Multi-Agent Debate */}
+              <DebatePanel 
+                debate={state.debateResults} 
+                debateTurns={state.debateTurns}
+                isStreaming={state.isStreaming && state.currentStage === 'debate'}
+              />
 
-        <RAGContextPanel context={state.ragContext} />
+              {/* Critical Review */}
+              <CritiquePanel critique={state.critiqueResults} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ExtractedFacts facts={state.prefetchFacts} />
-          <VerificationPanel verification={state.verification} />
-        </div>
+              {/* Verification */}
+              <VerificationPanel verification={state.verification} />
+            </main>
+          </div>
+        )}
+
+        {/* ============================================
+            SYNTHESIS SECTION - Full Width
+            ============================================ */}
+        {(state.metaSynthesis || state.scenarioResults.length > 0) && (
+          <section className="mt-8">
+            <ParallelScenarios 
+              scenarios={state.scenarios || []}
+              scenarioResults={state.scenarioResults || []}
+              metaSynthesis={state.metaSynthesis}
+            />
+          </section>
+        )}
+
+        {/* Executive Summary - Full Width */}
+        {state.synthesis && (
+          <section className="mt-8">
+            <ExecutiveSummary synthesis={state.synthesis} />
+          </section>
+        )}
+
+        {/* ============================================
+            IDLE STATE - Show when no analysis
+            ============================================ */}
+        {!showTwoColumnLayout && (
+          <section className="text-center py-16">
+            <div className="max-w-2xl mx-auto">
+              <span className="text-6xl mb-6 block">🏛️</span>
+              <h2 className="text-2xl font-semibold text-white mb-4">Ready for Analysis</h2>
+              <p className="text-slate-400 mb-8">
+                Enter your policy question above to activate the multi-agent intelligence council. 
+                The system will analyze economic implications, labor market impacts, and provide 
+                comprehensive policy recommendations.
+              </p>
+              <div className="flex flex-wrap justify-center gap-4 text-sm text-slate-500">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-cyan-400" />
+                  12+ Specialized Agents
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-purple-400" />
+                  Multi-Agent Debate
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                  Real-time Streaming
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
       </div>
-    </div>
-  )
-}
 
-function TelemetryCard({ label, value, isAlert = false }: { label: string; value: string | number; isAlert?: boolean }) {
-  return (
-    <div className={`rounded-2xl border p-4 bg-slate-900/40 ${isAlert ? 'border-red-500/60 text-red-300' : 'border-slate-700'}`}>
-      <p className="text-xs uppercase tracking-[0.3em] text-slate-500">{label}</p>
-      <p className="text-lg font-semibold mt-1">{value}</p>
+      {/* Footer */}
+      <footer className="border-t border-slate-800 mt-12">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <p className="text-xs text-slate-600 text-center">
+            QNWIS Enterprise Intelligence System · Qatar Ministry of Labour · Confidential
+          </p>
+        </div>
+      </footer>
     </div>
   )
 }
