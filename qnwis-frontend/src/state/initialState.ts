@@ -13,6 +13,7 @@ export function createInitialState(): AppState {
     ragContext: null,
     selectedAgents: [],
     agentStatuses: new Map(),
+    debateTurns: [],
     debateResults: null,
     critiqueResults: null,
     verification: null,
@@ -21,6 +22,13 @@ export function createInitialState(): AppState {
     stageTiming: new Map(ALL_STAGES.map((stage) => [stage, 0])),
     reasoningChain: [],
     finalState: null,
+  // Parallel scenario fields
+  scenarios: [],
+  scenarioResults: [],
+  metaSynthesis: null,
+  parallelExecutionActive: false,
+  scenariosCompleted: 0,
+  totalScenarios: 0,
   }
 }
 

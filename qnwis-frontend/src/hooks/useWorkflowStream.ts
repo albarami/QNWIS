@@ -31,6 +31,31 @@ function updateStageTiming(state: AppState, stage: WorkflowStage, latency?: numb
   state.completedStages.add(stage)
 }
 
+function handleScenarioGenEvent(state: AppState, event: WorkflowEvent) {
+  if (event.payload?.scenarios) {
+    state.scenarios = event.payload.scenarios as any[]
+    state.parallelExecutionActive = true
+  }
+  return state
+}
+
+function handleParallelExecEvent(state: AppState, event: WorkflowEvent) {
+  if (event.payload?.scenario_results) {
+    state.scenarioResults = event.payload.scenario_results as any[]
+  }
+  return state
+}
+
+function handleMetaSynthesisEvent(state: AppState, event: WorkflowEvent) {
+  if (event.payload?.meta_synthesis) {
+    state.metaSynthesis = event.payload.meta_synthesis as any
+  }
+  if (event.payload?.final_synthesis) {
+    state.synthesis = event.payload.final_synthesis as string
+  }
+  return state
+}
+
 function handleAgentEvent(state: AppState, event: WorkflowEvent) {
   const agentName = event.stage.replace('agent:', '')
   const existing = state.agentStatuses.get(agentName) ?? {
@@ -121,6 +146,48 @@ function reduceEvent(state: AppState, event: WorkflowEvent): AppState {
     next.critiqueResults = event.payload as any
   }
 
+  // Handle parallel scenario events
+  if (event.stage === 'scenario_gen' && event.payload) {
+    next.scenarios = (event.payload as any).scenarios ?? []
+    if (next.scenarios.length > 0) {
+      next.parallelExecutionActive = true
+    }
+  }
+
+  if (event.stage === 'parallel_exec' && event.payload) {
+    next.scenarioResults = (event.payload as any).scenario_results ?? []
+    if (event.status === 'complete') {
+      next.parallelExecutionActive = false
+    }
+  }
+
+  if (event.stage === 'parallel_progress' && event.payload) {
+    // Track overall progress
+    const payload = event.payload as any
+    next.scenariosCompleted = payload.completed ?? 0
+    next.totalScenarios = payload.total ?? 0
+  }
+
+  if (event.stage.startsWith('scenario:') && event.payload) {
+    // Individual scenario events
+    const scenarioId = event.stage.split(':')[1]
+    if (event.status === 'started') {
+      // Track scenario starting
+      next.reasoningChain.push(`Starting ${(event.payload as any).scenario_name} on GPU ${(event.payload as any).gpu_id}`)
+    } else if (event.status === 'complete') {
+      // Track scenario completion
+      next.reasoningChain.push(`Completed ${(event.payload as any).scenario_name} (${(event.payload as any).duration_seconds}s)`)
+    }
+  }
+
+  if (event.stage === 'meta_synthesis' && event.payload) {
+    next.metaSynthesis = (event.payload as any).meta_synthesis ?? null
+    // Meta-synthesis often includes final synthesis
+    if ((event.payload as any).final_synthesis) {
+      next.synthesis = (event.payload as any).final_synthesis
+    }
+  }
+
   if (event.stage === 'verify' && event.payload) {
     next.verification = event.payload as any
   }
@@ -130,12 +197,19 @@ function reduceEvent(state: AppState, event: WorkflowEvent): AppState {
       const token = (event.payload as any).token || ''
       next.synthesis = `${next.synthesis}${token}`
     } else {
-      next.synthesis = (event.payload as any).text ?? next.synthesis
+      next.synthesis = (event.payload as any).text ?? (event.payload as any).final_synthesis ?? next.synthesis
     }
   }
 
   if (event.stage === 'done' && event.payload) {
     next.finalState = event.payload as any
+    // Ensure we have synthesis even in done event
+    if ((event.payload as any).final_synthesis && !next.synthesis) {
+      next.synthesis = (event.payload as any).final_synthesis
+    }
+    if ((event.payload as any).meta_synthesis && !next.metaSynthesis) {
+      next.metaSynthesis = (event.payload as any).meta_synthesis
+    }
   }
 
   if ('stage' in event && 'status' in event) {

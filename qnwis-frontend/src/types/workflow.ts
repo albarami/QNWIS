@@ -2,6 +2,9 @@ export type WorkflowStage =
   | 'classify'
   | 'prefetch'
   | 'rag'
+  | 'scenario_gen'
+  | 'parallel_exec'
+  | 'meta_synthesis'
   | 'agent_selection'
   | 'agents'
   | 'debate'
@@ -212,6 +215,27 @@ export interface FinalWorkflowState {
   error?: string
 }
 
+export interface Scenario {
+  name: string
+  description: string
+  assumptions: Record<string, any>
+}
+
+export interface ScenarioResult {
+  scenario: Scenario
+  synthesis: string
+  confidence: number
+  key_findings: string[]
+}
+
+export interface MetaSynthesis {
+  robust_recommendations: string[]
+  scenario_dependent_strategies: string[]
+  key_uncertainties: string[]
+  early_warning_indicators: string[]
+  final_strategic_guidance: string
+}
+
 export interface AppState {
   connectionStatus: WorkflowStatus
   isStreaming: boolean
@@ -224,6 +248,7 @@ export interface AppState {
   ragContext: RAGContext | null
   selectedAgents: string[]
   agentStatuses: Map<string, AgentStatus>
+  debateTurns: any[]
   debateResults: DebateResults | null
   critiqueResults: CritiqueResults | null
   verification: VerificationResult | null
@@ -232,12 +257,22 @@ export interface AppState {
   stageTiming: Map<WorkflowStage, number>
   reasoningChain: string[]
   finalState: FinalWorkflowState | null
+  // Parallel scenario fields
+  scenarios: Scenario[]
+  scenarioResults: ScenarioResult[]
+  metaSynthesis: MetaSynthesis | null
+  parallelExecutionActive: boolean
+  scenariosCompleted: number
+  totalScenarios: number
 }
 
 export const ALL_STAGES: WorkflowStage[] = [
   'classify',
   'prefetch',
   'rag',
+  'scenario_gen',
+  'parallel_exec',
+  'meta_synthesis',
   'agent_selection',
   'agents',
   'debate',

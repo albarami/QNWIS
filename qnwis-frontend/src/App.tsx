@@ -9,6 +9,8 @@ import { CritiquePanel } from './components/critique/CritiquePanel'
 import { ExecutiveSummary } from './components/results/ExecutiveSummary'
 import { ExtractedFacts } from './components/results/ExtractedFacts'
 import { RAGContextPanel } from './components/results/RAGContextPanel'
+import { ParallelScenarios } from './components/results/ParallelScenarios'
+import { ParallelExecutionProgress } from './components/workflow/ParallelExecutionProgress'
 import { VerificationPanel } from './components/results/VerificationPanel'
 import { ReasoningLog } from './components/workflow/ReasoningLog'
 import { ErrorBanner } from './components/common/ErrorBanner'
@@ -165,11 +167,24 @@ function App() {
           </div>
         </section>
 
+        <ParallelExecutionProgress
+          scenarios={state.scenarios || []}
+          scenariosCompleted={state.scenariosCompleted || 0}
+          totalScenarios={state.totalScenarios || 0}
+          isActive={state.parallelExecutionActive || false}
+        />
+
         <AgentGrid agents={state.agentStatuses} />
 
         <DebatePanel debate={state.debateResults} debateTurns={state.debateTurns} />
 
         <CritiquePanel critique={state.critiqueResults} />
+
+        <ParallelScenarios 
+          scenarios={state.scenarios || []}
+          scenarioResults={state.scenarioResults || []}
+          metaSynthesis={state.metaSynthesis}
+        />
 
         <ExecutiveSummary synthesis={state.synthesis} />
 
