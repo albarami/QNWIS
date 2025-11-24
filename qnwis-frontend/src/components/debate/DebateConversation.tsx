@@ -1,119 +1,242 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { ConversationTurn } from '../../types/workflow'
+import { getAgentProfile, AgentProfile } from '../../utils/agentProfiles'
 
 interface DebateConversationProps {
   turns: ConversationTurn[]
+  isStreaming?: boolean
+  activeAgent?: string
 }
 
-export const DebateConversation: React.FC<DebateConversationProps> = ({ turns }) => {
-  const scrollRef = useRef<HTMLDivElement>(null)
+// Turn type to descriptive label mapping
+const TURN_TYPE_LABELS: Record<string, string> = {
+  opening_statement: 'Opening Statement',
+  challenge: 'Challenge',
+  response: 'Response',
+  contribution: 'Contribution',
+  resolution: 'Resolution',
+  consensus: 'Consensus Reached',
+  edge_case_analysis: 'Edge Case Analysis',
+  risk_identification: 'Risk Identified',
+  risk_assessment: 'Risk Assessment',
+  consensus_synthesis: 'Synthesis',
+  final_position: 'Final Position',
+}
 
+// Message component with chat bubble style
+const DebateMessage = ({ turn, index }: { turn: ConversationTurn; index: number }) => {
+  const profile = getAgentProfile(turn.agent)
+  const turnLabel = TURN_TYPE_LABELS[turn.type] || turn.type.replace(/_/g, ' ')
+  
+  return (
+    <div 
+      className="debate-message animate-slideIn"
+      style={{ 
+        borderLeftColor: profile.color,
+        animationDelay: `${index * 50}ms`
+      }}
+    >
+      {/* Message Header */}
+      <div className="flex items-center gap-3 mb-3">
+        <span 
+          className="text-2xl w-10 h-10 flex items-center justify-center rounded-full"
+          style={{ backgroundColor: `${profile.color}20` }}
+        >
+          {profile.icon}
+        </span>
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-white">{profile.name}</span>
+            <span 
+              className="text-xs px-2 py-0.5 rounded-full"
+              style={{ 
+                backgroundColor: `${profile.color}20`,
+                color: profile.color 
+              }}
+            >
+              {turnLabel}
+            </span>
+          </div>
+          <span className="text-xs text-slate-500">{profile.title}</span>
+        </div>
+        <div className="text-right">
+          <span className="text-xs text-slate-600">Turn {turn.turn}</span>
+          <br />
+          <span className="text-xs text-slate-600">
+            {new Date(turn.timestamp).toLocaleTimeString([], { 
+              hour: '2-digit', 
+              minute: '2-digit' 
+            })}
+          </span>
+        </div>
+      </div>
+      
+      {/* Message Content */}
+      <div className="text-slate-200 leading-relaxed pl-13 ml-13">
+        <p className="whitespace-pre-wrap text-sm">{turn.message}</p>
+      </div>
+    </div>
+  )
+}
+
+// Typing indicator component
+const TypingIndicator = ({ profile }: { profile: AgentProfile }) => (
+  <div 
+    className="debate-message animate-pulse"
+    style={{ borderLeftColor: profile.color }}
+  >
+    <div className="flex items-center gap-3">
+      <span 
+        className="text-2xl w-10 h-10 flex items-center justify-center rounded-full"
+        style={{ backgroundColor: `${profile.color}20` }}
+      >
+        {profile.icon}
+      </span>
+      <div>
+        <span className="font-semibold text-white">{profile.name}</span>
+        <div className="flex items-center gap-1 mt-1">
+          <span className="text-sm text-slate-400">is analyzing</span>
+          <span className="typing-dots flex gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+)
+
+export const DebateConversation: React.FC<DebateConversationProps> = ({ 
+  turns, 
+  isStreaming = false,
+  activeAgent 
+}) => {
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const [consensusPoints, setConsensusPoints] = useState<number>(0)
+  const [activeDebates, setActiveDebates] = useState<number>(0)
+
+  // Auto-scroll to bottom on new messages
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }
   }, [turns])
 
+  // Calculate consensus and debate metrics
+  useEffect(() => {
+    const consensus = turns.filter(t => 
+      t.type === 'consensus' || t.type === 'resolution' || t.type === 'consensus_synthesis'
+    ).length
+    const debates = turns.filter(t => 
+      t.type === 'challenge' || t.type === 'risk_identification'
+    ).length
+    setConsensusPoints(consensus)
+    setActiveDebates(debates)
+  }, [turns])
+
+  // Get current debate topic from recent messages
+  const getCurrentTopic = (): string => {
+    const recentChallenge = [...turns].reverse().find(t => t.type === 'challenge')
+    if (recentChallenge) {
+      // Extract first sentence or first 100 chars
+      const firstSentence = recentChallenge.message.split('.')[0]
+      return firstSentence.length > 100 ? firstSentence.slice(0, 100) + '...' : firstSentence
+    }
+    return 'Multi-agent deliberation in progress...'
+  }
+
+  // Estimate total turns based on pattern
+  const estimatedTotalTurns = Math.max(turns.length + 3, 10)
+
   if (!turns || turns.length === 0) {
     return (
-      <div className="p-4 text-center text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 rounded-lg">
-        Waiting for debate to start...
+      <div className="debate-container-empty">
+        <div className="text-center py-8">
+          <span className="text-4xl mb-4 block">🔥</span>
+          <p className="text-slate-400">Waiting for multi-agent deliberation to begin...</p>
+          <p className="text-xs text-slate-600 mt-2">Agents will debate to resolve contradictions and reach consensus</p>
+        </div>
       </div>
     )
   }
 
-  const getTurnColor = (type: ConversationTurn['type']) => {
-    switch (type) {
-      case 'opening_statement':
-        return 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-      case 'challenge':
-        return 'border-red-500 bg-red-50 dark:bg-red-900/20'
-      case 'response':
-        return 'border-green-500 bg-green-50 dark:bg-green-900/20'
-      case 'contribution':
-        return 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
-      case 'resolution':
-        return 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20'
-      case 'consensus':
-        return 'border-teal-500 bg-teal-50 dark:bg-teal-900/20'
-      case 'edge_case_analysis':
-        return 'border-orange-500 bg-orange-50 dark:bg-orange-900/20'
-      case 'risk_identification':
-        return 'border-rose-500 bg-rose-50 dark:bg-rose-900/20'
-      case 'risk_assessment':
-        return 'border-pink-500 bg-pink-50 dark:bg-pink-900/20'
-      case 'consensus_synthesis':
-        return 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
-      case 'final_position':
-        return 'border-cyan-500 bg-cyan-50 dark:bg-cyan-900/20'
-      default:
-        return 'border-gray-300 bg-gray-50 dark:bg-gray-800'
-    }
-  }
-
-  const getTurnIcon = (type: ConversationTurn['type']) => {
-    switch (type) {
-      case 'opening_statement': return '📢'
-      case 'challenge': return '⚔️'
-      case 'response': return '🛡️'
-      case 'contribution': return '💡'
-      case 'resolution': return '⚖️'
-      case 'consensus': return '🤝'
-      case 'edge_case_analysis': return '🧪'
-      case 'risk_identification': return '⚠️'
-      case 'risk_assessment': return '🔍'
-      case 'consensus_synthesis': return '📝'
-      case 'final_position': return '🏁'
-      default: return '💬'
-    }
-  }
+  const activeProfile = activeAgent ? getAgentProfile(activeAgent) : null
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-          Live Debate Feed
-        </h3>
-        <span className="px-2 py-1 text-sm font-medium text-blue-600 bg-blue-100 rounded-full dark:bg-blue-900 dark:text-blue-200">
-          {turns.length} turns
-        </span>
+    <div className="debate-container">
+      {/* Debate Header */}
+      <div className="debate-header flex items-center justify-between mb-4 pb-3 border-b border-slate-700">
+        <div className="flex items-center gap-3">
+          <span className="text-2xl">🔥</span>
+          <div>
+            <h3 className="text-lg font-semibold text-white">MULTI-AGENT DELIBERATION</h3>
+            <p className="text-xs text-slate-500">Real-time expert analysis and debate</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="text-right">
+            <span className="text-xs text-slate-500">Turn</span>
+            <p className="text-lg font-bold text-cyan-400">{turns.length} <span className="text-sm text-slate-500">of ~{estimatedTotalTurns}</span></p>
+          </div>
+        </div>
+      </div>
+
+      {/* Current Topic */}
+      <div className="current-topic bg-slate-800/50 rounded-lg px-4 py-3 mb-4">
+        <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">DEBATING:</span>
+        <p className="text-sm text-slate-300 mt-1">{getCurrentTopic()}</p>
       </div>
       
+      {/* Messages Container */}
       <div 
         ref={scrollRef}
-        className="space-y-4 max-h-[600px] overflow-y-auto p-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900"
+        className="messages-container space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar"
       >
         {turns.map((turn, index) => (
-          <div 
-            key={index} 
-            className={`p-4 rounded-lg border-l-4 ${getTurnColor(turn.type)} transition-all duration-300 ease-in-out`}
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex items-center space-x-2">
-                <span className="text-xl" role="img" aria-label={turn.type}>
-                  {getTurnIcon(turn.type)}
-                </span>
-                <div>
-                  <p className="font-bold text-gray-900 dark:text-white">
-                    {turn.agent}
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    {turn.type.replace(/_/g, ' ')}
-                  </p>
-                </div>
-              </div>
-              <span className="text-xs text-gray-400 dark:text-gray-500">
-                Turn {turn.turn} • {new Date(turn.timestamp).toLocaleTimeString()}
-              </span>
-            </div>
-            
-            <div className="mt-2 text-gray-700 dark:text-gray-300 prose dark:prose-invert max-w-none text-sm">
-              <p className="whitespace-pre-wrap">{turn.message}</p>
-            </div>
-          </div>
+          <DebateMessage key={`${turn.agent}-${turn.turn}-${index}`} turn={turn} index={index} />
         ))}
+        
+        {/* Typing Indicator */}
+        {isStreaming && activeProfile && (
+          <TypingIndicator profile={activeProfile} />
+        )}
+      </div>
+
+      {/* Consensus Tracker Footer */}
+      <div className="consensus-footer flex items-center justify-between mt-4 pt-3 border-t border-slate-700">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-green-400">✓</span>
+            <span className="text-sm text-slate-400">Points of Agreement: <strong className="text-green-400">{consensusPoints}</strong></span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-amber-400">⚡</span>
+            <span className="text-sm text-slate-400">Active Debates: <strong className="text-amber-400">{activeDebates}</strong></span>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          {/* Agent avatars showing who's participated */}
+          <span className="text-xs text-slate-500">Participants:</span>
+          <div className="flex -space-x-2">
+            {Array.from(new Set(turns.map(t => t.agent))).slice(0, 5).map((agent, idx) => {
+              const p = getAgentProfile(agent)
+              return (
+                <span 
+                  key={agent}
+                  className="w-6 h-6 rounded-full flex items-center justify-center text-xs border-2 border-slate-800"
+                  style={{ backgroundColor: `${p.color}30`, zIndex: 5 - idx }}
+                  title={p.name}
+                >
+                  {p.icon}
+                </span>
+              )
+            })}
+          </div>
+        </div>
       </div>
     </div>
   )
 }
 
+export default DebateConversation

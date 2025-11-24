@@ -188,7 +188,11 @@ function App() {
           agentsRunning={state.agentsRunning || false}
         />
 
-        <DebatePanel debate={state.debateResults} debateTurns={state.debateTurns} />
+        <DebatePanel 
+          debate={state.debateResults} 
+          debateTurns={state.debateTurns}
+          isStreaming={state.isStreaming && state.currentStage === 'debate'}
+        />
 
         <CritiquePanel critique={state.critiqueResults} />
 
