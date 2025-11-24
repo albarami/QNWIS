@@ -17,7 +17,7 @@ export type WorkflowStatus = 'idle' | 'connecting' | 'connected' | 'error'
 
 export interface WorkflowEvent {
   stage: WorkflowStage | string
-  status: 'running' | 'streaming' | 'complete' | 'error'
+  status: 'running' | 'streaming' | 'complete' | 'error' | 'started'
   payload?: Record<string, unknown>
   latency_ms?: number
   timestamp?: string
@@ -236,6 +236,14 @@ export interface MetaSynthesis {
   final_strategic_guidance: string
 }
 
+export interface ScenarioProgress {
+  scenarioId: string
+  name: string
+  status: 'queued' | 'running' | 'complete' | 'error'
+  progress: number // 0-100
+  gpuId?: number
+}
+
 export interface AppState {
   connectionStatus: WorkflowStatus
   isStreaming: boolean
@@ -264,6 +272,10 @@ export interface AppState {
   parallelExecutionActive: boolean
   scenariosCompleted: number
   totalScenarios: number
+  scenarioProgress: Map<string, ScenarioProgress>
+  // Agent execution tracking
+  agentsExpected: number
+  agentsRunning: boolean
 }
 
 export const ALL_STAGES: WorkflowStage[] = [

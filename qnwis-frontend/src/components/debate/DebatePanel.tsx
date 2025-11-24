@@ -49,10 +49,10 @@ export function DebatePanel({ debate, debateTurns = [] }: DebatePanelProps) {
         <div>
           <p className="text-xs uppercase tracking-[0.3em] text-purple-300">Multi-agent debate</p>
           <p className="text-sm text-slate-300">
-            {debate.contradictions_found} contradictions · {debate.resolved} resolved · {debate.flagged_for_review} flagged
+            {debate.contradictions_found || 0} contradictions · {debate.resolved || 0} resolved · {debate.flagged_for_review || 0} flagged · {debate.total_turns || 0} turns
           </p>
         </div>
-        <span className="text-xs text-slate-500">{(debate.latency_ms / 1000).toFixed(1)}s</span>
+        {debate.latency_ms && <span className="text-xs text-slate-500">{(debate.latency_ms / 1000).toFixed(1)}s</span>}
       </div>
 
       <div className="border-b border-slate-700 pb-4">

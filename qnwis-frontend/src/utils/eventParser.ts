@@ -4,7 +4,7 @@ interface RawSSEEvent {
   data?: string
 }
 
-const VALID_STATUSES = new Set(['running', 'streaming', 'complete', 'error'])
+const VALID_STATUSES = new Set(['running', 'streaming', 'complete', 'error', 'ready'])
 
 const STANDARD_STAGES: Record<string, WorkflowStage> = {
   classify: 'classify',

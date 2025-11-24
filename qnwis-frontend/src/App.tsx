@@ -162,7 +162,12 @@ function App() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <TelemetryCard label="Connection" value={state.connectionStatus} />
-            <TelemetryCard label="Agents Selected" value={state.selectedAgents.length} />
+            <TelemetryCard 
+              label="Agents Selected" 
+              value={state.parallelExecutionActive ? 
+                `${state.agentStatuses.size} (parallel)` : 
+                state.selectedAgents.length} 
+            />
             <TelemetryCard label="Errors" value={state.error ?? 'none'} isAlert={!!state.error} />
           </div>
         </section>
@@ -172,9 +177,16 @@ function App() {
           scenariosCompleted={state.scenariosCompleted || 0}
           totalScenarios={state.totalScenarios || 0}
           isActive={state.parallelExecutionActive || false}
+          scenarioProgress={state.scenarioProgress}
+          agentsExpected={state.agentsExpected || 0}
+          agentsRunning={state.agentsRunning || false}
         />
 
-        <AgentGrid agents={state.agentStatuses} />
+        <AgentGrid 
+          agents={state.agentStatuses} 
+          agentsExpected={state.agentsExpected || 0}
+          agentsRunning={state.agentsRunning || false}
+        />
 
         <DebatePanel debate={state.debateResults} debateTurns={state.debateTurns} />
 

@@ -14,7 +14,7 @@ export function StageTimeline({ stageTiming, completedStages, currentStage }: St
           <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Stage Timeline</p>
           <p className="text-sm text-slate-300">Latency budget · classify→done</p>
         </div>
-        <span className="text-xs text-slate-500">{completedStages.size}/10 complete</span>
+        <span className="text-xs text-slate-500">{completedStages.size}/{ALL_STAGES.length} complete</span>
       </div>
 
       <ol className="space-y-3">

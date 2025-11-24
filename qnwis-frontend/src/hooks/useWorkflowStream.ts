@@ -31,31 +31,6 @@ function updateStageTiming(state: AppState, stage: WorkflowStage, latency?: numb
   state.completedStages.add(stage)
 }
 
-function handleScenarioGenEvent(state: AppState, event: WorkflowEvent) {
-  if (event.payload?.scenarios) {
-    state.scenarios = event.payload.scenarios as any[]
-    state.parallelExecutionActive = true
-  }
-  return state
-}
-
-function handleParallelExecEvent(state: AppState, event: WorkflowEvent) {
-  if (event.payload?.scenario_results) {
-    state.scenarioResults = event.payload.scenario_results as any[]
-  }
-  return state
-}
-
-function handleMetaSynthesisEvent(state: AppState, event: WorkflowEvent) {
-  if (event.payload?.meta_synthesis) {
-    state.metaSynthesis = event.payload.meta_synthesis as any
-  }
-  if (event.payload?.final_synthesis) {
-    state.synthesis = event.payload.final_synthesis as string
-  }
-  return state
-}
-
 function handleAgentEvent(state: AppState, event: WorkflowEvent) {
   const agentName = event.stage.replace('agent:', '')
   const existing = state.agentStatuses.get(agentName) ?? {
@@ -101,6 +76,7 @@ function reduceEvent(state: AppState, event: WorkflowEvent): AppState {
     stageTiming: new Map(state.stageTiming),
     agentStatuses: new Map(state.agentStatuses),
     debateTurns: [...state.debateTurns],
+    scenarioProgress: new Map(state.scenarioProgress),
   }
 
   if (isAgentStage(event.stage)) {
@@ -111,6 +87,17 @@ function reduceEvent(state: AppState, event: WorkflowEvent): AppState {
   if (event.stage.startsWith('debate:turn') && event.status === 'streaming') {
     console.log('🎯 DEBATE TURN RECEIVED:', event.stage, event.payload)
     next.debateTurns.push(event.payload)
+    
+    // Extract agent name and track it
+    const payload = event.payload as any
+    const agentName = payload.speaker || payload.agent || 'Unknown'
+    if (agentName && !next.agentStatuses.has(agentName)) {
+      next.agentStatuses.set(agentName, {
+        name: agentName,
+        status: 'running'
+      })
+    }
+    
     return next
   }
 
@@ -133,9 +120,20 @@ function reduceEvent(state: AppState, event: WorkflowEvent): AppState {
 
   if (event.stage === 'agent_selection' && event.payload) {
     next.selectedAgents = (event.payload as any).selected_agents ?? []
+    next.agentsExpected = next.selectedAgents.length
+    next.agentsRunning = true
     next.agentStatuses = new Map(
       next.selectedAgents.map((name) => [name, { name, status: 'pending' as const }])
     )
+  }
+
+  // Track agents stage to know when agents are being processed
+  if (event.stage === 'agents') {
+    if (event.status === 'running') {
+      next.agentsRunning = true
+    } else if (event.status === 'complete') {
+      next.agentsRunning = false
+    }
   }
 
   if (event.stage === 'debate' && event.status === 'complete') {
@@ -151,32 +149,86 @@ function reduceEvent(state: AppState, event: WorkflowEvent): AppState {
     next.scenarios = (event.payload as any).scenarios ?? []
     if (next.scenarios.length > 0) {
       next.parallelExecutionActive = true
+      next.totalScenarios = next.scenarios.length
+      // Set selected agents to estimated total (6 scenarios × 5 agents = 30)
+      next.selectedAgents = ['MicroEconomist', 'MacroEconomist', 'Nationalization', 'SkillsAgent', 'PatternDetective']
     }
   }
 
-  if (event.stage === 'parallel_exec' && event.payload) {
-    next.scenarioResults = (event.payload as any).scenario_results ?? []
-    if (event.status === 'complete') {
+  if (event.stage === 'parallel_exec') {
+    if (event.status === 'started' && event.payload) {
+      // Set total scenarios when parallel execution starts
+      const payload = event.payload as any
+      next.totalScenarios = payload.total_scenarios ?? next.scenarios.length
+      next.scenariosCompleted = 0
+      next.parallelExecutionActive = true
+    } else if (event.status === 'running' && event.payload) {
+      // Track progress during execution
+      const payload = event.payload as any
+      if (payload.completed !== undefined) {
+        next.scenariosCompleted = payload.completed
+      }
+      if (payload.total !== undefined) {
+        next.totalScenarios = payload.total
+      }
+      // Also track scenario-level progress if provided
+      if (payload.scenario_progress) {
+        next.scenarioProgress = payload.scenario_progress
+      }
+    } else if (event.status === 'complete' && event.payload) {
+      next.scenarioResults = (event.payload as any).scenario_results ?? []
       next.parallelExecutionActive = false
+      next.scenariosCompleted = next.totalScenarios
     }
   }
 
   if (event.stage === 'parallel_progress' && event.payload) {
-    // Track overall progress
+    // Track overall progress - THIS IS KEY!
     const payload = event.payload as any
-    next.scenariosCompleted = payload.completed ?? 0
-    next.totalScenarios = payload.total ?? 0
+    next.scenariosCompleted = payload.completed ?? next.scenariosCompleted
+    next.totalScenarios = payload.total ?? next.totalScenarios
   }
 
   if (event.stage.startsWith('scenario:') && event.payload) {
     // Individual scenario events
     const scenarioId = event.stage.split(':')[1]
-    if (event.status === 'started') {
-      // Track scenario starting
-      next.reasoningChain.push(`Starting ${(event.payload as any).scenario_name} on GPU ${(event.payload as any).gpu_id}`)
+    const payload = event.payload as any
+    
+    if (event.status === 'started' || event.status === 'running') {
+      // Track scenario starting/running
+      const scenarioName = payload.scenario_name || payload.name || `Scenario ${scenarioId}`
+      next.scenarioProgress.set(scenarioId, {
+        scenarioId,
+        name: scenarioName,
+        status: 'running',
+        progress: payload.progress ?? 10, // Default to 10% when started
+        gpuId: payload.gpu_id,
+      })
+      if (event.status === 'started') {
+        next.reasoningChain.push(`Starting ${scenarioName} on GPU ${payload.gpu_id}`)
+      }
     } else if (event.status === 'complete') {
       // Track scenario completion
-      next.reasoningChain.push(`Completed ${(event.payload as any).scenario_name} (${(event.payload as any).duration_seconds}s)`)
+      const scenarioName = payload.scenario_name || payload.name || `Scenario ${scenarioId}`
+      next.scenarioProgress.set(scenarioId, {
+        scenarioId,
+        name: scenarioName,
+        status: 'complete',
+        progress: 100,
+        gpuId: payload.gpu_id,
+      })
+      next.reasoningChain.push(`Completed ${scenarioName} (${payload.duration_seconds}s)`)
+      // Increment completed count immediately
+      next.scenariosCompleted = next.scenariosCompleted + 1
+    } else if (event.status === 'error') {
+      const scenarioName = payload.scenario_name || payload.name || `Scenario ${scenarioId}`
+      next.scenarioProgress.set(scenarioId, {
+        scenarioId,
+        name: scenarioName,
+        status: 'error',
+        progress: 0,
+        gpuId: payload.gpu_id,
+      })
     }
   }
 

@@ -22,13 +22,17 @@ export function createInitialState(): AppState {
     stageTiming: new Map(ALL_STAGES.map((stage) => [stage, 0])),
     reasoningChain: [],
     finalState: null,
-  // Parallel scenario fields
-  scenarios: [],
-  scenarioResults: [],
-  metaSynthesis: null,
-  parallelExecutionActive: false,
-  scenariosCompleted: 0,
-  totalScenarios: 0,
+    // Parallel scenario fields
+    scenarios: [],
+    scenarioResults: [],
+    metaSynthesis: null,
+    parallelExecutionActive: false,
+    scenariosCompleted: 0,
+    totalScenarios: 0,
+    scenarioProgress: new Map(),
+    // Agent execution tracking
+    agentsExpected: 0,
+    agentsRunning: false,
   }
 }
 

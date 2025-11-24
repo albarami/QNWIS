@@ -6,30 +6,14 @@ interface ParallelScenariosProps {
   metaSynthesis: MetaSynthesis | null
 }
 
-export function ParallelScenarios({ scenarios, scenarioResults, metaSynthesis }: ParallelScenariosProps) {
-  if (scenarios.length === 0 && !metaSynthesis) {
+export function ParallelScenarios({ scenarios: _scenarios, scenarioResults, metaSynthesis }: ParallelScenariosProps) {
+  // Only show when we have results to display (meta-synthesis or scenario results)
+  if (!metaSynthesis && scenarioResults.length === 0) {
     return null
   }
 
   return (
     <div className="space-y-6">
-      {/* Scenarios Overview */}
-      {scenarios.length > 0 && (
-        <div className="bg-slate-800/50 rounded-lg p-6 border border-slate-700">
-          <h3 className="text-lg font-semibold text-cyan-400 mb-4">
-            🎯 Parallel Scenario Analysis ({scenarios.length} scenarios)
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {scenarios.map((scenario, idx) => (
-              <div key={idx} className="bg-slate-900/50 rounded p-4 border border-slate-600">
-                <div className="font-medium text-white mb-2">{scenario.name}</div>
-                <div className="text-sm text-slate-300">{scenario.description}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Meta-Synthesis Results */}
       {metaSynthesis && (
         <div className="bg-gradient-to-br from-purple-900/30 to-blue-900/30 rounded-lg p-6 border border-purple-500/50">

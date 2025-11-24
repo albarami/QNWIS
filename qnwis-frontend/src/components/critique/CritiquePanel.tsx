@@ -22,7 +22,7 @@ export function CritiquePanel({ critique }: CritiquePanelProps) {
             {critique.critiques?.length || 0} critiques · {critique.red_flags?.length || 0} red flags
           </p>
         </div>
-        <span className="text-xs text-slate-500">{(critique.latency_ms / 1000).toFixed(1)}s</span>
+        {critique.latency_ms && <span className="text-xs text-slate-500">{(critique.latency_ms / 1000).toFixed(1)}s</span>}
       </div>
 
       {critique.red_flags && critique.red_flags.length > 0 && (
