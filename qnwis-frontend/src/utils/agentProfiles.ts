@@ -203,6 +203,52 @@ export const AGENT_PROFILES: Record<string, AgentProfile> = {
     color: '#FBBF24',
     description: 'Oil, gas, and energy sector specialist',
   },
+  
+  // Backend workflow agents
+  financial: {
+    name: 'Dr. Fatima',
+    title: 'Financial Analysis',
+    icon: '💹',
+    color: '#3B82F6',
+    description: 'Financial modeling and investment analysis specialist',
+  },
+  market: {
+    name: 'Dr. Hassan',
+    title: 'Market Analysis',
+    icon: '📈',
+    color: '#10B981',
+    description: 'Market trends and competitive analysis expert',
+  },
+  operations: {
+    name: 'Dr. Ahmed',
+    title: 'Operations Analysis',
+    icon: '🏭',
+    color: '#06B6D4',
+    description: 'Operational efficiency and process optimization',
+  },
+  research: {
+    name: 'Dr. Mariam',
+    title: 'Research Analysis',
+    icon: '🔬',
+    color: '#8B5CF6',
+    description: 'Research methodology and evidence synthesis',
+  },
+  
+  // Special debate roles
+  DataValidator: {
+    name: 'Data Validator',
+    title: 'Quality Assurance',
+    icon: '✅',
+    color: '#22C55E',
+    description: 'Data quality and integrity verification',
+  },
+  Moderator: {
+    name: 'Moderator',
+    title: 'Debate Facilitator',
+    icon: '⚖️',
+    color: '#64748B',
+    description: 'Debate coordination and consensus building',
+  },
 }
 
 /**

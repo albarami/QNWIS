@@ -5,6 +5,7 @@ import {
   WorkflowEvent,
   WorkflowStage,
   WorkflowStatus,
+  ALL_STAGES,
   isAgentStage,
 } from '../types/workflow'
 import { createInitialState, resetState } from '../state/initialState'
@@ -24,19 +25,15 @@ interface UseWorkflowStreamResult {
 const API_BASE_URL = (import.meta.env.VITE_QNWIS_API_URL ?? 'http://localhost:8000').replace(/\/$/, '')
 const SSE_ENDPOINT = `${API_BASE_URL}/api/v1/council/stream`
 
-function updateStageTiming(state: AppState, stage: WorkflowStage, latency?: number) {
-  if (typeof latency === 'number') {
-    state.stageTiming.set(stage, latency)
-  }
-  state.completedStages.add(stage)
-}
-
 function handleAgentEvent(state: AppState, event: WorkflowEvent) {
   const agentName = event.stage.replace('agent:', '')
   const existing = state.agentStatuses.get(agentName) ?? {
     name: agentName,
     status: 'pending' as const,
   }
+
+  // Track that we have agents running
+  state.agentsRunning = true
 
   if (event.status === 'running') {
     state.agentStatuses.set(agentName, {
@@ -48,13 +45,27 @@ function handleAgentEvent(state: AppState, event: WorkflowEvent) {
   }
 
   if (event.status === 'complete') {
+    // Extract report from payload
+    const payload = event.payload as any
+    const report = payload?.report || payload?.analysis || payload
+    
     state.agentStatuses.set(agentName, {
       ...existing,
       status: 'complete',
       endTime: Date.now(),
       latency_ms: event.latency_ms,
-      report: event.payload as any,
+      report: report,
     })
+    
+    // Check if all agents are complete
+    const allComplete = Array.from(state.agentStatuses.values()).every(
+      a => a.status === 'complete' || a.status === 'error'
+    )
+    if (allComplete && state.agentStatuses.size > 0) {
+      state.agentsRunning = false
+      // Mark 'agents' stage as complete
+      state.completedStages.add('agents')
+    }
   }
 
   if (event.status === 'error') {
@@ -84,25 +95,29 @@ function reduceEvent(state: AppState, event: WorkflowEvent): AppState {
   }
 
   // Handle debate turn events (streaming conversation)
-  if (event.stage.startsWith('debate:turn') && event.status === 'streaming') {
-    console.log('🎯 DEBATE TURN RECEIVED:', event.stage, event.payload)
+  if (event.stage.startsWith('debate:turn')) {
+    console.log('🎯 DEBATE TURN RECEIVED:', event.stage, event.status, event.payload)
     next.debateTurns.push(event.payload)
     
-    // Extract agent name and track it
-    const payload = event.payload as any
-    const agentName = payload.speaker || payload.agent || 'Unknown'
-    if (agentName && !next.agentStatuses.has(agentName)) {
-      next.agentStatuses.set(agentName, {
-        name: agentName,
-        status: 'running'
-      })
-    }
+    // Mark debate stage as running/in-progress
+    next.currentStage = 'debate'
     
     return next
   }
 
-  if (event.stage === 'classify' && event.payload) {
-    next.classification = event.payload as any
+  if (event.stage === 'classify') {
+    const payload = event.payload as any
+    next.classification = payload
+    if (event.status === 'complete') {
+      next.completedStages.add('classify')
+      if (event.latency_ms) {
+        next.stageTiming.set('classify', event.latency_ms)
+      }
+    }
+    // Extract reasoning from classification
+    if (payload?.reasoning) {
+      next.reasoningChain.push(payload.reasoning)
+    }
   }
 
   // Generic reasoning chain handler
@@ -110,21 +125,44 @@ function reduceEvent(state: AppState, event: WorkflowEvent): AppState {
     next.reasoningChain = (event.payload as any).reasoning_chain
   }
 
-  if (event.stage === 'prefetch' && event.payload) {
-    next.prefetchFacts = (event.payload as any).extracted_facts ?? []
+  if (event.stage === 'prefetch') {
+    const payload = event.payload as any
+    next.prefetchFacts = payload?.extracted_facts ?? []
+    if (event.status === 'complete') {
+      next.completedStages.add('prefetch')
+      if (event.latency_ms) {
+        next.stageTiming.set('prefetch', event.latency_ms)
+      }
+    }
   }
 
-  if (event.stage === 'rag' && event.payload) {
-    next.ragContext = event.payload as any
+  if (event.stage === 'rag') {
+    const payload = event.payload as any
+    next.ragContext = payload
+    if (event.status === 'complete') {
+      next.completedStages.add('rag')
+      if (event.latency_ms) {
+        next.stageTiming.set('rag', event.latency_ms)
+      }
+    }
   }
 
   if (event.stage === 'agent_selection' && event.payload) {
-    next.selectedAgents = (event.payload as any).selected_agents ?? []
+    const payload = event.payload as any
+    next.selectedAgents = payload.selected_agents ?? []
     next.agentsExpected = next.selectedAgents.length
     next.agentsRunning = true
+    
+    // Initialize agent statuses for all selected agents as pending
     next.agentStatuses = new Map(
-      next.selectedAgents.map((name) => [name, { name, status: 'pending' as const }])
+      next.selectedAgents.map((name: string) => [name, { name, status: 'pending' as const }])
     )
+    
+    // Mark agent_selection as complete
+    next.completedStages.add('agent_selection')
+    if (event.latency_ms) {
+      next.stageTiming.set('agent_selection', event.latency_ms)
+    }
   }
 
   // Track agents stage to know when agents are being processed
@@ -133,141 +171,178 @@ function reduceEvent(state: AppState, event: WorkflowEvent): AppState {
       next.agentsRunning = true
     } else if (event.status === 'complete') {
       next.agentsRunning = false
+      next.completedStages.add('agents')
+      if (event.latency_ms) {
+        next.stageTiming.set('agents', event.latency_ms)
+      }
     }
   }
 
-  if (event.stage === 'debate' && event.status === 'complete') {
-    next.debateResults = event.payload as any
+  if (event.stage === 'debate') {
+    if (event.status === 'running') {
+      next.currentStage = 'debate'
+    } else if (event.status === 'complete') {
+      const payload = event.payload as any
+      next.debateResults = payload
+      next.completedStages.add('debate')
+      if (event.latency_ms) {
+        next.stageTiming.set('debate', event.latency_ms)
+      }
+      // Extract conversation history if available
+      if (payload?.conversation_history && Array.isArray(payload.conversation_history)) {
+        // Add any remaining turns from the conversation history
+        payload.conversation_history.forEach((turn: any) => {
+          const exists = next.debateTurns.some(
+            (t: any) => t.turn === turn.turn && t.agent === turn.agent
+          )
+          if (!exists) {
+            next.debateTurns.push(turn)
+          }
+        })
+      }
+    }
   }
 
-  if (event.stage === 'critique' && event.status === 'complete') {
-    next.critiqueResults = event.payload as any
+  if (event.stage === 'critique') {
+    if (event.status === 'running') {
+      next.currentStage = 'critique'
+    } else if (event.status === 'complete') {
+      const payload = event.payload as any
+      next.critiqueResults = payload?.critique || payload?.critique_report || payload
+      next.completedStages.add('critique')
+      if (event.latency_ms) {
+        next.stageTiming.set('critique', event.latency_ms)
+      }
+    }
   }
 
   // Handle parallel scenario events
-  if (event.stage === 'scenario_gen' && event.payload) {
-    next.scenarios = (event.payload as any).scenarios ?? []
+  if (event.stage === 'scenario_gen') {
+    const payload = event.payload as any
+    next.scenarios = payload?.scenarios ?? []
     if (next.scenarios.length > 0) {
       next.parallelExecutionActive = true
       next.totalScenarios = next.scenarios.length
-      // Set selected agents to estimated total (6 scenarios × 5 agents = 30)
-      next.selectedAgents = ['MicroEconomist', 'MacroEconomist', 'Nationalization', 'SkillsAgent', 'PatternDetective']
+      next.scenariosCompleted = 0
+      
+      // Initialize scenario progress for each scenario
+      next.scenarios.forEach((scenario: any, idx: number) => {
+        const scenarioId = scenario.id || `scenario-${idx}`
+        next.scenarioProgress.set(scenarioId, {
+          scenarioId,
+          name: scenario.name || `Scenario ${idx + 1}`,
+          status: 'queued',
+          progress: 0,
+        })
+      })
+    }
+    // Mark scenario_gen as complete
+    if (event.status === 'complete') {
+      next.completedStages.add('scenario_gen')
+      if (event.latency_ms) {
+        next.stageTiming.set('scenario_gen', event.latency_ms)
+      }
     }
   }
 
   if (event.stage === 'parallel_exec') {
-    if (event.status === 'started' && event.payload) {
-      // Set total scenarios when parallel execution starts
-      const payload = event.payload as any
-      next.totalScenarios = payload.total_scenarios ?? next.scenarios.length
-      next.scenariosCompleted = 0
+    const payload = event.payload as any
+    
+    if (event.status === 'running') {
       next.parallelExecutionActive = true
-    } else if (event.status === 'running' && event.payload) {
-      // Track progress during execution
-      const payload = event.payload as any
-      if (payload.completed !== undefined) {
-        next.scenariosCompleted = payload.completed
-      }
-      if (payload.total !== undefined) {
-        next.totalScenarios = payload.total
-      }
-      // Also track scenario-level progress if provided
-      if (payload.scenario_progress) {
-        next.scenarioProgress = payload.scenario_progress
-      }
-    } else if (event.status === 'complete' && event.payload) {
-      next.scenarioResults = (event.payload as any).scenario_results ?? []
-      next.parallelExecutionActive = false
-      next.scenariosCompleted = next.totalScenarios
-    }
-  }
-
-  if (event.stage === 'parallel_progress' && event.payload) {
-    // Track overall progress - THIS IS KEY!
-    const payload = event.payload as any
-    next.scenariosCompleted = payload.completed ?? next.scenariosCompleted
-    next.totalScenarios = payload.total ?? next.totalScenarios
-  }
-
-  if (event.stage.startsWith('scenario:') && event.payload) {
-    // Individual scenario events
-    const scenarioId = event.stage.split(':')[1]
-    const payload = event.payload as any
-    
-    if (event.status === 'started' || event.status === 'running') {
-      // Track scenario starting/running
-      const scenarioName = payload.scenario_name || payload.name || `Scenario ${scenarioId}`
-      next.scenarioProgress.set(scenarioId, {
-        scenarioId,
-        name: scenarioName,
-        status: 'running',
-        progress: payload.progress ?? 10, // Default to 10% when started
-        gpuId: payload.gpu_id,
+      // Mark scenarios as running
+      next.scenarioProgress.forEach((sp, id) => {
+        next.scenarioProgress.set(id, { ...sp, status: 'running', progress: 33 })
       })
-      if (event.status === 'started') {
-        next.reasoningChain.push(`Starting ${scenarioName} on GPU ${payload.gpu_id}`)
-      }
     } else if (event.status === 'complete') {
-      // Track scenario completion
-      const scenarioName = payload.scenario_name || payload.name || `Scenario ${scenarioId}`
-      next.scenarioProgress.set(scenarioId, {
-        scenarioId,
-        name: scenarioName,
-        status: 'complete',
-        progress: 100,
-        gpuId: payload.gpu_id,
+      // Backend sends complete with scenario_results
+      next.scenarioResults = payload?.scenario_results ?? []
+      next.parallelExecutionActive = false
+      next.scenariosCompleted = next.totalScenarios > 0 ? next.totalScenarios : next.scenarioResults.length
+      
+      // Mark all scenarios as complete
+      next.scenarioProgress.forEach((sp, id) => {
+        next.scenarioProgress.set(id, { ...sp, status: 'complete', progress: 100 })
       })
-      next.reasoningChain.push(`Completed ${scenarioName} (${payload.duration_seconds}s)`)
-      // Increment completed count immediately
-      next.scenariosCompleted = next.scenariosCompleted + 1
-    } else if (event.status === 'error') {
-      const scenarioName = payload.scenario_name || payload.name || `Scenario ${scenarioId}`
-      next.scenarioProgress.set(scenarioId, {
-        scenarioId,
-        name: scenarioName,
-        status: 'error',
-        progress: 0,
-        gpuId: payload.gpu_id,
-      })
+      
+      // Mark parallel_exec as complete
+      next.completedStages.add('parallel_exec')
+      if (event.latency_ms) {
+        next.stageTiming.set('parallel_exec', event.latency_ms)
+      }
     }
   }
 
-  if (event.stage === 'meta_synthesis' && event.payload) {
-    next.metaSynthesis = (event.payload as any).meta_synthesis ?? null
+  if (event.stage === 'meta_synthesis') {
+    const payload = event.payload as any
+    next.metaSynthesis = payload?.meta_synthesis ?? null
     // Meta-synthesis often includes final synthesis
-    if ((event.payload as any).final_synthesis) {
-      next.synthesis = (event.payload as any).final_synthesis
+    if (payload?.final_synthesis) {
+      next.synthesis = payload.final_synthesis
+    }
+    if (event.status === 'complete') {
+      next.completedStages.add('meta_synthesis')
+      if (event.latency_ms) {
+        next.stageTiming.set('meta_synthesis', event.latency_ms)
+      }
     }
   }
 
-  if (event.stage === 'verify' && event.payload) {
-    next.verification = event.payload as any
+  if (event.stage === 'verify') {
+    const payload = event.payload as any
+    next.verification = payload?.verification || payload?.fact_check_results || payload
+    if (event.status === 'complete') {
+      next.completedStages.add('verify')
+      if (event.latency_ms) {
+        next.stageTiming.set('verify', event.latency_ms)
+      }
+    }
   }
 
-  if (event.stage === 'synthesize' && event.payload) {
+  if (event.stage === 'synthesize') {
+    const payload = event.payload as any
     if (event.status === 'streaming') {
-      const token = (event.payload as any).token || ''
+      const token = payload?.token || ''
       next.synthesis = `${next.synthesis}${token}`
-    } else {
-      next.synthesis = (event.payload as any).text ?? (event.payload as any).final_synthesis ?? next.synthesis
+    } else if (event.status === 'complete') {
+      next.synthesis = payload?.text ?? payload?.final_synthesis ?? next.synthesis
+      next.completedStages.add('synthesize')
+      if (event.latency_ms) {
+        next.stageTiming.set('synthesize', event.latency_ms)
+      }
     }
   }
 
-  if (event.stage === 'done' && event.payload) {
-    next.finalState = event.payload as any
-    // Ensure we have synthesis even in done event
-    if ((event.payload as any).final_synthesis && !next.synthesis) {
-      next.synthesis = (event.payload as any).final_synthesis
-    }
-    if ((event.payload as any).meta_synthesis && !next.metaSynthesis) {
-      next.metaSynthesis = (event.payload as any).meta_synthesis
-    }
-  }
-
-  if ('stage' in event && 'status' in event) {
-    next.currentStage = event.stage as WorkflowStage
+  if (event.stage === 'done') {
+    const payload = event.payload as any
+    next.finalState = payload
+    next.isStreaming = false
     
-    if (event.stage === 'error') {
+    // Ensure we have synthesis even in done event
+    if (payload?.final_synthesis && !next.synthesis) {
+      next.synthesis = payload.final_synthesis
+    }
+    if (payload?.meta_synthesis && !next.metaSynthesis) {
+      next.metaSynthesis = payload.meta_synthesis
+    }
+    
+    // Mark done stage as complete
+    next.completedStages.add('done')
+    if (event.latency_ms) {
+      next.stageTiming.set('done', event.latency_ms)
+    }
+  }
+
+  // Update current stage for any valid workflow stage
+  if ('stage' in event && 'status' in event) {
+    const stageStr = event.stage as string
+    
+    // Only update currentStage for main workflow stages (not agent: or debate:turn)
+    if (ALL_STAGES.includes(stageStr as WorkflowStage)) {
+      next.currentStage = stageStr as WorkflowStage
+    }
+    
+    if (stageStr === 'error') {
       const errorPayload = event.payload as any
       const errorMessage = errorPayload?.error || errorPayload?.message || 'Workflow execution failed'
       next.error = errorMessage
@@ -275,8 +350,12 @@ function reduceEvent(state: AppState, event: WorkflowEvent): AppState {
       next.isStreaming = false
     }
 
-    if (event.status === 'complete' && next.currentStage && event.stage !== 'error') {
-      updateStageTiming(next, next.currentStage, event.latency_ms)
+    // For generic stage completion, ensure we mark it complete
+    if (event.status === 'complete' && ALL_STAGES.includes(stageStr as WorkflowStage)) {
+      next.completedStages.add(stageStr as WorkflowStage)
+      if (event.latency_ms) {
+        next.stageTiming.set(stageStr as WorkflowStage, event.latency_ms)
+      }
     }
   }
 

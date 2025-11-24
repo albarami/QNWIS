@@ -19,8 +19,10 @@ const TURN_TYPE_LABELS: Record<string, string> = {
   edge_case_analysis: 'Edge Case Analysis',
   risk_identification: 'Risk Identified',
   risk_assessment: 'Risk Assessment',
-  consensus_synthesis: 'Synthesis',
+  consensus_synthesis: 'Final Synthesis',
   final_position: 'Final Position',
+  data_quality_warning: 'Data Warning',
+  moderator: 'Moderator',
 }
 
 // Message component with chat bubble style
@@ -125,12 +127,21 @@ export const DebateConversation: React.FC<DebateConversationProps> = ({
 
   // Calculate consensus and debate metrics
   useEffect(() => {
+    // Consensus indicators: consensus_synthesis, final_position with agreement language, resolution
     const consensus = turns.filter(t => 
-      t.type === 'consensus' || t.type === 'resolution' || t.type === 'consensus_synthesis'
+      t.type === 'consensus_synthesis' || 
+      t.type === 'final_position' ||
+      t.type === 'resolution' ||
+      (t.message && t.message.toLowerCase().includes('consensus'))
     ).length
+    
+    // Active debates: challenges, risk identification, responses to challenges
     const debates = turns.filter(t => 
-      t.type === 'challenge' || t.type === 'risk_identification'
+      t.type === 'challenge' || 
+      t.type === 'risk_identification' ||
+      t.type === 'response'
     ).length
+    
     setConsensusPoints(consensus)
     setActiveDebates(debates)
   }, [turns])
