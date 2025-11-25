@@ -17,7 +17,7 @@ export type WorkflowStatus = 'idle' | 'connecting' | 'connected' | 'error'
 
 export interface WorkflowEvent {
   stage: WorkflowStage | string
-  status: 'running' | 'streaming' | 'complete' | 'error' | 'started'
+  status: 'ready' | 'running' | 'streaming' | 'complete' | 'error' | 'started' | 'update'
   payload?: Record<string, unknown>
   latency_ms?: number
   timestamp?: string

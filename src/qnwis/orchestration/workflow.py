@@ -146,6 +146,53 @@ async def parallel_execution_node(state: IntelligenceState) -> IntelligenceState
         return state
 
 
+async def aggregate_scenarios_for_debate_node(state: IntelligenceState) -> IntelligenceState:
+    """
+    Aggregate scenario results into agent analysis format for main debate.
+    
+    After parallel execution, prepares state for cross-scenario debate
+    by converting scenario results into agent analyses format.
+    """
+    scenario_results = state.get('scenario_results', [])
+    if not scenario_results:
+        logger.info("No scenario results to aggregate")
+        return state
+    
+    logger.info(f"Aggregating {len(scenario_results)} scenario results for main debate...")
+    
+    # Create synthetic agent analyses from scenario results
+    # Each scenario's synthesis becomes an "agent" position for the main debate
+    for i, result in enumerate(scenario_results):
+        scenario_name = result.get('scenario_name', f'Scenario {i+1}')
+        synthesis = result.get('synthesis', result.get('final_synthesis', ''))
+        
+        # Add as agent analysis for debate nodes to process
+        if i == 0:
+            state['financial_analysis'] = f"[{scenario_name}] {synthesis}"
+        elif i == 1:
+            state['market_analysis'] = f"[{scenario_name}] {synthesis}"
+        elif i == 2:
+            state['operations_analysis'] = f"[{scenario_name}] {synthesis}"
+        elif i == 3:
+            state['research_analysis'] = f"[{scenario_name}] {synthesis}"
+    
+    # Store all scenario syntheses for debate context
+    state['scenario_syntheses'] = [
+        {
+            'name': r.get('scenario_name', f'Scenario {i+1}'),
+            'synthesis': r.get('synthesis', r.get('final_synthesis', ''))
+        }
+        for i, r in enumerate(scenario_results)
+    ]
+    
+    state['reasoning_chain'].append(
+        f"✅ Aggregated {len(scenario_results)} scenarios for cross-scenario debate"
+    )
+    
+    logger.info("✅ Scenario aggregation complete")
+    return state
+
+
 async def meta_synthesis_wrapper(state: IntelligenceState) -> IntelligenceState:
     """
     Synthesize insights across all scenario results.
@@ -234,6 +281,7 @@ def create_intelligence_graph() -> StateGraph:
     
     # === Parallel path nodes ===
     workflow.add_node("parallel_exec", parallel_execution_node)
+    workflow.add_node("aggregate_scenarios", aggregate_scenarios_for_debate_node)
     workflow.add_node("meta_synthesis", meta_synthesis_wrapper)
     
     # === Single path nodes ===
@@ -276,9 +324,18 @@ def create_intelligence_graph() -> StateGraph:
         }
     )
     
-    # === PARALLEL PATH (Bug Fix #2 - explicit termination) ===
-    workflow.add_edge("parallel_exec", "meta_synthesis")
-    workflow.add_edge("meta_synthesis", END)  # Parallel path terminates here
+    # === PARALLEL PATH (Fixed: Run all stages after parallel scenarios) ===
+    # After parallel scenarios complete:
+    # 1. Aggregate scenario results for main debate
+    # 2. Run main debate across all scenarios
+    # 3. Run critique, verification
+    # 4. Final meta-synthesis combines everything
+    workflow.add_edge("parallel_exec", "aggregate_scenarios")
+    workflow.add_edge("aggregate_scenarios", "debate")  # Main debate on scenario results
+    workflow.add_edge("debate", "critique")
+    workflow.add_edge("critique", "verification")
+    workflow.add_edge("verification", "meta_synthesis")  # Meta-synthesis combines everything
+    workflow.add_edge("meta_synthesis", END)
     
     # === SINGLE PATH (Bug Fix #2 - complete path to END) ===
     workflow.add_edge("financial", "market")

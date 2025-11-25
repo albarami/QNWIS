@@ -315,7 +315,7 @@ class BatchQueryResponse(BaseModel):
 
 from typing import Literal
 
-StreamStatus = Literal["ready", "running", "streaming", "complete", "error"]
+StreamStatus = Literal["ready", "running", "streaming", "complete", "error", "started", "update"]
 
 
 class StreamEventResponse(BaseModel):

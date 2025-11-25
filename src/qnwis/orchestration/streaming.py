@@ -142,6 +142,11 @@ def _payload_for_stage(stage: str, state: Dict[str, Any]) -> Dict[str, Any]:
             "scenarios_completed": len(scenario_results),
             "scenarios": state.get("scenarios", [])
         }
+    if stage == "aggregate_scenarios":
+        return {
+            "scenario_syntheses": state.get("scenario_syntheses", []),
+            "num_scenarios": len(state.get("scenario_results", []))
+        }
     if stage == "meta_synthesis":
         # Sanitize scenario_results to remove non-serializable fields
         scenario_results = state.get("scenario_results", [])
@@ -312,12 +317,13 @@ async def run_workflow_stream(
 
             logger.info(f"Node '{node_name}' completed, emitting event")
 
-            # Map node names to stage names
+            # Map node names to stage names (frontend-compatible)
             stage_map = {
                 "classifier": "classify",
                 "extraction": "prefetch",
                 "scenario_gen": "scenario_gen",
                 "parallel_exec": "parallel_exec",
+                "aggregate_scenarios": "agents",  # Maps to agents stage in UI
                 "meta_synthesis": "meta_synthesis",
                 "financial": "agent:financial",
                 "market": "agent:market",
@@ -351,8 +357,8 @@ async def run_workflow_stream(
                 )
                 continue  # Skip the normal emit below
 
-            # Emit agent_selection stage BEFORE first agent
-            if node_name in {"financial", "market", "operations", "research"} and not first_agent_emitted:
+            # Emit agent_selection stage BEFORE first agent or aggregate_scenarios
+            if node_name in {"financial", "market", "operations", "research", "aggregate_scenarios"} and not first_agent_emitted:
                 first_agent_emitted = True
                 yield WorkflowEvent(
                     stage="agent_selection",
