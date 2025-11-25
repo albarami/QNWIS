@@ -27,6 +27,8 @@ const SSE_ENDPOINT = `${API_BASE_URL}/api/v1/council/stream`
 
 function handleAgentEvent(state: AppState, event: WorkflowEvent) {
   const agentName = event.stage.replace('agent:', '')
+  console.log('🤖 AGENT EVENT:', agentName, event.status, event.payload)
+  
   const existing = state.agentStatuses.get(agentName) ?? {
     name: agentName,
     status: 'pending' as const,
@@ -34,6 +36,11 @@ function handleAgentEvent(state: AppState, event: WorkflowEvent) {
 
   // Track that we have agents running
   state.agentsRunning = true
+  
+  // If this is a new agent we haven't seen, increment expected count
+  if (!state.agentStatuses.has(agentName) && state.agentsExpected === 0) {
+    state.agentsExpected = state.agentStatuses.size + 1
+  }
 
   if (event.status === 'running') {
     state.agentStatuses.set(agentName, {
@@ -149,9 +156,13 @@ function reduceEvent(state: AppState, event: WorkflowEvent): AppState {
 
   if (event.stage === 'agent_selection' && event.payload) {
     const payload = event.payload as any
-    next.selectedAgents = payload.selected_agents ?? []
+    console.log('🤖 AGENT_SELECTION event received:', payload)
+    
+    next.selectedAgents = payload.selected_agents ?? payload.agents ?? []
     next.agentsExpected = next.selectedAgents.length
     next.agentsRunning = true
+    
+    console.log('🤖 Selected agents:', next.selectedAgents, 'Expected:', next.agentsExpected)
     
     // Initialize agent statuses for all selected agents as pending
     next.agentStatuses = new Map(
@@ -284,10 +295,34 @@ function reduceEvent(state: AppState, event: WorkflowEvent): AppState {
   // Handle parallel_progress updates
   if (event.stage === 'parallel_progress') {
     const payload = event.payload as any
-    if (payload?.percent !== undefined) {
-      // Update overall progress based on completed scenarios
-      next.scenariosCompleted = payload?.completed || next.scenariosCompleted
+    
+    // Update completed count
+    if (payload?.completed !== undefined) {
+      next.scenariosCompleted = payload.completed
     }
+    if (payload?.total !== undefined) {
+      next.totalScenarios = payload.total
+    }
+    
+    // Calculate progress based on completed scenarios
+    if (next.totalScenarios > 0) {
+      const progressPercent = (next.scenariosCompleted / next.totalScenarios) * 100
+      
+      // Update all scenarios with estimated progress
+      let completedSoFar = 0
+      next.scenarioProgress.forEach((sp, id) => {
+        if (completedSoFar < next.scenariosCompleted) {
+          // This scenario is complete
+          next.scenarioProgress.set(id, { ...sp, status: 'complete', progress: 100 })
+          completedSoFar++
+        } else if (sp.status !== 'complete') {
+          // Running scenario - estimate progress based on overall
+          const runningProgress = Math.min(80, 20 + progressPercent * 0.6)
+          next.scenarioProgress.set(id, { ...sp, status: 'running', progress: runningProgress })
+        }
+      })
+    }
+    
     return next
   }
 
@@ -301,7 +336,8 @@ function reduceEvent(state: AppState, event: WorkflowEvent): AppState {
       if (payload?.scenarios && Array.isArray(payload.scenarios)) {
         next.totalScenarios = payload.scenarios.length
         payload.scenarios.forEach((scenario: any, idx: number) => {
-          const scenarioId = scenario.id || `scenario_${idx}`
+          // Use consistent ID format: scenario-{idx} (with dash)
+          const scenarioId = scenario.id || `scenario-${idx}`
           next.scenarioProgress.set(scenarioId, {
             scenarioId,
             name: scenario.name || `Scenario ${idx + 1}`,
@@ -310,9 +346,11 @@ function reduceEvent(state: AppState, event: WorkflowEvent): AppState {
           })
         })
       } else {
-        // Mark existing scenarios as running
+        // Mark existing scenarios as running with incremental progress
+        let idx = 0
         next.scenarioProgress.forEach((sp, id) => {
-          next.scenarioProgress.set(id, { ...sp, status: 'running', progress: 33 })
+          next.scenarioProgress.set(id, { ...sp, status: 'running', progress: 20 + (idx * 5) })
+          idx++
         })
       }
     } else if (event.status === 'complete') {
@@ -320,6 +358,11 @@ function reduceEvent(state: AppState, event: WorkflowEvent): AppState {
       next.scenarioResults = payload?.scenario_results ?? []
       next.parallelExecutionActive = false
       next.scenariosCompleted = next.totalScenarios > 0 ? next.totalScenarios : next.scenarioResults.length
+      
+      // Update totalScenarios if we have results but no total yet
+      if (next.totalScenarios === 0 && next.scenarioResults.length > 0) {
+        next.totalScenarios = next.scenarioResults.length
+      }
       
       // Mark all scenarios as complete
       next.scenarioProgress.forEach((sp, id) => {

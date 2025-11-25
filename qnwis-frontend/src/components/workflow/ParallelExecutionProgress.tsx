@@ -43,16 +43,28 @@ export function ParallelExecutionProgress({
   }
 
   // Use scenarios.length as fallback if totalScenarios is 0
-  const total = totalScenarios > 0 ? totalScenarios : scenarios.length
+  const total = totalScenarios > 0 ? totalScenarios : Math.max(scenarios.length, scenarioProgress?.size || 0)
   
   // Calculate overall progress based on individual scenario progress
   let overallProgress = 0
   if (scenarioProgress && scenarioProgress.size > 0) {
     const progressValues = Array.from(scenarioProgress.values())
-    overallProgress = progressValues.reduce((sum, sp) => sum + sp.progress, 0) / Math.max(total, progressValues.length)
-  } else if (total > 0) {
+    overallProgress = progressValues.reduce((sum, sp) => sum + sp.progress, 0) / progressValues.length
+  } else if (total > 0 && scenariosCompleted > 0) {
     overallProgress = (scenariosCompleted / total) * 100
+  } else if (isActive) {
+    // Show minimum progress when active but no specific data yet
+    overallProgress = 5
   }
+  
+  // Debug log
+  console.log('📊 ParallelExecutionProgress:', { 
+    total, 
+    scenariosCompleted, 
+    overallProgress, 
+    scenarioProgressSize: scenarioProgress?.size,
+    isActive 
+  })
 
   // Get scenario status from scenarioProgress map
   const getScenarioStatus = (scenarioId: string, idx: number): { status: string; progress: number } => {
