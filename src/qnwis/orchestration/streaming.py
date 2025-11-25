@@ -56,6 +56,42 @@ class WorkflowEvent:
         }
 
 
+def _is_json_serializable(obj: Any) -> bool:
+    """Check if an object is JSON serializable."""
+    import json
+    try:
+        json.dumps(obj)
+        return True
+    except (TypeError, ValueError):
+        return False
+
+
+def _sanitize_dict(d: Dict[str, Any]) -> Dict[str, Any]:
+    """Remove non-serializable values from a dictionary recursively."""
+    if not isinstance(d, dict):
+        return d
+    
+    result = {}
+    for k, v in d.items():
+        # Skip known non-serializable fields
+        if k in ('event_callback', 'emit_event_fn'):
+            continue
+        # Skip functions and callables
+        if callable(v):
+            continue
+        # Recursively handle nested dicts
+        if isinstance(v, dict):
+            result[k] = _sanitize_dict(v)
+        elif isinstance(v, list):
+            result[k] = [_sanitize_dict(item) if isinstance(item, dict) else item 
+                        for item in v if not callable(item)]
+        else:
+            # Only include serializable values
+            if _is_json_serializable(v):
+                result[k] = v
+    return result
+
+
 def _payload_for_stage(stage: str, state: Dict[str, Any]) -> Dict[str, Any]:
     """Return a compact payload for UI consumption."""
 
@@ -98,16 +134,22 @@ def _payload_for_stage(stage: str, state: Dict[str, Any]) -> Dict[str, Any]:
             "num_scenarios": len(state.get("scenarios", []))
         }
     if stage == "parallel_exec":
+        # Sanitize scenario_results to remove non-serializable fields
+        scenario_results = state.get("scenario_results", [])
+        sanitized_results = [_sanitize_dict(r) if isinstance(r, dict) else r for r in scenario_results]
         return {
-            "scenario_results": state.get("scenario_results", []),
-            "scenarios_completed": len(state.get("scenario_results", [])),
+            "scenario_results": sanitized_results,
+            "scenarios_completed": len(scenario_results),
             "scenarios": state.get("scenarios", [])
         }
     if stage == "meta_synthesis":
+        # Sanitize scenario_results to remove non-serializable fields
+        scenario_results = state.get("scenario_results", [])
+        sanitized_results = [_sanitize_dict(r) if isinstance(r, dict) else r for r in scenario_results]
         return {
             "meta_synthesis": state.get("meta_synthesis"),
             "final_synthesis": state.get("final_synthesis"),
-            "scenario_results": state.get("scenario_results", []),
+            "scenario_results": sanitized_results,
             "confidence_score": state.get("confidence_score", 0)
         }
     if stage == "synthesis":

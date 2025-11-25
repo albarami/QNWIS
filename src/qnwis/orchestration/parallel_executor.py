@@ -218,6 +218,12 @@ class ParallelDebateExecutor:
             # Rate limiting happens at individual LLM call level, not here
             result = await workflow.ainvoke(scenario_state)
             
+            # Remove non-serializable fields (functions, callbacks)
+            # These cannot be sent over SSE
+            non_serializable_fields = ['event_callback', 'emit_event_fn']
+            for field in non_serializable_fields:
+                result.pop(field, None)
+            
             # Add scenario metadata to result
             result['scenario_metadata'] = scenario
             result['scenario_id'] = scenario_id
