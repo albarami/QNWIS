@@ -226,8 +226,7 @@ function App() {
                 totalScenarios={state.totalScenarios || 0}
                 isActive={state.parallelExecutionActive || false}
                 scenarioProgress={state.scenarioProgress}
-                agentsExpected={state.agentsExpected || 0}
-                agentsRunning={state.agentsRunning || false}
+                scenarioResults={state.scenarioResults || []}
               />
 
               {/* Agent Execution Grid */}

@@ -1,4 +1,4 @@
-import { ScenarioProgress } from '../../types/workflow'
+import { ScenarioProgress, ScenarioResult } from '../../types/workflow'
 
 interface ParallelExecutionProgressProps {
   scenarios: any[]
@@ -6,6 +6,7 @@ interface ParallelExecutionProgressProps {
   totalScenarios: number
   isActive: boolean
   scenarioProgress?: Map<string, ScenarioProgress>
+  scenarioResults?: ScenarioResult[]
   agentsExpected?: number
   agentsRunning?: boolean
 }
@@ -31,15 +32,15 @@ export function ParallelExecutionProgress({
   totalScenarios,
   isActive,
   scenarioProgress,
-  // agentsExpected and agentsRunning reserved for future agent progress display
-  agentsExpected: _agentsExpected = 0,
-  agentsRunning: _agentsRunning = false,
+  scenarioResults = [],
 }: ParallelExecutionProgressProps) {
-  // Suppress unused variable warnings
-  void _agentsExpected
-  void _agentsRunning
   if (!isActive && scenarios.length === 0) {
     return null
+  }
+  
+  // Helper to get result for a scenario
+  const getScenarioResult = (scenarioName: string): ScenarioResult | undefined => {
+    return scenarioResults.find(r => r.scenario?.name === scenarioName)
   }
 
   // Use scenarios.length as fallback if totalScenarios is 0
@@ -114,6 +115,7 @@ export function ParallelExecutionProgress({
             const scenarioId = scenario.id || `scenario-${idx}`
             const { status, progress } = getScenarioStatus(scenarioId, idx)
             const typeInfo = getScenarioType(scenario.name)
+            const result = getScenarioResult(scenario.name)
             
             return (
               <div
@@ -164,6 +166,37 @@ export function ParallelExecutionProgress({
                       />
                     </div>
                     <span className="text-xs text-slate-500 mt-1">{progress}%</span>
+                  </div>
+                )}
+                
+                {/* Results Preview for complete scenarios */}
+                {status === 'complete' && result && (
+                  <div className="mt-3 pt-3 border-t border-slate-700 space-y-2">
+                    {/* Confidence Score */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-slate-500">Confidence</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-16 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-cyan-400"
+                            style={{ width: `${(result.confidence || 0) * 100}%` }}
+                          />
+                        </div>
+                        <span className="text-xs text-emerald-400 font-medium">
+                          {((result.confidence || 0) * 100).toFixed(0)}%
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* Key Findings Preview */}
+                    {result.key_findings && result.key_findings.length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-xs text-slate-500 mb-1">Key Finding:</p>
+                        <p className="text-xs text-slate-300 line-clamp-2">
+                          {result.key_findings[0]}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

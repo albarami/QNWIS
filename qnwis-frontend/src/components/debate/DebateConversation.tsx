@@ -398,10 +398,17 @@ export const DebateConversation: React.FC<DebateConversationProps> = ({
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-green-400 text-xl">✓</span>
+                <span className="text-amber-400 text-xl">⚔️</span>
+                <div>
+                  <p className="text-lg font-bold text-amber-400">{metrics.debates}</p>
+                  <p className="text-xs text-slate-500">challenges</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-green-400 text-xl">🤝</span>
                 <div>
                   <p className="text-lg font-bold text-green-400">{metrics.consensus}</p>
-                  <p className="text-xs text-slate-500">agreements</p>
+                  <p className="text-xs text-slate-500">consensus</p>
                 </div>
               </div>
             </div>
@@ -415,6 +422,34 @@ export const DebateConversation: React.FC<DebateConversationProps> = ({
             </button>
           </div>
         </div>
+        
+        {/* Consensus Progress Bar */}
+        {turns.length > 0 && (
+          <div className="mt-4 px-2">
+            <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
+              <span>Debate Progress</span>
+              <span>
+                {metrics.debates > 0 && metrics.consensus > 0 
+                  ? `${metrics.consensus} consensus points from ${metrics.debates} challenges`
+                  : metrics.debates > 0 
+                    ? `${metrics.debates} active challenges` 
+                    : 'Opening statements'}
+              </span>
+            </div>
+            <div className="h-2 bg-slate-700 rounded-full overflow-hidden flex">
+              {/* Challenges portion (amber) */}
+              <div 
+                className="bg-gradient-to-r from-amber-500 to-amber-400 transition-all duration-500"
+                style={{ width: `${Math.min((metrics.debates / Math.max(turns.length, 1)) * 100, 60)}%` }}
+              />
+              {/* Consensus portion (green) */}
+              <div 
+                className="bg-gradient-to-r from-emerald-500 to-green-400 transition-all duration-500"
+                style={{ width: `${Math.min((metrics.consensus / Math.max(turns.length, 1)) * 100, 40)}%` }}
+              />
+            </div>
+          </div>
+        )}
       </div>
       
       {/* Messages Container */}
