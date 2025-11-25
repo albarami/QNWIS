@@ -1,22 +1,24 @@
 """
-COMPREHENSIVE Perplexity AI Extraction - Using NEW Search API
+COMPREHENSIVE Perplexity AI Extraction - Using PRO SEARCH API
 
-Perplexity Search API provides:
-- Multi-query search (up to 5 queries in one request)
-- Regional filtering by country
-- Domain filtering (allowlist/denylist)
-- Language filtering
-- Date/recency filtering
-- Content extraction control
+Perplexity Pro Search provides:
+- Multi-step reasoning with automated tools
+- web_search: Intelligent web searches
+- fetch_url_content: Fetch detailed content from URLs  
+- execute_python: Run Python code for calculations
+- Real-time thought streaming
+- reasoning_steps in responses
+- Context management with threading
 
-This extractor uses ALL of these features for maximum data extraction.
+This extractor uses PRO SEARCH for ministerial-grade data extraction.
 """
 
 import logging
 import asyncio
 import os
 import re
-from typing import List, Dict, Any, Optional
+import json
+from typing import List, Dict, Any, Optional, AsyncIterator
 
 import aiohttp
 
@@ -26,16 +28,20 @@ logger = logging.getLogger(__name__)
 PERPLEXITY_SEARCH_URL = "https://api.perplexity.ai/search"
 PERPLEXITY_CHAT_URL = "https://api.perplexity.ai/chat/completions"
 
+# Pro Search model
+SONAR_PRO_MODEL = "sonar-pro"
+
 
 async def extract_perplexity_comprehensive(query: str) -> List[Dict[str, Any]]:
     """
     Extract comprehensive real-time intelligence from Perplexity AI.
     
-    Uses the NEW Search API with:
-    1. Multi-query search (up to 5 queries per request)
-    2. Regional filtering for Qatar/GCC
-    3. Recent content filtering
-    4. Domain filtering for authoritative sources
+    Uses PRO SEARCH with:
+    1. Multi-step reasoning with automated tools
+    2. web_search, fetch_url_content, execute_python tools
+    3. Threading for context management
+    4. Automatic classification (pro/fast based on complexity)
+    5. Real-time thought streaming and reasoning_steps
     """
     all_facts = []
     api_key = os.getenv("PERPLEXITY_API_KEY")
@@ -45,52 +51,337 @@ async def extract_perplexity_comprehensive(query: str) -> List[Dict[str, Any]]:
         return all_facts
     
     try:
-        # Generate multiple targeted queries
-        query_batches = _generate_query_batches(query)
-        logger.info(f"  Querying Perplexity Search API with {len(query_batches)} batches")
-        
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json"
         }
         
         async with aiohttp.ClientSession() as session:
-            # Execute multi-query searches
-            for i, batch in enumerate(query_batches):
-                try:
-                    logger.debug(f"  Batch {i+1}/{len(query_batches)}: {len(batch)} queries")
+            # 1. Use PRO SEARCH for complex multi-step reasoning
+            logger.info("  Using Perplexity PRO SEARCH for multi-step reasoning...")
+            pro_search_facts = await _perplexity_pro_search(
+                session, headers, query
+            )
+            all_facts.extend(pro_search_facts)
+            
+            # 2. Use threaded conversation for follow-up questions
+            if pro_search_facts:
+                thread_id = pro_search_facts[0].get("thread_id") if pro_search_facts else None
+                
+                if thread_id:
+                    # Ask follow-up questions in same thread context
+                    follow_up_questions = _generate_follow_up_questions(query)
                     
-                    # Use the Search API with multi-query support
+                    for fq in follow_up_questions[:2]:  # 2 follow-ups
+                        try:
+                            follow_up_facts = await _perplexity_threaded_followup(
+                                session, headers, fq, thread_id
+                            )
+                            all_facts.extend(follow_up_facts)
+                            await asyncio.sleep(0.3)
+                        except Exception as e:
+                            logger.warning(f"  Follow-up failed: {e}")
+            
+            # 3. Also use Search API for additional coverage
+            search_queries = _generate_search_queries(query)
+            for sq in search_queries[:3]:  # 3 searches
+                try:
                     search_facts = await _perplexity_search(
-                        session, headers, batch,
+                        session, headers, [sq],
                         max_results=10,
-                        search_recency_filter="year"  # Recent content
+                        search_recency_filter="year"
                     )
                     all_facts.extend(search_facts)
-                    
-                    # Small delay between batches
-                    await asyncio.sleep(0.5)
-                    
+                    await asyncio.sleep(0.3)
                 except Exception as e:
-                    logger.warning(f"  Perplexity batch {i+1} failed: {e}")
-                    continue
-            
-            # Also use Chat API for structured Q&A on key questions
-            key_questions = _generate_key_questions(query)
-            for question in key_questions[:3]:  # Limit to 3 key questions
-                try:
-                    chat_facts = await _perplexity_chat(session, headers, question)
-                    all_facts.extend(chat_facts)
-                    await asyncio.sleep(0.5)
-                except Exception as e:
-                    logger.warning(f"  Perplexity chat failed: {e}")
+                    logger.warning(f"  Search query failed: {e}")
         
-        logger.info(f"  Perplexity TOTAL: {len(all_facts)} facts with citations")
+        logger.info(f"  Perplexity PRO SEARCH TOTAL: {len(all_facts)} facts with reasoning")
         
     except Exception as e:
         logger.error(f"Perplexity comprehensive extraction error: {e}")
     
     return all_facts
+
+
+async def _perplexity_pro_search(
+    session: aiohttp.ClientSession,
+    headers: dict,
+    query: str
+) -> List[Dict[str, Any]]:
+    """
+    Execute Perplexity PRO SEARCH with multi-step reasoning.
+    
+    Pro Search uses automated tools:
+    - web_search: Intelligent web searches
+    - fetch_url_content: Fetch detailed content from URLs
+    - execute_python: Run Python code for calculations
+    
+    Requires streaming for full reasoning capabilities.
+    """
+    facts = []
+    
+    # Build system prompt for ministerial-grade research
+    system_prompt = """You are an expert research analyst for Qatar's Ministry. 
+Provide SPECIFIC statistics, numbers, and data with exact citations.
+Focus on Qatar, GCC, and relevant global benchmarks.
+Use multiple sources to verify facts.
+Include recent data (2023-2024) when available.
+Always cite your sources with URLs."""
+    
+    payload = {
+        "model": SONAR_PRO_MODEL,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {
+                "role": "user",
+                "content": f"""Research the following question thoroughly. Use multiple sources, fetch detailed content, and perform any necessary calculations:
+
+{query}
+
+Provide:
+1. Key statistics with exact numbers and citations
+2. Recent developments (2023-2024)
+3. Regional comparisons (GCC, global)
+4. Data sources and methodology
+5. Any calculations or analysis needed"""
+            }
+        ],
+        "stream": False,  # Non-streaming for now to get full response
+        "use_threads": True,  # Enable threading for follow-ups
+        "web_search_options": {
+            "search_type": "pro"  # Enable PRO SEARCH with tools
+        },
+        "temperature": 0.1,
+        "max_tokens": 4000,
+        "return_citations": True
+    }
+    
+    try:
+        async with session.post(PERPLEXITY_CHAT_URL, headers=headers, json=payload) as response:
+            if response.status == 200:
+                data = await response.json()
+                
+                # Extract thread_id for follow-ups
+                thread_id = data.get("thread_id")
+                
+                # Extract content
+                content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                
+                # Extract citations
+                citations = data.get("citations", [])
+                
+                # Extract search results if available
+                search_results = data.get("search_results", [])
+                
+                # Extract reasoning steps if available
+                reasoning_steps = data.get("reasoning_steps", [])
+                
+                # Process reasoning steps (contains tool outputs)
+                for step in reasoning_steps:
+                    step_type = step.get("type", "")
+                    thought = step.get("thought", "")
+                    
+                    if step_type == "web_search":
+                        web_search_data = step.get("web_search", {})
+                        results = web_search_data.get("search_results", [])
+                        for result in results:
+                            facts.append({
+                                "metric": "perplexity_pro_web_search",
+                                "title": result.get("title", ""),
+                                "text": result.get("snippet", "")[:1000],
+                                "url": result.get("url", ""),
+                                "date": result.get("date", ""),
+                                "thought": thought,
+                                "source": "Perplexity Pro Search (web_search tool)",
+                                "source_priority": 90,
+                                "confidence": 0.92,
+                                "thread_id": thread_id
+                            })
+                    
+                    elif step_type == "fetch_url_content":
+                        fetch_data = step.get("fetch_url_content", {})
+                        contents = fetch_data.get("contents", [])
+                        for content_item in contents:
+                            facts.append({
+                                "metric": "perplexity_pro_url_content",
+                                "title": content_item.get("title", ""),
+                                "text": content_item.get("snippet", "")[:1500],
+                                "url": content_item.get("url", ""),
+                                "thought": thought,
+                                "source": "Perplexity Pro Search (fetch_url_content tool)",
+                                "source_priority": 92,
+                                "confidence": 0.95,
+                                "thread_id": thread_id
+                            })
+                    
+                    elif step_type == "execute_python":
+                        python_data = step.get("execute_python", {})
+                        code = python_data.get("code", "")
+                        result = python_data.get("result", "")
+                        if result:
+                            facts.append({
+                                "metric": "perplexity_pro_calculation",
+                                "text": f"Calculation result: {result}",
+                                "code": code[:500],
+                                "thought": thought,
+                                "source": "Perplexity Pro Search (execute_python tool)",
+                                "source_priority": 88,
+                                "confidence": 0.90,
+                                "thread_id": thread_id
+                            })
+                
+                # Process search results
+                for result in search_results:
+                    facts.append({
+                        "metric": "perplexity_pro_search_result",
+                        "title": result.get("title", ""),
+                        "text": result.get("snippet", "")[:1000],
+                        "url": result.get("url", ""),
+                        "date": result.get("date", ""),
+                        "source": "Perplexity Pro Search",
+                        "source_priority": 88,
+                        "confidence": 0.90,
+                        "thread_id": thread_id
+                    })
+                
+                # Extract facts from main content
+                if content:
+                    content_facts = _extract_facts_from_content(content, query, citations)
+                    for fact in content_facts:
+                        fact["thread_id"] = thread_id
+                        fact["source"] = "Perplexity Pro Search (sonar-pro)"
+                        fact["source_priority"] = 90
+                    facts.extend(content_facts)
+                
+                logger.info(f"    Pro Search: {len(facts)} facts, {len(reasoning_steps)} reasoning steps")
+                
+            else:
+                error_text = await response.text()
+                logger.warning(f"  Perplexity Pro Search error {response.status}: {error_text[:300]}")
+                
+    except Exception as e:
+        logger.error(f"Perplexity Pro Search error: {e}")
+    
+    return facts
+
+
+async def _perplexity_threaded_followup(
+    session: aiohttp.ClientSession,
+    headers: dict,
+    question: str,
+    thread_id: str
+) -> List[Dict[str, Any]]:
+    """
+    Ask a follow-up question using thread context.
+    
+    Thread maintains conversation history for contextual follow-ups.
+    """
+    facts = []
+    
+    payload = {
+        "model": SONAR_PRO_MODEL,
+        "messages": [
+            {
+                "role": "user",
+                "content": question
+            }
+        ],
+        "stream": False,
+        "use_threads": True,
+        "thread_id": thread_id,  # Continue in same context
+        "web_search_options": {
+            "search_type": "auto"  # Auto-classify complexity
+        },
+        "temperature": 0.1,
+        "max_tokens": 2000,
+        "return_citations": True
+    }
+    
+    try:
+        async with session.post(PERPLEXITY_CHAT_URL, headers=headers, json=payload) as response:
+            if response.status == 200:
+                data = await response.json()
+                
+                content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                citations = data.get("citations", [])
+                
+                if content:
+                    content_facts = _extract_facts_from_content(content, question, citations)
+                    for fact in content_facts:
+                        fact["thread_id"] = thread_id
+                        fact["source"] = "Perplexity Threaded Follow-up"
+                        fact["source_priority"] = 85
+                    facts.extend(content_facts)
+                
+                logger.debug(f"    Threaded follow-up: {len(facts)} facts")
+                
+            else:
+                error_text = await response.text()
+                logger.warning(f"  Threaded follow-up error {response.status}: {error_text[:200]}")
+                
+    except Exception as e:
+        logger.error(f"Perplexity threaded follow-up error: {e}")
+    
+    return facts
+
+
+def _generate_follow_up_questions(query: str) -> List[str]:
+    """Generate contextual follow-up questions based on query."""
+    query_lower = query.lower()
+    questions = []
+    
+    if any(term in query_lower for term in ["labor", "employment", "job", "workforce"]):
+        questions.extend([
+            "What are the specific Qatarization targets and current progress rates?",
+            "What are the major skills gaps in Qatar's labor market?"
+        ])
+    
+    if any(term in query_lower for term in ["gdp", "economy", "growth"]):
+        questions.extend([
+            "What is Qatar's non-oil GDP growth rate and diversification progress?",
+            "How does Qatar's fiscal position compare to other GCC countries?"
+        ])
+    
+    if any(term in query_lower for term in ["oil", "gas", "lng", "energy"]):
+        questions.extend([
+            "What is the current status of North Field expansion projects?",
+            "What are Qatar's LNG export contracts and capacity projections?"
+        ])
+    
+    if any(term in query_lower for term in ["skill", "training"]):
+        questions.extend([
+            "What technical training capacity does Qatar have currently?",
+            "What are the major skills shortages by sector?"
+        ])
+    
+    # Default follow-ups
+    questions.extend([
+        f"What are the latest 2024 statistics and developments for this topic?",
+        f"How does Qatar compare to other GCC countries on this topic?"
+    ])
+    
+    return questions[:4]  # Max 4 follow-ups
+
+
+def _generate_search_queries(query: str) -> List[str]:
+    """Generate search queries for additional coverage."""
+    query_lower = query.lower()
+    queries = []
+    
+    queries.append(f"Qatar {query[:50]} statistics 2024")
+    queries.append(f"GCC {query[:40]} comparison data")
+    
+    if "labor" in query_lower or "employment" in query_lower:
+        queries.append("Qatar labor market statistics unemployment rate 2024")
+    
+    if "gdp" in query_lower or "economy" in query_lower:
+        queries.append("Qatar GDP economic growth forecast 2024 2025")
+    
+    if "energy" in query_lower or "lng" in query_lower:
+        queries.append("Qatar LNG production capacity North Field 2024")
+    
+    return queries[:5]
 
 
 async def _perplexity_search(
