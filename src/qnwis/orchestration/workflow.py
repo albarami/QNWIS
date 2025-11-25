@@ -152,6 +152,7 @@ async def aggregate_scenarios_for_debate_node(state: IntelligenceState) -> Intel
     
     After parallel execution, prepares state for cross-scenario debate
     by converting scenario results into agent analyses format.
+    Also populates agent_reports for critique and verification stages.
     """
     scenario_results = state.get('scenario_results', [])
     if not scenario_results:
@@ -160,11 +161,29 @@ async def aggregate_scenarios_for_debate_node(state: IntelligenceState) -> Intel
     
     logger.info(f"Aggregating {len(scenario_results)} scenario results for main debate...")
     
+    # Initialize agent_reports if not present
+    agent_reports = state.setdefault('agent_reports', [])
+    
     # Create synthetic agent analyses from scenario results
     # Each scenario's synthesis becomes an "agent" position for the main debate
     for i, result in enumerate(scenario_results):
         scenario_name = result.get('scenario_name', f'Scenario {i+1}')
         synthesis = result.get('synthesis', result.get('final_synthesis', ''))
+        confidence = result.get('confidence_score', 0.7)
+        
+        # Create agent report for each scenario
+        agent_report = {
+            "agent": f"Scenario_{i+1}_{scenario_name.replace(' ', '_')}",
+            "report": {
+                "narrative": synthesis,
+                "confidence": confidence,
+                "scenario_name": scenario_name,
+                "data_gaps": result.get('warnings', []),
+                "assumptions": result.get('scenario_metadata', {}).get('modified_assumptions', {}),
+                "citations": []  # Scenarios aggregate multiple citations
+            }
+        }
+        agent_reports.append(agent_report)
         
         # Add as agent analysis for debate nodes to process
         if i == 0:
@@ -185,11 +204,14 @@ async def aggregate_scenarios_for_debate_node(state: IntelligenceState) -> Intel
         for i, r in enumerate(scenario_results)
     ]
     
+    # Update agent count
+    state['agent_reports'] = agent_reports
+    
     state['reasoning_chain'].append(
-        f"✅ Aggregated {len(scenario_results)} scenarios for cross-scenario debate"
+        f"✅ Aggregated {len(scenario_results)} scenarios for cross-scenario debate, created {len(agent_reports)} agent reports"
     )
     
-    logger.info("✅ Scenario aggregation complete")
+    logger.info(f"✅ Scenario aggregation complete: {len(agent_reports)} agent reports created")
     return state
 
 

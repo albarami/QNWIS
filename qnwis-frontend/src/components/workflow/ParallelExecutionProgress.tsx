@@ -40,7 +40,21 @@ export function ParallelExecutionProgress({
   
   // Helper to get result for a scenario
   const getScenarioResult = (scenarioName: string): ScenarioResult | undefined => {
-    return scenarioResults.find(r => r.scenario?.name === scenarioName)
+    // Backend sends scenario_name directly, not nested in scenario object
+    return scenarioResults.find(r => 
+      r.scenario?.name === scenarioName || 
+      (r as any).scenario_name === scenarioName ||
+      (r as any).name === scenarioName
+    )
+  }
+  
+  // Helper to extract synthesis/confidence from various result formats
+  const getResultData = (result: any) => {
+    return {
+      confidence: result?.confidence ?? result?.confidence_score ?? 0,
+      synthesis: result?.synthesis ?? result?.final_synthesis ?? '',
+      key_findings: result?.key_findings ?? []
+    }
   }
 
   // Use scenarios.length as fallback if totalScenarios is 0
@@ -186,35 +200,48 @@ export function ParallelExecutionProgress({
                 )}
                 
                 {/* Results Preview for complete scenarios */}
-                {status === 'complete' && result && (
-                  <div className="mt-3 pt-3 border-t border-slate-700 space-y-2">
-                    {/* Confidence Score */}
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-slate-500">Confidence</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-16 h-1.5 bg-slate-700 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-cyan-400"
-                            style={{ width: `${(result.confidence || 0) * 100}%` }}
-                          />
+                {status === 'complete' && result && (() => {
+                  const data = getResultData(result)
+                  return (
+                    <div className="mt-3 pt-3 border-t border-slate-700 space-y-2">
+                      {/* Confidence Score */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-slate-500">Confidence</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-16 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-cyan-400"
+                              style={{ width: `${data.confidence * 100}%` }}
+                            />
+                          </div>
+                          <span className="text-xs text-emerald-400 font-medium">
+                            {(data.confidence * 100).toFixed(0)}%
+                          </span>
                         </div>
-                        <span className="text-xs text-emerald-400 font-medium">
-                          {((result.confidence || 0) * 100).toFixed(0)}%
-                        </span>
                       </div>
+                      
+                      {/* Synthesis Preview */}
+                      {data.synthesis && (
+                        <div className="mt-2">
+                          <p className="text-xs text-slate-500 mb-1">Analysis:</p>
+                          <p className="text-xs text-slate-300 line-clamp-3">
+                            {data.synthesis.substring(0, 200)}...
+                          </p>
+                        </div>
+                      )}
+                      
+                      {/* Key Findings Preview */}
+                      {data.key_findings && data.key_findings.length > 0 && (
+                        <div className="mt-2">
+                          <p className="text-xs text-slate-500 mb-1">Key Finding:</p>
+                          <p className="text-xs text-slate-300 line-clamp-2">
+                            {data.key_findings[0]}
+                          </p>
+                        </div>
+                      )}
                     </div>
-                    
-                    {/* Key Findings Preview */}
-                    {result.key_findings && result.key_findings.length > 0 && (
-                      <div className="mt-2">
-                        <p className="text-xs text-slate-500 mb-1">Key Finding:</p>
-                        <p className="text-xs text-slate-300 line-clamp-2">
-                          {result.key_findings[0]}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
+                  )
+                })()}
               </div>
             )
           })}

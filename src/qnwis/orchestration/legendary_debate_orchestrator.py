@@ -13,6 +13,139 @@ from .debate import detect_debate_convergence
 logger = logging.getLogger(__name__)
 
 
+def robust_json_parse(text: str, default: Any = None) -> Any:
+    """
+    Robustly parse JSON from LLM output with multiple fallback strategies.
+    
+    Args:
+        text: Raw text that may contain JSON
+        default: Default value if all parsing fails
+        
+    Returns:
+        Parsed JSON or default value
+    """
+    if not text or not text.strip():
+        return default
+    
+    # Strategy 1: Clean and parse directly
+    cleaned = text.strip()
+    
+    # Remove markdown code blocks
+    if cleaned.startswith("```json"):
+        cleaned = cleaned[7:]
+    elif cleaned.startswith("```"):
+        cleaned = cleaned[3:]
+    if cleaned.endswith("```"):
+        cleaned = cleaned[:-3]
+    cleaned = cleaned.strip()
+    
+    # Strategy 2: Try direct parsing
+    try:
+        return json.loads(cleaned)
+    except json.JSONDecodeError:
+        pass
+    
+    # Strategy 3: Find JSON object/array boundaries
+    try:
+        # Find first { or [
+        start_obj = cleaned.find('{')
+        start_arr = cleaned.find('[')
+        
+        if start_obj == -1 and start_arr == -1:
+            return default
+            
+        if start_obj == -1:
+            start = start_arr
+            end_char = ']'
+        elif start_arr == -1:
+            start = start_obj
+            end_char = '}'
+        else:
+            start = min(start_obj, start_arr)
+            end_char = '}' if start == start_obj else ']'
+        
+        # Find matching end
+        end = cleaned.rfind(end_char)
+        if end <= start:
+            return default
+            
+        json_str = cleaned[start:end+1]
+        
+        # Apply repairs
+        json_str = _repair_json_string(json_str)
+        
+        return json.loads(json_str)
+    except json.JSONDecodeError:
+        pass
+    
+    # Strategy 4: Try to extract key-value pairs with regex
+    try:
+        result = {}
+        # Match "key": "value" or "key": number patterns
+        kv_pattern = r'"([^"]+)"\s*:\s*("([^"\\]|\\.)*"|[\d.]+|true|false|null)'
+        matches = re.findall(kv_pattern, cleaned)
+        for key, value, _ in matches:
+            try:
+                result[key] = json.loads(value)
+            except:
+                result[key] = value.strip('"')
+        if result:
+            return result
+    except:
+        pass
+    
+    return default
+
+
+def _repair_json_string(json_str: str) -> str:
+    """
+    Repair common JSON syntax errors from LLM output.
+    """
+    # Escape unescaped newlines inside strings
+    result = []
+    in_string = False
+    escape_next = False
+    
+    for char in json_str:
+        if escape_next:
+            result.append(char)
+            escape_next = False
+            continue
+        
+        if char == '\\':
+            result.append(char)
+            escape_next = True
+            continue
+        
+        if char == '"':
+            in_string = not in_string
+            result.append(char)
+            continue
+        
+        if in_string:
+            if char == '\n':
+                result.append('\\n')
+            elif char == '\r':
+                result.append('\\r')
+            elif char == '\t':
+                result.append('\\t')
+            else:
+                result.append(char)
+        else:
+            result.append(char)
+    
+    json_str = ''.join(result)
+    
+    # Remove trailing commas before closing braces/brackets
+    json_str = re.sub(r',\s*([}\]])', r'\1', json_str)
+    
+    # Fix unclosed strings at end
+    if json_str.count('"') % 2 == 1:
+        json_str = json_str + '"'
+    
+    return json_str
+
+
 def create_debate_context(turn_number: int, debate_history: List[Dict]) -> str:
     """Create debate context that highlights recent micro vs macro arguments."""
     if turn_number == 1:
@@ -73,29 +206,29 @@ class LegendaryDebateOrchestrator:
             }
         },
         "standard": {
-            "max_turns": 40,
+            "max_turns": 30,
             "phases": {
-                "opening_statements": 8,
-                "challenge_defense": 18,
-                "edge_cases": 8,
-                "risk_analysis": 4,
-                "consensus_building": 2
+                "opening_statements": 7,
+                "challenge_defense": 8,
+                "edge_cases": 6,
+                "risk_analysis": 5,
+                "consensus_building": 4
             }
         },
         "complex": {
-            "max_turns": 125,
+            "max_turns": 40,
             "phases": {
-                "opening_statements": 12,
-                "challenge_defense": 50,
-                "edge_cases": 25,
-                "risk_analysis": 25,
-                "consensus_building": 13
+                "opening_statements": 8,
+                "challenge_defense": 12,
+                "edge_cases": 8,
+                "risk_analysis": 7,
+                "consensus_building": 5
             }
         }
     }
     
     # Default configuration (will be overridden by classification)
-    MAX_TURNS_TOTAL = 40
+    MAX_TURNS_TOTAL = 30
     MAX_TURNS_PER_PHASE = DEBATE_CONFIGS["standard"]["phases"]
     
     def __init__(self, emit_event_fn: Callable, llm_client: LLMClient):
@@ -201,10 +334,22 @@ class LegendaryDebateOrchestrator:
         # Phase 2: Challenge/Defense (reduced for production)
         await self._phase_2_challenge_defense(contradictions, agents_map)
         
-        # Circuit breaker after Phase 2
-        if self.turn_counter >= self.MAX_TURNS_TOTAL:
-            logger.warning(f"Hit MAX_TURNS_TOTAL ({self.MAX_TURNS_TOTAL}) after Phase 2, ending debate")
-            return self._generate_summary()
+        # Circuit breaker after Phase 2 - but ensure we generate summary
+        if self.turn_counter >= self.MAX_TURNS_TOTAL * 0.75:  # At 75% capacity
+            logger.warning(f"Approaching MAX_TURNS_TOTAL ({self.MAX_TURNS_TOTAL}), fast-tracking to synthesis")
+            # Skip edge cases and risk analysis, go straight to synthesis
+            consensus_data = await self._phase_5_consensus_building(agents_map, llm_client)
+            final_report = await self._phase_6_final_synthesis(self.conversation_history, llm_client)
+            return {
+                "total_turns": self.turn_counter,
+                "phases_completed": 4,  # Phases 1, 2, 5, 6
+                "conversation_history": self.conversation_history,
+                "final_report": final_report,
+                "resolutions": self.resolutions,
+                "consensus": consensus_data,
+                "execution_time_minutes": (datetime.now() - self.start_time).seconds / 60,
+                "truncated": True  # Flag that debate was shortened
+            }
         
         # Phase 3: Edge Case Exploration (reduced for production)
         edge_cases = await self._generate_edge_cases_llm(
@@ -214,17 +359,28 @@ class LegendaryDebateOrchestrator:
         )
         await self._phase_3_edge_cases(edge_cases, agents_map)
         
-        # Phase 4: Risk Analysis (15 turns, 4 min) - OPTIMIZED
-        await self._phase_4_risk_analysis(agents_map)
+        # Phase 4: Risk Analysis (optimized)
+        if self.turn_counter < self.MAX_TURNS_TOTAL * 0.85:  # Only if we have capacity
+            await self._phase_4_risk_analysis(agents_map)
+        else:
+            logger.warning("Skipping Phase 4 (Risk Analysis) to ensure synthesis completes")
         
-        # Phase 5: Consensus Building (20 turns, 5 min)
-        consensus_data = await self._phase_5_consensus_building(agents_map, llm_client)
+        # Phase 5: Consensus Building - ALWAYS RUN (critical for synthesis)
+        try:
+            consensus_data = await self._phase_5_consensus_building(agents_map, llm_client)
+        except Exception as e:
+            logger.error(f"Phase 5 failed: {e}, using fallback consensus")
+            consensus_data = {"narrative": "Consensus building interrupted", "agreements": []}
         
-        # Phase 6: Final Synthesis (5 min)
-        final_report = await self._phase_6_final_synthesis(
-            self.conversation_history,
-            llm_client
-        )
+        # Phase 6: Final Synthesis - ALWAYS RUN (GUARANTEED)
+        try:
+            final_report = await self._phase_6_final_synthesis(
+                self.conversation_history,
+                llm_client
+            )
+        except Exception as e:
+            logger.error(f"Phase 6 failed: {e}, using fallback synthesis")
+            final_report = f"Debate completed with {self.turn_counter} turns. See conversation history for details."
         
         return {
             "total_turns": self.turn_counter,
@@ -233,7 +389,8 @@ class LegendaryDebateOrchestrator:
             "final_report": final_report,
             "resolutions": self.resolutions,  # REAL resolutions, not empty list
             "consensus": consensus_data,
-            "execution_time_minutes": (datetime.now() - self.start_time).seconds / 60
+            "execution_time_minutes": (datetime.now() - self.start_time).seconds / 60,
+            "truncated": False  # Full debate completed
         }
 
     async def _phase_1_opening_statements(
@@ -290,56 +447,41 @@ class LegendaryDebateOrchestrator:
         macro_agent = agents_map.get("MacroEconomist")
         if micro_agent and macro_agent:
             logger.info("🔥 PHASE 2A: Micro vs Macro Cross-Examination")
-            for _ in range(2):
+            
+            # Get MacroEconomist's opening statement to challenge
+            macro_turns = [t for t in self.conversation_history if t.get("agent") == "MacroEconomist" and t.get("type") == "opening_statement"]
+            if macro_turns:
+                macro_position = macro_turns[0].get("message", "")[:1000]
+                
+                # MicroEconomist challenges MacroEconomist
                 if not self._can_emit_turn():
-                    break
-
-                challenge_context = create_debate_context(self.turn_counter + 1, self.conversation_history)
-                challenge_context += """
-
-**SPECIAL INSTRUCTION FOR MICROECONOMIST**:
-MacroEconomist has argued for strategic benefits. Challenge their assumptions:
-- Are strategic benefits quantified or vague claims?
-- What is the probability of the scenarios they describe?
-- Could cheaper alternatives achieve similar strategic goals?
-- What opportunity costs are they ignoring?
-"""
-                micro_report = await micro_agent.run(
-                    self.question,
-                    {"extracted_facts": self.extracted_facts},
-                    debate_context=challenge_context
-                )
-                micro_message = getattr(micro_report, "narrative", str(micro_report))
-                await self._emit_turn(
-                    "MicroEconomist",
-                    "micro_macro_challenge",
-                    micro_message
-                )
-
+                    return
+                if hasattr(micro_agent, 'challenge_position'):
+                    micro_challenge = await micro_agent.challenge_position(
+                        opponent_name="MacroEconomist",
+                        opponent_claim=macro_position,
+                        conversation_history=self.conversation_history
+                    )
+                    await self._emit_turn(
+                        "MicroEconomist",
+                        "challenge",
+                        micro_challenge
+                    )
+                
+                # MacroEconomist responds
                 if not self._can_emit_turn():
-                    break
-
-                response_context = create_debate_context(self.turn_counter + 1, self.conversation_history)
-                response_context += """
-
-**SPECIAL INSTRUCTION FOR MACROECONOMIST**:
-MicroEconomist has challenged your strategic benefit claims. Respond:
-- Quantify strategic benefits where possible (insurance value, option value)
-- Provide probability estimates for risk scenarios
-- Acknowledge valid efficiency concerns
-- Explain where market failures justify intervention
-"""
-                macro_report = await macro_agent.run(
-                    self.question,
-                    {"extracted_facts": self.extracted_facts},
-                    debate_context=response_context
-                )
-                macro_message = getattr(macro_report, "narrative", str(macro_report))
-                await self._emit_turn(
-                    "MacroEconomist",
-                    "micro_macro_response",
-                    macro_message
-                )
+                    return
+                if hasattr(macro_agent, 'respond_to_challenge'):
+                    macro_response = await macro_agent.respond_to_challenge(
+                        challenger_name="MicroEconomist",
+                        challenge=micro_challenge,
+                        conversation_history=self.conversation_history
+                    )
+                    await self._emit_turn(
+                        "MacroEconomist",
+                        "response",
+                        macro_response
+                    )
 
     async def _get_agent_statement(
         self,
@@ -476,6 +618,10 @@ Provide your expert analysis based on this specific query."""
                         target_position = target_turns[-1].get("message", "")[:800]
                         
                         # Generate challenge using agent's method
+                        if agent_name not in agents_map:
+                            logger.warning(f"Agent '{agent_name}' not in agents_map, skipping challenge")
+                            continue
+                        
                         agent = agents_map[agent_name]
                         if hasattr(agent, 'challenge_position'):
                             challenge_text = await agent.challenge_position(
@@ -498,6 +644,10 @@ Provide your expert analysis based on this specific query."""
                         ])
                         
                         # Use agent's respond method as weigh-in
+                        if agent_name not in agents_map:
+                            logger.warning(f"Agent '{agent_name}' not in agents_map, skipping weigh-in")
+                            continue
+                        
                         agent = agents_map[agent_name]
                         if hasattr(agent, 'respond_to_challenge'):
                             weighin_text = await agent.respond_to_challenge(
@@ -546,6 +696,10 @@ Provide:
 Be DIRECT. No meta-analysis."""
                         
                         try:
+                            if agent_name not in agents_map:
+                                logger.warning(f"Agent '{agent_name}' not in agents_map, skipping refocus")
+                                continue
+                            
                             agent = agents_map[agent_name]
                             if hasattr(agent, 'state_final_position'):
                                 final = await agent.state_final_position(
@@ -754,19 +908,22 @@ Format as JSON:
                 max_tokens=800
             )
             
-            # Clean and parse
-            response_clean = response.strip()
-            if response_clean.startswith("```json"):
-                response_clean = response_clean[7:]
-            if response_clean.startswith("```"):
-                response_clean = response_clean[3:]
-            if response_clean.endswith("```"):
-                response_clean = response_clean[:-3]
+            # Use robust JSON parsing
+            resolution = robust_json_parse(response, default=None)
             
-            resolution = json.loads(response_clean.strip())
+            if resolution is None:
+                logger.warning("Could not parse resolution JSON, using fallback")
+                resolution = {
+                    "action": "inconclusive",
+                    "explanation": f"Debate completed after {len(debate_turns)} turns",
+                    "confidence": 0.5
+                }
+            
             resolution["debate_turns_count"] = len(debate_turns)
             
-            logger.info(f"Resolution synthesized: {resolution['action']} - {resolution['explanation'][:100]}...")
+            action = resolution.get('action', 'unknown')
+            explanation = resolution.get('explanation', 'No explanation')[:100]
+            logger.info(f"Resolution synthesized: {action} - {explanation}...")
             return resolution
             
         except Exception as e:
@@ -825,14 +982,13 @@ Return as JSON array of 5 scenarios."""
         )
         
         try:
-            response_clean = response.strip()
-            if response_clean.startswith("```json"):
-                response_clean = response_clean[7:]
-            if response_clean.startswith("```"):
-                response_clean = response_clean[3:]
-            if response_clean.endswith("```"):
-                response_clean = response_clean[:-3]
-            return json.loads(response_clean.strip())
+            # Use robust JSON parsing
+            edge_cases = robust_json_parse(response, default=[])
+            if isinstance(edge_cases, list):
+                return edge_cases
+            elif isinstance(edge_cases, dict) and "edge_cases" in edge_cases:
+                return edge_cases["edge_cases"]
+            return []
         except Exception as e:
             logger.error(f"Failed to parse edge cases: {e}")
             return []
@@ -873,6 +1029,11 @@ Return as JSON array of 5 scenarios."""
             for agent_name in relevant_agents[:3]:  # Limit to 3 agents per scenario
                 if not self._can_emit_turn():
                     break
+                
+                # Skip if agent not available
+                if agent_name not in agents_map:
+                    logger.warning(f"Agent '{agent_name}' not found in agents_map, skipping")
+                    continue
                     
                 agent = agents_map[agent_name]
                 
@@ -1113,18 +1274,20 @@ Format as structured JSON."""
             max_tokens=1500
         )
         
-        try:
-            consensus_clean = consensus.strip()
-            if consensus_clean.startswith("```json"):
-                consensus_clean = consensus_clean[7:]
-            if consensus_clean.startswith("```"):
-                consensus_clean = consensus_clean[3:]
-            if consensus_clean.endswith("```"):
-                consensus_clean = consensus_clean[:-3]
-            consensus_data = json.loads(consensus_clean.strip())
-        except Exception as e:
-            logger.error(f"Failed to parse consensus: {e}")
-            consensus_data = {"error": "Failed to parse consensus", "raw": consensus}
+        # Use robust JSON parsing to handle malformed LLM output
+        consensus_data = robust_json_parse(consensus, default=None)
+        
+        if consensus_data is None:
+            logger.warning(f"Could not parse consensus JSON, creating structured fallback")
+            # Create useful fallback from the text
+            consensus_data = {
+                "consensus_reached": "partial" if "consensus" in consensus.lower() else "none",
+                "areas_of_agreement": [],
+                "areas_of_disagreement": [],
+                "confidence": 0.5,
+                "recommendation": "Further analysis required",
+                "raw_synthesis": consensus[:2000] if consensus else "No synthesis generated"
+            }
         
         await self._emit_turn(
             "Moderator",
