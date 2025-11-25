@@ -302,10 +302,40 @@ class CompletePrefetchLayer:
         except ImportError:
             IEAAPI = None  # type: ignore
         
+        # PHASE 3 APIs (Regional Depth)
+        # Arab Development Portal API Connector (179K+ datasets)
+        try:
+            from src.data.apis.arab_dev_portal import ArabDevPortalClient
+        except ImportError:
+            ArabDevPortalClient = None  # type: ignore
+        
+        # ESCWA Trade Data Platform API Connector
+        try:
+            from src.data.apis.escwa_etdp import ESCWATradeAPI
+        except ImportError:
+            ESCWATradeAPI = None  # type: ignore
+        
+        # Knowledge Graph for cross-domain reasoning
+        try:
+            from ..knowledge.graph_builder import QNWISKnowledgeGraph
+            from pathlib import Path
+            kg_path = Path("data/knowledge_graph.json")
+            if kg_path.exists():
+                self._knowledge_graph = QNWISKnowledgeGraph()
+                self._knowledge_graph.load(kg_path)
+                _safe_print("Knowledge Graph: Loaded successfully")
+            else:
+                self._knowledge_graph = None
+        except ImportError:
+            QNWISKnowledgeGraph = None  # type: ignore
+            self._knowledge_graph = None
+        
         # Initialize all connectors
         self.imf_connector = IMFConnector() if IMFConnector else None
-        self.un_comtrade_connector = UNComtradeConnector() if UNComtradeConnector else None
-        self.fred_connector = FREDConnector() if FREDConnector else None
+        # DISABLED: UN Comtrade requires auth and blocks workflow with 35s waits
+        self.un_comtrade_connector = None  # UNComtradeConnector() if UNComtradeConnector else None
+        # DISABLED: FRED API also disabled to speed up workflow
+        self.fred_connector = None  # FREDConnector() if FREDConnector else None
         
         # Phase 1 connectors
         self.world_bank_connector = WorldBankAPIClass() if WorldBankAPIClass else None
@@ -316,6 +346,10 @@ class CompletePrefetchLayer:
         self.fao_connector = FAOAPI() if FAOAPI else None
         self.unwto_connector = UNWTOAPI() if UNWTOAPI else None
         self.iea_connector = IEAAPI() if IEAAPI else None
+        
+        # Phase 3 connectors (Regional Depth)
+        self.adp_connector = ArabDevPortalClient() if ArabDevPortalClient else None
+        self.escwa_connector = ESCWATradeAPI() if ESCWATradeAPI else None
         
         # Legacy reference for backward compatibility
         self.world_bank = self.world_bank_connector
@@ -344,6 +378,11 @@ class CompletePrefetchLayer:
         _safe_print(f"🔑 UNWTO Tourism API: {'✅' if self.unwto_connector else '❌'}")
         _safe_print(f"🔑 IEA Energy API: {'✅' if self.iea_connector else '❌'}")
         
+        # Phase 3 APIs (Regional Depth)
+        _safe_print(f"🔑 Arab Dev Portal API: {'✅' if self.adp_connector else '❌'}")
+        _safe_print(f"🔑 ESCWA Trade API: {'✅' if self.escwa_connector else '❌'}")
+        _safe_print(f"🧠 Knowledge Graph: {'✅' if self._knowledge_graph else '❌'}")
+        
         # Add PostgreSQL writer for caching
         from ..data.deterministic.engine import get_engine
         self.pg_engine = get_engine()
@@ -354,6 +393,13 @@ class CompletePrefetchLayer:
         Fetch from ALL sources in parallel based on query keywords.
         Returns comprehensive fact list for agent analysis.
         """
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        # CRITICAL DEBUG: Log the FULL query to understand what's happening
+        logger.warning(f"FETCH_ALL_SOURCES QUERY LENGTH: {len(query)}")
+        logger.warning(f"FETCH_ALL_SOURCES QUERY FIRST 200 CHARS: {repr(query[:200])}")
+        
         facts: List[Dict[str, Any]] = []
         query_lower = query.lower()
         tasks: List[Callable[[], Awaitable[List[Dict[str, Any]]]]] = []
@@ -364,6 +410,7 @@ class CompletePrefetchLayer:
             if name not in added_methods:
                 tasks.append(factory)
                 added_methods.add(name)
+                logger.info(f"📌 Added task: {name}")
 
         # ========================================================================
         # TIER 1 FREE API TRIGGERS (IMF, UN Comtrade, FRED)
@@ -405,6 +452,11 @@ class CompletePrefetchLayer:
         
         # World Bank API Triggers (PHASE 1 - HIGH PRIORITY)
         # ENHANCED: Added manufacturing, infrastructure, energy, and food keywords
+        logger.info(f"🔍 Checking World Bank triggers for query: '{query_lower[:80]}...'")
+        world_bank_keywords = [
+                "sector", "tourism", "manufacturing", "services", "industry",]
+        matching_keywords = [kw for kw in world_bank_keywords if kw in query_lower]
+        logger.info(f"🔍 Matching World Bank keywords: {matching_keywords}")
         if any(
             keyword in query_lower
             for keyword in [
@@ -622,6 +674,83 @@ class CompletePrefetchLayer:
             add_task(lambda: self._fetch_semantic_scholar_policy(query), "semantic_policy")
             if self.perplexity_api_key:
                 add_task(lambda: self._fetch_perplexity_policy(query), "perplexity_policy")
+
+        # Trade / Commerce triggers (ESCWA Trade Data)
+        if any(
+            word in query_lower
+            for word in [
+                "trade",
+                "export",
+                "import",
+                "commerce",
+                "tariff",
+                "customs",
+                "goods",
+                "commodity",
+                "shipping",
+                "logistics",
+                "supply chain",
+                "bilateral",
+            ]
+        ):
+            if self.escwa_connector:
+                _safe_print("🎯 Triggering: Trade sources (ESCWA Trade Data)")
+                add_task(lambda: self._fetch_escwa_trade(query), "escwa_trade")
+
+        # Arab World / Regional triggers (Arab Development Portal)
+        if any(
+            word in query_lower
+            for word in [
+                "arab",
+                "mena",
+                "middle east",
+                "regional",
+                "gcc",
+                "gulf",
+                "hdi",
+                "sdg",
+                "development",
+                "benchmark",
+            ]
+        ):
+            if self.adp_connector:
+                _safe_print("🎯 Triggering: Arab Development Portal")
+                # Determine domain from query
+                adp_domain = "labor"
+                if any(w in query_lower for w in ["trade", "export", "import"]):
+                    adp_domain = "trade"
+                elif any(w in query_lower for w in ["health", "medical", "hospital"]):
+                    adp_domain = "health"
+                elif any(w in query_lower for w in ["education", "school", "university"]):
+                    adp_domain = "education"
+                elif any(w in query_lower for w in ["energy", "oil", "gas", "power"]):
+                    adp_domain = "energy"
+                elif any(w in query_lower for w in ["tourism", "travel", "hotel"]):
+                    adp_domain = "tourism"
+                add_task(lambda d=adp_domain: self._fetch_adp_data(query, d), f"adp_{adp_domain}")
+
+        # Knowledge Graph triggers (cross-domain reasoning)
+        if self._knowledge_graph and any(
+            word in query_lower
+            for word in [
+                "impact",
+                "affect",
+                "relationship",
+                "connection",
+                "cause",
+                "effect",
+                "consequence",
+                "lead to",
+                "result in",
+                "depend",
+                "influence",
+                "sector",
+                "cross",
+                "multi",
+            ]
+        ):
+            _safe_print("🧠 Triggering: Knowledge Graph (cross-domain reasoning)")
+            add_task(lambda: self._fetch_knowledge_graph_context(query), "knowledge_graph")
 
         if tasks:
             _safe_print(f"\n🚀 Executing {len(tasks)} unique parallel API calls...")
@@ -1923,8 +2052,15 @@ class CompletePrefetchLayer:
             cached_facts = self._query_postgres_cache("world_bank", "QAT")
             
             if cached_facts and len(cached_facts) >= 100:  # Have sufficient cached data (128 rows)
-                _safe_print(f"✅ World Bank: Using {len(cached_facts)} cached indicators from PostgreSQL (<100ms)")
-                return cached_facts
+                # VALIDATION: Check if cached data looks realistic for Qatar
+                # Qatar's unemployment rate should be < 5% (it's actually ~0.1%)
+                suspicious_values = [f for f in cached_facts if 'UEM' in str(f.get('metric', '')) and f.get('value', 0) > 5]
+                if suspicious_values:
+                    _safe_print(f"⚠️ World Bank: Cache has {len(suspicious_values)} suspicious unemployment values > 5% - REFRESHING from API")
+                    # Don't use cache - fall through to API fetch
+                else:
+                    _safe_print(f"✅ World Bank: Using {len(cached_facts)} cached indicators from PostgreSQL (<100ms)")
+                    return cached_facts
             
             # Cache miss or insufficient data - fetch from API
             _safe_print("📡 World Bank: Cache miss, fetching from API (this takes ~2 minutes)...")
@@ -2282,6 +2418,143 @@ class CompletePrefetchLayer:
                 
             except Exception as e:
                 _safe_print(f"⚠️  IEA fallback failed: {e}")
+        
+        return facts
+    
+    # ================== Arab Development Portal ==================
+    
+    async def _fetch_adp_data(self, query: str, domain: str = "labor") -> List[Dict[str, Any]]:
+        """Fetch data from Arab Development Portal (179K+ datasets)."""
+        if not self.adp_connector:
+            _safe_print("⚠️  Arab Dev Portal connector not available")
+            return []
+        
+        facts = []
+        try:
+            _safe_print(f"📡 ADP: Searching {domain} datasets for Qatar...")
+            
+            datasets = await self.adp_connector.search_datasets(
+                theme=domain, 
+                country="QAT",
+                limit=20
+            )
+            
+            if datasets:
+                for ds in datasets[:10]:  # Top 10 most relevant
+                    facts.append({
+                        "metric": ds.get("title", "ADP Dataset"),
+                        "value": ds.get("dataset_id"),
+                        "description": ds.get("description", ""),
+                        "source": f"Arab Development Portal ({domain})",
+                        "source_priority": 92,
+                        "confidence": 0.90,
+                        "raw_text": f"ADP Dataset: {ds.get('title', 'Unknown')}",
+                        "timestamp": datetime.now().isoformat()
+                    })
+                
+                _safe_print(f"   Retrieved {len(facts)} ADP {domain} datasets")
+            
+        except Exception as e:
+            _safe_print(f"❌ ADP error: {e}")
+        
+        return facts
+    
+    # ================== ESCWA Trade Data ==================
+    
+    async def _fetch_escwa_trade(self, query: str) -> List[Dict[str, Any]]:
+        """Fetch trade data from UN ESCWA platform."""
+        if not self.escwa_connector:
+            _safe_print("⚠️  ESCWA Trade connector not available")
+            return []
+        
+        facts = []
+        try:
+            _safe_print("📡 ESCWA: Fetching Qatar trade data...")
+            
+            # Get exports and imports (returns dict with "data" key)
+            exports_result = await self.escwa_connector.get_qatar_exports(year=2023)
+            imports_result = await self.escwa_connector.get_qatar_imports(year=2023)
+            
+            # Extract data from results
+            export_data = exports_result.get("data", []) if exports_result else []
+            import_data = imports_result.get("data", []) if imports_result else []
+            
+            if export_data:
+                for item in export_data[:10]:
+                    facts.append({
+                        "metric": f"Export: {item.get('commodity_code', 'Total')}",
+                        "value": item.get("value_usd"),
+                        "year": item.get("year", 2023),
+                        "partner": exports_result.get("partner", "World"),
+                        "source": "UN ESCWA Trade Data",
+                        "source_priority": 93,
+                        "confidence": 0.92,
+                        "raw_text": f"Qatar {item.get('flow', 'export')} to {exports_result.get('partner', 'World')}",
+                        "timestamp": datetime.now().isoformat()
+                    })
+            
+            if import_data:
+                for item in import_data[:10]:
+                    facts.append({
+                        "metric": f"Import: {item.get('commodity_code', 'Total')}",
+                        "value": item.get("value_usd"),
+                        "year": item.get("year", 2023),
+                        "partner": imports_result.get("partner", "World"),
+                        "source": "UN ESCWA Trade Data",
+                        "source_priority": 93,
+                        "confidence": 0.92,
+                        "raw_text": f"Qatar {item.get('flow', 'import')} from {imports_result.get('partner', 'World')}",
+                        "timestamp": datetime.now().isoformat()
+                    })
+            
+            _safe_print(f"   Retrieved {len(facts)} ESCWA trade data points")
+            
+        except Exception as e:
+            _safe_print(f"❌ ESCWA error: {e}")
+        
+        return facts
+    
+    # ================== Knowledge Graph ==================
+    
+    async def _fetch_knowledge_graph_context(self, query: str) -> List[Dict[str, Any]]:
+        """Fetch relevant context from knowledge graph for cross-domain reasoning."""
+        if not self._knowledge_graph:
+            return []
+        
+        facts = []
+        try:
+            _safe_print("🧠 Knowledge Graph: Finding related entities...")
+            
+            # Extract entities from query
+            extracted = self._knowledge_graph.extract_entities_from_text(query)
+            
+            if extracted:
+                _safe_print(f"   Found {len(extracted)} entities in query")
+                
+                # Get related entities for each extracted entity
+                for entity_id in extracted[:5]:  # Limit to 5 entities
+                    related = self._knowledge_graph.get_related_entities(
+                        entity_id, max_hops=2
+                    )
+                    
+                    for related_id, edge_data in related[:3]:  # Top 3 related
+                        node_data = self._knowledge_graph.graph.nodes.get(related_id, {})
+                        facts.append({
+                            "metric": f"Related: {node_data.get('name', related_id)}",
+                            "entity_type": node_data.get('type', 'unknown'),
+                            "relationship": edge_data.get('relation_type', 'related_to'),
+                            "source_entity": entity_id,
+                            "source": "Knowledge Graph",
+                            "source_priority": 88,
+                            "confidence": edge_data.get('confidence', 0.7),
+                            "raw_text": f"Knowledge Graph: {entity_id} → {edge_data.get('relation_type', 'relates to')} → {node_data.get('name', related_id)}",
+                            "timestamp": datetime.now().isoformat()
+                        })
+                
+                _safe_print(f"   Retrieved {len(facts)} knowledge graph relationships")
+            
+        except Exception as e:
+            _safe_print(f"❌ Knowledge Graph error: {e}")
         
         return facts
     
