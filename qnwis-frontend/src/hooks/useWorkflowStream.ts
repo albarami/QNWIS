@@ -106,8 +106,12 @@ function reduceEvent(state: AppState, event: WorkflowEvent): AppState {
     console.log('🎯 DEBATE TURN RECEIVED:', event.stage, event.status, event.payload)
     next.debateTurns.push(event.payload)
     
-    // Mark debate stage as running/in-progress
-    next.currentStage = 'debate'
+    // Only mark debate as current stage if NOT in parallel execution mode
+    // (Parallel scenarios have their own internal debates which shouldn't
+    // change the main workflow stage display)
+    if (!next.parallelExecutionActive) {
+      next.currentStage = 'debate'
+    }
     
     return next
   }
