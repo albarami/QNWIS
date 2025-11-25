@@ -13,6 +13,32 @@ interface ExtractedFactsProps {
   facts: ExtractedFact[]
 }
 
+// Confidence bar component
+const ConfidenceBar = ({ confidence }: { confidence: number }) => {
+  const percent = Math.round(confidence * 100)
+  const color = confidence >= 0.8 ? 'from-emerald-500 to-green-400' :
+                confidence >= 0.5 ? 'from-amber-500 to-yellow-400' :
+                'from-red-500 to-orange-400'
+  
+  return (
+    <div className="flex items-center gap-2">
+      <div className="w-16 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+        <div 
+          className={`h-full rounded-full bg-gradient-to-r ${color} transition-all duration-300`}
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+      <span className={`text-xs font-medium ${
+        confidence >= 0.8 ? 'text-emerald-400' :
+        confidence >= 0.5 ? 'text-amber-400' :
+        'text-red-400'
+      }`}>
+        {percent}%
+      </span>
+    </div>
+  )
+}
+
 // Fact item component
 const FactItem = ({ fact }: { fact: ExtractedFact }) => {
   const label = getIndicatorLabel(fact.metric)
@@ -20,30 +46,30 @@ const FactItem = ({ fact }: { fact: ExtractedFact }) => {
   const sourceLabel = getSourceLabel(fact.source)
   
   return (
-    <div className="fact-item bg-slate-900/60 rounded-lg p-3 border border-slate-700/50 hover:border-slate-600 transition-colors">
-      <div className="flex items-start justify-between gap-2">
+    <div className="fact-item bg-slate-900/60 rounded-lg p-3 border border-slate-700/50 hover:border-cyan-500/30 hover:bg-slate-800/50 transition-all duration-200 group">
+      <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-slate-200 truncate" title={label}>
+          <p className="text-sm font-medium text-slate-200 group-hover:text-white transition-colors" title={label}>
             {label}
           </p>
-          <p className="text-xs text-slate-500 mt-0.5" title={fact.metric}>
-            {fact.metric !== label && fact.metric.length < 30 ? fact.metric : ''}
-          </p>
+          {fact.metric !== label && fact.metric.length < 40 && (
+            <p className="text-xs text-slate-600 mt-0.5 font-mono" title={fact.metric}>
+              {fact.metric}
+            </p>
+          )}
         </div>
-        <div className="text-right">
-          <p className="text-lg font-semibold text-cyan-400">{formattedValue}</p>
+        <div className="text-right flex-shrink-0">
+          <p className="text-xl font-bold text-cyan-400 tabular-nums">{formattedValue}</p>
         </div>
       </div>
-      <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-800">
-        <span className="text-xs text-slate-500">{sourceLabel}</span>
-        {fact.confidence !== undefined && (
-          <span className={`text-xs px-1.5 py-0.5 rounded ${
-            fact.confidence >= 0.8 ? 'bg-emerald-500/20 text-emerald-400' :
-            fact.confidence >= 0.5 ? 'bg-amber-500/20 text-amber-400' :
-            'bg-red-500/20 text-red-400'
-          }`}>
-            {Math.round(fact.confidence * 100)}%
+      <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-800/50">
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-slate-500 bg-slate-800/50 px-2 py-0.5 rounded">
+            {sourceLabel}
           </span>
+        </div>
+        {fact.confidence !== undefined && (
+          <ConfidenceBar confidence={fact.confidence} />
         )}
       </div>
     </div>
@@ -182,3 +208,4 @@ export function ExtractedFacts({ facts }: ExtractedFactsProps) {
     </section>
   )
 }
+

@@ -191,28 +191,22 @@ function App() {
                 ---------------------------------------- */}
             <aside className="lg:col-span-4 space-y-6">
               {/* Progress Dashboard */}
-              <div className="content-section">
-                <StageProgress 
-                  currentStage={state.currentStage} 
-                  completedStages={state.completedStages}
-                  startTime={state.startTime}
-                />
-              </div>
+              <StageProgress 
+                currentStage={state.currentStage} 
+                completedStages={state.completedStages}
+                startTime={state.startTime}
+              />
 
               {/* Stage Timeline */}
-              <div className="content-section">
-                <StageTimeline
-                  stageTiming={state.stageTiming}
-                  completedStages={state.completedStages}
-                  currentStage={state.currentStage}
-                  insightPreview={state.reasoningChain.length > 0 ? state.reasoningChain[state.reasoningChain.length - 1] : undefined}
-                />
-              </div>
+              <StageTimeline
+                stageTiming={state.stageTiming}
+                completedStages={state.completedStages}
+                currentStage={state.currentStage}
+                insightPreview={state.reasoningChain.length > 0 ? state.reasoningChain[state.reasoningChain.length - 1] : undefined}
+              />
 
               {/* Extracted Facts */}
-              <div className="content-section">
-                <ExtractedFacts facts={state.prefetchFacts} />
-              </div>
+              <ExtractedFacts facts={state.prefetchFacts} />
             </aside>
 
             {/* ----------------------------------------
