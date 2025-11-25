@@ -98,13 +98,13 @@ def _payload_for_stage(stage: str, state: Dict[str, Any]) -> Dict[str, Any]:
     if stage == "classifier":
         return {
             "complexity": state.get("complexity"),
-            "reasoning": state.get("reasoning_chain", [])
+            "reasoning": state.get("reasoning_chain") or []
         }
     if stage == "extraction":
         return {
-            "extracted_facts": state.get("extracted_facts", []),
-            "data_sources": state.get("data_sources", []),
-            "facts_count": len(state.get("extracted_facts", [])),
+            "extracted_facts": state.get("extracted_facts") or [],
+            "data_sources": state.get("data_sources") or [],
+            "facts_count": len(state.get("extracted_facts") or []),
         }
     if stage in {"financial", "market", "operations", "research"}:
         key = f"{stage}_analysis"
@@ -115,7 +115,7 @@ def _payload_for_stage(stage: str, state: Dict[str, Any]) -> Dict[str, Any]:
             "report": analysis  # For compatibility
         }
     if stage == "debate":
-        debate_results = state.get("debate_results", {})
+        debate_results = state.get("debate_results") or {}
         # Return full debate with conversation turns
         return debate_results
     if stage == "critique":
@@ -125,31 +125,32 @@ def _payload_for_stage(stage: str, state: Dict[str, Any]) -> Dict[str, Any]:
         }
     if stage == "verification":
         return {
-            "verification": state.get("fact_check_results", {}),
-            "fact_check_results": state.get("fact_check_results", {})  # For compatibility
+            "verification": state.get("fact_check_results") or {},
+            "fact_check_results": state.get("fact_check_results") or {}  # For compatibility
         }
     if stage == "scenario_gen":
+        scenarios = state.get("scenarios") or []
         return {
-            "scenarios": state.get("scenarios", []),
-            "num_scenarios": len(state.get("scenarios", []))
+            "scenarios": scenarios,
+            "num_scenarios": len(scenarios)
         }
     if stage == "parallel_exec":
         # Sanitize scenario_results to remove non-serializable fields
-        scenario_results = state.get("scenario_results", [])
+        scenario_results = state.get("scenario_results") or []
         sanitized_results = [_sanitize_dict(r) if isinstance(r, dict) else r for r in scenario_results]
         return {
             "scenario_results": sanitized_results,
             "scenarios_completed": len(scenario_results),
-            "scenarios": state.get("scenarios", [])
+            "scenarios": state.get("scenarios") or []
         }
     if stage == "aggregate_scenarios":
         return {
-            "scenario_syntheses": state.get("scenario_syntheses", []),
-            "num_scenarios": len(state.get("scenario_results", []))
+            "scenario_syntheses": state.get("scenario_syntheses") or [],
+            "num_scenarios": len(state.get("scenario_results") or [])
         }
     if stage == "meta_synthesis":
         # Sanitize scenario_results to remove non-serializable fields
-        scenario_results = state.get("scenario_results", [])
+        scenario_results = state.get("scenario_results") or []
         sanitized_results = [_sanitize_dict(r) if isinstance(r, dict) else r for r in scenario_results]
         return {
             "meta_synthesis": state.get("meta_synthesis"),
