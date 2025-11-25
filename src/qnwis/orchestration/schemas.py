@@ -319,7 +319,4 @@ class WorkflowState(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
     prefetch_cache: dict[str, Any] = Field(default_factory=dict)
 
-    class Config:
-        """Pydantic config."""
-
-        arbitrary_types_allowed = True
+    model_config = {"arbitrary_types_allowed": True}

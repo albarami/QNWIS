@@ -575,7 +575,8 @@ class QNWISKnowledgeGraph:
         with open(path, 'r') as f:
             data = json.load(f)
         
-        self.graph = nx.node_link_graph(data["graph"])
+        # Use explicit edges parameter to avoid FutureWarning in NetworkX 3.6+
+        self.graph = nx.node_link_graph(data["graph"], edges="links")
         self._entity_index = {k: Entity(
             name=v["name"],
             entity_type=EntityType(v["entity_type"]),
