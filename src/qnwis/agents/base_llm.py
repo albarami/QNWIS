@@ -4,6 +4,9 @@ Base class for LLM-powered agents.
 All agents inherit from this and implement:
 - _fetch_data(): What data to retrieve
 - _build_prompt(): How to format prompt for LLM
+
+DOMAIN AGNOSTIC: Agents can analyze ANY domain:
+- Labor, Economy, Energy, Tourism, Health, Education, Trade, Technology, etc.
 """
 
 import json
@@ -16,6 +19,7 @@ from qnwis.agents.base import DataClient, AgentReport, Insight, evidence_from
 from qnwis.llm.client import LLMClient
 from qnwis.llm.parser import LLMResponseParser, AgentFinding
 from qnwis.llm.exceptions import LLMError, LLMParseError
+from qnwis.agents.data_mastery import get_agent_data_prompt, AGENT_DATA_MASTERY_PROMPT
 
 logger = logging.getLogger(__name__)
 
@@ -276,7 +280,10 @@ class LLMAgent(ABC):
     # --- Legendary Debate Conversation Methods ---
 
     async def present_case(self, topic: str, context: list) -> str:
-        """Present opening statement on a topic."""
+        """Present opening statement on a topic with full data mastery."""
+        
+        # Get agent-specific data mastery knowledge
+        data_mastery = get_agent_data_prompt(self.agent_name)
         
         prompt = f"""{topic}
 
@@ -284,17 +291,19 @@ Based on your expertise as {self.agent_name}, analyze this query and present you
 
 CRITICAL INSTRUCTIONS:
 - Address the specific query mentioned above
-- Use evidence from available data
-- Be specific and cite sources when possible
+- Use evidence from the data sources listed below
+- BE SPECIFIC: Name the exact source and indicator code
 - Focus on your domain of expertise
 - Keep response concise (2-3 paragraphs)
-- If the query is unclear, analyze what information IS available
+- CITE EVERY FACT: "[Per SOURCE: value]"
+
+{data_mastery}
 
 Your expert analysis:"""
         
         return await self.llm.generate(
             prompt=prompt,
-            system=f"You are {self.agent_name}, providing expert analysis on the given query.",
+            system=f"You are {self.agent_name}, providing expert analysis with deep knowledge of all available data sources.",
             temperature=0.3,
             max_tokens=500
         )
@@ -305,7 +314,7 @@ Your expert analysis:"""
         opponent_claim: str,
         conversation_history: list
     ) -> str:
-        """Challenge another agent's position."""
+        """Challenge another agent's position with data-backed evidence."""
         history_text = self._format_history(conversation_history[-5:])
         
         # Extract original query from conversation history if available
@@ -321,6 +330,9 @@ Your expert analysis:"""
                             original_query = lines[i + 1].strip()
                             break
         
+        # Get data mastery for evidence-based challenges
+        data_mastery = get_agent_data_prompt(self.agent_name)
+        
         prompt = f"""You are {self.agent_name}.
 
 ORIGINAL QUERY: {original_query}
@@ -330,17 +342,21 @@ ORIGINAL QUERY: {original_query}
 Recent conversation:
 {history_text}
 
+YOU HAVE ACCESS TO THESE DATA SOURCES - USE THEM:
+{data_mastery[:2000]}
+
 Challenge this position by:
 - Pointing out potential weaknesses IN THEIR SPECIFIC CLAIMS
-- Presenting alternative interpretations of the data
-- Questioning assumptions related to the original query
-- Citing conflicting evidence or perspectives
+- Presenting ALTERNATIVE DATA from your data sources
+- Questioning assumptions with SPECIFIC COUNTER-EVIDENCE
+- Citing conflicting evidence or perspectives with EXACT SOURCE NAMES
+- USE THE DATA SOURCES LISTED ABOVE TO STRENGTHEN YOUR CHALLENGE
 
-Your challenge:"""
+Your challenge (CITE SPECIFIC DATA SOURCES):"""
         
         return await self.llm.generate(
             prompt=prompt,
-            system=f"You are {self.agent_name}, critically examining claims about the query.",
+            system=f"You are {self.agent_name}, critically examining claims with deep knowledge of all data sources.",
             temperature=0.4,
             max_tokens=400
         )
@@ -351,8 +367,11 @@ Your challenge:"""
         challenge: str,
         conversation_history: list
     ) -> str:
-        """Respond to a challenge."""
+        """Respond to a challenge with data-backed evidence."""
         history_text = self._format_history(conversation_history[-5:])
+        
+        # Get data mastery for evidence-based defense
+        data_mastery = get_agent_data_prompt(self.agent_name)
         
         prompt = f"""You are {self.agent_name}.
 
@@ -361,19 +380,23 @@ Your challenge:"""
 Recent conversation:
 {history_text}
 
+YOU HAVE ACCESS TO THESE DATA SOURCES - USE THEM TO DEFEND YOUR POSITION:
+{data_mastery[:2000]}
+
 Respond by:
-- Defending your position with evidence
+- Defending your position with SPECIFIC DATA from the sources above
 - Acknowledging valid points
-- Clarifying misunderstandings
+- Clarifying misunderstandings with FACTS AND CITATIONS
 - Finding common ground where possible
 
-Use phrases like "I acknowledge...", "However...", "We agree that..." when appropriate.
+Use phrases like "I acknowledge...", "However, [Per SOURCE: data]...", "We agree that..." when appropriate.
+CITE EVERY DATA POINT: "[Per World Bank: value]" or "[Per MoL LMIS: value]"
 
-Your response:"""
+Your response (WITH DATA CITATIONS):"""
         
         return await self.llm.generate(
             prompt=prompt,
-            system=f"You are {self.agent_name}, responding to critique.",
+            system=f"You are {self.agent_name}, responding to critique with comprehensive data knowledge.",
             temperature=0.3,
             max_tokens=400
         )
@@ -382,25 +405,33 @@ Your response:"""
         self,
         conversation_history: list
     ) -> str:
-        """Contribute to ongoing discussion."""
+        """Contribute to ongoing discussion with new data perspectives."""
         history_text = self._format_history(conversation_history[-8:])
+        
+        # Get data mastery for evidence-based contributions
+        data_mastery = get_agent_data_prompt(self.agent_name)
         
         prompt = f"""You are {self.agent_name}.
 
 Ongoing debate:
 {history_text}
 
-Contribute your perspective by:
-- Offering insights both sides may have missed
-- Presenting additional evidence
-- Proposing synthesis or middle ground
-- Highlighting implications
+YOU HAVE ACCESS TO THESE DATA SOURCES - BRING NEW DATA TO THE DISCUSSION:
+{data_mastery[:2000]}
 
-Your contribution:"""
+Contribute your perspective by:
+- Offering insights both sides may have MISSED from data sources
+- Presenting ADDITIONAL EVIDENCE from sources NOT YET DISCUSSED
+- Proposing synthesis backed by DATA
+- Highlighting implications with QUANTIFIED PROJECTIONS
+
+USE SPECIFIC DATA SOURCES TO SUPPORT YOUR CONTRIBUTION!
+
+Your contribution (WITH DATA CITATIONS):"""
         
         return await self.llm.generate(
             prompt=prompt,
-            system=f"You are {self.agent_name}, contributing expertise.",
+            system=f"You are {self.agent_name}, contributing expertise with deep data knowledge.",
             temperature=0.4,
             max_tokens=400
         )
