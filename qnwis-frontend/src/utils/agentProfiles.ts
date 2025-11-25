@@ -104,6 +104,29 @@ export const AGENT_PROFILES: Record<string, AgentProfile> = {
     description: 'Data patterns and anomaly detection specialist',
   },
   
+  // National Strategy LLM Agent
+  NationalStrategyLLM: {
+    name: 'Dr. Abdulaziz',
+    title: 'National Strategy',
+    icon: '🏛️',
+    color: '#7C3AED', // violet
+    description: 'National vision and long-term strategic planning expert',
+  },
+  national_strategy_llm: {
+    name: 'Dr. Abdulaziz',
+    title: 'National Strategy',
+    icon: '🏛️',
+    color: '#7C3AED',
+    description: 'National vision and long-term strategic planning expert',
+  },
+  NationalStrategy: {
+    name: 'Dr. Abdulaziz',
+    title: 'National Strategy',
+    icon: '🏛️',
+    color: '#7C3AED',
+    description: 'National vision and long-term strategic planning expert',
+  },
+  
   // Deterministic analysis agents
   sector_analysis: {
     name: 'Dr. Ahmed',

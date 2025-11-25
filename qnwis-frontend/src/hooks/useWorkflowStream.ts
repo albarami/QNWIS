@@ -245,15 +245,76 @@ function reduceEvent(state: AppState, event: WorkflowEvent): AppState {
     }
   }
 
+  // Handle individual scenario progress events (scenario:{id})
+  if (event.stage.startsWith('scenario:')) {
+    const payload = event.payload as any
+    const scenarioId = payload?.scenario_id || event.stage.replace('scenario:', '')
+    
+    if (event.status === 'started') {
+      const existing = next.scenarioProgress.get(scenarioId) || {
+        scenarioId,
+        name: payload?.scenario_name || scenarioId,
+        status: 'queued' as const,
+        progress: 0,
+      }
+      next.scenarioProgress.set(scenarioId, {
+        ...existing,
+        status: 'running',
+        progress: 33,
+        gpuId: payload?.gpu_id,
+      })
+    } else if (event.status === 'complete') {
+      const existing = next.scenarioProgress.get(scenarioId)
+      if (existing) {
+        next.scenarioProgress.set(scenarioId, {
+          ...existing,
+          status: 'complete',
+          progress: 100,
+        })
+        // Update scenariosCompleted count
+        const completedCount = Array.from(next.scenarioProgress.values()).filter(
+          sp => sp.status === 'complete'
+        ).length
+        next.scenariosCompleted = completedCount
+      }
+    }
+    return next
+  }
+
+  // Handle parallel_progress updates
+  if (event.stage === 'parallel_progress') {
+    const payload = event.payload as any
+    if (payload?.percent !== undefined) {
+      // Update overall progress based on completed scenarios
+      next.scenariosCompleted = payload?.completed || next.scenariosCompleted
+    }
+    return next
+  }
+
   if (event.stage === 'parallel_exec') {
     const payload = event.payload as any
     
-    if (event.status === 'running') {
+    // Handle both 'running' and 'started' status (backend uses 'started')
+    if (event.status === 'running' || event.status === 'started') {
       next.parallelExecutionActive = true
-      // Mark scenarios as running
-      next.scenarioProgress.forEach((sp, id) => {
-        next.scenarioProgress.set(id, { ...sp, status: 'running', progress: 33 })
-      })
+      // Initialize scenarios from payload if available
+      if (payload?.scenarios && Array.isArray(payload.scenarios)) {
+        next.totalScenarios = payload.scenarios.length
+        payload.scenarios.forEach((scenario: any, idx: number) => {
+          const scenarioId = scenario.id || `scenario_${idx}`
+          next.scenarioProgress.set(scenarioId, {
+            scenarioId,
+            name: scenario.name || `Scenario ${idx + 1}`,
+            status: 'running',
+            progress: 10, // Starting
+          })
+        })
+      } else {
+        // Mark existing scenarios as running
+        next.scenarioProgress.forEach((sp, id) => {
+          next.scenarioProgress.set(id, { ...sp, status: 'running', progress: 33 })
+        })
+      }
     } else if (event.status === 'complete') {
       // Backend sends complete with scenario_results
       next.scenarioResults = payload?.scenario_results ?? []
