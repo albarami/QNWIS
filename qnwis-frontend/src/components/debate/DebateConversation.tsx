@@ -119,11 +119,12 @@ const formatInlineText = (text: string): React.ReactNode => {
 }
 
 // Expandable message component
-const DebateMessage = ({ turn, index, isExpanded, onToggle }: { 
+const DebateMessage = ({ turn, index, isExpanded, onToggle, isHighlighted = false }: { 
   turn: ConversationTurn
   index: number
   isExpanded: boolean
   onToggle: () => void
+  isHighlighted?: boolean
 }) => {
   const profile = getAgentProfile(turn.agent)
   const turnLabel = TURN_TYPE_LABELS[turn.type] || turn.type.replace(/_/g, ' ')
@@ -135,12 +136,20 @@ const DebateMessage = ({ turn, index, isExpanded, onToggle }: {
     ? turn.message.slice(0, 500) + '...'
     : turn.message
   
+  // Estimate reading time (avg 200 words per minute)
+  const wordCount = turn.message?.split(/\s+/).length || 0
+  const readingTime = Math.max(1, Math.ceil(wordCount / 200))
+  
   return (
     <div 
-      className="debate-message animate-slideIn bg-slate-800/50 rounded-lg p-4 border-l-4 transition-all duration-300 hover:bg-slate-800/70"
+      className={`debate-message animate-slideIn rounded-lg p-4 border-l-4 transition-all duration-500 hover:bg-slate-800/70 ${
+        isHighlighted 
+          ? 'bg-cyan-900/30 ring-2 ring-cyan-400/50 shadow-lg shadow-cyan-500/20' 
+          : 'bg-slate-800/50'
+      }`}
       style={{ 
         borderLeftColor: profile.color,
-        animationDelay: `${Math.min(index * 30, 500)}ms`
+        animationDelay: `${Math.min(index * 50, 500)}ms`
       }}
     >
       {/* Message Header */}
@@ -165,7 +174,7 @@ const DebateMessage = ({ turn, index, isExpanded, onToggle }: {
               {turnLabel}
             </span>
           </div>
-          <div className="flex items-center gap-2 mt-1">
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
             <span className="text-xs text-slate-500">{profile.title}</span>
             <span className="text-slate-600">•</span>
             <span className="text-xs text-slate-600">Turn {turn.turn}</span>
@@ -179,6 +188,13 @@ const DebateMessage = ({ turn, index, isExpanded, onToggle }: {
                   })}
                 </span>
               </>
+            )}
+            <span className="text-slate-600">•</span>
+            <span className="text-xs text-slate-500">~{readingTime} min read</span>
+            {isHighlighted && (
+              <span className="text-xs px-2 py-0.5 bg-cyan-500 text-white rounded-full font-medium animate-pulse">
+                NEW
+              </span>
             )}
           </div>
         </div>
@@ -278,13 +294,70 @@ export const DebateConversation: React.FC<DebateConversationProps> = ({
   const scrollRef = useRef<HTMLDivElement>(null)
   const [expandedMessages, setExpandedMessages] = useState<Set<number>>(new Set())
   const [expandAll, setExpandAll] = useState(false)
+  const [autoScroll, setAutoScroll] = useState(true)
+  const [newMessageCount, setNewMessageCount] = useState(0)
+  const [lastSeenIndex, setLastSeenIndex] = useState(0)
+  const [highlightedIndex, setHighlightedIndex] = useState<number | null>(null)
 
-  // Auto-scroll to bottom on new messages
+  // Track new messages when auto-scroll is paused
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+    if (!autoScroll && turns.length > lastSeenIndex) {
+      setNewMessageCount(turns.length - lastSeenIndex)
     }
-  }, [turns])
+  }, [turns.length, autoScroll, lastSeenIndex])
+
+  // Controlled auto-scroll with delay for readability
+  useEffect(() => {
+    if (autoScroll && scrollRef.current && turns.length > 0) {
+      // Highlight the newest message
+      setHighlightedIndex(turns.length - 1)
+      
+      // Delay scroll to give user time to notice new message
+      const scrollDelay = setTimeout(() => {
+        if (scrollRef.current) {
+          scrollRef.current.scrollTo({
+            top: scrollRef.current.scrollHeight,
+            behavior: 'smooth'
+          })
+        }
+      }, 800) // 800ms delay before scrolling
+      
+      // Remove highlight after animation
+      const highlightDelay = setTimeout(() => {
+        setHighlightedIndex(null)
+      }, 2000)
+      
+      setLastSeenIndex(turns.length)
+      
+      return () => {
+        clearTimeout(scrollDelay)
+        clearTimeout(highlightDelay)
+      }
+    }
+  }, [turns.length, autoScroll])
+
+  // Jump to new messages when user clicks indicator
+  const jumpToNewMessages = () => {
+    setAutoScroll(true)
+    setNewMessageCount(0)
+    setLastSeenIndex(turns.length)
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior: 'smooth'
+      })
+    }
+  }
+
+  // Toggle auto-scroll
+  const toggleAutoScroll = () => {
+    if (!autoScroll) {
+      // Re-enabling auto-scroll
+      setNewMessageCount(0)
+      setLastSeenIndex(turns.length)
+    }
+    setAutoScroll(!autoScroll)
+  }
 
   // Calculate metrics
   const metrics = useMemo(() => {
@@ -413,13 +486,39 @@ export const DebateConversation: React.FC<DebateConversationProps> = ({
               </div>
             </div>
             
-            {/* Expand All Toggle */}
-            <button
-              onClick={toggleExpandAll}
-              className="px-3 py-1.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg transition-colors"
-            >
-              {expandAll ? 'Collapse All' : 'Expand All'}
-            </button>
+            {/* Control Buttons */}
+            <div className="flex items-center gap-2">
+              {/* Auto-scroll Toggle */}
+              <button
+                onClick={toggleAutoScroll}
+                className={`px-3 py-1.5 text-xs rounded-lg transition-colors flex items-center gap-1.5 ${
+                  autoScroll 
+                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' 
+                    : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                }`}
+                title={autoScroll ? 'Click to pause auto-scroll' : 'Click to resume auto-scroll'}
+              >
+                {autoScroll ? (
+                  <>
+                    <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                    <span>Following</span>
+                  </>
+                ) : (
+                  <>
+                    <span>⏸</span>
+                    <span>Paused</span>
+                  </>
+                )}
+              </button>
+              
+              {/* Expand All Toggle */}
+              <button
+                onClick={toggleExpandAll}
+                className="px-3 py-1.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg transition-colors"
+              >
+                {expandAll ? 'Collapse All' : 'Expand All'}
+              </button>
+            </div>
           </div>
         </div>
         
@@ -453,23 +552,39 @@ export const DebateConversation: React.FC<DebateConversationProps> = ({
       </div>
       
       {/* Messages Container */}
-      <div 
-        ref={scrollRef}
-        className="messages-container space-y-3 p-4 max-h-[700px] overflow-y-auto custom-scrollbar"
-      >
-        {turns.map((turn, index) => (
-          <DebateMessage 
-            key={`${turn.agent}-${turn.turn}-${index}`} 
-            turn={turn} 
-            index={index}
-            isExpanded={expandedMessages.has(index) || expandAll}
-            onToggle={() => toggleMessage(index)}
-          />
-        ))}
+      <div className="relative">
+        <div 
+          ref={scrollRef}
+          className="messages-container space-y-3 p-4 max-h-[700px] overflow-y-auto custom-scrollbar"
+        >
+          {turns.map((turn, index) => (
+            <DebateMessage 
+              key={`${turn.agent}-${turn.turn}-${index}`} 
+              turn={turn} 
+              index={index}
+              isExpanded={expandedMessages.has(index) || expandAll}
+              onToggle={() => toggleMessage(index)}
+              isHighlighted={highlightedIndex === index}
+            />
+          ))}
+          
+          {/* Typing Indicator */}
+          {isStreaming && activeProfile && (
+            <TypingIndicator profile={activeProfile} />
+          )}
+        </div>
         
-        {/* Typing Indicator */}
-        {isStreaming && activeProfile && (
-          <TypingIndicator profile={activeProfile} />
+        {/* New Messages Floating Indicator */}
+        {!autoScroll && newMessageCount > 0 && (
+          <button
+            onClick={jumpToNewMessages}
+            className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-cyan-500 text-white rounded-full shadow-lg shadow-cyan-500/30 flex items-center gap-2 hover:bg-cyan-400 transition-all animate-bounce"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+            </svg>
+            <span className="font-medium">{newMessageCount} new message{newMessageCount > 1 ? 's' : ''}</span>
+          </button>
         )}
       </div>
 

@@ -61,21 +61,53 @@ body {
   transform: translateX(4px);
 }
 
-/* Slide-in animation */
+/* Slide-in animation - slower for readability */
 @keyframes slideIn {
-  from {
+  0% {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(20px) scale(0.98);
   }
-  to {
+  50% {
+    opacity: 0.7;
+    transform: translateY(5px) scale(0.99);
+  }
+  100% {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
 .animate-slideIn {
-  animation: slideIn 0.3s ease forwards;
+  animation: slideIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   opacity: 0;
+}
+
+/* New message highlight glow */
+@keyframes newMessageGlow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(34, 211, 238, 0.3), inset 0 0 0 1px rgba(34, 211, 238, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(34, 211, 238, 0.5), inset 0 0 0 1px rgba(34, 211, 238, 0.3);
+  }
+}
+
+.debate-message.highlighted {
+  animation: newMessageGlow 1.5s ease-in-out infinite;
+}
+
+/* Floating button bounce */
+@keyframes floatBounce {
+  0%, 100% {
+    transform: translateX(-50%) translateY(0);
+  }
+  50% {
+    transform: translateX(-50%) translateY(-5px);
+  }
+}
+
+.new-messages-indicator {
+  animation: floatBounce 1s ease-in-out infinite;
 }
 
 /* Typing dots animation */
