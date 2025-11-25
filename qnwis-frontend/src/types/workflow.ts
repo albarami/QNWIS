@@ -242,6 +242,7 @@ export interface ScenarioProgress {
   status: 'queued' | 'running' | 'complete' | 'error'
   progress: number // 0-100
   gpuId?: number
+  results?: Record<string, unknown> // Scenario analysis results when complete
 }
 
 export interface AppState {

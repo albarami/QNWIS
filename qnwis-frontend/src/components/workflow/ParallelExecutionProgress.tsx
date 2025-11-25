@@ -69,9 +69,24 @@ export function ParallelExecutionProgress({
 
   // Get scenario status from scenarioProgress map
   const getScenarioStatus = (scenarioId: string, idx: number): { status: string; progress: number } => {
-    if (scenarioProgress && scenarioProgress.has(scenarioId)) {
-      const sp = scenarioProgress.get(scenarioId)!
-      return { status: sp.status, progress: sp.progress }
+    if (scenarioProgress) {
+      // Try exact match first
+      if (scenarioProgress.has(scenarioId)) {
+        const sp = scenarioProgress.get(scenarioId)!
+        return { status: sp.status, progress: sp.progress }
+      }
+      // Try underscore format (scenario_0, scenario_1, etc.)
+      const underscoreId = `scenario_${idx}`
+      if (scenarioProgress.has(underscoreId)) {
+        const sp = scenarioProgress.get(underscoreId)!
+        return { status: sp.status, progress: sp.progress }
+      }
+      // Try dash format (scenario-0, scenario-1, etc.)
+      const dashId = `scenario-${idx}`
+      if (scenarioProgress.has(dashId)) {
+        const sp = scenarioProgress.get(dashId)!
+        return { status: sp.status, progress: sp.progress }
+      }
     }
     // Fallback based on index
     if (idx < scenariosCompleted) {
@@ -112,7 +127,8 @@ export function ParallelExecutionProgress({
       {scenarios.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {scenarios.map((scenario, idx) => {
-            const scenarioId = scenario.id || `scenario-${idx}`
+            // Use underscore format to match backend
+            const scenarioId = scenario.id || `scenario_${idx}`
             const { status, progress } = getScenarioStatus(scenarioId, idx)
             const typeInfo = getScenarioType(scenario.name)
             const result = getScenarioResult(scenario.name)
