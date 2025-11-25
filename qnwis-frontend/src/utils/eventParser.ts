@@ -4,12 +4,15 @@ interface RawSSEEvent {
   data?: string
 }
 
-const VALID_STATUSES = new Set(['running', 'streaming', 'complete', 'error', 'ready'])
+const VALID_STATUSES = new Set(['running', 'streaming', 'complete', 'error', 'ready', 'started', 'update'])
 
 const STANDARD_STAGES: Record<string, WorkflowStage> = {
   classify: 'classify',
   prefetch: 'prefetch',
   rag: 'rag',
+  scenario_gen: 'scenario_gen',
+  parallel_exec: 'parallel_exec',
+  meta_synthesis: 'meta_synthesis',
   agent_selection: 'agent_selection',
   agents: 'agents',
   debate: 'debate',
@@ -34,6 +37,16 @@ function normalizeStage(stage: string): WorkflowStage | string {
 
   // Keep debate turn stages for conversation streaming
   if (trimmed.startsWith('debate:turn')) {
+    return trimmed
+  }
+
+  // Keep scenario stages for parallel execution progress
+  if (trimmed.startsWith('scenario:')) {
+    return trimmed
+  }
+
+  // Keep parallel_progress stages
+  if (trimmed === 'parallel_progress') {
     return trimmed
   }
 
