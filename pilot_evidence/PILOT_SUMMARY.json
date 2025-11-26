@@ -1,100 +1,100 @@
 {
-  "date": "2025-11-22T07:15:43.152648",
+  "date": "2025-11-22T11:14:29.218572",
   "total_queries": 10,
-  "successful": 0,
-  "avg_facts": 0,
-  "avg_confidence": 0,
-  "avg_time": 0,
-  "decision": "NO-GO",
+  "successful": 10,
+  "avg_facts": 154.0,
+  "avg_confidence": 0.67,
+  "avg_time": 131.54634330272674,
+  "decision": "GO",
   "results": [
     {
       "id": 1,
       "domain": "Economic Diversification",
-      "facts": 155,
-      "confidence": 0.45,
-      "time": 46.6168897151947,
-      "passed": false,
-      "sources": 8
+      "facts": 175,
+      "confidence": 0.67,
+      "time": 112.41271638870239,
+      "passed": true,
+      "sources": 11
     },
     {
       "id": 2,
       "domain": "Energy/Oil&Gas",
-      "facts": 20,
-      "confidence": 0.2,
-      "time": 29.435643672943115,
-      "passed": false,
-      "sources": 5
+      "facts": 168,
+      "confidence": 0.68,
+      "time": 114.56693959236145,
+      "passed": true,
+      "sources": 9
     },
     {
       "id": 3,
       "domain": "Tourism",
       "facts": 141,
-      "confidence": 0.47,
-      "time": 29.689260482788086,
-      "passed": false,
+      "confidence": 0.67,
+      "time": 83.15080380439758,
+      "passed": true,
       "sources": 3
     },
     {
       "id": 4,
       "domain": "Food Security",
-      "facts": 17,
-      "confidence": 0.2,
-      "time": 309.72932958602905,
-      "passed": false,
-      "sources": 6
+      "facts": 163,
+      "confidence": 0.64,
+      "time": 373.9747281074524,
+      "passed": true,
+      "sources": 7
     },
     {
       "id": 5,
       "domain": "Healthcare",
       "facts": 141,
-      "confidence": 0.47,
-      "time": 27.83255648612976,
-      "passed": false,
+      "confidence": 0.67,
+      "time": 98.21979975700378,
+      "passed": true,
       "sources": 3
     },
     {
       "id": 6,
       "domain": "Digital/AI",
       "facts": 157,
-      "confidence": 0.44,
-      "time": 28.33261013031006,
-      "passed": false,
+      "confidence": 0.74,
+      "time": 114.25721454620361,
+      "passed": true,
       "sources": 9
     },
     {
       "id": 7,
       "domain": "Manufacturing",
-      "facts": 13,
-      "confidence": 0.2,
-      "time": 28.03308653831482,
-      "passed": false,
-      "sources": 2
+      "facts": 141,
+      "confidence": 0.67,
+      "time": 96.3680191040039,
+      "passed": true,
+      "sources": 3
     },
     {
       "id": 8,
       "domain": "Workforce/Labor",
       "facts": 157,
-      "confidence": 0.44,
-      "time": 29.085509538650513,
-      "passed": false,
+      "confidence": 0.64,
+      "time": 116.97029876708984,
+      "passed": true,
       "sources": 9
     },
     {
       "id": 9,
       "domain": "Infrastructure",
-      "facts": 13,
-      "confidence": 0.2,
-      "time": 29.51157808303833,
-      "passed": false,
-      "sources": 2
+      "facts": 141,
+      "confidence": 0.62,
+      "time": 98.59495282173157,
+      "passed": true,
+      "sources": 3
     },
     {
       "id": 10,
       "domain": "Cross-Domain Strategic",
       "facts": 156,
-      "confidence": 0.45,
-      "time": 27.96435523033142,
-      "passed": false,
+      "confidence": 0.7,
+      "time": 106.94796013832092,
+      "passed": true,
       "sources": 8
     }
   ]

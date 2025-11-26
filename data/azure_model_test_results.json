@@ -1,0 +1,72 @@
+{
+  "timestamp": "2025-11-26T05:16:29.739111",
+  "environment": {
+    "endpoint": "https://oai-tawteen-data-swc-01.openai.azure.com/",
+    "api_version": "2024-08-01-preview",
+    "target_model": "gpt-5.1-chat"
+  },
+  "models_tested": [
+    {
+      "model": "gpt-5.1-chat",
+      "status": "not_found",
+      "latency_ms": 1283.95,
+      "response_length": 0,
+      "response_preview": "",
+      "error": "Deployment 'gpt-5.1-chat' not found in Azure",
+      "quality_indicators": {}
+    },
+    {
+      "model": "gpt-4o",
+      "status": "success",
+      "latency_ms": 11935.71,
+      "response_length": 6952,
+      "response_preview": "### Strategic Analysis of Qatar\u2019s Qatarization Policy\n\n#### Executive Summary\nQatarization, the national policy aimed at increasing the participation of Qatari nationals in the workforce, is a cornerstone of Qatar\u2019s Vision 2030. The policy seeks to reduce reliance on expatriate labor, enhance skills development among Qatari citizens, and support economic diversification. While progress has been made in some areas, challenges such as labor market segmentation, skills mismatches, and over-reliance...",
+      "error": null,
+      "quality_indicators": {
+        "length_score": 0.9,
+        "structure_score": 0.8,
+        "depth_score": 0.8571428571428571,
+        "overall_score": 0.8528571428571429
+      },
+      "usage": {
+        "prompt_tokens": 91,
+        "completion_tokens": 1288,
+        "total_tokens": 1379
+      }
+    },
+    {
+      "model": "gpt-4o-mini",
+      "status": "success",
+      "latency_ms": 7536.99,
+      "response_length": 4697,
+      "response_preview": "### Executive Briefing: Analysis of Qatar's Qatarization Policy\n\n#### Introduction\nQatar's Qatarization policy aims to increase the employment of Qatari nationals in the workforce, particularly in the private sector. This policy is crucial for addressing the demographic imbalance in the labor market, enhancing skills development, and supporting economic diversification efforts. This briefing analyzes the impact of Qatarization on employment rates, skills development, and economic diversification...",
+      "error": null,
+      "quality_indicators": {
+        "length_score": 0.9,
+        "structure_score": 1.0,
+        "depth_score": 1.0,
+        "overall_score": 0.9700000000000001
+      },
+      "usage": {
+        "prompt_tokens": 91,
+        "completion_tokens": 867,
+        "total_tokens": 958
+      }
+    },
+    {
+      "model": "gpt-4-turbo",
+      "status": "not_found",
+      "latency_ms": 695.49,
+      "response_length": 0,
+      "response_preview": "",
+      "error": "Deployment 'gpt-4-turbo' not found in Azure",
+      "quality_indicators": {}
+    }
+  ],
+  "available_models": [
+    "gpt-4o",
+    "gpt-4o-mini"
+  ],
+  "recommended_model": "gpt-4o-mini",
+  "summary": {}
+}

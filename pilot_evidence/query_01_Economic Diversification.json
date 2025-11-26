@@ -1,19 +1,22 @@
 {
   "query": "Analyze Qatar's non-oil GDP growth and sector contribution (2015-2024)",
   "domain": "Economic Diversification",
-  "execution_time": 46.6168897151947,
-  "facts_count": 155,
+  "execution_time": 112.41271638870239,
+  "facts_count": 175,
   "sources": [
     "Brave Search (real-time)",
     "GCC-STAT (live API)",
     "IMF Data Mapper API",
     "MoL Education Data (stub)",
     "MoL LMIS (stub)",
+    "Perplexity AI (energy analysis with citations)",
     "Perplexity AI (real-time analysis)",
+    "Perplexity AI (verified citation)",
     "Semantic Scholar (2025)",
-    "World Bank (PostgreSQL cache)"
+    "World Bank (PostgreSQL cache)",
+    "World Bank Energy Indicators"
   ],
-  "confidence": 0.45,
+  "confidence": 0.67,
   "nodes": [
     "classifier",
     "extraction",
@@ -27,9 +30,10 @@
     "synthesis"
   ],
   "warnings": [
+    "Critique flagged outstanding concerns; review recommended.",
     "Fact check flagged missing citations or low confidence."
   ],
   "errors": [],
-  "synthesis": "## Ministerial Intelligence Brief\n\n### Financial\n\u26a0\ufe0f ANALYSIS REJECTED - No citations found. Agent violated citation requirements.\n\n{\n  \"title\": \"Test Finding\",\n  \"summary\": \"This is a test finding from the stub LLM.\",\n  \"metrics\": {\n    \"test_metric\": 42.0\n  },\n  \"analysis\": \"Detailed analysis would go here, including Qatar's unemployment rate of 0.10% compared to peers.\",\n  \"recommendations\": [\n    \"Test recommendation 1\",\n    \"Test recommendation 2\"\n  ],\n  \"confidence\": 0.85,\n  \"citations\": [\n",
-  "passed": false
+  "synthesis": "## Ministerial Intelligence Brief\n\n### Financial\n## \ud83d\udcb0 FINANCIAL ECONOMIST ANALYSIS\n**Analyst:** Senior Financial Economist\n\n### 1. GDP IMPACT CALCULATIONS\n- Baseline tech sector GDP contribution: NOT IN DATA - cannot calculate tech sector's specific GDP share without sectoral breakdown data\n- Productivity differential (national vs expatriate): ASSUMPTION (confidence: 40%): 15-25% productivity gap based on experience differentials, but NOT IN DATA - no productivity metrics available\n- GDP impact ",
+  "passed": true
 }

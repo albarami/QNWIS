@@ -15,14 +15,20 @@ API Categories:
 - Dynamic Labor Market Modeling
 - Expat Labor Dynamics
 - SMEs and Local Businesses
+
+FALLBACK MODE:
+When the live API is not accessible, uses cached data from:
+data/lmis_dashboard_data.json
 """
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 from datetime import datetime
-from typing import Any, Literal
+from pathlib import Path
+from typing import Any, Literal, Optional
 
 import pandas as pd
 import requests
@@ -33,8 +39,34 @@ logger = logging.getLogger(__name__)
 LMIS_BASE_URL = "https://lmis-dashb-api.mol.gov.qa/api"
 LMIS_POWERBI_URL = f"{LMIS_BASE_URL}/power-bi"
 
+# Cached data path
+LMIS_CACHE_PATH = Path("data/lmis_dashboard_data.json")
+
 # Sector types
 SectorType = Literal["NDS3", "ISIC"]
+
+
+def _load_cached_lmis_data() -> Optional[dict]:
+    """Load cached LMIS data from JSON file."""
+    if LMIS_CACHE_PATH.exists():
+        try:
+            with open(LMIS_CACHE_PATH, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            logger.warning(f"Failed to load LMIS cache: {e}")
+    return None
+
+
+# Global cache
+_LMIS_CACHE: Optional[dict] = None
+
+
+def get_lmis_cache() -> Optional[dict]:
+    """Get or load LMIS cached data."""
+    global _LMIS_CACHE
+    if _LMIS_CACHE is None:
+        _LMIS_CACHE = _load_cached_lmis_data()
+    return _LMIS_CACHE
 
 
 class LMISAPIClient:
@@ -43,22 +75,32 @@ class LMISAPIClient:
     
     Provides access to official labour market data, workforce statistics,
     skills analysis, and economic indicators.
+    
+    FALLBACK MODE: When live API is unavailable, uses cached data from
+    data/lmis_dashboard_data.json which contains sample responses from
+    all 17 API endpoints.
     """
     
-    def __init__(self, api_token: str | None = None):
+    def __init__(self, api_token: str | None = None, use_cache_fallback: bool = True):
         """
         Initialize LMIS API client.
         
         Args:
             api_token: Bearer token for API authentication.
                       If not provided, reads from LMIS_API_TOKEN env variable.
+            use_cache_fallback: Whether to use cached data when API fails.
         """
         self.base_url = LMIS_BASE_URL
         self.powerbi_url = LMIS_POWERBI_URL
         self.api_token = api_token or os.getenv("LMIS_API_TOKEN")
+        self.use_cache_fallback = use_cache_fallback
+        self._cache = get_lmis_cache()
         
         if not self.api_token:
-            logger.warning("LMIS_API_TOKEN not set - API calls may fail")
+            if self._cache:
+                logger.info("LMIS_API_TOKEN not set - using cached data fallback")
+            else:
+                logger.warning("LMIS_API_TOKEN not set and no cache available")
     
     def _get_headers(self, lang: str = "en") -> dict[str, str]:
         """Build request headers with authentication."""
@@ -72,19 +114,37 @@ class LMISAPIClient:
         
         return headers
     
+    def _get_cached_data(self, cache_key: str) -> Optional[list[dict[str, Any]]]:
+        """
+        Get data from cache by key.
+        
+        Args:
+            cache_key: Key in sample_data dict
+            
+        Returns:
+            Cached data or None
+        """
+        if not self._cache or not self.use_cache_fallback:
+            return None
+        
+        sample_data = self._cache.get("sample_data", {})
+        return sample_data.get(cache_key)
+    
     def _make_request(
         self,
         endpoint: str,
         params: dict[str, Any] | None = None,
-        lang: str = "en"
+        lang: str = "en",
+        cache_key: Optional[str] = None
     ) -> dict[str, Any] | list[dict[str, Any]] | None:
         """
-        Make API request to LMIS.
+        Make API request to LMIS with cache fallback.
         
         Args:
             endpoint: API endpoint path
             params: Query parameters
             lang: Language ('en' or 'ar')
+            cache_key: Key for cached data fallback
             
         Returns:
             JSON response data or None if request fails
@@ -106,14 +166,20 @@ class LMISAPIClient:
                 return response.json()
             elif response.status_code == 401:
                 logger.error("LMIS API authentication failed - check API token")
-                return None
             else:
                 logger.warning(f"LMIS API returned status {response.status_code}")
-                return None
                 
         except Exception as e:
-            logger.error(f"Error calling LMIS API: {e}")
-            return None
+            logger.warning(f"LMIS API call failed: {e}")
+        
+        # Try cache fallback
+        if cache_key and self.use_cache_fallback:
+            cached = self._get_cached_data(cache_key)
+            if cached:
+                logger.info(f"Using cached LMIS data for: {cache_key}")
+                return cached
+        
+        return None
     
     # ==========================================================================
     # LABOR MARKET INDICATORS
@@ -126,6 +192,17 @@ class LMISAPIClient:
         Includes: Population, GDP, unemployment, exports, imports, remittances,
         female labor participation, health coverage, internet usage, etc.
         
+        Data includes:
+        - Qatar_Population: 2,950,000
+        - GDP: $825.7 billion
+        - GDP_Capita: $279,895
+        - Unemployment: 9.9%
+        - Qatar_Female_Labor: 63.39%
+        - Qatar_Internet_Usage: 100%
+        - Qatar_Health_Coverage: 76.4%
+        - Exports: $97.5 billion
+        - Imports: $30.5 billion
+        
         Args:
             lang: Language ('en' or 'ar')
             
@@ -133,7 +210,7 @@ class LMISAPIClient:
             DataFrame with main economic and labor indicators
         """
         endpoint = f"{self.powerbi_url}/escwa-api-qatar-indicators"
-        data = self._make_request(endpoint, lang=lang)
+        data = self._make_request(endpoint, lang=lang, cache_key="main_indicators")
         
         if data and isinstance(data, list) and len(data) > 0:
             df = pd.DataFrame(data)
@@ -147,6 +224,19 @@ class LMISAPIClient:
         """
         Fetch Sustainable Development Goals (SDG) progress indicators.
         
+        SDG indicators tracked:
+        - SDG 1: No Poverty
+        - SDG 2: Zero Hunger
+        - SDG 3: Good Health
+        - SDG 4: Quality Education
+        - SDG 5: Gender Equality
+        - SDG 6: Clean Water
+        - SDG 7: Affordable Energy
+        - SDG 8: Decent Work (primary labor indicator)
+        - SDG 9: Industry & Innovation
+        - SDG 10: Reduced Inequalities
+        - And more...
+        
         Args:
             lang: Language ('en' or 'ar')
             
@@ -154,7 +244,7 @@ class LMISAPIClient:
             DataFrame with SDG indicators by country
         """
         endpoint = f"{self.powerbi_url}/escwa-api-sdgs"
-        data = self._make_request(endpoint, lang=lang)
+        data = self._make_request(endpoint, lang=lang, cache_key="sdg_indicators")
         
         if data and isinstance(data, list):
             # Flatten nested SDG data

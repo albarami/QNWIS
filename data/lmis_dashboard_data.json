@@ -1,0 +1,2670 @@
+{
+  "source": "MoL LMIS Dashboard API",
+  "parsed_from": "C:\\Users\\admin-salim\\Downloads\\API  DashBorad(API  DashBorad).csv",
+  "endpoints": {
+    "escwa_api_qatar_indicators": {
+      "url": "https:/lmis-dashb-api.mol.gov.qa/api/power-bi/escwa-api-qatar-indicators",
+      "method": "GET"
+    },
+    "escwa_api_qatar_indicators?lang=en": {
+      "url": "https:/lmis-dashb-api.mol.gov.qa/api/power-bi/escwa-api-qatar-indicators?lang=en",
+      "method": "GET"
+    },
+    "escwa_api_sdgs": {
+      "url": "https:/lmis-dashb-api.mol.gov.qa/api/power-bi/escwa-api-sdgs",
+      "method": "GET"
+    },
+    "escwa_api_sdgs?lang=en": {
+      "url": "https:/lmis-dashb-api.mol.gov.qa/api/power-bi/escwa-api-sdgs?lang=en",
+      "method": "GET"
+    },
+    "escwa_api_seniority": {
+      "url": "https:/lmis-dashb-api.mol.gov.qa/api/power-bi/escwa-api-seniority",
+      "method": "GET"
+    },
+    "escwa_api_seniority?lang=en": {
+      "url": "https:/lmis-dashb-api.mol.gov.qa/api/power-bi/escwa-api-seniority?lang=en",
+      "method": "GET"
+    },
+    "{sectorType}": {
+      "url": "https:/lmis-dashb-api.mol.gov.qa/api/demand-approval-vs-supply/{sectorType}",
+      "method": "GET"
+    },
+    "nds3": {
+      "url": "https:/lmis-dashb-api.mol.gov.qa/api/demand-approval-vs-supply/nds3",
+      "method": "GET"
+    },
+    "nds3?lang=en": {
+      "url": "https:/lmis-dashb-api.mol.gov.qa/api/sector-growth-new/nds3?lang=en",
+      "method": "GET"
+    },
+    "isic": {
+      "url": "https:/lmis-dashb-api.mol.gov.qa/api/sector-growth-new/isic",
+      "method": "GET"
+    },
+    "isic?lang=en": {
+      "url": "https:/lmis-dashb-api.mol.gov.qa/api/sector-growth-new/isic?lang=en",
+      "method": "GET"
+    },
+    "nds3?lang=en&limit=10": {
+      "url": "https:/lmis-dashb-api.mol.gov.qa/api/demand-approval-vs-supply/nds3?lang=en&limit=10",
+      "method": "GET"
+    },
+    "demande_skills_mdm_vs_kawader": {
+      "url": "https:/lmis-dashb-api.mol.gov.qa/api/demande-skills-mdm-vs-kawader",
+      "method": "GET"
+    },
+    "demande_skills_mdm_vs_kawader?lang=en": {
+      "url": "https:/lmis-dashb-api.mol.gov.qa/api/demande-skills-mdm-vs-kawader?lang=en",
+      "method": "GET"
+    },
+    "skill_probability_country": {
+      "url": "https:/lmis-dashb-api.mol.gov.qa/api/skill-probability-country",
+      "method": "GET"
+    },
+    "skill_probability_country?lang=en": {
+      "url": "https:/lmis-dashb-api.mol.gov.qa/api/skill-probability-country?lang=en",
+      "method": "GET"
+    },
+    "edu_attainment_bachelors": {
+      "url": "https:/lmis-dashb-api.mol.gov.qa/api/edu-attainment-bachelors",
+      "method": "GET"
+    },
+    "edu_attainment_bachelors?lang=en": {
+      "url": "https:/lmis-dashb-api.mol.gov.qa/api/edu-attainment-bachelors?lang=en",
+      "method": "GET"
+    },
+    "emerging_decaying_skills": {
+      "url": "https:/lmis-dashb-api.mol.gov.qa/api/emerging-decaying-skills",
+      "method": "GET"
+    },
+    "emerging_decaying_skills?lang=en": {
+      "url": "https:/lmis-dashb-api.mol.gov.qa/api/emerging-decaying-skills?lang=en",
+      "method": "GET"
+    },
+    "demand_vps_supply_univ": {
+      "url": "https:/lmis-dashb-api.mol.gov.qa/api/demand-vps-supply-univ",
+      "method": "GET"
+    },
+    "demand_vps_supply_univ?lang=en": {
+      "url": "https:/lmis-dashb-api.mol.gov.qa/api/demand-vps-supply-univ?lang=en",
+      "method": "GET"
+    },
+    "avg_salary_no_sec": {
+      "url": "https:/lmis-dashb-api.mol.gov.qa/api/avg-salary-no-sec",
+      "method": "GET"
+    },
+    "avg_salary_no_sec?lang=en&limit=10": {
+      "url": "https:/lmis-dashb-api.mol.gov.qa/api/avg-salary-no-sec?lang=en&limit=10",
+      "method": "GET"
+    },
+    "demande_skills_webscrap_vs_kawader": {
+      "url": "https:/lmis-dashb-api.mol.gov.qa/api/demande-skills-webscrap-vs-kawader",
+      "method": "GET"
+    },
+    "demande_skills_webscrap_vs_kawader?lang=en": {
+      "url": "https:/lmis-dashb-api.mol.gov.qa/api/demande-skills-webscrap-vs-kawader?lang=en",
+      "method": "GET"
+    },
+    "job_source_destination": {
+      "url": "https:/lmis-dashb-api.mol.gov.qa/api/job-source-destination",
+      "method": "GET"
+    },
+    "job_source_destination?lang=en&limit=10": {
+      "url": "https:/lmis-dashb-api.mol.gov.qa/api/job-source-destination?lang=en&limit=10",
+      "method": "GET"
+    },
+    "year_sector_source_dest": {
+      "url": "https:/lmis-dashb-api.mol.gov.qa/api/year-sector-source-dest",
+      "method": "GET"
+    },
+    "year_sector_source_dest?lang=en": {
+      "url": "https:/lmis-dashb-api.mol.gov.qa/api/year-sector-source-dest?lang=en",
+      "method": "GET"
+    },
+    "job_monopoly": {
+      "url": "https:/lmis-dashb-api.mol.gov.qa/api/job-monopoly",
+      "method": "GET"
+    },
+    "job_monopoly?lang=en": {
+      "url": "https:/lmis-dashb-api.mol.gov.qa/api/job-monopoly?lang=en",
+      "method": "GET"
+    },
+    "top_skills": {
+      "url": "https:/lmis-dashb-api.mol.gov.qa/api/top-skills",
+      "method": "GET"
+    },
+    "top_skills?lang=en&limit=10": {
+      "url": "https:/lmis-dashb-api.mol.gov.qa/api/top-skills?lang=en&limit=10",
+      "method": "GET"
+    },
+    "grouped_firm_data": {
+      "url": "https:/lmis-dashb-api.mol.gov.qa/api/power-bi/grouped-firm-data",
+      "method": "GET"
+    },
+    "grouped_firm_data?lang=en": {
+      "url": "https:/lmis-dashb-api.mol.gov.qa/api/power-bi/grouped-firm-data?lang=en",
+      "method": "GET"
+    },
+    "median_growth_size_year": {
+      "url": "https:/lmis-dashb-api.mol.gov.qa/api/power-bi/median-growth-size-year",
+      "method": "GET"
+    },
+    "median_growth_size_year?lang=en": {
+      "url": "https:/lmis-dashb-api.mol.gov.qa/api/power-bi/median-growth-size-year?lang=en",
+      "method": "GET"
+    },
+    "firm_size_transition": {
+      "url": "https:/lmis-dashb-api.mol.gov.qa/api/power-bi/firm-size-transition",
+      "method": "GET"
+    },
+    "firm_size_transition?lang=en": {
+      "url": "https:/lmis-dashb-api.mol.gov.qa/api/power-bi/firm-size-transition?lang=en",
+      "method": "GET"
+    }
+  },
+  "sample_data": {
+    "main_indicators": [
+      {
+        "Qatar_Population": 2950000,
+        "Imports": 30471383523.367393,
+        "Exports": 97469173774.00502,
+        "Total_Debt": 40.219,
+        "Qatar_Bank": 71,
+        "Qatar_Remittances": 0.43,
+        "Qatar_Social_Protection": 7,
+        "Unemployment": 0.099,
+        "GDP": 825692050000,
+        "GDP_Capita": 279895.6101694915,
+        "CPI": 106.67,
+        "Qatar_Health_Coverage": 76.4,
+        "Qatar_Internet_Usage": 100,
+        "Qatar_Female_Labor": 63.39,
+        "Qatar_Out_Of_School": 0.4,
+        "FDI": "-474.176M"
+      }
+    ],
+    "sdg_indicators": [
+      {
+        "country": "Egypt",
+        "sdgs": {
+          "SDG13": 771,
+          "SDG11": 64236,
+          "SDG2": 3553,
+          "SDG10": 20941,
+          "SDG15": 4402,
+          "SDG4": 29904,
+          "SDG12": 13549,
+          "SDG14": 1606,
+          "SDG1": 1158,
+          "SDG8": 14728,
+          "SDG7": 2717,
+          "SDG16": 2799,
+          "SDG3": 16591,
+          "SDG17": 135,
+          "SDG6": 1765,
+          "SDG5": 1775,
+          "SDG9": 2497
+        }
+      },
+      {
+        "country": "United Arab Emirates",
+        "sdgs": {
+          "SDG13": 2634,
+          "SDG11": 222260,
+          "SDG2": 11831,
+          "SDG10": 60050,
+          "SDG15": 11273,
+          "SDG4": 131101,
+          "SDG12": 41615,
+          "SDG14": 10641,
+          "SDG1": 515,
+          "SDG8": 43200,
+          "SDG7": 7773,
+          "SDG16": 4774,
+          "SDG3": 48814,
+          "SDG17": 413,
+          "SDG6": 8181,
+          "SDG5": 1665,
+          "SDG9": 7081
+        }
+      },
+      {
+        "country": "Qatar",
+        "sdgs": {
+          "SDG13": 1829,
+          "SDG11": 60720,
+          "SDG2": 4342,
+          "SDG10": 22373,
+          "SDG15": 2309,
+          "SDG4": 38750,
+          "SDG12": 9827,
+          "SDG14": 3352,
+          "SDG1": 200,
+          "SDG8": 13757,
+          "SDG7": 3809,
+          "SDG16": 1891,
+          "SDG3": 14134,
+          "SDG17": 95,
+          "SDG6": 2676,
+          "SDG5": 937,
+          "SDG9": 1862
+        }
+      },
+      {
+        "country": "Saudi Arabia",
+        "sdgs": {
+          "SDG13": 4564,
+          "SDG11": 125160,
+          "SDG2": 4963,
+          "SDG10": 41298,
+          "SDG15": 9239,
+          "SDG4": 67522,
+          "SDG12": 23912,
+          "SDG14": 4044,
+          "SDG1": 657,
+          "SDG8": 31954,
+          "SDG7": 8331,
+          "SDG16": 3935,
+          "SDG3": 35334,
+          "SDG17": 300,
+          "SDG6": 6561,
+          "SDG5": 2403,
+          "SDG9": 5062
+        }
+      },
+      {
+        "country": "Kuwait",
+        "sdgs": {
+          "SDG13": 4508,
+          "SDG11": 39442,
+          "SDG2": 2445,
+          "SDG10": 14754,
+          "SDG15": 1961,
+          "SDG4": 30716,
+          "SDG12": 4536,
+          "SDG14": 794,
+          "SDG1": 226,
+          "SDG8": 7569,
+          "SDG7": 2592,
+          "SDG16": 1005,
+          "SDG3": 11270,
+          "SDG17": 59,
+          "SDG6": 932,
+          "SDG5": 572,
+          "SDG9": 719
+        }
+      },
+      {
+        "country": "Jordan",
+        "sdgs": {
+          "SDG13": 939,
+          "SDG11": 22727,
+          "SDG2": 2061,
+          "SDG10": 12204,
+          "SDG15": 1270,
+          "SDG4": 13430,
+          "SDG12": 2818,
+          "SDG14": 291,
+          "SDG1": 2234,
+          "SDG8": 7521,
+          "SDG7": 471,
+          "SDG16": 6869,
+          "SDG3": 8126,
+          "SDG17": 132,
+          "SDG6": 1315,
+          "SDG5": 4517,
+          "SDG9": 676
+        }
+      },
+      {
+        "country": "Oman",
+        "sdgs": {
+          "SDG13": 1040,
+          "SDG11": 21443,
+          "SDG2": 1265,
+          "SDG10": 8102,
+          "SDG15": 2430,
+          "SDG4": 12449,
+          "SDG12": 3132,
+          "SDG14": 588,
+          "SDG1": 377,
+          "SDG8": 5719,
+          "SDG7": 1953,
+          "SDG16": 1147,
+          "SDG3": 5162,
+          "SDG17": 33,
+          "SDG6": 781,
+          "SDG5": 1038,
+          "SDG9": 460
+        }
+      },
+      {
+        "country": "Bahrain",
+        "sdgs": {
+          "SDG13": 167,
+          "SDG11": 18035,
+          "SDG2": 1392,
+          "SDG10": 8114,
+          "SDG15": 844,
+          "SDG4": 13104,
+          "SDG12": 3850,
+          "SDG14": 688,
+          "SDG1": 129,
+          "SDG8": 4081,
+          "SDG7": 790,
+          "SDG16": 477,
+          "SDG3": 3557,
+          "SDG17": 35,
+          "SDG6": 665,
+          "SDG5": 201,
+          "SDG9": 718
+        }
+      }
+    ],
+    "dataset_2": [
+      {
+        "entry_level": 85980,
+        "junior": 45016,
+        "mid_level": 23839,
+        "senior": 11949,
+        "timestamp": "2025-11-01T23:44:56.787Z",
+        "country": "Egypt"
+      },
+      {
+        "entry_level": 214342,
+        "junior": 83611,
+        "mid_level": 38920,
+        "senior": 33458,
+        "timestamp": "2025-11-01T23:44:56.787Z",
+        "country": "United Arab Emirates"
+      },
+      {
+        "entry_level": 14700,
+        "junior": 7575,
+        "mid_level": 4306,
+        "senior": 3391,
+        "timestamp": "2025-11-01T23:44:56.787Z",
+        "country": "Oman"
+      },
+      {
+        "entry_level": 47039,
+        "junior": 22921,
+        "mid_level": 13705,
+        "senior": 14445,
+        "timestamp": "2025-11-01T23:44:56.787Z",
+        "country": "Qatar"
+      },
+      {
+        "entry_level": 72372,
+        "junior": 45313,
+        "mid_level": 29624,
+        "senior": 36083,
+        "timestamp": "2025-11-01T23:44:56.787Z",
+        "country": "Saudi Arabia"
+      },
+      {
+        "entry_level": 46342,
+        "junior": 19273,
+        "mid_level": 8261,
+        "senior": 5429,
+        "timestamp": "2025-11-01T23:44:56.787Z",
+        "country": "Kuwait"
+      },
+      {
+        "entry_level": 14422,
+        "junior": 6068,
+        "mid_level": 2704,
+        "senior": 1881,
+        "timestamp": "2025-11-01T23:44:56.787Z",
+        "country": "Bahrain"
+      },
+      {
+        "entry_level": 13969,
+        "junior": 7469,
+        "mid_level": 4146,
+        "senior": 2147,
+        "timestamp": "2025-11-01T23:44:56.787Z",
+        "country": "Jordan"
+      }
+    ],
+    "dataset_4": [
+      {
+        "year": "2018",
+        "emp_count": 66164,
+        "percentage_change": -2.06
+      },
+      {
+        "year": "2019",
+        "emp_count": 59765,
+        "percentage_change": -9.67
+      },
+      {
+        "year": "2020",
+        "emp_count": 55725,
+        "percentage_change": -6.76
+      },
+      {
+        "year": "2021",
+        "emp_count": 58704,
+        "percentage_change": 5.35
+      },
+      {
+        "year": "2022",
+        "emp_count": 55938,
+        "percentage_change": -4.71
+      },
+      {
+        "year": "2023",
+        "emp_count": 54976,
+        "percentage_change": -1.72
+      },
+      {
+        "year": "2024",
+        "emp_count": 57584,
+        "percentage_change": 4.74
+      }
+    ],
+    "dataset_5": [
+      {
+        "year": "2018",
+        "emp_count": 134658,
+        "percentage_change": -7.83
+      },
+      {
+        "year": "2019",
+        "emp_count": 110669,
+        "percentage_change": -17.81
+      },
+      {
+        "year": "2020",
+        "emp_count": 94642,
+        "percentage_change": -14.48
+      },
+      {
+        "year": "2021",
+        "emp_count": 95376,
+        "percentage_change": 0.78
+      },
+      {
+        "year": "2022",
+        "emp_count": 92747,
+        "percentage_change": -2.76
+      },
+      {
+        "year": "2023",
+        "emp_count": 88511,
+        "percentage_change": -4.57
+      },
+      {
+        "year": "2024",
+        "emp_count": 87263,
+        "percentage_change": -1.41
+      }
+    ],
+    "dataset_6": [
+      {
+        "year": "2018",
+        "emp_count": 208197,
+        "percentage_change": 0.54
+      },
+      {
+        "year": "2019",
+        "emp_count": 200885,
+        "percentage_change": -3.51
+      },
+      {
+        "year": "2020",
+        "emp_count": 192623,
+        "percentage_change": -4.11
+      },
+      {
+        "year": "2021",
+        "emp_count": 197994,
+        "percentage_change": 2.79
+      },
+      {
+        "year": "2022",
+        "emp_count": 217512,
+        "percentage_change": 9.86
+      },
+      {
+        "year": "2023",
+        "emp_count": 213413,
+        "percentage_change": -1.88
+      },
+      {
+        "year": "2024",
+        "emp_count": 203456,
+        "percentage_change": -4.67
+      }
+    ],
+    "dataset_7": [
+      {
+        "year": "2018",
+        "emp_count": 200641,
+        "percentage_change": -0.99
+      },
+      {
+        "year": "2019",
+        "emp_count": 187179,
+        "percentage_change": -6.71
+      },
+      {
+        "year": "2020",
+        "emp_count": 172550,
+        "percentage_change": -7.82
+      },
+      {
+        "year": "2021",
+        "emp_count": 175433,
+        "percentage_change": 1.67
+      },
+      {
+        "year": "2022",
+        "emp_count": 171885,
+        "percentage_change": -2.02
+      },
+      {
+        "year": "2023",
+        "emp_count": 158577,
+        "percentage_change": -7.74
+      },
+      {
+        "year": "2024",
+        "emp_count": 147849,
+        "percentage_change": -6.77
+      }
+    ],
+    "dataset_8": [
+      {
+        "year": "2018",
+        "emp_count": 133596,
+        "percentage_change": -2.33
+      },
+      {
+        "year": "2019",
+        "emp_count": 124071,
+        "percentage_change": -7.13
+      },
+      {
+        "year": "2020",
+        "emp_count": 117147,
+        "percentage_change": -5.58
+      },
+      {
+        "year": "2021",
+        "emp_count": 120524,
+        "percentage_change": 2.88
+      },
+      {
+        "year": "2022",
+        "emp_count": 126472,
+        "percentage_change": 4.94
+      },
+      {
+        "year": "2023",
+        "emp_count": 131930,
+        "percentage_change": 4.32
+      },
+      {
+        "year": "2024",
+        "emp_count": 135110,
+        "percentage_change": 2.41
+      }
+    ],
+    "dataset_9": [
+      {
+        "year": "2018",
+        "emp_count": 649597,
+        "percentage_change": 3.51
+      },
+      {
+        "year": "2019",
+        "emp_count": 650642,
+        "percentage_change": 0.16
+      },
+      {
+        "year": "2020",
+        "emp_count": 629895,
+        "percentage_change": -3.19
+      },
+      {
+        "year": "2021",
+        "emp_count": 640230,
+        "percentage_change": 1.64
+      },
+      {
+        "year": "2022",
+        "emp_count": 741457,
+        "percentage_change": 15.81
+      },
+      {
+        "year": "2023",
+        "emp_count": 786379,
+        "percentage_change": 6.06
+      },
+      {
+        "year": "2024",
+        "emp_count": 796511,
+        "percentage_change": 1.29
+      }
+    ],
+    "dataset_10": [
+      {
+        "year": "2018",
+        "emp_count": 265696,
+        "percentage_change": -1.57
+      },
+      {
+        "year": "2019",
+        "emp_count": 242807,
+        "percentage_change": -8.61
+      },
+      {
+        "year": "2020",
+        "emp_count": 224413,
+        "percentage_change": -7.58
+      },
+      {
+        "year": "2021",
+        "emp_count": 227015,
+        "percentage_change": 1.16
+      },
+      {
+        "year": "2022",
+        "emp_count": 227344,
+        "percentage_change": 0.14
+      },
+      {
+        "year": "2023",
+        "emp_count": 210502,
+        "percentage_change": -7.41
+      },
+      {
+        "year": "2024",
+        "emp_count": 201317,
+        "percentage_change": -4.36
+      }
+    ],
+    "dataset_11": [
+      {
+        "year": "2018",
+        "emp_count": 170405,
+        "percentage_change": 2.03
+      },
+      {
+        "year": "2019",
+        "emp_count": 171598,
+        "percentage_change": 0.7
+      },
+      {
+        "year": "2020",
+        "emp_count": 171732,
+        "percentage_change": 0.08
+      },
+      {
+        "year": "2021",
+        "emp_count": 169991,
+        "percentage_change": -1.01
+      },
+      {
+        "year": "2022",
+        "emp_count": 196364,
+        "percentage_change": 15.51
+      },
+      {
+        "year": "2023",
+        "emp_count": 213807,
+        "percentage_change": 8.88
+      },
+      {
+        "year": "2024",
+        "emp_count": 220484,
+        "percentage_change": 3.12
+      }
+    ],
+    "dataset_13": [
+      {
+        "year": "2018",
+        "emp_count": 119722,
+        "percentage_change": 6.59
+      },
+      {
+        "year": "2019",
+        "emp_count": 127556,
+        "percentage_change": 6.54
+      },
+      {
+        "year": "2020",
+        "emp_count": 131935,
+        "percentage_change": 3.43
+      },
+      {
+        "year": "2021",
+        "emp_count": 134366,
+        "percentage_change": 1.84
+      },
+      {
+        "year": "2022",
+        "emp_count": 162531,
+        "percentage_change": 20.96
+      },
+      {
+        "year": "2023",
+        "emp_count": 173866,
+        "percentage_change": 6.97
+      },
+      {
+        "year": "2024",
+        "emp_count": 176063,
+        "percentage_change": 1.26
+      }
+    ],
+    "dataset_14": [
+      {
+        "year": "2018",
+        "emp_count": 42980,
+        "percentage_change": 9.53
+      },
+      {
+        "year": "2019",
+        "emp_count": 46818,
+        "percentage_change": 8.93
+      },
+      {
+        "year": "2020",
+        "emp_count": 49376,
+        "percentage_change": 5.46
+      },
+      {
+        "year": "2021",
+        "emp_count": 51099,
+        "percentage_change": 3.49
+      },
+      {
+        "year": "2022",
+        "emp_count": 55307,
+        "percentage_change": 8.23
+      },
+      {
+        "year": "2023",
+        "emp_count": 58509,
+        "percentage_change": 5.79
+      },
+      {
+        "year": "2024",
+        "emp_count": 60932,
+        "percentage_change": 4.14
+      }
+    ],
+    "dataset_15": [
+      {
+        "year": "2018",
+        "emp_count": 187935,
+        "percentage_change": 2.13
+      },
+      {
+        "year": "2019",
+        "emp_count": 192919,
+        "percentage_change": 2.65
+      },
+      {
+        "year": "2020",
+        "emp_count": 192237,
+        "percentage_change": -0.35
+      },
+      {
+        "year": "2021",
+        "emp_count": 189196,
+        "percentage_change": -1.58
+      },
+      {
+        "year": "2022",
+        "emp_count": 222764,
+        "percentage_change": 17.74
+      },
+      {
+        "year": "2023",
+        "emp_count": 238629,
+        "percentage_change": 7.12
+      },
+      {
+        "year": "2024",
+        "emp_count": 237393,
+        "percentage_change": -0.52
+      }
+    ],
+    "dataset_16": [
+      {
+        "year": "2018",
+        "emp_count": 428464,
+        "percentage_change": 4.19
+      },
+      {
+        "year": "2019",
+        "emp_count": 432189,
+        "percentage_change": 0.87
+      },
+      {
+        "year": "2020",
+        "emp_count": 418807,
+        "percentage_change": -3.1
+      },
+      {
+        "year": "2021",
+        "emp_count": 424104,
+        "percentage_change": 1.26
+      },
+      {
+        "year": "2022",
+        "emp_count": 489593,
+        "percentage_change": 15.44
+      },
+      {
+        "year": "2023",
+        "emp_count": 532776,
+        "percentage_change": 8.82
+      },
+      {
+        "year": "2024",
+        "emp_count": 544784,
+        "percentage_change": 2.25
+      }
+    ],
+    "dataset_17": [
+      {
+        "year": "2018",
+        "emp_count": 30497,
+        "percentage_change": 3.26
+      },
+      {
+        "year": "2019",
+        "emp_count": 31274,
+        "percentage_change": 2.55
+      },
+      {
+        "year": "2020",
+        "emp_count": 30736,
+        "percentage_change": -1.72
+      },
+      {
+        "year": "2021",
+        "emp_count": 29453,
+        "percentage_change": -4.17
+      },
+      {
+        "year": "2022",
+        "emp_count": 37262,
+        "percentage_change": 26.51
+      },
+      {
+        "year": "2023",
+        "emp_count": 36991,
+        "percentage_change": -0.73
+      },
+      {
+        "year": "2024",
+        "emp_count": 36429,
+        "percentage_change": -1.52
+      }
+    ],
+    "dataset_18": [
+      {
+        "year": "2018",
+        "emp_count": 97848,
+        "percentage_change": 0.41
+      },
+      {
+        "year": "2019",
+        "emp_count": 95887,
+        "percentage_change": -2
+      },
+      {
+        "year": "2020",
+        "emp_count": 91999,
+        "percentage_change": -4.05
+      },
+      {
+        "year": "2021",
+        "emp_count": 96117,
+        "percentage_change": 4.48
+      },
+      {
+        "year": "2022",
+        "emp_count": 101507,
+        "percentage_change": 5.61
+      },
+      {
+        "year": "2023",
+        "emp_count": 108164,
+        "percentage_change": 6.56
+      },
+      {
+        "year": "2024",
+        "emp_count": 111418,
+        "percentage_change": 3.01
+      }
+    ],
+    "dataset_20": [
+      {
+        "name": "english",
+        "count": 68581
+      },
+      {
+        "name": "business communication",
+        "count": 55030
+      },
+      {
+        "name": "develop strategy to solve problems",
+        "count": 32157
+      },
+      {
+        "name": "communication",
+        "count": 30430
+      },
+      {
+        "name": "customer service",
+        "count": 28276
+      },
+      {
+        "name": "project management",
+        "count": 24750
+      },
+      {
+        "name": "use microsoft office",
+        "count": 24747
+      },
+      {
+        "name": "arabic",
+        "count": 24198
+      },
+      {
+        "name": "attend to detail",
+        "count": 22478
+      },
+      {
+        "name": "manage teamwork",
+        "count": 21083
+      }
+    ],
+    "dataset_21": [
+      {
+        "name": "english",
+        "count": 63027
+      },
+      {
+        "name": "business communication",
+        "count": 50825
+      },
+      {
+        "name": "develop strategy to solve problems",
+        "count": 29421
+      },
+      {
+        "name": "communication",
+        "count": 27614
+      },
+      {
+        "name": "customer service",
+        "count": 25797
+      },
+      {
+        "name": "use microsoft office",
+        "count": 22664
+      },
+      {
+        "name": "project management",
+        "count": 22150
+      },
+      {
+        "name": "arabic",
+        "count": 21936
+      },
+      {
+        "name": "attend to detail",
+        "count": 21195
+      },
+      {
+        "name": "manage teamwork",
+        "count": 19499
+      }
+    ],
+    "dataset_22": [
+      {
+        "name": "english",
+        "count": 61722
+      },
+      {
+        "name": "business communication",
+        "count": 49927
+      },
+      {
+        "name": "develop strategy to solve problems",
+        "count": 28921
+      },
+      {
+        "name": "communication",
+        "count": 27011
+      },
+      {
+        "name": "customer service",
+        "count": 25585
+      },
+      {
+        "name": "use microsoft office",
+        "count": 21784
+      },
+      {
+        "name": "attend to detail",
+        "count": 21281
+      },
+      {
+        "name": "project management",
+        "count": 21252
+      },
+      {
+        "name": "arabic",
+        "count": 20798
+      },
+      {
+        "name": "manage teamwork",
+        "count": 19398
+      }
+    ],
+    "dataset_23": [
+      {
+        "name": "english",
+        "count": 64192
+      },
+      {
+        "name": "business communication",
+        "count": 51963
+      },
+      {
+        "name": "develop strategy to solve problems",
+        "count": 29964
+      },
+      {
+        "name": "communication",
+        "count": 28205
+      },
+      {
+        "name": "customer service",
+        "count": 26488
+      },
+      {
+        "name": "use microsoft office",
+        "count": 22745
+      },
+      {
+        "name": "arabic",
+        "count": 22470
+      },
+      {
+        "name": "project management",
+        "count": 22404
+      },
+      {
+        "name": "attend to detail",
+        "count": 21926
+      },
+      {
+        "name": "manage teamwork",
+        "count": 19965
+      }
+    ],
+    "dataset_24": [
+      {
+        "name": "english",
+        "count": 63810
+      },
+      {
+        "name": "business communication",
+        "count": 51451
+      },
+      {
+        "name": "develop strategy to solve problems",
+        "count": 29701
+      },
+      {
+        "name": "communication",
+        "count": 27892
+      },
+      {
+        "name": "customer service",
+        "count": 26095
+      },
+      {
+        "name": "use microsoft office",
+        "count": 22867
+      },
+      {
+        "name": "project management",
+        "count": 22441
+      },
+      {
+        "name": "arabic",
+        "count": 22190
+      },
+      {
+        "name": "attend to detail",
+        "count": 21341
+      },
+      {
+        "name": "manage teamwork",
+        "count": 19792
+      }
+    ],
+    "dataset_25": [
+      {
+        "name": "english",
+        "count": 70539
+      },
+      {
+        "name": "business communication",
+        "count": 56295
+      },
+      {
+        "name": "develop strategy to solve problems",
+        "count": 32728
+      },
+      {
+        "name": "communication",
+        "count": 31228
+      },
+      {
+        "name": "customer service",
+        "count": 28626
+      },
+      {
+        "name": "use microsoft office",
+        "count": 25076
+      },
+      {
+        "name": "project management",
+        "count": 24547
+      },
+      {
+        "name": "arabic",
+        "count": 24380
+      },
+      {
+        "name": "attend to detail",
+        "count": 23199
+      },
+      {
+        "name": "manage teamwork",
+        "count": 21723
+      }
+    ],
+    "dataset_26": [
+      {
+        "name": "english",
+        "count": 61759
+      },
+      {
+        "name": "business communication",
+        "count": 49966
+      },
+      {
+        "name": "develop strategy to solve problems",
+        "count": 28824
+      },
+      {
+        "name": "communication",
+        "count": 26891
+      },
+      {
+        "name": "customer service",
+        "count": 25044
+      },
+      {
+        "name": "use microsoft office",
+        "count": 22139
+      },
+      {
+        "name": "project management",
+        "count": 22065
+      },
+      {
+        "name": "arabic",
+        "count": 20802
+      },
+      {
+        "name": "attend to detail",
+        "count": 20728
+      },
+      {
+        "name": "manage teamwork",
+        "count": 19205
+      }
+    ],
+    "dataset_27": [
+      {
+        "name": "english",
+        "count": 66353
+      },
+      {
+        "name": "business communication",
+        "count": 53605
+      },
+      {
+        "name": "develop strategy to solve problems",
+        "count": 31255
+      },
+      {
+        "name": "communication",
+        "count": 29480
+      },
+      {
+        "name": "customer service",
+        "count": 28104
+      },
+      {
+        "name": "use microsoft office",
+        "count": 23298
+      },
+      {
+        "name": "project management",
+        "count": 23068
+      },
+      {
+        "name": "arabic",
+        "count": 22862
+      },
+      {
+        "name": "attend to detail",
+        "count": 22651
+      },
+      {
+        "name": "manage teamwork",
+        "count": 20902
+      }
+    ],
+    "skills_data_28": [
+      {
+        "mdm_skill": "english",
+        "cv_mdm_rank": "1",
+        "cv_kawader_rank": "2"
+      },
+      {
+        "mdm_skill": "arabic",
+        "cv_mdm_rank": "2",
+        "cv_kawader_rank": "1"
+      },
+      {
+        "mdm_skill": "use microsoft office",
+        "cv_mdm_rank": "3",
+        "cv_kawader_rank": "8"
+      },
+      {
+        "mdm_skill": "communication",
+        "cv_mdm_rank": "4",
+        "cv_kawader_rank": "19"
+      },
+      {
+        "mdm_skill": "hindi",
+        "cv_mdm_rank": "5",
+        "cv_kawader_rank": "264"
+      },
+      {
+        "mdm_skill": "project management",
+        "cv_mdm_rank": "6",
+        "cv_kawader_rank": "22"
+      },
+      {
+        "mdm_skill": "develop strategy to solve problems",
+        "cv_mdm_rank": "7",
+        "cv_kawader_rank": "9"
+      },
+      {
+        "mdm_skill": "manage schedule of tasks",
+        "cv_mdm_rank": "8",
+        "cv_kawader_rank": "6"
+      },
+      {
+        "mdm_skill": "customer service",
+        "cv_mdm_rank": "9",
+        "cv_kawader_rank": "34"
+      },
+      {
+        "mdm_skill": "business communication",
+        "cv_mdm_rank": "10",
+        "cv_kawader_rank": "64"
+      },
+      {
+        "mdm_skill": "lead a team",
+        "cv_mdm_rank": "11",
+        "cv_kawader_rank": "13"
+      },
+      {
+        "mdm_skill": "use spreadsheets software",
+        "cv_mdm_rank": "12",
+        "cv_kawader_rank": "12"
+      },
+      {
+        "mdm_skill": "use word processing software",
+        "cv_mdm_rank": "13",
+        "cv_kawader_rank": "10"
+      },
+      {
+        "mdm_skill": "manage teamwork",
+        "cv_mdm_rank": "14",
+        "cv_kawader_rank": "124"
+      },
+      {
+        "mdm_skill": "tamil",
+        "cv_mdm_rank": "15",
+        "cv_kawader_rank": "-"
+      },
+      {
+        "mdm_skill": "",
+        "cv_mdm_rank": "16",
+        "cv_kawader_rank": "-"
+      },
+      {
+        "mdm_skill": "urdu",
+        "cv_mdm_rank": "17",
+        "cv_kawader_rank": "360"
+      },
+      {
+        "mdm_skill": "use cad software",
+        "cv_mdm_rank": "18",
+        "cv_kawader_rank": "110"
+      },
+      {
+        "mdm_skill": "data analytics",
+        "cv_mdm_rank": "19",
+        "cv_kawader_rank": "27"
+      },
+      {
+        "mdm_skill": "use presentation software",
+        "cv_mdm_rank": "20",
+        "cv_kawader_rank": "14"
+      },
+      {
+        "mdm_skill": "manage a team",
+        "cv_mdm_rank": "21",
+        "cv_kawader_rank": "29"
+      },
+      {
+        "mdm_skill": "office software",
+        "cv_mdm_rank": "22",
+        "cv_kawader_rank": "128"
+      },
+      {
+        "mdm_skill": "attend to detail",
+        "cv_mdm_rank": "23",
+        "cv_kawader_rank": "18"
+      },
+      {
+        "mdm_skill": "customer relationship management",
+        "cv_mdm_rank": "24",
+        "cv_kawader_rank": "109"
+      },
+      {
+        "mdm_skill": "work in teams",
+        "cv_mdm_rank": "25",
+        "cv_kawader_rank": "3"
+      },
+      {
+        "mdm_skill": "sql",
+        "cv_mdm_rank": "26",
+        "cv_kawader_rank": "79"
+      },
+      {
+        "mdm_skill": "adapt to change",
+        "cv_mdm_rank": "27",
+        "cv_kawader_rank": "11"
+      },
+      {
+        "mdm_skill": "develop training programmes",
+        "cv_mdm_rank": "28",
+        "cv_kawader_rank": "115"
+      },
+      {
+        "mdm_skill": "adapt teaching to student's capabilities",
+        "cv_mdm_rank": "29",
+        "cv_kawader_rank": "641"
+      },
+      {
+        "mdm_skill": "computer science",
+        "cv_mdm_rank": "30",
+        "cv_kawader_rank": "59"
+      },
+      {
+        "mdm_skill": "manage inventory",
+        "cv_mdm_rank": "31",
+        "cv_kawader_rank": "454"
+      },
+      {
+        "mdm_skill": "risk management",
+        "cv_mdm_rank": "32",
+        "cv_kawader_rank": "112"
+      },
+      {
+        "mdm_skill": "teamwork principles",
+        "cv_mdm_rank": "33",
+        "cv_kawader_rank": "126"
+      },
+      {
+        "mdm_skill": "work in an organised manner",
+        "cv_mdm_rank": "34",
+        "cv_kawader_rank": "25"
+      },
+      {
+        "mdm_skill": "strategic planning",
+        "cv_mdm_rank": "35",
+        "cv_kawader_rank": "32"
+      },
+      {
+        "mdm_skill": "demonstrate intercultural competence",
+        "cv_mdm_rank": "36",
+        "cv_kawader_rank": "85"
+      },
+      {
+        "mdm_skill": "create cad drawings",
+        "cv_mdm_rank": "37",
+        "cv_kawader_rank": "533"
+      },
+      {
+        "mdm_skill": "adobe photoshop",
+        "cv_mdm_rank": "38",
+        "cv_kawader_rank": "70"
+      },
+      {
+        "mdm_skill": "troubleshoot",
+        "cv_mdm_rank": "39",
+        "cv_kawader_rank": "501"
+      },
+      {
+        "mdm_skill": "financial management",
+        "cv_mdm_rank": "40",
+        "cv_kawader_rank": "158"
+      },
+      {
+        "mdm_skill": "manage relationships with stakeholders",
+        "cv_mdm_rank": "41",
+        "cv_kawader_rank": "291"
+      },
+      {
+        "mdm_skill": "accounting",
+        "cv_mdm_rank": "42",
+        "cv_kawader_rank": "50"
+      },
+      {
+        "mdm_skill": "provide high quality customer service",
+        "cv_mdm_rank": "43",
+        "cv_kawader_rank": "147"
+      },
+      {
+        "mdm_skill": "bengali",
+        "cv_mdm_rank": "44",
+        "cv_kawader_rank": "-"
+      },
+      {
+        "mdm_skill": "handle stressful situations in the work place",
+        "cv_mdm_rank": "45",
+        "cv_kawader_rank": "81"
+      },
+      {
+        "mdm_skill": "human resource management",
+        "cv_mdm_rank": "46",
+        "cv_kawader_rank": "63"
+      },
+      {
+        "mdm_skill": "interact verbally in french",
+        "cv_mdm_rank": "47",
+        "cv_kawader_rank": "107"
+      },
+      {
+        "mdm_skill": "financial analysis",
+        "cv_mdm_rank": "48",
+        "cv_kawader_rank": "57"
+      },
+      {
+        "mdm_skill": "understand written english",
+        "cv_mdm_rank": "49",
+        "cv_kawader_rank": "181"
+      },
+      {
+        "mdm_skill": "have computer literacy",
+        "cv_mdm_rank": "50",
+        "cv_kawader_rank": "4"
+      }
+    ],
+    "skills_data_30": [
+      {
+        "Skill": "Marketing",
+        "Country_Probability": 0.0201,
+        "Qatar_Probability": 0.015411479450750292
+      },
+      {
+        "Skill": "Accounting",
+        "Country_Probability": 0.0172,
+        "Qatar_Probability": 0.011389899167481605
+      },
+      {
+        "Skill": "Finance",
+        "Country_Probability": 0.015,
+        "Qatar_Probability": 0.011879777457907094
+      },
+      {
+        "Skill": "Computer Science",
+        "Country_Probability": 0.0144,
+        "Qatar_Probability": 0.005353866101154831
+      },
+      {
+        "Skill": "Project Management",
+        "Country_Probability": 0.0123,
+        "Qatar_Probability": 0.015497551524208229
+      },
+      {
+        "Skill": "Key Performance Indicators (KPIs)",
+        "Country_Probability": 0.0088,
+        "Qatar_Probability": 0.005841913070868449
+      },
+      {
+        "Skill": "Invoicing",
+        "Country_Probability": 0.0066,
+        "Qatar_Probability": 0.0051460112003574735
+      },
+      {
+        "Skill": "Financial Statements",
+        "Country_Probability": 0.0064,
+        "Qatar_Probability": 0.004645144985660759
+      },
+      {
+        "Skill": "Auditing",
+        "Country_Probability": 0.0063,
+        "Qatar_Probability": 0.006925139271940137
+      },
+      {
+        "Skill": "Selling Techniques",
+        "Country_Probability": 0.0059,
+        "Qatar_Probability": 0.004857578188237793
+      }
+    ],
+    "skills_data_31": [
+      {
+        "Skill": "Environment Health And Safety",
+        "Country_Probability": 0.0208,
+        "Qatar_Probability": 0.005510444022019801
+      },
+      {
+        "Skill": "Project Management",
+        "Country_Probability": 0.0167,
+        "Qatar_Probability": 0.015497551524208229
+      },
+      {
+        "Skill": "Dental Examinations",
+        "Country_Probability": 0.0132,
+        "Qatar_Probability": 8.240943203419442e-06
+      },
+      {
+        "Skill": "Occupational Safety And Health",
+        "Country_Probability": 0.0129,
+        "Qatar_Probability": 0.0020748863665498284
+      },
+      {
+        "Skill": "Finance",
+        "Country_Probability": 0.0118,
+        "Qatar_Probability": 0.011879777457907094
+      },
+      {
+        "Skill": "Industrial Production",
+        "Country_Probability": 0.0111,
+        "Qatar_Probability": 0.00015016829837342094
+      },
+      {
+        "Skill": "Kurdish Language",
+        "Country_Probability": 0.0102,
+        "Qatar_Probability": 0
+      },
+      {
+        "Skill": "Oil And Gas",
+        "Country_Probability": 0.0089,
+        "Qatar_Probability": 0.006583597959176199
+      },
+      {
+        "Skill": "Labor Law",
+        "Country_Probability": 0.0082,
+        "Qatar_Probability": 0.001094214125342915
+      },
+      {
+        "Skill": "Exploitation",
+        "Country_Probability": 0.0074,
+        "Qatar_Probability": 1.1903584627161416e-05
+      }
+    ],
+    "skills_data_32": [
+      {
+        "Skill": "Finance",
+        "Country_Probability": 0.0235,
+        "Qatar_Probability": 0.011879777457907094
+      },
+      {
+        "Skill": "Project Management",
+        "Country_Probability": 0.0182,
+        "Qatar_Probability": 0.015497551524208229
+      },
+      {
+        "Skill": "Marketing",
+        "Country_Probability": 0.0148,
+        "Qatar_Probability": 0.015411479450750292
+      },
+      {
+        "Skill": "Accounting",
+        "Country_Probability": 0.0121,
+        "Qatar_Probability": 0.011389899167481605
+      },
+      {
+        "Skill": "Exploitation",
+        "Country_Probability": 0.0112,
+        "Qatar_Probability": 1.1903584627161416e-05
+      },
+      {
+        "Skill": "Computer Science",
+        "Country_Probability": 0.0099,
+        "Qatar_Probability": 0.005353866101154831
+      },
+      {
+        "Skill": "Data Analysis",
+        "Country_Probability": 0.0088,
+        "Qatar_Probability": 0.004625000457830178
+      },
+      {
+        "Skill": "Social Work",
+        "Country_Probability": 0.0074,
+        "Qatar_Probability": 5.67709420680006e-05
+      },
+      {
+        "Skill": "Financial Statements",
+        "Country_Probability": 0.0072,
+        "Qatar_Probability": 0.004645144985660759
+      },
+      {
+        "Skill": "Economics",
+        "Country_Probability": 0.0065,
+        "Qatar_Probability": 0.0015337310961919517
+      }
+    ],
+    "skills_data_33": [
+      {
+        "Skill": "Restaurant Operation",
+        "Country_Probability": 0.0251,
+        "Qatar_Probability": 0.008679544513912544
+      },
+      {
+        "Skill": "Accounting",
+        "Country_Probability": 0.0242,
+        "Qatar_Probability": 0.011389899167481605
+      },
+      {
+        "Skill": "Marketing",
+        "Country_Probability": 0.0194,
+        "Qatar_Probability": 0.015411479450750292
+      },
+      {
+        "Skill": "Finance",
+        "Country_Probability": 0.0113,
+        "Qatar_Probability": 0.011879777457907094
+      },
+      {
+        "Skill": "Project Management",
+        "Country_Probability": 0.0088,
+        "Qatar_Probability": 0.015497551524208229
+      },
+      {
+        "Skill": "Labor Law",
+        "Country_Probability": 0.0062,
+        "Qatar_Probability": 0.001094214125342915
+      },
+      {
+        "Skill": "Computer Science",
+        "Country_Probability": 0.0059,
+        "Qatar_Probability": 0.005353866101154831
+      },
+      {
+        "Skill": "Financial Statements",
+        "Country_Probability": 0.0058,
+        "Qatar_Probability": 0.004645144985660759
+      },
+      {
+        "Skill": "Occupational Safety And Health",
+        "Country_Probability": 0.0055,
+        "Qatar_Probability": 0.0020748863665498284
+      },
+      {
+        "Skill": "Invoicing",
+        "Country_Probability": 0.0054,
+        "Qatar_Probability": 0.0051460112003574735
+      }
+    ],
+    "skills_data_34": [
+      {
+        "Skill": "Marketing",
+        "Country_Probability": 0.0265,
+        "Qatar_Probability": 0.015411479450750292
+      },
+      {
+        "Skill": "Accounting",
+        "Country_Probability": 0.0263,
+        "Qatar_Probability": 0.011389899167481605
+      },
+      {
+        "Skill": "Finance",
+        "Country_Probability": 0.0134,
+        "Qatar_Probability": 0.011879777457907094
+      },
+      {
+        "Skill": "Invoicing",
+        "Country_Probability": 0.012,
+        "Qatar_Probability": 0.0051460112003574735
+      },
+      {
+        "Skill": "Computer Science",
+        "Country_Probability": 0.0119,
+        "Qatar_Probability": 0.005353866101154831
+      },
+      {
+        "Skill": "Project Management",
+        "Country_Probability": 0.0102,
+        "Qatar_Probability": 0.015497551524208229
+      },
+      {
+        "Skill": "Social Media",
+        "Country_Probability": 0.0088,
+        "Qatar_Probability": 0.0024054397550425416
+      },
+      {
+        "Skill": "Restaurant Operation",
+        "Country_Probability": 0.0086,
+        "Qatar_Probability": 0.008679544513912544
+      },
+      {
+        "Skill": "Financial Statements",
+        "Country_Probability": 0.0082,
+        "Qatar_Probability": 0.004645144985660759
+      },
+      {
+        "Skill": "Graphic Design",
+        "Country_Probability": 0.0065,
+        "Qatar_Probability": 0.00177180278873518
+      }
+    ],
+    "skills_data_35": [
+      {
+        "Skill": "Finance",
+        "Country_Probability": 0.0264,
+        "Qatar_Probability": 0.011879777457907094
+      },
+      {
+        "Skill": "Marketing",
+        "Country_Probability": 0.0249,
+        "Qatar_Probability": 0.015411479450750292
+      },
+      {
+        "Skill": "ESPRIT AutoCAD",
+        "Country_Probability": 0.0241,
+        "Qatar_Probability": 5.951792313580708e-05
+      },
+      {
+        "Skill": "Project Management",
+        "Country_Probability": 0.0121,
+        "Qatar_Probability": 0.015497551524208229
+      },
+      {
+        "Skill": "Key Performance Indicators (KPIs)",
+        "Country_Probability": 0.0116,
+        "Qatar_Probability": 0.005841913070868449
+      },
+      {
+        "Skill": "Bilingual (French/English)",
+        "Country_Probability": 0.0116,
+        "Qatar_Probability": 6.501188527142005e-05
+      },
+      {
+        "Skill": "SQL (Programming Language)",
+        "Country_Probability": 0.0084,
+        "Qatar_Probability": 0.0024402348485680903
+      },
+      {
+        "Skill": "Java (Programming Language)",
+        "Country_Probability": 0.0083,
+        "Qatar_Probability": 0.0016051526039549202
+      },
+      {
+        "Skill": "Agile Methodology",
+        "Country_Probability": 0.0081,
+        "Qatar_Probability": 0.0015401407186835003
+      },
+      {
+        "Skill": "Python (Programming Language)",
+        "Country_Probability": 0.0077,
+        "Qatar_Probability": 0.0014458277020221444
+      }
+    ],
+    "skills_data_36": [
+      {
+        "Skill": "Marketing",
+        "Country_Probability": 0.0265,
+        "Qatar_Probability": 0.015411479450750292
+      },
+      {
+        "Skill": "Finance",
+        "Country_Probability": 0.0212,
+        "Qatar_Probability": 0.011879777457907094
+      },
+      {
+        "Skill": "Accounting",
+        "Country_Probability": 0.0143,
+        "Qatar_Probability": 0.011389899167481605
+      },
+      {
+        "Skill": "Restaurant Operation",
+        "Country_Probability": 0.0142,
+        "Qatar_Probability": 0.008679544513912544
+      },
+      {
+        "Skill": "Project Management",
+        "Country_Probability": 0.0129,
+        "Qatar_Probability": 0.015497551524208229
+      },
+      {
+        "Skill": "Key Performance Indicators (KPIs)",
+        "Country_Probability": 0.0089,
+        "Qatar_Probability": 0.005841913070868449
+      },
+      {
+        "Skill": "Auditing",
+        "Country_Probability": 0.0085,
+        "Qatar_Probability": 0.006925139271940137
+      },
+      {
+        "Skill": "ESPRIT AutoCAD",
+        "Country_Probability": 0.0083,
+        "Qatar_Probability": 5.951792313580708e-05
+      },
+      {
+        "Skill": "Computer Science",
+        "Country_Probability": 0.0066,
+        "Qatar_Probability": 0.005353866101154831
+      },
+      {
+        "Skill": "Financial Statements",
+        "Country_Probability": 0.0061,
+        "Qatar_Probability": 0.004645144985660759
+      }
+    ],
+    "skills_data_37": [
+      {
+        "Skill": "Project Management",
+        "Country_Probability": 0.0155,
+        "Qatar_Probability": 0.015497551524208229
+      },
+      {
+        "Skill": "Marketing",
+        "Country_Probability": 0.0154,
+        "Qatar_Probability": 0.015411479450750292
+      },
+      {
+        "Skill": "Finance",
+        "Country_Probability": 0.0119,
+        "Qatar_Probability": 0.011879777457907094
+      },
+      {
+        "Skill": "Accounting",
+        "Country_Probability": 0.0114,
+        "Qatar_Probability": 0.011389899167481605
+      },
+      {
+        "Skill": "Restaurant Operation",
+        "Country_Probability": 0.0087,
+        "Qatar_Probability": 0.008679544513912544
+      },
+      {
+        "Skill": "Construction",
+        "Country_Probability": 0.0086,
+        "Qatar_Probability": 0.008605376025081768
+      },
+      {
+        "Skill": "Auditing",
+        "Country_Probability": 0.0069,
+        "Qatar_Probability": 0.006925139271940137
+      },
+      {
+        "Skill": "Oil And Gas",
+        "Country_Probability": 0.0066,
+        "Qatar_Probability": 0.006583597959176199
+      },
+      {
+        "Skill": "Key Performance Indicators (KPIs)",
+        "Country_Probability": 0.0058,
+        "Qatar_Probability": 0.005841913070868449
+      },
+      {
+        "Skill": "Safety Training",
+        "Country_Probability": 0.0057,
+        "Qatar_Probability": 0.005694491753562835
+      }
+    ],
+    "skills_data_38": [
+      {
+        "Skill": "Project Management",
+        "Country_Probability": 0.0215,
+        "Qatar_Probability": 0.015497551524208229
+      },
+      {
+        "Skill": "Marketing",
+        "Country_Probability": 0.017,
+        "Qatar_Probability": 0.015411479450750292
+      },
+      {
+        "Skill": "Finance",
+        "Country_Probability": 0.0138,
+        "Qatar_Probability": 0.011879777457907094
+      },
+      {
+        "Skill": "Accounting",
+        "Country_Probability": 0.0126,
+        "Qatar_Probability": 0.011389899167481605
+      },
+      {
+        "Skill": "Key Performance Indicators (KPIs)",
+        "Country_Probability": 0.0083,
+        "Qatar_Probability": 0.005841913070868449
+      },
+      {
+        "Skill": "Construction",
+        "Country_Probability": 0.0082,
+        "Qatar_Probability": 0.008605376025081768
+      },
+      {
+        "Skill": "Auditing",
+        "Country_Probability": 0.0067,
+        "Qatar_Probability": 0.006925139271940137
+      },
+      {
+        "Skill": "Procurement",
+        "Country_Probability": 0.0067,
+        "Qatar_Probability": 0.0053080830833580565
+      },
+      {
+        "Skill": "Business Development",
+        "Country_Probability": 0.0067,
+        "Qatar_Probability": 0.004073772923557011
+      },
+      {
+        "Skill": "Computer Science",
+        "Country_Probability": 0.0059,
+        "Qatar_Probability": 0.005353866101154831
+      }
+    ],
+    "skills_data_39": [
+      {
+        "Skill": "Marketing",
+        "Country_Probability": 0.0219,
+        "Qatar_Probability": 0.015411479450750292
+      },
+      {
+        "Skill": "Finance",
+        "Country_Probability": 0.0147,
+        "Qatar_Probability": 0.011879777457907094
+      },
+      {
+        "Skill": "Accounting",
+        "Country_Probability": 0.0138,
+        "Qatar_Probability": 0.011389899167481605
+      },
+      {
+        "Skill": "Project Management",
+        "Country_Probability": 0.013,
+        "Qatar_Probability": 0.015497551524208229
+      },
+      {
+        "Skill": "Restaurant Operation",
+        "Country_Probability": 0.0089,
+        "Qatar_Probability": 0.008679544513912544
+      },
+      {
+        "Skill": "Key Performance Indicators (KPIs)",
+        "Country_Probability": 0.0071,
+        "Qatar_Probability": 0.005841913070868449
+      },
+      {
+        "Skill": "Selling Techniques",
+        "Country_Probability": 0.007,
+        "Qatar_Probability": 0.004857578188237793
+      },
+      {
+        "Skill": "Business Development",
+        "Country_Probability": 0.0069,
+        "Qatar_Probability": 0.004073772923557011
+      },
+      {
+        "Skill": "Invoicing",
+        "Country_Probability": 0.0068,
+        "Qatar_Probability": 0.0051460112003574735
+      },
+      {
+        "Skill": "Financial Statements",
+        "Country_Probability": 0.0059,
+        "Qatar_Probability": 0.004645144985660759
+      }
+    ],
+    "dataset_41": [
+      {
+        "esco_occupation": "primary school teacher",
+        "demand_count": 3417,
+        "supply_count": 22335,
+        "met_percent": 86.7311
+      },
+      {
+        "esco_occupation": "labour",
+        "demand_count": 59157,
+        "supply_count": 10484,
+        "met_percent": 15.0544
+      },
+      {
+        "esco_occupation": "Technician",
+        "demand_count": 37639,
+        "supply_count": 7984,
+        "met_percent": 17.4999
+      },
+      {
+        "esco_occupation": "driver",
+        "demand_count": 65050,
+        "supply_count": 7945,
+        "met_percent": 10.8843
+      },
+      {
+        "esco_occupation": "domestic housekeeper",
+        "demand_count": 161,
+        "supply_count": 6427,
+        "met_percent": 97.5562
+      },
+      {
+        "esco_occupation": "administrative assistant",
+        "demand_count": 7893,
+        "supply_count": 5682,
+        "met_percent": 41.8564
+      },
+      {
+        "esco_occupation": "building cleaner",
+        "demand_count": 37337,
+        "supply_count": 4018,
+        "met_percent": 9.7159
+      },
+      {
+        "esco_occupation": "mechanical engineer",
+        "demand_count": 11614,
+        "supply_count": 3620,
+        "met_percent": 23.7626
+      },
+      {
+        "esco_occupation": "primary school teaching assistant",
+        "demand_count": 487,
+        "supply_count": 3248,
+        "met_percent": 86.9612
+      },
+      {
+        "esco_occupation": "accountant",
+        "demand_count": 17809,
+        "supply_count": 3199,
+        "met_percent": 15.2275
+      }
+    ],
+    "dataset_42": [
+      {
+        "esco_occupation": "labour",
+        "demand_count": 59157,
+        "supply_count": 30374,
+        "met_percent": 33.9257
+      },
+      {
+        "esco_occupation": "driver",
+        "demand_count": 65050,
+        "supply_count": 20874,
+        "met_percent": 24.2936
+      },
+      {
+        "esco_occupation": "building cleaner",
+        "demand_count": 37337,
+        "supply_count": 8514,
+        "met_percent": 18.5688
+      },
+      {
+        "esco_occupation": "administrative assistant",
+        "demand_count": 7893,
+        "supply_count": 8172,
+        "met_percent": 50.8683
+      },
+      {
+        "esco_occupation": "accountant",
+        "demand_count": 17809,
+        "supply_count": 7025,
+        "met_percent": 28.2878
+      },
+      {
+        "esco_occupation": "customer service representative",
+        "demand_count": 17154,
+        "supply_count": 6535,
+        "met_percent": 27.5866
+      },
+      {
+        "esco_occupation": "carpenter",
+        "demand_count": 5970,
+        "supply_count": 6500,
+        "met_percent": 52.1251
+      },
+      {
+        "esco_occupation": "business manager",
+        "demand_count": 10590,
+        "supply_count": 6335,
+        "met_percent": 37.4298
+      },
+      {
+        "esco_occupation": "bricklayer",
+        "demand_count": 1837,
+        "supply_count": 5714,
+        "met_percent": 75.6721
+      },
+      {
+        "esco_occupation": "moving truck driver",
+        "demand_count": 5637,
+        "supply_count": 5192,
+        "met_percent": 47.9453
+      }
+    ],
+    "dataset_43": [
+      {
+        "esco_occupation": "labour",
+        "demand_count": 59157,
+        "supply_count": 84072,
+        "met_percent": 58.6976
+      },
+      {
+        "esco_occupation": "driver",
+        "demand_count": 65050,
+        "supply_count": 54730,
+        "met_percent": 45.6921
+      },
+      {
+        "esco_occupation": "building cleaner",
+        "demand_count": 37337,
+        "supply_count": 20136,
+        "met_percent": 35.0356
+      },
+      {
+        "esco_occupation": "accountant",
+        "demand_count": 17809,
+        "supply_count": 15902,
+        "met_percent": 47.1715
+      },
+      {
+        "esco_occupation": "business manager",
+        "demand_count": 10590,
+        "supply_count": 15094,
+        "met_percent": 58.7681
+      },
+      {
+        "esco_occupation": "waiter/waitress",
+        "demand_count": 16161,
+        "supply_count": 14688,
+        "met_percent": 47.6126
+      },
+      {
+        "esco_occupation": "cook",
+        "demand_count": 14579,
+        "supply_count": 13397,
+        "met_percent": 47.8875
+      },
+      {
+        "esco_occupation": "cashier",
+        "demand_count": 9813,
+        "supply_count": 12758,
+        "met_percent": 56.5239
+      },
+      {
+        "esco_occupation": "Technician",
+        "demand_count": 37639,
+        "supply_count": 11236,
+        "met_percent": 22.9893
+      },
+      {
+        "esco_occupation": "administrative assistant",
+        "demand_count": 7893,
+        "supply_count": 10811,
+        "met_percent": 57.8005
+      }
+    ],
+    "dataset_44": [
+      {
+        "esco_occupation": "labour",
+        "demand_count": 59157,
+        "supply_count": 50969,
+        "met_percent": 46.2824
+      },
+      {
+        "esco_occupation": "nurse responsible for general care",
+        "demand_count": 6562,
+        "supply_count": 33862,
+        "met_percent": 83.7671
+      },
+      {
+        "esco_occupation": "driver",
+        "demand_count": 65050,
+        "supply_count": 21887,
+        "met_percent": 25.1757
+      },
+      {
+        "esco_occupation": "Technician",
+        "demand_count": 37639,
+        "supply_count": 12882,
+        "met_percent": 25.4983
+      },
+      {
+        "esco_occupation": "carpenter",
+        "demand_count": 5970,
+        "supply_count": 11175,
+        "met_percent": 65.1794
+      },
+      {
+        "esco_occupation": "commercial sales representative",
+        "demand_count": 14639,
+        "supply_count": 10054,
+        "met_percent": 40.716
+      },
+      {
+        "esco_occupation": "bricklayer",
+        "demand_count": 1837,
+        "supply_count": 9466,
+        "met_percent": 83.7477
+      },
+      {
+        "esco_occupation": "general practitioner",
+        "demand_count": 1579,
+        "supply_count": 8559,
+        "met_percent": 84.4249
+      },
+      {
+        "esco_occupation": "business manager",
+        "demand_count": 10590,
+        "supply_count": 8261,
+        "met_percent": 43.8226
+      },
+      {
+        "esco_occupation": "administrative assistant",
+        "demand_count": 7893,
+        "supply_count": 8137,
+        "met_percent": 50.7611
+      }
+    ],
+    "dataset_45": [
+      {
+        "esco_occupation": "shop supervisor",
+        "demand_count": 40399,
+        "supply_count": 18169,
+        "met_percent": 31.0221
+      },
+      {
+        "esco_occupation": "commercial sales representative",
+        "demand_count": 14639,
+        "supply_count": 17998,
+        "met_percent": 55.146
+      },
+      {
+        "esco_occupation": "business manager",
+        "demand_count": 10590,
+        "supply_count": 16675,
+        "met_percent": 61.159
+      },
+      {
+        "esco_occupation": "administrative assistant",
+        "demand_count": 7893,
+        "supply_count": 12675,
+        "met_percent": 61.6249
+      },
+      {
+        "esco_occupation": "accountant",
+        "demand_count": 17809,
+        "supply_count": 12267,
+        "met_percent": 40.7867
+      },
+      {
+        "esco_occupation": "Technician",
+        "demand_count": 37639,
+        "supply_count": 11954,
+        "met_percent": 24.1042
+      },
+      {
+        "esco_occupation": "customer service representative",
+        "demand_count": 17154,
+        "supply_count": 11485,
+        "met_percent": 40.1027
+      },
+      {
+        "esco_occupation": "mechanical engineer",
+        "demand_count": 11614,
+        "supply_count": 7592,
+        "met_percent": 39.5293
+      },
+      {
+        "esco_occupation": "security guard",
+        "demand_count": 8858,
+        "supply_count": 7570,
+        "met_percent": 46.0799
+      },
+      {
+        "esco_occupation": "building cleaner",
+        "demand_count": 37337,
+        "supply_count": 6617,
+        "met_percent": 15.0544
+      }
+    ],
+    "dataset_46": [
+      {
+        "esco_occupation": "driver",
+        "demand_count": 65050,
+        "supply_count": 323979,
+        "met_percent": 83.2789
+      },
+      {
+        "esco_occupation": "labour",
+        "demand_count": 59157,
+        "supply_count": 240471,
+        "met_percent": 80.2565
+      },
+      {
+        "esco_occupation": "building cleaner",
+        "demand_count": 37337,
+        "supply_count": 120939,
+        "met_percent": 76.4102
+      },
+      {
+        "esco_occupation": "shop supervisor",
+        "demand_count": 40399,
+        "supply_count": 95710,
+        "met_percent": 70.3186
+      },
+      {
+        "esco_occupation": "security guard",
+        "demand_count": 8858,
+        "supply_count": 84840,
+        "met_percent": 90.5462
+      },
+      {
+        "esco_occupation": "construction manager",
+        "demand_count": 19765,
+        "supply_count": 76573,
+        "met_percent": 79.4837
+      },
+      {
+        "esco_occupation": "accountant",
+        "demand_count": 17809,
+        "supply_count": 66920,
+        "met_percent": 78.9812
+      },
+      {
+        "esco_occupation": "customer service representative",
+        "demand_count": 17154,
+        "supply_count": 62469,
+        "met_percent": 78.456
+      },
+      {
+        "esco_occupation": "commercial sales representative",
+        "demand_count": 14639,
+        "supply_count": 56871,
+        "met_percent": 79.5287
+      },
+      {
+        "esco_occupation": "business manager",
+        "demand_count": 10590,
+        "supply_count": 53798,
+        "met_percent": 83.5528
+      }
+    ],
+    "dataset_47": [
+      {
+        "esco_occupation": "labour",
+        "demand_count": 59157,
+        "supply_count": 92396,
+        "met_percent": 60.9661
+      },
+      {
+        "esco_occupation": "driver",
+        "demand_count": 65050,
+        "supply_count": 37875,
+        "met_percent": 36.7986
+      },
+      {
+        "esco_occupation": "Technician",
+        "demand_count": 37639,
+        "supply_count": 32077,
+        "met_percent": 46.011
+      },
+      {
+        "esco_occupation": "shop supervisor",
+        "demand_count": 40399,
+        "supply_count": 20688,
+        "met_percent": 33.8665
+      },
+      {
+        "esco_occupation": "mechanical engineer",
+        "demand_count": 11614,
+        "supply_count": 14565,
+        "met_percent": 55.6362
+      },
+      {
+        "esco_occupation": "business manager",
+        "demand_count": 10590,
+        "supply_count": 13240,
+        "met_percent": 55.5602
+      },
+      {
+        "esco_occupation": "carpenter",
+        "demand_count": 5970,
+        "supply_count": 12478,
+        "met_percent": 67.6388
+      },
+      {
+        "esco_occupation": "moving truck driver",
+        "demand_count": 5637,
+        "supply_count": 12041,
+        "met_percent": 68.1129
+      },
+      {
+        "esco_occupation": "petroleum engineer",
+        "demand_count": 447,
+        "supply_count": 11026,
+        "met_percent": 96.1039
+      },
+      {
+        "esco_occupation": "bricklayer",
+        "demand_count": 1837,
+        "supply_count": 10876,
+        "met_percent": 85.5502
+      }
+    ],
+    "dataset_48": [
+      {
+        "esco_occupation": "waiter/waitress",
+        "demand_count": 16161,
+        "supply_count": 51580,
+        "met_percent": 76.143
+      },
+      {
+        "esco_occupation": "cook",
+        "demand_count": 14579,
+        "supply_count": 45521,
+        "met_percent": 75.7421
+      },
+      {
+        "esco_occupation": "labour",
+        "demand_count": 59157,
+        "supply_count": 45321,
+        "met_percent": 43.3785
+      },
+      {
+        "esco_occupation": "driver",
+        "demand_count": 65050,
+        "supply_count": 38391,
+        "met_percent": 37.1139
+      },
+      {
+        "esco_occupation": "building cleaner",
+        "demand_count": 37337,
+        "supply_count": 24269,
+        "met_percent": 39.3939
+      },
+      {
+        "esco_occupation": "shop supervisor",
+        "demand_count": 40399,
+        "supply_count": 24229,
+        "met_percent": 37.4899
+      },
+      {
+        "esco_occupation": "commercial sales representative",
+        "demand_count": 14639,
+        "supply_count": 23435,
+        "met_percent": 61.5512
+      },
+      {
+        "esco_occupation": "flight attendant",
+        "demand_count": 3719,
+        "supply_count": 17556,
+        "met_percent": 82.5194
+      },
+      {
+        "esco_occupation": "cashier",
+        "demand_count": 9813,
+        "supply_count": 16735,
+        "met_percent": 63.0368
+      },
+      {
+        "esco_occupation": "customer service representative",
+        "demand_count": 17154,
+        "supply_count": 16269,
+        "met_percent": 48.6761
+      }
+    ],
+    "dataset_49": [
+      {
+        "Year": "2004",
+        "TotalPopulation": "773.3324999999999",
+        "Education-bachelor-count": "20.8600006103516",
+        "CalculatedValue": "16131.716422004727"
+      },
+      {
+        "Year": "2005",
+        "TotalPopulation": "825.4074999999999",
+        "Education-bachelor-count": "22.9949998855591",
+        "CalculatedValue": "18980.24536803962"
+      },
+      {
+        "Year": "2006",
+        "TotalPopulation": "972.8310000000001",
+        "Education-bachelor-count": "22.9949998855591",
+        "CalculatedValue": "22370.248733668348"
+      },
+      {
+        "Year": "2007",
+        "TotalPopulation": "1208.595",
+        "Education-bachelor-count": "25.1299991607666",
+        "CalculatedValue": "30371.991335706713"
+      },
+      {
+        "Year": "2008",
+        "TotalPopulation": "1426.9384999999997",
+        "Education-bachelor-count": "21.1599998474121",
+        "CalculatedValue": "30194.018442266442"
+      },
+      {
+        "Year": "2009",
+        "TotalPopulation": "1586.0495000000005",
+        "Education-bachelor-count": "19.2700004577637",
+        "CalculatedValue": "30563.1745910359"
+      },
+      {
+        "Year": "2010",
+        "TotalPopulation": "1709.2295",
+        "Education-bachelor-count": "17.1200008392334",
+        "CalculatedValue": "29262.01047444248"
+      },
+      {
+        "Year": "2011",
+        "TotalPopulation": "1810.9500000000005",
+        "Education-bachelor-count": "18.7999992370605",
+        "CalculatedValue": "34045.85861835472"
+      },
+      {
+        "Year": "2012",
+        "TotalPopulation": "1907.1169999999995",
+        "Education-bachelor-count": "20.8799991607666",
+        "CalculatedValue": "39820.601359483706"
+      },
+      {
+        "Year": "2013",
+        "TotalPopulation": "2032.6409999999996",
+        "Education-bachelor-count": "20.5100002288818",
+        "CalculatedValue": "41689.467375234526"
+      },
+      {
+        "Year": "2014",
+        "TotalPopulation": "2218.3719999999994",
+        "Education-bachelor-count": "20.3099994659424",
+        "CalculatedValue": "45055.134135261564"
+      },
+      {
+        "Year": "2015",
+        "TotalPopulation": "2427.3305",
+        "Education-bachelor-count": "17.8108100891113",
+        "CalculatedValue": "43232.722559007576"
+      },
+      {
+        "Year": "2016",
+        "TotalPopulation": "2599.3720000000017",
+        "Education-bachelor-count": "18.8799991607666",
+        "CalculatedValue": "49076.141178520236"
+      },
+      {
+        "Year": "2017",
+        "TotalPopulation": "2706.709499999999",
+        "Education-bachelor-count": "19.0300006866455",
+        "CalculatedValue": "51508.683643549884"
+      },
+      {
+        "Year": "2018",
+        "TotalPopulation": "2761.142000000003",
+        "Education-bachelor-count": "19.974573135376",
+        "CalculatedValue": "55152.632816158424"
+      },
+      {
+        "Year": "2019",
+        "TotalPopulation": "2797.9209999999994",
+        "Education-bachelor-count": "19.6199398040771",
+        "CalculatedValue": "54895.04159656319"
+      },
+      {
+        "Year": "2020",
+        "TotalPopulation": "2803.375",
+        "Education-bachelor-count": "27.9772491455078",
+        "CalculatedValue": "78430.72082328792"
+      },
+      {
+        "Year": "2021",
+        "TotalPopulation": "2814.981999999998",
+        "Education-bachelor-count": "28.7944869995117",
+        "CalculatedValue": "81055.96260285939"
+      },
+      {
+        "Year": "2022",
+        "TotalPopulation": "2892.4549999999995",
+        "Education-bachelor-count": "30.3899993896484",
+        "CalculatedValue": "87901.70568458544"
+      }
+    ]
+  }
+}

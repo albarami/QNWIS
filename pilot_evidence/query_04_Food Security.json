@@ -1,17 +1,18 @@
 {
   "query": "Assess Qatar's food self-sufficiency levels by major categories",
   "domain": "Food Security",
-  "execution_time": 309.72932958602905,
-  "facts_count": 17,
+  "execution_time": 373.9747281074524,
+  "facts_count": 163,
   "sources": [
-    "FAO STAT - Food Balance",
-    "FAO STAT - Food Security",
-    "FAO STAT - Production",
     "GCC-STAT (live API)",
+    "Perplexity AI (food security analysis with citations)",
     "Perplexity AI (real-time analysis)",
-    "UN Comtrade API"
+    "Perplexity AI (verified citation)",
+    "UN Comtrade API",
+    "World Bank (PostgreSQL cache)",
+    "World Bank Agriculture Indicators"
   ],
-  "confidence": 0.2,
+  "confidence": 0.64,
   "nodes": [
     "classifier",
     "extraction",
@@ -25,9 +26,10 @@
     "synthesis"
   ],
   "warnings": [
+    "Critique flagged outstanding concerns; review recommended.",
     "Fact check flagged missing citations or low confidence."
   ],
   "errors": [],
-  "synthesis": "## Ministerial Intelligence Brief\n\n### Financial\n\u26a0\ufe0f ANALYSIS REJECTED - No citations found. Agent violated citation requirements.\n\n{\n  \"title\": \"Test Finding\",\n  \"summary\": \"This is a test finding from the stub LLM.\",\n  \"metrics\": {\n    \"test_metric\": 42.0\n  },\n  \"analysis\": \"Detailed analysis would go here, including Qatar's unemployment rate of 0.10% compared to peers.\",\n  \"recommendations\": [\n    \"Test recommendation 1\",\n    \"Test recommendation 2\"\n  ],\n  \"confidence\": 0.85,\n  \"citations\": [\n",
-  "passed": false
+  "synthesis": "## Ministerial Intelligence Brief\n\n### Financial\n## \ud83d\udcb0 FINANCIAL ECONOMIST ANALYSIS\n**Analyst:** Senior Financial Economist\n\n### 1. GDP IMPACT CALCULATIONS\n- Baseline tech sector GDP contribution: NOT IN DATA - cannot determine tech sector's specific share of Qatar's $217.98B GDP (Per extraction: World Bank, confidence 99%, 2024)\n- Productivity differential (national vs expatriate): NOT IN DATA - no labor productivity metrics by nationality available in extracted facts\n- GDP impact for each scena",
+  "passed": true
 }

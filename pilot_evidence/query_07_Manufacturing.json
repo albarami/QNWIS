@@ -1,13 +1,14 @@
 {
   "query": "Compare Qatar's industrial competitiveness to GCC countries",
   "domain": "Manufacturing",
-  "execution_time": 28.03308653831482,
-  "facts_count": 13,
+  "execution_time": 96.3680191040039,
+  "facts_count": 141,
   "sources": [
     "GCC-STAT (live API)",
-    "Perplexity AI (real-time analysis)"
+    "Perplexity AI (real-time analysis)",
+    "World Bank (PostgreSQL cache)"
   ],
-  "confidence": 0.2,
+  "confidence": 0.67,
   "nodes": [
     "classifier",
     "extraction",
@@ -21,9 +22,10 @@
     "synthesis"
   ],
   "warnings": [
+    "Critique flagged outstanding concerns; review recommended.",
     "Fact check flagged missing citations or low confidence."
   ],
   "errors": [],
-  "synthesis": "## Ministerial Intelligence Brief\n\n### Financial\n\u26a0\ufe0f ANALYSIS REJECTED - No citations found. Agent violated citation requirements.\n\n{\n  \"title\": \"Test Finding\",\n  \"summary\": \"This is a test finding from the stub LLM.\",\n  \"metrics\": {\n    \"test_metric\": 42.0\n  },\n  \"analysis\": \"Detailed analysis would go here, including Qatar's unemployment rate of 0.10% compared to peers.\",\n  \"recommendations\": [\n    \"Test recommendation 1\",\n    \"Test recommendation 2\"\n  ],\n  \"confidence\": 0.85,\n  \"citations\": [\n",
-  "passed": false
+  "synthesis": "## Ministerial Intelligence Brief\n\n### Financial\n## \ud83d\udcb0 FINANCIAL ECONOMIST ANALYSIS\n**Analyst:** Senior Financial Economist\n\n### 1. GDP IMPACT CALCULATIONS\n- Baseline tech sector GDP contribution: NOT IN DATA - cannot isolate technology sector from broader services component. Per extraction: Services value added 45.911819% of GDP (World Bank, confidence 99%, 2024), but tech subset undefined\n- Productivity differential (national vs expatriate): NOT IN DATA - no productivity metrics by worker natio",
+  "passed": true
 }
