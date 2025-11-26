@@ -64,28 +64,57 @@ async def _generate_llm_critique(
             conclusions.append(f"Agent: {agent_name}\nConfidence: {confidence:.2f}\nConclusion: {narrative[:500]}\n")
     
     if not conclusions:
-        logger.warning("No agent conclusions to critique")
+        logger.warning("No agent conclusions found - attempting to extract from conversation history")
+        # Try to extract from conversation history as fallback
+        # This is critical for parallel mode where agent_reports may be in different format
+        conversation = debate_results.get("conversation_history", [])
+        for turn in conversation[-10:]:  # Last 10 turns often contain synthesis/conclusions
+            if isinstance(turn, dict):
+                msg = turn.get("message", "")
+                agent = turn.get("agent", "Expert")
+                if msg and len(msg) > 100:  # Only substantive messages
+                    conclusions.append(f"Agent: {agent}\nConclusion: {msg[:500]}\n")
+    
+    if not conclusions:
+        logger.warning("Still no conclusions - using scenario syntheses if available")
         return {
-            "critiques": [],
-            "red_flags": ["No agent conclusions available for critique"],
-            "overall_assessment": "Unable to perform critique - no agent analysis available",
+            "critiques": [{
+                "agent_name": "System",
+                "weakness_found": "Agent reports were not available in expected format",
+                "counter_argument": "Verify data aggregation from parallel scenarios",
+                "severity": "medium",
+                "robustness_score": 0.5
+            }],
+            "red_flags": ["Agent conclusions not properly aggregated from parallel scenarios"],
+            "overall_assessment": "Critique limited - agent data not in expected format. Review scenario syntheses directly.",
             "strengthened_by_critique": False,
             "confidence_adjustments": {},
-            "status": "skipped"
+            "status": "partial"
         }
     
     conclusions_text = "\n---\n".join(conclusions)
     
-    # Add debate context
+    # Add debate context - check BOTH locations for conversation history
     debate_context = ""
-    if debate_results:
-        contradictions = debate_results.get("contradictions_found", 0)
-        total_turns = debate_results.get("total_turns", 0)
-        debate_context = f"""
+    conversation = debate_results.get("conversation_history", [])
+    
+    # Extract risk mentions from debate for devil's advocate
+    risk_mentions = []
+    for turn in conversation:
+        if isinstance(turn, dict):
+            msg = turn.get("message", "").lower()
+            if any(w in msg for w in ["risk", "threat", "danger", "catastrophic", "failure", "tail risk"]):
+                risk_mentions.append(f"Turn {turn.get('turn', '?')}: {turn.get('agent', 'Expert')}: {turn.get('message', '')[:200]}")
+    
+    contradictions = debate_results.get("contradictions_found", 0)
+    total_turns = debate_results.get("total_turns", len(conversation))
+    debate_context = f"""
 DEBATE RESULTS:
 - Total debate turns: {total_turns}
 - Contradictions found: {contradictions}
 - Consensus reached: {debate_results.get('consensus_reached', False)}
+- Risk mentions in debate: {len(risk_mentions)}
+{chr(10).join(risk_mentions[:5]) if risk_mentions else '(No specific risks flagged in debate)'}
 """
     
     # Build critique prompt
@@ -258,7 +287,22 @@ async def critique_node_async(state: IntelligenceState) -> IntelligenceState:
     debate_results = state.get("debate_results") or {}
     query = state.get("query", "")
     
-    logger.info(f"Starting devil's advocate critique of {len(agent_reports)} reports")
+    # CRITICAL: In parallel mode, conversation_history is in state directly
+    # Merge it into debate_results so _generate_llm_critique can access it
+    if not debate_results.get("conversation_history") and state.get("conversation_history"):
+        debate_results = dict(debate_results)  # Copy to avoid mutating original
+        debate_results["conversation_history"] = state.get("conversation_history", [])
+        debate_results["total_turns"] = len(debate_results["conversation_history"])
+        logger.info(f"Using aggregated conversation_history with {len(debate_results['conversation_history'])} turns")
+    
+    # Also check aggregate_debate_stats
+    aggregate_stats = state.get("aggregate_debate_stats", {})
+    if aggregate_stats:
+        debate_results["total_turns"] = aggregate_stats.get("total_turns", debate_results.get("total_turns", 0))
+        debate_results["total_challenges"] = aggregate_stats.get("total_challenges", 0)
+        debate_results["total_consensus"] = aggregate_stats.get("total_consensus", 0)
+    
+    logger.info(f"Starting devil's advocate critique of {len(agent_reports)} reports, {debate_results.get('total_turns', 0)} debate turns")
     
     # Generate LLM critique
     critique_results = await _generate_llm_critique(agent_reports, debate_results, query)

@@ -194,35 +194,37 @@ class LegendaryDebateOrchestrator:
     """
     
     # Debate configurations by complexity
+    # CRITICAL: These values determine analytical depth!
+    # Higher turns = more thorough analysis = better ministerial intelligence
     DEBATE_CONFIGS = {
         "simple": {
-            "max_turns": 15,
+            "max_turns": 25,  # Increased from 15 for better coverage
             "phases": {
-                "opening_statements": 4,
-                "challenge_defense": 6,
-                "edge_cases": 2,
-                "risk_analysis": 2,
-                "consensus_building": 1
+                "opening_statements": 6,
+                "challenge_defense": 10,
+                "edge_cases": 4,
+                "risk_analysis": 3,
+                "consensus_building": 2
             }
         },
         "standard": {
-            "max_turns": 30,
+            "max_turns": 50,  # Increased from 30 for deeper analysis
             "phases": {
-                "opening_statements": 7,
-                "challenge_defense": 8,
-                "edge_cases": 6,
-                "risk_analysis": 5,
+                "opening_statements": 10,
+                "challenge_defense": 18,
+                "edge_cases": 10,
+                "risk_analysis": 8,
                 "consensus_building": 4
             }
         },
         "complex": {
-            "max_turns": 40,
+            "max_turns": 80,  # Increased from 40 - FULL DEPTH for ministerial queries
             "phases": {
-                "opening_statements": 8,
-                "challenge_defense": 12,
-                "edge_cases": 8,
-                "risk_analysis": 7,
-                "consensus_building": 5
+                "opening_statements": 15,
+                "challenge_defense": 30,
+                "edge_cases": 15,
+                "risk_analysis": 12,
+                "consensus_building": 8
             }
         }
     }

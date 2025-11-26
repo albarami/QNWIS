@@ -84,6 +84,14 @@ class ParallelDebateExecutor:
             }
         )
         
+        # Emit agent running events - agents run inside parallel scenarios
+        for agent_name in ['financial', 'market', 'operations', 'research']:
+            await self._emit_event(
+                stage=f"agent:{agent_name}",
+                status="running",
+                payload={"agent": agent_name, "parallel_execution": True}
+            )
+        
         # Create tasks for each scenario
         tasks = []
         for i, scenario in enumerate(scenarios):
@@ -108,6 +116,9 @@ class ParallelDebateExecutor:
         successful_results = []
         failed_count = 0
         
+        # Track agents for aggregate events
+        all_agents_seen = set()
+        
         for i, result in enumerate(results):
             if isinstance(result, Exception):
                 logger.error(
@@ -118,6 +129,13 @@ class ParallelDebateExecutor:
             else:
                 successful_results.append(result)
                 logger.info(f"✅ Scenario {scenarios[i]['name']} completed successfully")
+                
+                # Track which agents ran in this scenario
+                if isinstance(result, dict):
+                    for field in ['financial_analysis', 'market_analysis', 'operations_analysis', 'research_analysis']:
+                        if result.get(field):
+                            agent_name = field.replace('_analysis', '')
+                            all_agents_seen.add(agent_name)
                 
                 # Emit progress update after each completion
                 await self._emit_event(
@@ -131,6 +149,20 @@ class ParallelDebateExecutor:
                         "latest_completed": scenarios[i].get('name', f'Scenario {i}')
                     }
                 )
+        
+        # Emit aggregate agent completion events for frontend
+        # Since agents ran inside parallel scenarios, we emit their status now
+        for agent_name in ['financial', 'market', 'operations', 'research']:
+            status = 'complete' if agent_name in all_agents_seen else 'pending'
+            await self._emit_event(
+                stage=f"agent:{agent_name}",
+                status=status,
+                payload={
+                    "agent": agent_name,
+                    "scenarios_completed": len(successful_results),
+                    "parallel_execution": True
+                }
+            )
         
         # Log summary
         elapsed = (datetime.now() - start_time).total_seconds()

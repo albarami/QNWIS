@@ -234,26 +234,48 @@ async def aggregate_scenarios_for_debate_node(state: IntelligenceState) -> Intel
         
         confidence = result.get('confidence_score', result.get('confidence', 0.7))
         
-        # Extract internal agent reports from scenario (if available)
+        # CRITICAL: Extract internal agent reports from scenario
+        # These contain the actual agent analyses that critique needs
         scenario_agent_reports = result.get('agent_reports', [])
-        for sar in scenario_agent_reports:
-            if isinstance(sar, dict):
-                agent_reports.append(sar)
+        if scenario_agent_reports:
+            for sar in scenario_agent_reports:
+                if isinstance(sar, dict) and sar.get('report'):
+                    # Add scenario context to each report
+                    sar_copy = dict(sar)
+                    if isinstance(sar_copy.get('report'), dict):
+                        sar_copy['report']['scenario'] = scenario_name
+                    agent_reports.append(sar_copy)
+                    logger.debug(f"  Added agent report: {sar.get('agent')}")
         
-        # Also create a scenario-level report
-        agent_report = {
-            "agent": scenario_name.replace(' ', '_'),
-            "report": {
-                "narrative": synthesis[:2000] if synthesis else "Analysis completed",
-                "confidence": float(confidence) if confidence else 0.7,
-                "scenario_name": scenario_name,
-                "data_gaps": result.get('warnings', []),
-                "assumptions": result.get('scenario_metadata', {}).get('modified_assumptions', {}),
+        # Also extract individual agent analyses from scenario state
+        for agent_type in ['financial', 'market', 'operations', 'research']:
+            analysis_key = f'{agent_type}_analysis'
+            if result.get(analysis_key):
+                analysis = result[analysis_key]
+                agent_reports.append({
+                    "agent": f"{agent_type}_{scenario_name.replace(' ', '_')}",
+                    "report": {
+                        "narrative": str(analysis)[:2000] if analysis else "",
+                        "confidence": float(confidence) if confidence else 0.7,
+                        "scenario_name": scenario_name,
+                    }
+                })
+        
+        # Create a scenario-level synthesis report
+        if synthesis and len(synthesis) > 50:  # Only if meaningful synthesis
+            agent_report = {
+                "agent": f"Scenario_{scenario_name.replace(' ', '_')}",
+                "report": {
+                    "narrative": synthesis[:2000],
+                    "confidence": float(confidence) if confidence else 0.7,
+                    "scenario_name": scenario_name,
+                    "data_gaps": result.get('warnings', []),
+                    "assumptions": result.get('scenario_metadata', {}).get('modified_assumptions', {}),
+                }
             }
-        }
-        agent_reports.append(agent_report)
+            agent_reports.append(agent_report)
         
-        # Populate agent analysis fields for debate nodes
+        # Populate agent analysis fields for debate nodes (first 4 scenarios)
         agent_fields = ['financial_analysis', 'market_analysis', 'operations_analysis', 'research_analysis']
         if i < len(agent_fields):
             state[agent_fields[i]] = f"[{scenario_name}] {synthesis[:1500] if synthesis else 'Analysis complete'}"
@@ -263,7 +285,7 @@ async def aggregate_scenarios_for_debate_node(state: IntelligenceState) -> Intel
         if scenario_facts:
             all_facts.extend(scenario_facts)
         
-        logger.info(f"  📊 {scenario_name}: {len(synthesis) if synthesis else 0} chars, confidence={confidence}")
+        logger.info(f"  📊 {scenario_name}: {len(synthesis) if synthesis else 0} chars, {len(result.get('agent_reports', []))} internal reports")
     
     # Store aggregated data
     state['agent_reports'] = agent_reports

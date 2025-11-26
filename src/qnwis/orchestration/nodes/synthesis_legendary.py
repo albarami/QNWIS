@@ -138,14 +138,24 @@ def _extract_stats(state: IntelligenceState) -> Dict[str, Any]:
 
 
 def _extract_debate_highlights(state: IntelligenceState) -> Dict[str, Any]:
-    """Extract key debate moments, consensus points, and disagreements."""
+    """Extract key debate moments, consensus points, and disagreements.
+    
+    CRITICAL: In parallel mode, conversation_history is in state directly,
+    not inside debate_results.
+    """
     
     debate_results = state.get("debate_results", {}) or {}
-    conversation = debate_results.get("conversation_history", [])
+    
+    # Check BOTH locations for conversation history (parallel vs single path)
+    conversation = state.get("conversation_history", []) or debate_results.get("conversation_history", [])
+    
+    if not conversation:
+        logger.warning("No conversation history found for debate highlight extraction")
     
     consensus_points = []
     disagreements = []
     breakthrough_insights = []
+    risk_assessments = []  # NEW: Track risk mentions from debate
     expert_contributions = {}
     
     for i, turn in enumerate(conversation):
@@ -192,12 +202,27 @@ def _extract_debate_highlights(state: IntelligenceState) -> Dict[str, Any]:
             })
             if not expert_contributions[agent]["key_insight"]:
                 expert_contributions[agent]["key_insight"] = message[:200]
+        
+        # NEW: Extract risk assessments and catastrophic failure analyses
+        # These are what the devil's advocate should surface
+        risk_keywords = ["risk", "threat", "danger", "catastrophic", "failure", "collapse", 
+                        "tail risk", "recession", "geopolitical", "instability", "vulnerable"]
+        if any(w in message.lower() for w in risk_keywords):
+            risk_assessments.append({
+                "turn": turn_num,
+                "agent": agent,
+                "risk_statement": message[:600],
+                "severity": "high" if any(w in message.lower() for w in ["catastrophic", "collapse", "tail risk"]) else "medium",
+            })
+    
+    logger.info(f"Extracted debate highlights: {len(consensus_points)} consensus, {len(disagreements)} disagreements, {len(risk_assessments)} risk mentions")
     
     return {
         "consensus_points": consensus_points[:6],
         "disagreements": disagreements[:4],
         "breakthrough_insights": breakthrough_insights[:5],
         "expert_contributions": list(expert_contributions.values())[:6],
+        "risk_assessments": risk_assessments[:8],  # NEW: Include risk assessments for devil's advocate
     }
 
 
@@ -313,7 +338,16 @@ Raised by: {d['agent']}
 Challenge: "{d['challenge'][:300]}..."
 """
     
-    # Format risks
+    # Format risk assessments from debate (CRITICAL for Devil's Advocate content)
+    debate_risks_text = ""
+    for i, r in enumerate(debate_highlights.get("risk_assessments", [])[:5], 1):
+        debate_risks_text += f"""
+DEBATE RISK {i}: [Turn {r['turn']}, {r['agent']}]
+Severity: {r['severity'].upper()}
+Expert Quote: "{r['risk_statement'][:400]}..."
+"""
+    
+    # Format risks from risk assessment
     risk_text = ""
     for i, r in enumerate(risks[:5], 1):
         risk_text += f"""
@@ -368,7 +402,10 @@ KEY CONSENSUS POINTS REACHED:
 EXPERT DISAGREEMENTS (Unresolved):
 {disagreement_text}
 
-RISK INTELLIGENCE:
+RISK ASSESSMENTS FROM DEBATE (QUOTE DIRECTLY IN REPORT):
+{debate_risks_text}
+
+ADDITIONAL RISK INTELLIGENCE:
 {risk_text}
 
 KEY FACTS EXTRACTED:
