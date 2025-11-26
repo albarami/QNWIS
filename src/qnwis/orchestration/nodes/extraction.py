@@ -178,6 +178,11 @@ async def _extract_missing_sources(
         logger.info(f"   🕸️ Adding: Knowledge Graph additional extraction")
         tasks.append(_extract_knowledge_graph_additional(query))
     
+    # LMIS - Ministry of Labour Qatar (OFFICIAL DATA)
+    if "LMIS" in missing_sources or "lmis" not in str(already_queried).lower():
+        logger.info(f"   🏛️ Adding: LMIS (Ministry of Labour) official data extraction")
+        tasks.append(_extract_lmis_data(query))
+    
     if tasks:
         logger.info(f"   ⚡ Running {len(tasks)} comprehensive extractors in parallel...")
         results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -331,4 +336,112 @@ async def _extract_semantic_scholar_additional(query: str) -> List[Dict[str, Any
     except Exception as e:
         logger.error(f"Semantic Scholar comprehensive extraction error: {e}")
         return []
+
+
+async def _extract_lmis_data(query: str) -> List[Dict[str, Any]]:
+    """
+    COMPREHENSIVE LMIS extraction from Ministry of Labour API.
+    
+    Extracts from 17+ endpoints:
+    - Main labor market indicators
+    - SDG progress
+    - Sector growth (NDS3, ISIC)
+    - Skills gaps and emerging skills
+    - Qatarization data
+    - Expat workforce dynamics
+    - SME growth metrics
+    """
+    facts = []
+    query_lower = query.lower()
+    
+    try:
+        from src.data.apis.lmis_mol_api import LMISAPIClient
+        
+        client = LMISAPIClient()
+        
+        # Determine which LMIS endpoints are relevant based on query
+        endpoints_to_fetch = []
+        
+        # Always fetch main indicators for Qatar queries
+        if "qatar" in query_lower or "labor" in query_lower or "employment" in query_lower:
+            endpoints_to_fetch.append(("main_indicators", client.get_qatar_main_indicators))
+        
+        # SDG indicators
+        if "sdg" in query_lower or "sustainable" in query_lower or "development goal" in query_lower:
+            endpoints_to_fetch.append(("sdg_indicators", client.get_sdg_indicators))
+        
+        # Sector growth
+        if "sector" in query_lower or "diversification" in query_lower or "growth" in query_lower:
+            endpoints_to_fetch.append(("sector_growth_nds3", lambda: client.get_sector_growth("NDS3")))
+            endpoints_to_fetch.append(("sector_growth_isic", lambda: client.get_sector_growth("ISIC")))
+        
+        # Skills-related queries
+        if "skill" in query_lower or "training" in query_lower or "education" in query_lower:
+            endpoints_to_fetch.append(("top_skills", lambda: client.get_top_skills_by_sector("NDS3")))
+            endpoints_to_fetch.append(("emerging_skills", client.get_emerging_decaying_skills))
+            endpoints_to_fetch.append(("skills_gap", client.get_education_system_skills_gap))
+        
+        # Qatarization queries
+        if "qatarization" in query_lower or "nationalization" in query_lower or "qatari" in query_lower:
+            endpoints_to_fetch.append(("qatari_skills_gap", client.get_qatari_jobseekers_skills_gap))
+        
+        # Expat workforce
+        if "expat" in query_lower or "foreign" in query_lower or "immigrant" in query_lower:
+            endpoints_to_fetch.append(("expat_dominated", client.get_expat_dominated_occupations))
+            endpoints_to_fetch.append(("expat_skills", client.get_attracted_expat_skills))
+            endpoints_to_fetch.append(("top_expat_skills", client.get_top_expat_skills))
+        
+        # SME and business
+        if "sme" in query_lower or "business" in query_lower or "company" in query_lower:
+            endpoints_to_fetch.append(("sme_growth", client.get_sme_growth))
+            endpoints_to_fetch.append(("occupations_by_size", client.get_occupations_by_company_size))
+        
+        # Salary and compensation
+        if "salary" in query_lower or "wage" in query_lower or "compensation" in query_lower:
+            endpoints_to_fetch.append(("best_paid", client.get_best_paid_occupations))
+        
+        # Career mobility
+        if "mobility" in query_lower or "transition" in query_lower or "career" in query_lower:
+            endpoints_to_fetch.append(("occupation_transitions", client.get_occupation_transitions))
+            endpoints_to_fetch.append(("sector_mobility", client.get_sector_mobility))
+        
+        # If no specific triggers, fetch core indicators
+        if not endpoints_to_fetch:
+            endpoints_to_fetch = [
+                ("main_indicators", client.get_qatar_main_indicators),
+                ("sector_growth", lambda: client.get_sector_growth("NDS3")),
+            ]
+        
+        # Fetch data from selected endpoints
+        for endpoint_name, fetch_func in endpoints_to_fetch:
+            try:
+                df = fetch_func()
+                if df is not None and not df.empty:
+                    # Convert DataFrame rows to facts
+                    for _, row in df.iterrows():
+                        fact = {
+                            "metric": endpoint_name,
+                            "data": row.to_dict(),
+                            "source": "LMIS (Ministry of Labour Qatar)",
+                            "source_type": "official_government",
+                            "confidence": 0.95,  # High confidence for official data
+                            "source_priority": 98,  # High priority
+                            "endpoint": endpoint_name,
+                            "cached": False
+                        }
+                        facts.append(fact)
+                        
+                logger.debug(f"   LMIS {endpoint_name}: {len(df) if df is not None else 0} records")
+            except Exception as e:
+                logger.warning(f"   LMIS {endpoint_name} error: {e}")
+                continue
+        
+        logger.info(f"   LMIS COMPREHENSIVE: {len(facts)} official labor market facts")
+        
+    except ImportError:
+        logger.warning("LMIS API client not available")
+    except Exception as e:
+        logger.error(f"LMIS comprehensive extraction error: {e}")
+    
+    return facts
 

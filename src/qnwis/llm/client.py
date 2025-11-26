@@ -1,8 +1,8 @@
 """
 Unified LLM client for QNWIS.
 
-Supports Anthropic Claude and OpenAI GPT with streaming, bounded timeouts,
-jittered retries, and safe logging.
+Supports Anthropic Claude, OpenAI GPT, and Azure OpenAI with streaming,
+bounded timeouts, jittered retries, and safe logging.
 
 CRITICAL: Stub mode is DELETED. System requires real LLM.
 """
@@ -12,6 +12,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 import random
 import time
 from typing import AsyncIterator, Optional, Dict, Any
@@ -29,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 class LLMClient:
     """
-    Unified LLM client supporting Anthropic and OpenAI.
+    Unified LLM client supporting Anthropic, OpenAI, and Azure OpenAI.
     
     Provides streaming generation with automatic retries,
     timeout handling, and fallback support.
@@ -46,7 +47,7 @@ class LLMClient:
         Initialize LLM client.
         
         Args:
-            provider: "anthropic" or "openai" (default from config)
+            provider: "anthropic", "openai", or "azure" (default from config)
             model: Model name (default from config)
             timeout_s: Timeout in seconds
             config: LLMConfig instance (default: load from env)
@@ -64,10 +65,12 @@ class LLMClient:
             self._init_anthropic()
         elif self.provider == "openai":
             self._init_openai()
+        elif self.provider == "azure":
+            self._init_azure_openai()
         else:
             raise ValueError(
                 f"Unknown provider: {self.provider}. "
-                "Use 'anthropic' or 'openai'. Stub mode is deleted."
+                "Use 'anthropic', 'openai', or 'azure'."
             )
         
         logger.info(
@@ -109,6 +112,40 @@ class LLMClient:
             self.client = AsyncOpenAI(
                 api_key=api_key,
                 timeout=self.timeout_s
+            )
+        except ImportError:
+            raise LLMProviderError(
+                "openai package not installed. "
+                "Run: pip install openai"
+            )
+    
+    def _init_azure_openai(self):
+        """Initialize Azure OpenAI client."""
+        try:
+            from openai import AsyncAzureOpenAI
+            
+            api_key = self.config.get_api_key("azure")
+            if not api_key:
+                raise ValueError("AZURE_OPENAI_API_KEY not set")
+            
+            endpoint = self.config.azure_endpoint
+            if not endpoint:
+                raise ValueError("AZURE_OPENAI_ENDPOINT not set")
+            
+            api_version = self.config.azure_api_version
+            
+            self.client = AsyncAzureOpenAI(
+                api_key=api_key,
+                api_version=api_version,
+                azure_endpoint=endpoint,
+                timeout=self.timeout_s
+            )
+            
+            logger.info(
+                "Azure OpenAI client initialized (endpoint=%s, api_version=%s, model=%s)",
+                endpoint[:50] + "..." if len(endpoint) > 50 else endpoint,
+                api_version,
+                self.model
             )
         except ImportError:
             raise LLMProviderError(
@@ -223,10 +260,15 @@ class LLMClient:
                 prompt, system, temperature, max_tokens, stop, extra
             ):
                 yield token
+        elif self.provider == "azure":
+            async for token in self._stream_azure(
+                prompt, system, temperature, max_tokens, stop, extra
+            ):
+                yield token
         else:
             raise ValueError(
                 f"Unknown provider: {self.provider}. "
-                "Use 'anthropic' or 'openai'. Stub mode is deleted."
+                "Use 'anthropic', 'openai', or 'azure'."
             )
     
     async def _stream_anthropic(
@@ -281,6 +323,49 @@ class LLMClient:
         async for chunk in stream:
             if chunk.choices[0].delta.content:
                 yield chunk.choices[0].delta.content
+    
+    async def _stream_azure(
+        self,
+        prompt: str,
+        system: str,
+        temperature: float,
+        max_tokens: int,
+        stop: Optional[list[str]],
+        extra: Dict[str, Any]
+    ) -> AsyncIterator[str]:
+        """
+        Stream from Azure OpenAI.
+        
+        Uses the same API as OpenAI but with Azure-specific endpoint.
+        The model parameter is the Azure deployment name (e.g., 'gpt-5.1-chat').
+        """
+        messages = []
+        if system:
+            messages.append({"role": "system", "content": system})
+        messages.append({"role": "user", "content": prompt})
+        
+        try:
+            stream = await self.client.chat.completions.create(
+                model=self.model,  # This is the deployment name in Azure
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                stop=stop,
+                stream=True,
+                **extra
+            )
+            
+            async for chunk in stream:
+                if chunk.choices and chunk.choices[0].delta.content:
+                    yield chunk.choices[0].delta.content
+        except Exception as e:
+            # Log Azure-specific error details
+            logger.error(
+                "Azure OpenAI streaming error (deployment=%s): %s",
+                self.model,
+                str(e)
+            )
+            raise
     
     async def generate(
         self,

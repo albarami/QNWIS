@@ -27,8 +27,18 @@ def classify_query_node(state: IntelligenceState) -> IntelligenceState:
     - "complex": Full multi-agent analysis
     - "critical": Emergency analysis (parallel execution)
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    # CRITICAL DEBUG - What is the state we receive?
+    logger.warning(f"🔍 classify_query_node received state keys: {list(state.keys())}")
+    logger.warning(f"🔍 classify_query_node state['query'] = {repr(state.get('query', 'NOT_FOUND'))}")
+    logger.warning(f"🔍 classify_query_node state type = {type(state)}")
 
-    query = state["query"].lower()
+    query = state.get("query", "")
+    if not query:
+        logger.error("❌ CRITICAL: Query is empty in classifier node!")
+    query = query.lower()
 
     # Critical: Urgent/emergency queries
     critical_patterns = [
@@ -76,16 +86,17 @@ def classify_query_node(state: IntelligenceState) -> IntelligenceState:
         r"^what are ",               # "What are latest numbers?" (simple fact)
     ]
 
+    # MINISTER-GRADE: Classify all queries as at least "complex"
+    # No query is "simple" when ministers are the audience
     if _matches_any(critical_patterns, query):
         complexity = "critical"
     elif _matches_any(complex_patterns, query):
         complexity = "complex"
-    elif _matches_any(medium_patterns, query):
-        complexity = "medium"
-    elif _matches_any(simple_patterns, query):
-        complexity = "simple"
     else:
-        complexity = "medium"
+        # EVERYTHING ELSE IS COMPLEX - ministers expect thorough analysis
+        complexity = "complex"
+    
+    logger.info(f"✅ Query classified as: {complexity} (minister-grade: full analysis)")
 
     reasoning_chain = state.setdefault("reasoning_chain", [])
     nodes_executed = state.setdefault("nodes_executed", [])

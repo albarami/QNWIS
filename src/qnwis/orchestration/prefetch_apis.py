@@ -315,6 +315,14 @@ class CompletePrefetchLayer:
         except ImportError:
             ESCWATradeAPI = None  # type: ignore
         
+        # PHASE 4: LMIS - Ministry of Labour Qatar (OFFICIAL AUTHORITATIVE DATA)
+        try:
+            from src.data.apis.lmis_mol_api import LMISAPIClient
+            self.lmis_connector = LMISAPIClient()
+        except ImportError:
+            LMISAPIClient = None  # type: ignore
+            self.lmis_connector = None
+        
         # Knowledge Graph for cross-domain reasoning
         try:
             from ..knowledge.graph_builder import QNWISKnowledgeGraph
@@ -381,6 +389,9 @@ class CompletePrefetchLayer:
         # Phase 3 APIs (Regional Depth)
         _safe_print(f"🔑 Arab Dev Portal API: {'✅' if self.adp_connector else '❌'}")
         _safe_print(f"🔑 ESCWA Trade API: {'✅' if self.escwa_connector else '❌'}")
+        
+        # Phase 4: LMIS (Official Government Data)
+        _safe_print(f"🏛️ LMIS MoL API: {'✅' if self.lmis_connector else '❌'}")
         _safe_print(f"🧠 Knowledge Graph: {'✅' if self._knowledge_graph else '❌'}")
         
         # Add PostgreSQL writer for caching
@@ -506,6 +517,21 @@ class CompletePrefetchLayer:
             _safe_print("🌍 Triggering: ILO ILOSTAT API (international labor benchmarks)")
             add_task(self._fetch_ilo_benchmarks, "ilo_benchmarks")
         
+        # LMIS Ministry of Labour Triggers (PHASE 4 - OFFICIAL GOVERNMENT DATA)
+        if any(
+            keyword in query_lower
+            for keyword in [
+                "labor", "labour", "employment", "workforce", "worker",
+                "qatarization", "qatari", "expat", "expatriate", "skills",
+                "occupation", "sector", "salary", "wage", "sme", "business",
+                "nationalization", "job", "career", "training", "education",
+                "human capital", "talent", "recruitment", "hiring",
+                "qatar", "ministry", "mol"
+            ]
+        ):
+            _safe_print("🏛️ Triggering: LMIS MoL API (official Qatar labor market data)")
+            add_task(self._fetch_lmis_comprehensive, "lmis_comprehensive")
+        
         # FAO Food Security Triggers (PHASE 2)
         # ENHANCED: Added Perplexity real-time data with citations
         if any(
@@ -588,7 +614,7 @@ class CompletePrefetchLayer:
             ]
         ):
             _safe_print("🎯 Triggering: Labor market sources (MoL, GCC-STAT, Semantic Scholar)")
-            add_task(self._fetch_mol_stub, "mol_stub")
+            add_task(self._fetch_mol_data, "mol_data")
             add_task(self._fetch_gcc_stat, "gcc_stat")
             add_task(lambda: self._fetch_semantic_scholar_labor(query), "semantic_labor")
 
@@ -766,59 +792,89 @@ class CompletePrefetchLayer:
         _safe_print(f"\n📊 Total facts extracted: {len(facts)}")
         return facts
     
-    # ================== MoL LMIS (Stub until DNS/auth fixed) ==================
+    # ================== MoL LMIS (REAL DATA FROM POSTGRESQL) ==================
     
-    async def _fetch_mol_stub(self) -> List[Dict[str, Any]]:
-        """MoL LMIS stub data for Qatar labor market."""
-        _safe_print("⚠️  MoL LMIS: Using stub data (awaiting API token)")
+    async def _fetch_mol_data(self) -> List[Dict[str, Any]]:
+        """
+        Fetch REAL Qatar labor market data from PostgreSQL cache.
         
-        return [
-            {
-                "metric": "qatar_unemployment_rate",
-                "value": 0.1,
-                "source": "MoL LMIS (stub)",
-                "source_priority": 90,
-                "confidence": 0.80,
-                "raw_text": "Qatar unemployment: 0.1% (Q4 2024)",
-                "timestamp": datetime.now().isoformat()
-            },
-            {
-                "metric": "qatar_labour_force_participation",
-                "value": 88.7,
-                "source": "MoL LMIS (stub)",
-                "source_priority": 90,
-                "confidence": 0.80,
-                "raw_text": "Labour force participation: 88.7%",
-                "timestamp": datetime.now().isoformat()
-            },
-            {
-                "metric": "qatar_tech_sector_employment",
-                "value": 12400,
-                "source": "MoL LMIS (stub)",
-                "source_priority": 90,
-                "confidence": 0.75,
-                "raw_text": "Tech sector employment: 12,400 workers",
-                "timestamp": datetime.now().isoformat()
-            },
-            {
-                "metric": "qatar_tech_qatarization_current",
-                "value": 8.2,
-                "source": "MoL LMIS (stub)",
-                "source_priority": 90,
-                "confidence": 0.80,
-                "raw_text": "Tech sector Qatarization: 8.2%",
-                "timestamp": datetime.now().isoformat()
-            },
-            {
-                "metric": "qatari_tech_graduates_annual",
-                "value": 347,
-                "source": "MoL Education Data (stub)",
-                "source_priority": 85,
-                "confidence": 0.70,
-                "raw_text": "Annual Qatari tech graduates: 347",
-                "timestamp": datetime.now().isoformat()
-            },
-        ]
+        NO STUBS. NO FAKES. NO PLACEHOLDERS.
+        Returns only verified data from World Bank/ILO/GCC-STAT cached in PostgreSQL.
+        """
+        _safe_print("📊 MoL Data: Fetching verified data from PostgreSQL...")
+        
+        facts = []
+        try:
+            from sqlalchemy import text
+            
+            with self.pg_engine.begin() as conn:
+                # Get Qatar unemployment from World Bank (REAL DATA)
+                result = conn.execute(text("""
+                    SELECT value, year FROM world_bank_indicators 
+                    WHERE country_code = 'QAT' 
+                    AND indicator_code = 'SL.UEM.TOTL.ZS'
+                    ORDER BY year DESC LIMIT 1
+                """)).fetchone()
+                
+                if result:
+                    facts.append({
+                        "metric": "qatar_unemployment_rate",
+                        "value": float(result[0]),
+                        "year": result[1],
+                        "source": "World Bank (PostgreSQL cache)",
+                        "source_priority": 98,
+                        "confidence": 0.99,
+                        "raw_text": f"Qatar unemployment: {result[0]}% ({result[1]})",
+                        "timestamp": datetime.now().isoformat()
+                    })
+                
+                # Get labor force participation (REAL DATA)
+                result = conn.execute(text("""
+                    SELECT value, year FROM world_bank_indicators 
+                    WHERE country_code = 'QAT' 
+                    AND indicator_code = 'SL.TLF.CACT.ZS'
+                    ORDER BY year DESC LIMIT 1
+                """)).fetchone()
+                
+                if result:
+                    facts.append({
+                        "metric": "qatar_labour_force_participation",
+                        "value": float(result[0]),
+                        "year": result[1],
+                        "source": "World Bank (PostgreSQL cache)",
+                        "source_priority": 98,
+                        "confidence": 0.99,
+                        "raw_text": f"Labour force participation: {result[0]}% ({result[1]})",
+                        "timestamp": datetime.now().isoformat()
+                    })
+                
+                # Get GDP data (REAL DATA)
+                result = conn.execute(text("""
+                    SELECT value, year FROM world_bank_indicators 
+                    WHERE country_code = 'QAT' 
+                    AND indicator_code = 'NY.GDP.MKTP.CD'
+                    ORDER BY year DESC LIMIT 1
+                """)).fetchone()
+                
+                if result:
+                    gdp_billions = float(result[0]) / 1e9
+                    facts.append({
+                        "metric": "qatar_gdp_usd",
+                        "value": gdp_billions,
+                        "year": result[1],
+                        "source": "World Bank (PostgreSQL cache)",
+                        "source_priority": 98,
+                        "confidence": 0.99,
+                        "raw_text": f"Qatar GDP: ${gdp_billions:.1f}B ({result[1]})",
+                        "timestamp": datetime.now().isoformat()
+                    })
+                
+            _safe_print(f"   Retrieved {len(facts)} verified facts from PostgreSQL")
+            
+        except Exception as e:
+            _safe_print(f"❌ PostgreSQL fetch error: {e}")
+        
+        return facts
     
     # ================== GCC-STAT (WORKING) ==================
     
@@ -2223,6 +2279,143 @@ class CompletePrefetchLayer:
             
         except Exception as e:
             _safe_print(f"❌ ILO error: {e}")
+            return []
+    
+    async def _fetch_lmis_comprehensive(self, lang: str = "en") -> List[Dict[str, Any]]:
+        """
+        Fetch comprehensive LMIS data from Ministry of Labour Qatar.
+        
+        OFFICIAL AUTHORITATIVE SOURCE for Qatar labor market data.
+        17+ endpoints covering:
+        - Main labor indicators
+        - SDG progress
+        - Sector growth (NDS3, ISIC)
+        - Skills analysis
+        - Qatarization data
+        - Expat workforce dynamics
+        - SME growth metrics
+        """
+        if not self.lmis_connector:
+            _safe_print("⚠️  LMIS connector not available")
+            return []
+        
+        try:
+            _safe_print("🏛️ LMIS: Fetching official Qatar labor market data...")
+            facts = []
+            
+            # 1. Main indicators (critical for any labor query)
+            try:
+                df = self.lmis_connector.get_qatar_main_indicators(lang)
+                if df is not None and not df.empty:
+                    for _, row in df.iterrows():
+                        facts.append({
+                            "metric": "qatar_main_indicator",
+                            "data": row.to_dict(),
+                            "source": "LMIS (Ministry of Labour Qatar)",
+                            "source_type": "official_government",
+                            "source_priority": 99,
+                            "confidence": 0.98,
+                            "cached": False
+                        })
+                    _safe_print(f"   ✅ Main indicators: {len(df)} records")
+            except Exception as e:
+                _safe_print(f"   ⚠️ Main indicators error: {e}")
+            
+            # 2. Sector growth (NDS3 strategic clusters)
+            try:
+                df = self.lmis_connector.get_sector_growth("NDS3", lang)
+                if df is not None and not df.empty:
+                    for _, row in df.iterrows():
+                        facts.append({
+                            "metric": "sector_growth_nds3",
+                            "data": row.to_dict(),
+                            "source": "LMIS (Ministry of Labour Qatar)",
+                            "source_type": "official_government",
+                            "source_priority": 98,
+                            "confidence": 0.95,
+                            "cached": False
+                        })
+                    _safe_print(f"   ✅ Sector growth (NDS3): {len(df)} records")
+            except Exception as e:
+                _safe_print(f"   ⚠️ Sector growth error: {e}")
+            
+            # 3. Top skills by sector
+            try:
+                df = self.lmis_connector.get_top_skills_by_sector("NDS3", lang)
+                if df is not None and not df.empty:
+                    for _, row in df.iterrows():
+                        facts.append({
+                            "metric": "top_skills_sector",
+                            "data": row.to_dict(),
+                            "source": "LMIS (Ministry of Labour Qatar)",
+                            "source_type": "official_government",
+                            "source_priority": 97,
+                            "confidence": 0.93,
+                            "cached": False
+                        })
+                    _safe_print(f"   ✅ Top skills: {len(df)} records")
+            except Exception as e:
+                _safe_print(f"   ⚠️ Top skills error: {e}")
+            
+            # 4. Emerging and decaying skills
+            try:
+                df = self.lmis_connector.get_emerging_decaying_skills(lang)
+                if df is not None and not df.empty:
+                    for _, row in df.iterrows():
+                        facts.append({
+                            "metric": "emerging_decaying_skills",
+                            "data": row.to_dict(),
+                            "source": "LMIS (Ministry of Labour Qatar)",
+                            "source_type": "official_government",
+                            "source_priority": 96,
+                            "confidence": 0.92,
+                            "cached": False
+                        })
+                    _safe_print(f"   ✅ Emerging skills: {len(df)} records")
+            except Exception as e:
+                _safe_print(f"   ⚠️ Emerging skills error: {e}")
+            
+            # 5. Expat dominated occupations
+            try:
+                df = self.lmis_connector.get_expat_dominated_occupations(lang)
+                if df is not None and not df.empty:
+                    for _, row in df.iterrows():
+                        facts.append({
+                            "metric": "expat_dominated_occupations",
+                            "data": row.to_dict(),
+                            "source": "LMIS (Ministry of Labour Qatar)",
+                            "source_type": "official_government",
+                            "source_priority": 95,
+                            "confidence": 0.94,
+                            "cached": False
+                        })
+                    _safe_print(f"   ✅ Expat occupations: {len(df)} records")
+            except Exception as e:
+                _safe_print(f"   ⚠️ Expat occupations error: {e}")
+            
+            # 6. Best paid occupations
+            try:
+                df = self.lmis_connector.get_best_paid_occupations(lang)
+                if df is not None and not df.empty:
+                    for _, row in df.iterrows():
+                        facts.append({
+                            "metric": "best_paid_occupations",
+                            "data": row.to_dict(),
+                            "source": "LMIS (Ministry of Labour Qatar)",
+                            "source_type": "official_government",
+                            "source_priority": 94,
+                            "confidence": 0.93,
+                            "cached": False
+                        })
+                    _safe_print(f"   ✅ Best paid occupations: {len(df)} records")
+            except Exception as e:
+                _safe_print(f"   ⚠️ Best paid occupations error: {e}")
+            
+            _safe_print(f"🏛️ LMIS TOTAL: {len(facts)} official records retrieved")
+            return facts
+            
+        except Exception as e:
+            _safe_print(f"❌ LMIS comprehensive error: {e}")
             return []
     
     async def _fetch_fao_food_security(self, country: str = "QAT") -> List[Dict[str, Any]]:

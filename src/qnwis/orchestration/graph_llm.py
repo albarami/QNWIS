@@ -551,7 +551,9 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
             classification = state.get("classification", {}) or {}
             complexity = classification.get("complexity", "medium")
 
-            if complexity in {"complex", "critical"}:
+            # MINISTER-GRADE: ALL queries get full agent team
+            # No query is "simple" when the minister is watching
+            if complexity in {"complex", "critical", "medium", "simple"}:
                 selected_agent_names = [
                     "MicroEconomist",
                     "MacroEconomist",
@@ -567,7 +569,7 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
                     "selected_count": len(selected_agent_names),
                     "total_available": total_available,
                     "savings": "0%",
-                    "agents": {name: {"description": "LEGENDARY depth override"} for name in selected_agent_names},
+                    "agents": {name: {"description": "MINISTER-GRADE: Full analysis for all queries"} for name in selected_agent_names},
                     "mode": mode,
                 }
             else:

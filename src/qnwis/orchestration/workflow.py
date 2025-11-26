@@ -65,18 +65,28 @@ async def scenario_generation_node(state: IntelligenceState) -> IntelligenceStat
     Checks if parallel scenario analysis is enabled and generates 4-6 scenarios
     for simultaneous execution across GPUs 0-5.
     """
-    # Check if parallel scenarios are enabled
-    if not state.get('enable_parallel_scenarios', True):
+    # CRITICAL DEBUG
+    logger.warning(f"🔍 scenario_generation_node: enable_parallel_scenarios = {state.get('enable_parallel_scenarios')}")
+    logger.warning(f"🔍 scenario_generation_node: complexity = {state.get('complexity')}")
+    logger.warning(f"🔍 scenario_generation_node: query length = {len(state.get('query', ''))}")
+    
+    # Check if parallel scenarios are enabled - ALWAYS default to True for complex queries
+    enable_parallel = state.get('enable_parallel_scenarios')
+    if enable_parallel is None:
+        enable_parallel = True  # Default to True if not set
+        logger.warning("🔧 enable_parallel_scenarios was None, defaulting to True")
+    
+    if not enable_parallel:
         logger.info("Parallel scenarios disabled, using single analysis path")
         state['scenarios'] = None
         return state
     
-    # Check if complexity warrants parallel analysis
+    # MINISTER-GRADE: ALL queries get full analysis
+    # NO QUERY IS "SIMPLE" FOR MINISTERIAL INTELLIGENCE
     complexity = state.get('complexity', 'medium')
-    if complexity == 'simple':
-        logger.info("Simple query detected, skipping parallel scenarios")
-        state['scenarios'] = None
-        return state
+    # REMOVED: Skip logic for simple queries
+    # ALL queries go through full parallel scenario analysis
+    logger.info(f"Query complexity: {complexity} - proceeding with FULL analysis (minister-grade)")
     
     try:
         logger.info("Generating scenarios for parallel analysis...")
@@ -322,17 +332,10 @@ def create_intelligence_graph() -> StateGraph:
     # === Main flow ===
     workflow.add_edge("classifier", "extraction")
     
-    # === Conditional routing based on complexity ===
-    # Simple queries skip agents and go directly to synthesis
-    # Medium/Complex queries go through scenario generation
-    workflow.add_conditional_edges(
-        "extraction",
-        lambda state: "simple" if state.get("complexity") == "simple" else "scenario_gen",
-        {
-            "simple": "synthesis",       # Fast path for simple queries
-            "scenario_gen": "scenario_gen"  # Full analysis path
-        }
-    )
+    # === MINISTER-GRADE: ALL QUERIES GET FULL ANALYSIS ===
+    # NO SHORTCUTS - Every query goes through scenario generation and agents
+    # The "simple" path is REMOVED - ministers expect thorough analysis
+    workflow.add_edge("extraction", "scenario_gen")  # Direct edge - no conditions
     
     # === Conditional routing after scenario generation ===
     # If scenarios generated → parallel path

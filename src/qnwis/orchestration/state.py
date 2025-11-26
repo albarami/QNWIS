@@ -12,8 +12,19 @@ from typing import Annotated, Any, Callable, Dict, List, Optional, TypedDict
 
 
 def keep_first(existing: Any, new: Any) -> Any:
-    """Reducer that keeps the first (original) value, ignoring updates."""
-    if existing is not None:
+    """Reducer that keeps the first NON-DEFAULT value."""
+    # For the initial merge from input state, prefer the new (input) value if existing is default
+    # Default values: None, empty string, empty list, False (for bool)
+    is_default = (
+        existing is None or 
+        existing == "" or 
+        existing == [] or 
+        (isinstance(existing, bool) and existing is False)
+    )
+    if is_default and new is not None:
+        return new
+    # After initial merge, keep the existing value
+    if existing is not None and existing != "" and existing != []:
         return existing
     return new
 
