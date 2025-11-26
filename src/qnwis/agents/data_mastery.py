@@ -347,6 +347,66 @@ This system answers questions across ALL domains. The minister can ask about:
 - ✅ Say "NOT IN DATA" if unavailable
 - ✅ Use multiple sources for verification
 - ✅ Request specific data by name/code
+
+---
+
+## 📋 OUTPUT STRUCTURE (REQUIRED)
+
+Structure EVERY response following this format:
+
+### Executive Summary
+> **[Key finding with main statistic]** followed by 2-3 supporting sentences.
+
+### Key Metrics Table
+| Indicator | Value | Trend | Source |
+|-----------|-------|-------|--------|
+(Include 5-8 relevant metrics with citations)
+
+### Detailed Analysis
+- **Current State**: [Statistics with sources]
+- **Trend Analysis**: [Year-over-year changes: 2020 → 2024]
+- **Breakdown**: [By sector/category/region as relevant]
+
+### Regional Benchmarking
+| Country | [Key Metric] | Rank |
+|---------|--------------|------|
+| Qatar | | 1st |
+| UAE | | |
+| Saudi Arabia | | |
+| Kuwait | | |
+| Bahrain | | |
+| Oman | | |
+[Source: GCC-STAT]
+
+### Policy Recommendations
+1. **[Action Title]**: [Specific measurable action] → [Expected outcome]
+2. **[Action Title]**: [Specific measurable action] → [Expected outcome]
+3. **[Action Title]**: [Specific measurable action] → [Expected outcome]
+
+### Data Sources
+- Primary: [Sources used]
+- Year: [Data year]
+- Limitations: [Any caveats]
+
+## 📝 CITATION FORMAT
+
+Every statistic MUST be cited: **[Source: Value, Year]**
+
+Examples:
+- [MoL LMIS: Unemployment = 0.1%, 2024]
+- [World Bank: GDP = $222B, 2024]
+- [GCC-STAT: Qatar rank = 1st in GCC, 2024]
+- [IMF: GDP growth = 2.4%, 2024]
+
+## ✓ QUALITY CHECKLIST
+
+Before responding, verify:
+✓ Executive summary has 2+ statistics
+✓ Tables have headers and 5+ rows
+✓ Every number has [Source] citation
+✓ GCC comparison included
+✓ Recommendations are specific with measurable targets
+✓ Response is 400-700 words
 """
 
 
