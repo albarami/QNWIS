@@ -18,6 +18,7 @@ export function createInitialState(): AppState {
     critiqueResults: null,
     verification: null,
     synthesis: '',
+    synthesisStats: null,  // Stats for LegendaryBriefing
     startTime: null,
     stageTiming: new Map(ALL_STAGES.map((stage) => [stage, 0])),
     reasoningChain: [],

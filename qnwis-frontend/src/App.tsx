@@ -254,13 +254,17 @@ function App() {
             <LegendaryBriefing 
               synthesis={state.synthesis} 
               confidence={state.finalState?.confidence || 0.75}
-              stats={{
-                n_facts: state.extractedFacts?.length || 0,
-                n_scenarios: state.scenarioProgress?.size || 6,
-                n_turns: state.debate?.total_turns || 0,
-                n_experts: 6,
-                n_challenges: state.debate?.contradictions_found || 0,
-                n_consensus: state.debate?.resolved || 0,
+              stats={state.synthesisStats || {
+                n_facts: state.prefetchFacts?.length || 0,
+                n_sources: 4,
+                n_scenarios: state.scenarioResults?.length || state.totalScenarios || 6,
+                n_turns: state.debateResults?.total_turns || state.debateTurns?.length || 0,
+                n_experts: state.selectedAgents?.length || 6,
+                n_challenges: state.debateResults?.contradictions_found || 0,
+                n_consensus: state.debateResults?.resolved || 0,
+                n_critiques: state.critiqueResults?.critiques?.length || 0,
+                n_red_flags: state.critiqueResults?.red_flags?.length || 0,
+                avg_confidence: 75,
               }}
             />
           </section>

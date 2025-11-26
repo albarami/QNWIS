@@ -202,68 +202,131 @@ async def aggregate_scenarios_for_debate_node(state: IntelligenceState) -> Intel
     """
     Aggregate scenario results into agent analysis format for main debate.
     
+    CRITICAL: This node populates agent_reports which critique and synthesis need.
     After parallel execution, prepares state for cross-scenario debate
     by converting scenario results into agent analyses format.
-    Also populates agent_reports for critique and verification stages.
     """
     scenario_results = state.get('scenario_results', [])
     if not scenario_results:
-        logger.info("No scenario results to aggregate")
+        logger.warning("⚠️ No scenario results to aggregate - critique will have no data!")
         return state
     
-    logger.info(f"Aggregating {len(scenario_results)} scenario results for main debate...")
+    logger.info(f"🔄 Aggregating {len(scenario_results)} scenario results for main debate...")
     
-    # Initialize agent_reports if not present
-    agent_reports = state.setdefault('agent_reports', [])
+    # Initialize agent_reports
+    agent_reports = []
     
-    # Create synthetic agent analyses from scenario results
-    # Each scenario's synthesis becomes an "agent" position for the main debate
+    # Also aggregate extracted facts from all scenarios
+    all_facts = state.get('extracted_facts', [])
+    
+    # Create agent reports from scenario results
+    # Each scenario's analysis becomes an "agent" position for the main debate
     for i, result in enumerate(scenario_results):
         scenario_name = result.get('scenario_name', f'Scenario {i+1}')
-        synthesis = result.get('synthesis', result.get('final_synthesis', ''))
-        confidence = result.get('confidence_score', 0.7)
         
-        # Create agent report for each scenario
+        # Get synthesis - try multiple field names
+        synthesis = (
+            result.get('final_synthesis') or 
+            result.get('synthesis') or 
+            result.get('meta_synthesis') or
+            f"Analysis for {scenario_name} completed"
+        )
+        
+        confidence = result.get('confidence_score', result.get('confidence', 0.7))
+        
+        # Extract internal agent reports from scenario (if available)
+        scenario_agent_reports = result.get('agent_reports', [])
+        for sar in scenario_agent_reports:
+            if isinstance(sar, dict):
+                agent_reports.append(sar)
+        
+        # Also create a scenario-level report
         agent_report = {
-            "agent": f"Scenario_{i+1}_{scenario_name.replace(' ', '_')}",
+            "agent": scenario_name.replace(' ', '_'),
             "report": {
-                "narrative": synthesis,
-                "confidence": confidence,
+                "narrative": synthesis[:2000] if synthesis else "Analysis completed",
+                "confidence": float(confidence) if confidence else 0.7,
                 "scenario_name": scenario_name,
                 "data_gaps": result.get('warnings', []),
                 "assumptions": result.get('scenario_metadata', {}).get('modified_assumptions', {}),
-                "citations": []  # Scenarios aggregate multiple citations
             }
         }
         agent_reports.append(agent_report)
         
-        # Add as agent analysis for debate nodes to process
-        if i == 0:
-            state['financial_analysis'] = f"[{scenario_name}] {synthesis}"
-        elif i == 1:
-            state['market_analysis'] = f"[{scenario_name}] {synthesis}"
-        elif i == 2:
-            state['operations_analysis'] = f"[{scenario_name}] {synthesis}"
-        elif i == 3:
-            state['research_analysis'] = f"[{scenario_name}] {synthesis}"
+        # Populate agent analysis fields for debate nodes
+        agent_fields = ['financial_analysis', 'market_analysis', 'operations_analysis', 'research_analysis']
+        if i < len(agent_fields):
+            state[agent_fields[i]] = f"[{scenario_name}] {synthesis[:1500] if synthesis else 'Analysis complete'}"
+        
+        # Aggregate facts from scenarios
+        scenario_facts = result.get('extracted_facts', [])
+        if scenario_facts:
+            all_facts.extend(scenario_facts)
+        
+        logger.info(f"  📊 {scenario_name}: {len(synthesis) if synthesis else 0} chars, confidence={confidence}")
+    
+    # Store aggregated data
+    state['agent_reports'] = agent_reports
+    state['extracted_facts'] = all_facts
     
     # Store all scenario syntheses for debate context
     state['scenario_syntheses'] = [
         {
             'name': r.get('scenario_name', f'Scenario {i+1}'),
-            'synthesis': r.get('synthesis', r.get('final_synthesis', ''))
+            'synthesis': r.get('final_synthesis') or r.get('synthesis') or ''
         }
         for i, r in enumerate(scenario_results)
     ]
     
-    # Update agent count
-    state['agent_reports'] = agent_reports
+    # Aggregate debate conversation history from all scenarios
+    all_conversation_history = state.get('conversation_history', [])
+    total_debate_turns = 0
+    total_challenges = 0
+    total_consensus = 0
+    
+    for i, result in enumerate(scenario_results):
+        scenario_name = result.get('scenario_name', f'Scenario {i+1}')
+        
+        # Collect conversation history
+        scenario_history = result.get('conversation_history', [])
+        for msg in scenario_history:
+            if isinstance(msg, dict):
+                msg['scenario'] = scenario_name
+                all_conversation_history.append(msg)
+        
+        # Collect debate statistics
+        scenario_debate = result.get('debate_results', {})
+        if scenario_debate:
+            total_debate_turns += scenario_debate.get('total_turns', 0)
+            total_challenges += len(scenario_debate.get('challenges', []))
+            total_consensus += len([r for r in scenario_debate.get('resolutions', []) if r.get('consensus_reached')])
+    
+    state['conversation_history'] = all_conversation_history
+    
+    # Store aggregate debate statistics for synthesis to use
+    state['aggregate_debate_stats'] = {
+        'total_turns': total_debate_turns,
+        'total_challenges': total_challenges,
+        'total_consensus': total_consensus,
+        'scenarios_analyzed': len(scenario_results)
+    }
+    
+    # Calculate data quality score from scenarios
+    confidences = [r.get('confidence_score', r.get('confidence', 0.7)) for r in scenario_results]
+    avg_confidence = sum(confidences) / len(confidences) if confidences else 0.7
+    state['data_quality_score'] = avg_confidence
+    state['confidence_score'] = avg_confidence  # Also set main confidence score
     
     state['reasoning_chain'].append(
-        f"✅ Aggregated {len(scenario_results)} scenarios for cross-scenario debate, created {len(agent_reports)} agent reports"
+        f"✅ Aggregated {len(scenario_results)} scenarios: {len(agent_reports)} agent reports, "
+        f"{len(all_facts)} facts, {total_debate_turns} debate turns"
     )
     
-    logger.info(f"✅ Scenario aggregation complete: {len(agent_reports)} agent reports created")
+    logger.info(
+        f"✅ Aggregation complete: {len(agent_reports)} agent reports, "
+        f"{len(all_facts)} facts, {total_debate_turns} debate turns, "
+        f"{total_challenges} challenges, {total_consensus} consensus points"
+    )
     return state
 
 

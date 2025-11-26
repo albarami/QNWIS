@@ -245,6 +245,20 @@ export interface ScenarioProgress {
   results?: Record<string, unknown> // Scenario analysis results when complete
 }
 
+// Stats for the Legendary Briefing
+export interface SynthesisStats {
+  n_facts: number
+  n_sources: number
+  n_scenarios: number
+  n_experts: number
+  n_turns: number
+  n_challenges: number
+  n_consensus: number
+  n_critiques: number
+  n_red_flags: number
+  avg_confidence: number
+}
+
 export interface AppState {
   connectionStatus: WorkflowStatus
   isStreaming: boolean
@@ -262,6 +276,7 @@ export interface AppState {
   critiqueResults: CritiqueResults | null
   verification: VerificationResult | null
   synthesis: string
+  synthesisStats: SynthesisStats | null  // Stats for LegendaryBriefing
   startTime: string | null
   stageTiming: Map<WorkflowStage, number>
   reasoningChain: string[]

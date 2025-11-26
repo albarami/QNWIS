@@ -50,12 +50,35 @@ def _extract_stats(state: IntelligenceState) -> Dict[str, Any]:
                 confidences.append(float(conf))
     avg_confidence = sum(confidences) / len(confidences) * 100 if confidences else 75
     
-    # Extract debate statistics
+    # Extract debate statistics - first check aggregate stats from parallel scenarios
+    aggregate_stats = state.get("aggregate_debate_stats", {})
     debate_results = state.get("debate_results", {}) or {}
-    conversation = debate_results.get("conversation_history", [])
-    n_turns = len(conversation) if conversation else debate_results.get("total_turns", 0)
     
-    # Count unique experts
+    # Use aggregate stats if available (from parallel execution), otherwise use main debate_results
+    if aggregate_stats:
+        n_turns = aggregate_stats.get("total_turns", 0)
+        n_challenges = aggregate_stats.get("total_challenges", 0)
+        n_consensus = aggregate_stats.get("total_consensus", 0)
+        logger.info(f"Using aggregate stats: {n_turns} turns, {n_challenges} challenges, {n_consensus} consensus")
+    else:
+        conversation = debate_results.get("conversation_history", [])
+        n_turns = len(conversation) if conversation else debate_results.get("total_turns", 0)
+        n_challenges = 0
+        n_consensus = 0
+        for turn in conversation:
+            if isinstance(turn, dict):
+                turn_type = turn.get("type", "")
+                message = turn.get("message", "").lower()
+                if turn_type == "challenge" or "challenge" in message:
+                    n_challenges += 1
+                if turn_type in ["consensus", "resolution", "consensus_synthesis"] or \
+                   any(w in message for w in ["agree", "consensus", "concur"]):
+                    n_consensus += 1
+    
+    # Get full conversation history (aggregated or single path)
+    conversation = state.get("conversation_history", []) or debate_results.get("conversation_history", [])
+    
+    # Count unique experts from conversation
     experts = set()
     for turn in conversation:
         if isinstance(turn, dict):
@@ -63,19 +86,6 @@ def _extract_stats(state: IntelligenceState) -> Dict[str, Any]:
             if agent:
                 experts.add(agent)
     n_experts = len(experts) if experts else 6
-    
-    # Count challenges and consensus
-    n_challenges = 0
-    n_consensus = 0
-    for turn in conversation:
-        if isinstance(turn, dict):
-            turn_type = turn.get("type", "")
-            message = turn.get("message", "").lower()
-            if turn_type == "challenge" or "challenge" in message:
-                n_challenges += 1
-            if turn_type in ["consensus", "resolution", "consensus_synthesis"] or \
-               any(w in message for w in ["agree", "consensus", "concur"]):
-                n_consensus += 1
     
     # Get critique stats
     critique = state.get("critique_results", {}) or {}

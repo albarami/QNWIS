@@ -490,6 +490,10 @@ function reduceEvent(state: AppState, event: WorkflowEvent): AppState {
     if (payload?.final_synthesis) {
       next.synthesis = payload.final_synthesis
     }
+    // Capture stats for LegendaryBriefing
+    if (payload?.stats) {
+      next.synthesisStats = payload.stats
+    }
     if (event.status === 'complete') {
       next.completedStages.add('meta_synthesis')
       if (event.latency_ms) {
@@ -516,6 +520,10 @@ function reduceEvent(state: AppState, event: WorkflowEvent): AppState {
       next.synthesis = `${next.synthesis}${token}`
     } else if (event.status === 'complete') {
       next.synthesis = payload?.text ?? payload?.final_synthesis ?? next.synthesis
+      // Capture stats for LegendaryBriefing
+      if (payload?.stats) {
+        next.synthesisStats = payload.stats
+      }
       next.completedStages.add('synthesize')
       if (event.latency_ms) {
         next.stageTiming.set('synthesize', event.latency_ms)

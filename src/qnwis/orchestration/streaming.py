@@ -309,15 +309,78 @@ def _payload_for_stage(stage: str, state: Dict[str, Any]) -> Dict[str, Any]:
                 sanitized_results.append(sanitized)
             else:
                 sanitized_results.append(r)
+        
+        # Build comprehensive stats for LegendaryBriefing
+        facts = state.get("extracted_facts", [])
+        aggregate_stats = state.get("aggregate_debate_stats", {})
+        debate_results = state.get("debate_results", {}) or {}
+        critique_results = state.get("critique_results", {}) or {}
+        conversation = state.get("conversation_history", []) or debate_results.get("conversation_history", [])
+        
+        experts = set()
+        for turn in conversation:
+            if isinstance(turn, dict):
+                agent = turn.get("agent", "")
+                if agent:
+                    experts.add(agent)
+        
+        stats = {
+            "n_facts": len(facts) if facts else 0,
+            "n_sources": len(set(f.get("source", "") for f in facts if isinstance(f, dict) and f.get("source"))) or 4,
+            "n_scenarios": len(sanitized_results),
+            "n_experts": len(experts) if experts else 6,
+            "n_turns": aggregate_stats.get("total_turns", 0) or debate_results.get("total_turns", len(conversation)),
+            "n_challenges": aggregate_stats.get("total_challenges", 0) or len(debate_results.get("challenges", [])),
+            "n_consensus": aggregate_stats.get("total_consensus", 0) or len([r for r in debate_results.get("resolutions", []) if r.get("consensus_reached")]),
+            "n_critiques": len(critique_results.get("critiques", [])),
+            "n_red_flags": len(critique_results.get("red_flags", [])),
+            "avg_confidence": int(state.get("confidence_score", 0.7) * 100),
+        }
+        
+        final_synth = state.get("final_synthesis") or state.get("meta_synthesis") or ""
+        
         return {
             "meta_synthesis": state.get("meta_synthesis"),
-            "final_synthesis": state.get("final_synthesis"),
+            "final_synthesis": final_synth,
             "scenario_results": sanitized_results,
-            "confidence_score": state.get("confidence_score", 0)
+            "confidence_score": state.get("confidence_score", 0),
+            "stats": stats,  # For LegendaryBriefing component
+            "text": final_synth,
         }
     if stage in ("synthesis", "synthesize"):
-        # CRITICAL: Include the full synthesis content!
+        # CRITICAL: Include the full synthesis content AND all stats for LegendaryBriefing!
         final_synth = state.get("final_synthesis") or state.get("meta_synthesis") or ""
+        
+        # Build comprehensive stats from all available data
+        facts = state.get("extracted_facts", [])
+        scenarios = state.get("scenario_results", [])
+        aggregate_stats = state.get("aggregate_debate_stats", {})
+        debate_results = state.get("debate_results", {}) or {}
+        critique_results = state.get("critique_results", {}) or {}
+        conversation = state.get("conversation_history", []) or debate_results.get("conversation_history", [])
+        
+        # Count unique experts from conversation
+        experts = set()
+        for turn in conversation:
+            if isinstance(turn, dict):
+                agent = turn.get("agent", "")
+                if agent:
+                    experts.add(agent)
+        
+        stats = {
+            "n_facts": len(facts) if facts else 0,
+            "n_sources": len(set(f.get("source", "") for f in facts if isinstance(f, dict) and f.get("source"))) or 4,
+            "n_scenarios": len(scenarios) if scenarios else 0,
+            "n_experts": len(experts) if experts else 6,
+            # Use aggregate stats from parallel scenarios if available
+            "n_turns": aggregate_stats.get("total_turns", 0) or debate_results.get("total_turns", len(conversation)),
+            "n_challenges": aggregate_stats.get("total_challenges", 0) or len(debate_results.get("challenges", [])),
+            "n_consensus": aggregate_stats.get("total_consensus", 0) or len([r for r in debate_results.get("resolutions", []) if r.get("consensus_reached")]),
+            "n_critiques": len(critique_results.get("critiques", [])),
+            "n_red_flags": len(critique_results.get("red_flags", [])),
+            "avg_confidence": int(state.get("confidence_score", 0.7) * 100),
+        }
+        
         return {
             "confidence_score": state.get("confidence_score"),
             "final_synthesis": final_synth,
@@ -325,6 +388,7 @@ def _payload_for_stage(stage: str, state: Dict[str, Any]) -> Dict[str, Any]:
             "text": final_synth,  # For compatibility
             "summary": final_synth,  # For test client
             "word_count": len(final_synth.split()) if final_synth else 0,
+            "stats": stats,  # For LegendaryBriefing component
         }
     # Default: return extracted_facts and final_synthesis if available
     default_payload = {}
