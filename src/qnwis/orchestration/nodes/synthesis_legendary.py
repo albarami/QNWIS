@@ -265,6 +265,75 @@ def _extract_scenario_summaries(state: IntelligenceState) -> List[Dict[str, Any]
     return summaries[:6]
 
 
+def _extract_edge_cases(state: IntelligenceState) -> List[Dict[str, Any]]:
+    """Extract edge case analyses from debate conversation.
+    
+    Edge cases are stress-test scenarios like oil price shocks, automation,
+    pandemic scenarios, geopolitical crises, etc.
+    """
+    edge_cases = []
+    
+    # Check explicit edge_case_results first
+    explicit_cases = state.get("edge_case_results", [])
+    if explicit_cases:
+        for case in explicit_cases:
+            if isinstance(case, dict):
+                edge_cases.append({
+                    "name": case.get("name", case.get("description", "Edge Case")[:50]),
+                    "description": case.get("description", ""),
+                    "severity": case.get("severity", "medium"),
+                    "probability": case.get("probability_pct", 15),
+                    "impact": case.get("impact_on_recommendations", ""),
+                    "source": case.get("source", "Edge Case Analysis"),
+                })
+    
+    # Also extract from debate turns tagged as edge_case_analysis
+    debate_results = state.get("debate_results", {}) or {}
+    conversation = state.get("conversation_history", []) or debate_results.get("conversation_history", [])
+    
+    edge_case_keywords = [
+        "oil price", "oil shock", "recession", "pandemic", "automation",
+        "geopolitical", "regional conflict", "talent exodus", "wage competition",
+        "technology disruption", "black swan", "tail risk", "catastrophic"
+    ]
+    
+    for turn in conversation:
+        if not isinstance(turn, dict):
+            continue
+        
+        turn_type = turn.get("type", "")
+        message = turn.get("message", "").lower()
+        
+        # Check if it's an edge case analysis turn or contains edge case keywords
+        if turn_type == "edge_case_analysis" or any(kw in message for kw in edge_case_keywords):
+            # Determine which edge case type
+            case_name = "Edge Case"
+            for kw in edge_case_keywords:
+                if kw in message:
+                    case_name = kw.title()
+                    break
+            
+            edge_cases.append({
+                "name": case_name,
+                "turn": turn.get("turn", 0),
+                "agent": turn.get("agent", "Unknown"),
+                "description": turn.get("message", "")[:500],
+                "severity": "high" if any(w in message for w in ["catastrophic", "collapse", "crisis"]) else "medium",
+            })
+    
+    # Deduplicate by name
+    seen = set()
+    unique_cases = []
+    for case in edge_cases:
+        name = case.get("name", "")
+        if name not in seen:
+            seen.add(name)
+            unique_cases.append(case)
+    
+    logger.info(f"Extracted {len(unique_cases)} unique edge cases for synthesis")
+    return unique_cases[:8]
+
+
 def _extract_risks(state: IntelligenceState) -> List[Dict[str, Any]]:
     """Extract risk intelligence from edge cases and critique."""
     
@@ -275,25 +344,37 @@ def _extract_risks(state: IntelligenceState) -> List[Dict[str, Any]]:
     risks = []
     
     for i, flag in enumerate(red_flags):
+        # Handle both string and dict format for red flags
+        if isinstance(flag, str):
+            flag_text = flag
+        elif isinstance(flag, dict):
+            flag_text = flag.get("description", flag.get("flag", str(flag)))
+        else:
+            flag_text = str(flag)
+        
         risks.append({
             "type": "red_flag",
-            "title": f"Red Flag: {flag[:50]}..." if len(flag) > 50 else f"Red Flag: {flag}",
-            "description": flag,
+            "id": i + 1,
+            "title": f"Red Flag #{i+1}: {flag_text[:50]}..." if len(flag_text) > 50 else f"Red Flag #{i+1}: {flag_text}",
+            "description": flag_text,
             "severity": "HIGH",
-            "source": f"Devil's Advocate Critique #{i+1}",
+            "source": f"Devil's Advocate Critique",
+            "requires_response": True,  # Flag that recommendations must address this
         })
     
     for c in critiques:
-        if isinstance(c, dict) and c.get("severity") == "high":
+        if isinstance(c, dict):
             risks.append({
                 "type": "critique",
                 "title": c.get("weakness_found", "Issue identified")[:50],
-                "description": c.get("counter_argument", ""),
+                "description": c.get("counter_argument", c.get("critique", "")),
                 "severity": c.get("severity", "medium").upper(),
                 "source": f"Expert {c.get('agent_name', 'Analysis')}",
+                "agent": c.get("agent_name", ""),
+                "turn": c.get("turn", 0),
             })
     
-    return risks[:8]
+    return risks[:10]
 
 
 def _build_legendary_prompt(
@@ -303,8 +384,11 @@ def _build_legendary_prompt(
     scenario_summaries: List[Dict[str, Any]],
     risks: List[Dict[str, Any]],
     facts: List[Dict[str, Any]],
+    edge_cases: List[Dict[str, Any]] = None,
 ) -> str:
     """Build the legendary synthesis prompt."""
+    
+    edge_cases = edge_cases or []
     
     # Format expert contributions
     expert_table = ""
@@ -320,22 +404,33 @@ def _build_legendary_prompt(
         name = s.get("name", f"Scenario {i}")[:20]
         scenario_table += f"│ {i} │ {name:<20} │ {prob:>3}% │ {conf:>3}% │\n"
     
-    # Format consensus points
+    # Format consensus points WITH FULL QUOTES
     consensus_text = ""
     for i, cp in enumerate(debate_highlights.get("consensus_points", [])[:4], 1):
         consensus_text += f"""
 CONSENSUS {i}: [Turn {cp['turn']}]
 Agent: {cp['agent']}
-Statement: "{cp['statement'][:300]}..."
+DIRECT QUOTE: "{cp['statement'][:400]}"
 """
     
-    # Format disagreements
+    # Format disagreements WITH FULL QUOTES
     disagreement_text = ""
     for i, d in enumerate(debate_highlights.get("disagreements", [])[:3], 1):
         disagreement_text += f"""
 DISAGREEMENT {i}: [Turn {d['turn']}]
 Raised by: {d['agent']}
-Challenge: "{d['challenge'][:300]}..."
+DIRECT QUOTE: "{d['challenge'][:400]}"
+"""
+    
+    # Format edge cases (CRITICAL - these must surface in the report)
+    edge_case_text = ""
+    for i, ec in enumerate(edge_cases[:6], 1):
+        turn_info = f" [Turn {ec['turn']}]" if ec.get('turn') else ""
+        agent_info = f" - {ec['agent']}" if ec.get('agent') else ""
+        edge_case_text += f"""
+EDGE CASE {i}: {ec.get('name', 'Scenario')}{turn_info}{agent_info}
+Severity: {ec.get('severity', 'medium').upper()}
+Analysis: "{ec.get('description', '')[:400]}"
 """
     
     # Format risk assessments from debate (CRITICAL for Devil's Advocate content)
@@ -405,7 +500,10 @@ EXPERT DISAGREEMENTS (Unresolved):
 RISK ASSESSMENTS FROM DEBATE (QUOTE DIRECTLY IN REPORT):
 {debate_risks_text}
 
-ADDITIONAL RISK INTELLIGENCE:
+EDGE CASE STRESS TESTS (MUST APPEAR IN RISK SECTION):
+{edge_case_text}
+
+ADDITIONAL RISK INTELLIGENCE (RED FLAGS REQUIRE RESPONSE):
 {risk_text}
 
 KEY FACTS EXTRACTED:
@@ -420,10 +518,35 @@ Use the data provided above. Every claim MUST be traced to evidence.
 
 ## CRITICAL RULES:
 1. **Answer First** - The minister has 30 seconds. First paragraph = direct answer.
-2. **Every Claim Cited** - Use [Fact #X], [Consensus: Turn Y], [Scenario Z], [Risk #N]
+2. **Every Claim Cited** - Use [Fact #X], [Consensus: Turn Y], [Scenario Z], [Risk #N], [Edge Case #N]
 3. **Specific, Not Generic** - Could this apply to another country? If yes, rewrite with specifics.
 4. **Preserve Disagreement** - Surface expert conflicts, don't smooth them over.
 5. **Actionable = Specific** - WHO does WHAT by WHEN with WHAT resources.
+6. **QUOTE THE DEBATE** - When citing [Turn X], include 1-2 sentences of what was actually said.
+7. **Red Flags MUST Be Addressed** - Every red flag requires a response in recommendations showing how it's mitigated.
+8. **Edge Cases Surface** - Edge case findings must appear in Risk Intelligence section.
+
+## SPECIFICITY REQUIREMENTS (DOMAIN AGNOSTIC):
+When making recommendations, you MUST be SPECIFIC using data from the analysis:
+- **Name actual entities** - Use specific institutions, programs, locations, assets mentioned in the facts
+- **Use real numbers** - Extract actual figures from the evidence (budgets, targets, timelines)
+- **Reference the context** - Your recommendations must fit the specific domain of the query
+- **No generic advice** - "Invest in training" is UNACCEPTABLE. Instead: "Allocate [specific amount] to [specific program] targeting [specific gap identified in Fact #X]"
+
+The system is domain agnostic. Whether the query is about:
+- Qatar tourism vs Saudi competition
+- Workforce nationalization policies
+- Energy sector transformation  
+- Any other domain
+
+Your synthesis must draw from the ACTUAL DATA provided, not assumptions. Name the specific:
+- Programs, institutions, and initiatives mentioned in the facts
+- Geographic locations and assets identified in the evidence
+- Numerical targets and budgets from official sources
+- Stakeholders and responsible parties from the debate
+
+Example of GENERIC (bad): "Invest in workforce development programs"
+Example of SPECIFIC (good): "Allocate [amount from Fact #X] to [program name from evidence] targeting [gap identified in Turn Y] [Addresses Red Flag #Z]"
 
 ## OUTPUT STRUCTURE (Follow EXACTLY):
 
@@ -520,24 +643,37 @@ Gap Analysis: [Specific gaps identified]
 **A. CRITICAL RISKS IDENTIFIED**
 [Use the risk data - for each risk show: probability, impact, triggers, mitigations]
 
-**B. TAIL RISK ASSESSMENT (The 1% Scenario)**
+**B. EDGE CASE STRESS TESTS**
+[List edge cases from the debate - oil shocks, automation, geopolitical crises, etc.]
+[For each: scenario description, probability, impact if it occurs, which recommendations survive]
+
+**C. TAIL RISK ASSESSMENT (The 1% Scenario)**
 [What's the nightmare scenario? Low probability but catastrophic.]
 
-**C. DEVIL'S ADVOCATE FINDINGS**
-[{stats["n_red_flags"]} red flags identified - list each with counter required]
+**D. DEVIL'S ADVOCATE FINDINGS**
+[{stats["n_red_flags"]} red flags identified - FOR EACH RED FLAG:]
+- The critique
+- Why this is a valid concern  
+- How recommendations address it (required!)
+- Residual risk after mitigation
 
 ---
 
 ## VII. STRATEGIC RECOMMENDATIONS
 
+**⚠️ RED FLAG RESPONSE MAPPING:**
+[For EACH red flag identified above, show which recommendation addresses it]
+
 **IMMEDIATE ACTIONS (0-30 days):**
 [For each: WHAT, WHY (with citation), WHEN, WHO, RESOURCES, SUCCESS METRIC]
+[If this addresses a red flag, note: "[Addresses Red Flag #X]"]
 
 **NEAR-TERM ACTIONS (30-90 days):**
-[Same detailed format]
+[Same detailed format with red flag mapping]
 
 **CONTINGENT ACTIONS (If triggered):**
 [TRIGGER condition + ACTION when triggered + PRE-POSITIONING now]
+[Include edge case triggers: e.g., "If oil price drops >30%, activate contingency X"]
 
 ---
 
@@ -590,12 +726,15 @@ ANALYTICAL DEPTH: {stats["n_facts"]} facts | {stats["n_scenarios"]} scenarios | 
 END OF BRIEFING
 
 QUALITY CHECK BEFORE OUTPUT:
-□ First paragraph directly answers the question
-□ Every claim has a citation [Fact #X], [Turn Y], [Scenario Z]
-□ Recommendations are specific (WHO, WHAT, WHEN, HOW MUCH)
-□ At least 2 expert disagreements are surfaced
+□ First paragraph directly answers the question with specific numbers from evidence
+□ Every claim has a citation [Fact #X], [Turn Y], [Scenario Z], [Edge Case #N]
+□ Recommendations are specific (WHO, WHAT, WHEN, HOW MUCH) using actual entities from the data
+□ At least 2 expert disagreements are surfaced WITH DIRECT QUOTES from the debate
 □ Tail risk / 1% scenario included
-□ Report demonstrates extraordinary analytical depth
+□ Edge cases are surfaced in Risk Intelligence section
+□ EVERY red flag has a corresponding response in recommendations
+□ Specific assets, programs, institutions from the facts are named (not generic placeholders)
+□ Report demonstrates extraordinary analytical depth based on actual data provided
 '''
     
     return prompt
@@ -620,11 +759,13 @@ async def legendary_synthesis_node(state: IntelligenceState) -> IntelligenceStat
     debate_highlights = _extract_debate_highlights(state)
     scenario_summaries = _extract_scenario_summaries(state)
     risks = _extract_risks(state)
+    edge_cases = _extract_edge_cases(state)  # NEW: Extract edge cases
     facts = state.get("extracted_facts", [])
     
     logger.info(
         f"🏛️ Generating Legendary Briefing: "
-        f"{stats['n_facts']} facts, {stats['n_turns']} turns, {stats['n_scenarios']} scenarios"
+        f"{stats['n_facts']} facts, {stats['n_turns']} turns, {stats['n_scenarios']} scenarios, "
+        f"{len(edge_cases)} edge cases, {len(risks)} risks"
     )
     
     # Build the legendary prompt
@@ -635,6 +776,7 @@ async def legendary_synthesis_node(state: IntelligenceState) -> IntelligenceStat
         scenario_summaries=scenario_summaries,
         risks=risks,
         facts=facts,
+        edge_cases=edge_cases,  # NEW: Pass edge cases to prompt
     )
     
     # Initialize LLM client

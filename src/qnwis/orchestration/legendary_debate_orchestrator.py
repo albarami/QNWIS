@@ -189,42 +189,43 @@ class LegendaryDebateOrchestrator:
     ADAPTIVE 6-phase legendary debate system.
     Adjusts depth based on question complexity.
     
-    SIMPLE questions (factual): 10-15 turns, 2-3 minutes
-    COMPLEX questions (strategic): 80-125 turns, 20-30 minutes
+    SIMPLE questions (factual): 25-40 turns, 3-5 minutes
+    COMPLEX questions (strategic): 100-150 turns, 25-35 minutes
     """
-    
+
     # Debate configurations by complexity
     # CRITICAL: These values determine analytical depth!
     # Higher turns = more thorough analysis = better ministerial intelligence
+    # Designed for 5 LLM agents: MicroEconomist, MacroEconomist, SkillsAgent, Nationalization, PatternDetective
     DEBATE_CONFIGS = {
         "simple": {
-            "max_turns": 25,  # Increased from 15 for better coverage
+            "max_turns": 40,
             "phases": {
-                "opening_statements": 6,
-                "challenge_defense": 10,
-                "edge_cases": 4,
-                "risk_analysis": 3,
+                "opening_statements": 10,   # 2 turns × 5 agents
+                "challenge_defense": 15,    # 3 rounds × 5 agents
+                "edge_cases": 8,
+                "risk_analysis": 5,
                 "consensus_building": 2
             }
         },
         "standard": {
-            "max_turns": 50,  # Increased from 30 for deeper analysis
+            "max_turns": 80,
             "phases": {
-                "opening_statements": 10,
-                "challenge_defense": 18,
-                "edge_cases": 10,
-                "risk_analysis": 8,
-                "consensus_building": 4
+                "opening_statements": 12,
+                "challenge_defense": 35,    # 7 rounds × 5 agents
+                "edge_cases": 15,
+                "risk_analysis": 12,
+                "consensus_building": 6
             }
         },
         "complex": {
-            "max_turns": 80,  # Increased from 40 - FULL DEPTH for ministerial queries
+            "max_turns": 150,  # FULL DEPTH for ministerial queries
             "phases": {
-                "opening_statements": 15,
-                "challenge_defense": 30,
-                "edge_cases": 15,
-                "risk_analysis": 12,
-                "consensus_building": 8
+                "opening_statements": 15,   # 3 turns × 5 agents
+                "challenge_defense": 60,    # 12 rounds × 5 agents
+                "edge_cases": 25,           # 5 cases × 5 agents
+                "risk_analysis": 25,        # 5 risks × 5 assessors
+                "consensus_building": 25    # 5 rounds × 5 agents
             }
         }
     }
@@ -553,7 +554,14 @@ Provide your expert analysis based on this specific query."""
         )
         
         # Get LLM agents that succeeded in Phase 1
-        llm_agent_names = ['Nationalization', 'SkillsAgent', 'PatternDetective', 'NationalStrategyLLM']
+        # Must match AGENT_REGISTRY in agent_selector.py
+        llm_agent_names = [
+            'MicroEconomist',    # Project-level ROI, efficiency analysis
+            'MacroEconomist',    # National strategy, systemic resilience
+            'SkillsAgent',       # Human capital, workforce development
+            'Nationalization',   # Political economy, governance
+            'PatternDetective',  # Meta-analysis, pattern recognition
+        ]
         active_llm_agents = [
             agent_name for agent_name in llm_agent_names
             if agent_name in agents_map
@@ -573,7 +581,11 @@ Provide your expert analysis based on this specific query."""
             logger.warning("Not enough LLM agents for multi-agent debate")
             return
         
-        max_debate_rounds = 8  # 8 rounds x N agents = substantial debate
+        # Calculate rounds dynamically from phase config
+        phase_turns = self.MAX_TURNS_PER_PHASE.get("challenge_defense", 35)
+        num_agents = len(active_llm_agents) or 4
+        max_debate_rounds = max(12, phase_turns // num_agents)  # At least 12 rounds
+        logger.info(f"🎯 Debate configured for {max_debate_rounds} rounds × {num_agents} agents = {max_debate_rounds * num_agents} potential turns")
         meta_debate_count = 0
         
         for round_num in range(1, max_debate_rounds + 1):

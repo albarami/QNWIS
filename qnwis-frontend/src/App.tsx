@@ -5,8 +5,8 @@ import { StageTimeline } from './components/workflow/StageTimeline'
 import { AgentGrid } from './components/agents/AgentGrid'
 import { DebatePanel } from './components/debate/DebatePanel'
 import { CritiquePanel } from './components/critique/CritiquePanel'
-import { ExecutiveSummary } from './components/results/ExecutiveSummary'
-import { StrategicBriefing } from './components/results/StrategicBriefing'
+// import { ExecutiveSummary } from './components/results/ExecutiveSummary'
+// import { StrategicBriefing } from './components/results/StrategicBriefing'
 import { LegendaryBriefing } from './components/results/LegendaryBriefing'
 import { ExtractedFacts } from './components/results/ExtractedFacts'
 import { ParallelScenarios } from './components/results/ParallelScenarios'
@@ -253,15 +253,19 @@ function App() {
           <section className="mt-8">
             <LegendaryBriefing 
               synthesis={state.synthesis} 
-              confidence={state.finalState?.confidence || 0.75}
+              confidence={(state.finalState as any)?.confidence || 0.75}
               stats={state.synthesisStats || {
                 n_facts: state.prefetchFacts?.length || 0,
                 n_sources: 4,
                 n_scenarios: state.scenarioResults?.length || state.totalScenarios || 6,
                 n_turns: state.debateResults?.total_turns || state.debateTurns?.length || 0,
                 n_experts: state.selectedAgents?.length || 6,
-                n_challenges: state.debateResults?.contradictions_found || 0,
-                n_consensus: state.debateResults?.resolved || 0,
+                // Map backend field names to frontend expectations
+                n_challenges: state.debateResults?.contradictions_found || 
+                              (state.debateTurns?.filter((t: any) => t.type === 'challenge')?.length) || 0,
+                n_consensus: state.debateResults?.resolved || 
+                             state.debateResults?.resolutions?.length ||
+                             (state.debateTurns?.filter((t: any) => t.type === 'consensus' || t.type === 'consensus_synthesis')?.length) || 0,
                 n_critiques: state.critiqueResults?.critiques?.length || 0,
                 n_red_flags: state.critiqueResults?.red_flags?.length || 0,
                 avg_confidence: 75,
