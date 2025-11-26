@@ -377,20 +377,165 @@ class DocumentStore:
                 default=None
             )
         }
+    
+    def save(self, path: str) -> bool:
+        """
+        Save document store to disk (JSON + embeddings).
+        
+        Args:
+            path: Path to save JSON document data
+            
+        Returns:
+            True if successful
+        """
+        try:
+            # Save document metadata
+            doc_data = []
+            embeddings_list = []
+            
+            for doc_id, doc in self.documents.items():
+                doc_dict = doc.to_dict()
+                doc_data.append(doc_dict)
+                
+                # Save embeddings separately
+                if doc.embedding is not None:
+                    embeddings_list.append(doc.embedding)
+                else:
+                    embeddings_list.append(None)
+            
+            # Save JSON
+            with open(path, 'w', encoding='utf-8') as f:
+                json.dump({
+                    "version": 1,
+                    "document_count": len(doc_data),
+                    "documents": doc_data,
+                    "use_sentence_embeddings": self.use_sentence_embeddings
+                }, f)
+            
+            # Save embeddings as numpy array
+            if self.use_sentence_embeddings and any(e is not None for e in embeddings_list):
+                embeddings_path = path.replace('.json', '_embeddings.npy')
+                valid_embeddings = [e for e in embeddings_list if e is not None]
+                if valid_embeddings:
+                    np.save(embeddings_path, np.array(valid_embeddings))
+            
+            logger.info(f"Saved {len(doc_data)} documents to {path}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to save document store: {e}")
+            return False
+    
+    def load(self, path: str) -> bool:
+        """
+        Load document store from disk.
+        
+        Args:
+            path: Path to JSON document data
+            
+        Returns:
+            True if successful
+        """
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            documents = data.get("documents", [])
+            
+            # Load embeddings if available
+            embeddings = None
+            embeddings_path = path.replace('.json', '_embeddings.npy')
+            if Path(embeddings_path).exists():
+                try:
+                    embeddings = np.load(embeddings_path)
+                except Exception as e:
+                    logger.warning(f"Could not load embeddings: {e}")
+            
+            # Reconstruct documents
+            for i, doc_dict in enumerate(documents):
+                doc = Document(
+                    doc_id=doc_dict["doc_id"],
+                    text=doc_dict["text"],
+                    source=doc_dict["source"],
+                    metadata=doc_dict.get("metadata"),
+                    freshness=doc_dict.get("freshness"),
+                    doc_type=doc_dict.get("doc_type", "context")
+                )
+                
+                # Attach embedding if available
+                if embeddings is not None and i < len(embeddings):
+                    doc.embedding = embeddings[i]
+                
+                self.documents[doc.doc_id] = doc
+                
+                # Also store tokens for fallback search
+                if not self.use_sentence_embeddings:
+                    self._doc_tokens[doc.doc_id] = self.embedder.embed_text(doc.text)
+            
+            logger.info(f"Loaded {len(self.documents)} documents from {path}")
+            return True
+            
+        except FileNotFoundError:
+            logger.warning(f"Document store file not found: {path}")
+            return False
+        except Exception as e:
+            logger.error(f"Failed to load document store: {e}")
+            return False
 
 
 # Global document store instance
 _document_store: Optional[DocumentStore] = None
 
+# Persistence paths
+RAG_STORE_PATH = Path("data/rag_store.json")
+RAG_EMBEDDINGS_PATH = Path("data/rag_embeddings.npy")
+
 
 def get_document_store() -> DocumentStore:
-    """Get or create global document store instance."""
+    """
+    Get or create global document store instance.
+    
+    LOADS PERSISTED DATA if available (including ingested R&D papers).
+    """
     global _document_store
     if _document_store is None:
         _document_store = DocumentStore(cache_ttl_hours=24)
-        # Initialize with base documents
-        _initialize_knowledge_base(_document_store)
+        
+        # Try to load persisted store (with 1959 R&D chunks!)
+        if RAG_STORE_PATH.exists():
+            try:
+                loaded = _document_store.load(str(RAG_STORE_PATH))
+                if loaded:
+                    logger.info(f"Loaded {len(_document_store.documents)} documents from persisted RAG store")
+                else:
+                    # Initialize with base documents if load failed
+                    _initialize_knowledge_base(_document_store)
+            except Exception as e:
+                logger.warning(f"Failed to load RAG store: {e}, initializing fresh")
+                _initialize_knowledge_base(_document_store)
+        else:
+            # Initialize with base documents
+            _initialize_knowledge_base(_document_store)
+    
     return _document_store
+
+
+def save_document_store() -> bool:
+    """
+    Save the document store to disk for persistence.
+    
+    Call this after ingesting new documents (e.g., R&D papers).
+    """
+    global _document_store
+    if _document_store is None:
+        return False
+    
+    try:
+        RAG_STORE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        return _document_store.save(str(RAG_STORE_PATH))
+    except Exception as e:
+        logger.error(f"Failed to save RAG store: {e}")
+        return False
 
 
 def _initialize_knowledge_base(store: DocumentStore) -> None:

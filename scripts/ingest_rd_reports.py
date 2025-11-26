@@ -25,7 +25,7 @@ import re
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from qnwis.rag.retriever import Document, DocumentStore, get_document_store
+from qnwis.rag.retriever import Document, DocumentStore, get_document_store, save_document_store
 
 logger = logging.getLogger(__name__)
 
@@ -396,6 +396,13 @@ if __name__ == "__main__":
     
     if result["status"] == "success":
         safe_print(f"\n[SUCCESS] Ingested {result['chunks_added']} chunks from {result['files_processed']} files")
+        
+        # CRITICAL: Save the store to disk for persistence!
+        safe_print("\n[SAVING] Persisting RAG store to disk...")
+        if save_document_store():
+            safe_print("[SAVED] RAG store persisted to data/rag_store.json")
+        else:
+            safe_print("[WARNING] Failed to save RAG store!")
     else:
         safe_print(f"\n[ERROR] {result.get('message', 'Unknown error')}")
 
