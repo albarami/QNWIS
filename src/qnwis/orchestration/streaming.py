@@ -158,13 +158,25 @@ def _payload_for_stage(stage: str, state: Dict[str, Any]) -> Dict[str, Any]:
             "scenario_results": sanitized_results,
             "confidence_score": state.get("confidence_score", 0)
         }
-    if stage == "synthesis":
+    if stage in ("synthesis", "synthesize"):
+        # CRITICAL: Include the full synthesis content!
+        final_synth = state.get("final_synthesis") or state.get("meta_synthesis") or ""
         return {
             "confidence_score": state.get("confidence_score"),
-            "final_synthesis": state.get("final_synthesis"),
-            "text": state.get("final_synthesis"),  # For compatibility
+            "final_synthesis": final_synth,
+            "meta_synthesis": state.get("meta_synthesis"),
+            "text": final_synth,  # For compatibility
+            "summary": final_synth,  # For test client
+            "word_count": len(final_synth.split()) if final_synth else 0,
         }
-    return {}
+    # Default: return extracted_facts and final_synthesis if available
+    default_payload = {}
+    if state.get("extracted_facts"):
+        default_payload["extracted_facts"] = state.get("extracted_facts")
+        default_payload["facts_count"] = len(state.get("extracted_facts"))
+    if state.get("final_synthesis"):
+        default_payload["final_synthesis"] = state.get("final_synthesis")
+    return default_payload
 
 
 async def run_workflow_stream(
@@ -259,24 +271,41 @@ async def run_workflow_stream(
             "warnings": [],
             "errors": [],
             "emit_event_fn": emit_event_fn,  # Pass callback to nodes for real-time events
+            # Parallel scenario analysis - MUST BE ENABLED for complex queries
+            "enable_parallel_scenarios": True,
+            "scenarios": None,
+            "scenario_results": None,
         }
 
+        # CRITICAL DEBUG - Log initial state
+        logger.warning(f"🔍 INITIAL STATE query = {repr(initial_state.get('query', 'NOT_FOUND'))}")
+        logger.warning(f"🔍 INITIAL STATE query length = {len(initial_state.get('query', ''))}")
+        logger.warning(f"🔍 INITIAL STATE enable_parallel = {initial_state.get('enable_parallel_scenarios')}")
+        
         graph = create_intelligence_graph()
+        
+        # CRITICAL: We need to accumulate state because astream yields PARTIAL updates
+        accumulated_state = initial_state.copy()
 
         # Run workflow in background task
         async def run_workflow():
-            nonlocal workflow_complete
+            nonlocal workflow_complete, accumulated_state
             try:
                 async for event in graph.astream(initial_state):
                     # Forward node completion events to queue
                     for node_name, node_output in event.items():
-                        await event_queue.put(("node_complete", node_name, node_output))
+                        # CRITICAL: Merge partial state into accumulated state
+                        if isinstance(node_output, dict):
+                            accumulated_state.update(node_output)
+                            logger.info(f"🔄 Node '{node_name}' updated keys: {list(node_output.keys())[:5]}")
+                        # Send the FULL accumulated state, not just partial update
+                        await event_queue.put(("node_complete", node_name, accumulated_state.copy()))
             except Exception as e:
                 logger.error(f"Workflow execution error: {e}", exc_info=True)
                 await event_queue.put(("error", str(e), None))
             finally:
                 workflow_complete = True
-                await event_queue.put(("done", None, None))
+                await event_queue.put(("done", None, accumulated_state.copy()))
 
         # Start workflow in background
         workflow_task = asyncio.create_task(run_workflow())
@@ -284,6 +313,15 @@ async def run_workflow_stream(
         # Stream events from queue as they arrive (real-time!)
         first_agent_emitted = False
         rag_emitted = False
+        stages_started = set()  # Track which stages we've emitted "running" for
+        
+        # Emit initial "running" event for classify stage immediately
+        yield WorkflowEvent(
+            stage="classify",
+            status="running",
+            payload={"message": "Analyzing query complexity..."}
+        )
+        stages_started.add("classify")
 
         while True:
             # Get next event from queue (blocks until available)
@@ -318,6 +356,23 @@ async def run_workflow_stream(
 
             logger.info(f"Node '{node_name}' completed, emitting event")
 
+            # Define next stage mapping for emitting "running" events
+            next_stage_map = {
+                "classifier": "prefetch",
+                "extraction": "scenario_gen",  # Handled specially above
+                "scenario_gen": "parallel_exec",  # or agents depending on path
+                "parallel_exec": "aggregate_scenarios",
+                "aggregate_scenarios": "debate",
+                "financial": "market",
+                "market": "operations",
+                "operations": "research",
+                "research": "debate",
+                "debate": "critique",
+                "critique": "verify",
+                "verification": "synthesize",
+                "synthesis": "done",
+            }
+
             # Map node names to stage names (frontend-compatible)
             stage_map = {
                 "classifier": "classify",
@@ -341,13 +396,22 @@ async def run_workflow_stream(
             # Emit synthetic RAG stage after prefetch (extraction)
             if node_name == "extraction" and not rag_emitted:
                 rag_emitted = True
-                # Emit prefetch first
+                
+                # Emit prefetch running then complete
+                if "prefetch" not in stages_started:
+                    yield WorkflowEvent(stage="prefetch", status="running", payload={"message": "Fetching external data..."})
+                    stages_started.add("prefetch")
+                    await asyncio.sleep(0.3)  # Brief delay for UI to show running state
                 yield WorkflowEvent(
                     stage="prefetch",
                     status="complete",
                     payload=_payload_for_stage(node_name, node_output),
                 )
-                # Then emit RAG
+                
+                # Emit RAG running then complete
+                yield WorkflowEvent(stage="rag", status="running", payload={"message": "Retrieving relevant documents..."})
+                stages_started.add("rag")
+                await asyncio.sleep(0.3)
                 yield WorkflowEvent(
                     stage="rag",
                     status="complete",
@@ -356,6 +420,11 @@ async def run_workflow_stream(
                         "context": "RAG context retrieved"
                     },
                 )
+                
+                # Emit running for next stage (scenario_gen)
+                yield WorkflowEvent(stage="scenario_gen", status="running", payload={"message": "Generating analysis scenarios..."})
+                stages_started.add("scenario_gen")
+                
                 continue  # Skip the normal emit below
 
             # Emit agent_selection stage BEFORE first agent or aggregate_scenarios
@@ -375,18 +444,38 @@ async def run_workflow_stream(
                 status="complete",
                 payload=_payload_for_stage(node_name, node_output),
             )
+            
+            # Emit "running" event for next stage (so UI shows progression)
+            next_stage = next_stage_map.get(node_name)
+            if next_stage and next_stage not in stages_started:
+                # Map next node to frontend stage name
+                next_stage_frontend = stage_map.get(next_stage, next_stage)
+                stages_started.add(next_stage)
+                yield WorkflowEvent(
+                    stage=next_stage_frontend,
+                    status="running",
+                    payload={"message": f"Processing {next_stage_frontend}..."}
+                )
 
         # Ensure workflow task completes
         await workflow_task
 
-        # Emit final done event
+        # Emit final done event with FULL accumulated state including synthesis
+        final_synthesis = accumulated_state.get("final_synthesis") or accumulated_state.get("meta_synthesis") or ""
+        logger.info(f"✅ Final synthesis length: {len(final_synthesis)} chars")
+        
         yield WorkflowEvent(
             stage="done",
             status="complete",
             payload={
-                "confidence": initial_state.get("confidence_score", 0.0),
-                "warnings": initial_state.get("warnings", []),
-                "errors": initial_state.get("errors", []),
+                "confidence": accumulated_state.get("confidence_score", 0.0),
+                "warnings": accumulated_state.get("warnings", []),
+                "errors": accumulated_state.get("errors", []),
+                "final_synthesis": final_synthesis,
+                "summary": final_synthesis,
+                "text": final_synthesis,
+                "extracted_facts": accumulated_state.get("extracted_facts", []),
+                "word_count": len(final_synthesis.split()) if final_synthesis else 0,
             },
         )
         return  # Exit early for langgraph workflow
