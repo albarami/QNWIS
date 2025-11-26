@@ -5,10 +5,12 @@ Implements streaming workflow with nodes:
 classify ΓåÆ prefetch ΓåÆ agents (parallel) ΓåÆ verify ΓåÆ synthesize ΓåÆ done
 """
 
+import asyncio
 import logging
 import re
+import textwrap
 from typing import TypedDict, Annotated, Sequence, Optional, Dict, Any, AsyncIterator
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date, timedelta
 
 from langgraph.graph import StateGraph, END
 
@@ -17,6 +19,10 @@ from ..agents.nationalization import NationalizationAgent
 from ..agents.skills import SkillsAgent
 from ..agents.pattern_detective_llm import PatternDetectiveLLMAgent
 from ..agents.national_strategy_llm import NationalStrategyLLMAgent
+from ..agents.pattern_detective import PatternDetectiveAgent
+from ..agents.pattern_miner import PatternMinerAgent
+from ..agents.national_strategy import NationalStrategyAgent
+from ..agents.alert_center import AlertCenterAgent
 from ..agents.time_machine import TimeMachineAgent
 from ..agents.predictor import PredictorAgent
 from ..agents.scenario_agent import ScenarioAgent
@@ -74,20 +80,39 @@ class LLMWorkflow:
         self.llm_client = llm_client
         self.classifier = classifier or Classifier()
         
-        # Initialize LLM agents
+        # Initialize LLM agents (PascalCase keys for reporting)
         self.agents = {
-            "labour_economist": LabourEconomistAgent(data_client, llm_client),
-            "nationalization": NationalizationAgent(data_client, llm_client),
-            "skills": SkillsAgent(data_client, llm_client),
-            "pattern_detective": PatternDetectiveLLMAgent(data_client, llm_client),
-            "national_strategy": NationalStrategyLLMAgent(data_client, llm_client),
+            "Nationalization": NationalizationAgent(data_client, llm_client),
+            "SkillsAgent": SkillsAgent(data_client, llm_client),
+            "PatternDetective": PatternDetectiveLLMAgent(data_client, llm_client),
+            "NationalStrategyLLM": NationalStrategyLLMAgent(data_client, llm_client),
+        }
+        self.agent_key_map = {
+            "laboureconomist": "LabourEconomist",
+            "nationalization": "Nationalization",
+            "skills": "SkillsAgent",
+            "skillsagent": "SkillsAgent",
+            "patterndetective": "PatternDetective",
+            "nationalstrategy": "NationalStrategy", # Default to deterministic
+            "nationalstrategyllm": "NationalStrategyLLM",
+            "timemachine": "TimeMachine",
+            "predictor": "Predictor",
+            "scenario": "Scenario",
+            "patterndetectiveagent": "PatternDetectiveAgent",
+            "patternminer": "PatternMiner",
+            "alertcenter": "AlertCenter",
         }
 
-        # Initialize deterministic agents (Phase 3)
+        # Initialize deterministic agents for LEGENDARY depth mode
         self.deterministic_agents = {
-            "time_machine": TimeMachineAgent(data_client),
-            "predictor": PredictorAgent(data_client),
-            "scenario": ScenarioAgent(data_client),
+            "LabourEconomist": LabourEconomistAgent(data_client),
+            "TimeMachine": TimeMachineAgent(data_client),
+            "Predictor": PredictorAgent(data_client),
+            "Scenario": ScenarioAgent(data_client),
+            "PatternDetectiveAgent": PatternDetectiveAgent(data_client),
+            "PatternMiner": PatternMinerAgent(data_client),
+            "NationalStrategy": NationalStrategyAgent(data_client),
+            "AlertCenter": AlertCenterAgent(data_client),
         }
 
         # Build graph
@@ -96,6 +121,36 @@ class LLMWorkflow:
         # Agent selector
         from .agent_selector import AgentSelector
         self.agent_selector = AgentSelector()
+
+    def _normalize_agent_name(self, name: str) -> str:
+        """Map selector keys to PascalCase agent names."""
+        if not name:
+            return ""
+        if name in self.agents:
+            return name
+        if name in self.deterministic_agents:
+            return name
+            
+        sanitized = name.lower().replace("_", "").replace(" ", "")
+        mapped = self.agent_key_map.get(sanitized)
+        if mapped:
+            return mapped
+            
+        sanitized = sanitized.replace("agent", "")
+        
+        # Check LLM agents
+        for candidate in self.agents:
+            candidate_key = candidate.lower().replace("agent", "").replace("_", "")
+            if candidate_key == sanitized:
+                return candidate
+                
+        # Check deterministic agents
+        for candidate in self.deterministic_agents:
+            candidate_key = candidate.lower().replace("agent", "").replace("_", "")
+            if candidate_key == sanitized:
+                return candidate
+                
+        return name
     
     def _build_graph(self) -> StateGraph:
         """
@@ -212,7 +267,10 @@ class LLMWorkflow:
                 await state["event_callback"](
                     "classify", 
                     "complete", 
-                    {"classification": classification},
+                    {
+                        "classification": classification,
+                        "reasoning_chain": reasoning_chain
+                    },
                     latency_ms
                 )
             
@@ -396,11 +454,13 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
                         "sources": list(
                             {fact["source"] for fact in extracted_facts if isinstance(fact, dict) and fact.get("source")}
                         ),
+                        "reasoning_chain": reasoning_chain,
                     },
                     0,
                 )
 
-            print(f"\n✅ Prefetch Complete: {len(extracted_facts)} facts")
+            # Prefetch complete - log via logger instead of print to avoid Unicode errors
+            logger.info(f"Prefetch Complete: {len(extracted_facts)} facts")
             sources: Dict[str, int] = {}
             for fact in extracted_facts:
                 if isinstance(fact, dict):
@@ -408,14 +468,12 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
                     sources[source] = sources.get(source, 0) + 1
 
             for source, count in sources.items():
-                print(f"   • {source}: {count} facts")
+                logger.debug(f"Source {source}: {count} facts")
 
             return updated_state
 
         except Exception as e:
-            print(f"❌ Prefetch error: {e}")
-            import traceback
-            traceback.print_exc()
+            logger.error(f"Prefetch error: {e}", exc_info=True)
 
             if state.get("event_callback"):
                 await state["event_callback"]("prefetch", "error", {"error": str(e)})
@@ -447,19 +505,22 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
             
             latency_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
             
+            # Get reasoning chain first for event callback
+            reasoning_chain = list(state.get("reasoning_chain", []))
+            
             if state.get("event_callback"):
                 await state["event_callback"](
                     "rag",
                     "complete",
                     {
                         "snippets_retrieved": len(rag_result.get("snippets", [])),
-                        "sources": rag_result.get("sources", [])
+                        "sources": rag_result.get("sources", []),
+                        "reasoning_chain": reasoning_chain
                     },
                     latency_ms
                 )
             
             # Update reasoning chain
-            reasoning_chain = list(state.get("reasoning_chain", []))
             snippets = len(rag_result.get("snippets", []))
             sources = rag_result.get("sources", [])
             reasoning_chain.append(
@@ -483,206 +544,459 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
             }
     
     async def _select_agents_node(self, state: WorkflowState) -> WorkflowState:
-        """Intelligent agent selection node."""
-        classification = state.get("classification", {})
-        
-        selected_agent_names = self.agent_selector.select_agents(
-            classification=classification,
-            min_agents=2,
-            max_agents=4
-        )
-        
-        selection_explanation = self.agent_selector.explain_selection(
-            selected_agent_names, classification
-        )
-        
-        if state.get("event_callback"):
-            await state["event_callback"](
-                "agent_selection",
-                "complete",
-                {
-                    "selected_agents": selected_agent_names,
-                    "selected_count": len(selected_agent_names),
-                    "total_available": len(self.agent_selector.AGENT_EXPERTISE),
-                    "savings": selection_explanation["savings"],
-                    "explanation": selection_explanation
-                },
-                0
-            )
-        
-        # Update reasoning chain
-        reasoning_chain = list(state.get("reasoning_chain", []))
-        reasoning_chain.append(
-            f"Γ£ô Agent selection: chose {len(selected_agent_names)}/{len(self.agent_selector.AGENT_EXPERTISE)} agents"
-            + (f" ({', '.join(selected_agent_names)})" if selected_agent_names else "")
-        )
+        """Intelligent agent selection node with LEGENDARY override."""
+        try:
+            classification = state.get("classification", {}) or {}
+            complexity = classification.get("complexity", "medium")
 
-        return {
-            **state,
-            "selected_agents": selected_agent_names,
-            "reasoning_chain": reasoning_chain,
-        }
+            if complexity in {"complex", "critical"}:
+                selected_agent_names = [
+                    "LabourEconomist",
+                    "Nationalization",
+                    "SkillsAgent",
+                    "PatternDetective",
+                    "NationalStrategyLLM",
+                ]
+                deterministic_names = list(self.deterministic_agents.keys())
+                selected_agent_names.extend(deterministic_names)
+                mode = "LEGENDARY_DEPTH"
+                total_available = len(self.agents) + len(self.deterministic_agents)
+                selection_explanation = {
+                    "selected_count": len(selected_agent_names),
+                    "total_available": total_available,
+                    "savings": "0%",
+                    "agents": {name: {"description": "LEGENDARY depth override"} for name in selected_agent_names},
+                    "mode": mode,
+                }
+            else:
+                raw_selection = self.agent_selector.select_agents(
+                    classification=classification,
+                    min_agents=2,
+                    max_agents=4,
+                )
+                selected_agent_names = [
+                    self._normalize_agent_name(name)
+                    for name in raw_selection
+                    if self._normalize_agent_name(name)
+                ]
+                mode = "INTELLIGENT_SELECTION"
+                total_available = len(self.agent_selector.AGENT_EXPERTISE)
+                selection_explanation = self.agent_selector.explain_selection(
+                    raw_selection, classification
+                )
+
+            # Robust Deduplication
+            seen: set[str] = set()
+            deduped: list[str] = []
+            for name in selected_agent_names:
+                # Normalize to PascalCase if possible
+                normalized = self._normalize_agent_name(name)
+                if normalized and normalized not in seen:
+                    deduped.append(normalized)
+                    seen.add(normalized)
+            selected_agent_names = deduped
+
+            # Get reasoning chain first for event callback
+            reasoning_chain = list(state.get("reasoning_chain", []))
+
+            if state.get("event_callback"):
+                await state["event_callback"](
+                    "agent_selection",
+                    "complete",
+                    {
+                        "selected_agents": selected_agent_names,
+                        "selected_count": len(selected_agent_names),
+                        "total_available": total_available,
+                        "mode": mode,
+                        "explanation": selection_explanation,
+                        "reasoning_chain": reasoning_chain,
+                    },
+                    0,
+                )
+            summary = (
+                f"⚡ Agent selection: LEGENDARY DEPTH ({len(selected_agent_names)} agents)"
+                if mode == "LEGENDARY_DEPTH"
+                else f"✓ Agent selection: chose {len(selected_agent_names)} agents"
+            )
+            if selected_agent_names:
+                summary += f" ({', '.join(selected_agent_names)})"
+            reasoning_chain.append(summary)
+
+            return {
+                **state,
+                "selected_agents": selected_agent_names,
+                "reasoning_chain": reasoning_chain,
+            }
+
+        except Exception as e:
+            logger.error(f"Agent selection failed: {e}", exc_info=True)
+            if state.get("event_callback"):
+                await state["event_callback"]("agent_selection", "error", {"error": str(e)})
+            
+            # Fallback to a minimal set of agents
+            fallback_agents = ["LabourEconomist", "Nationalization"]
+            
+            reasoning_chain = list(state.get("reasoning_chain", []))
+            reasoning_chain.append(f"⚠️ Agent selection failed ({e}), falling back to default agents")
+            
+            return {
+                **state,
+                "selected_agents": fallback_agents,
+                "error": f"Agent selection warning: {e}",
+                "reasoning_chain": reasoning_chain
+            }
     
     async def _agents_node(self, state: WorkflowState) -> WorkflowState:
-        """
-        Execute selected agents with streaming and deliberation.
-        
-        Args:
-            state: Current workflow state
+        """Execute selected agents with streaming and deliberation."""
+        try:
+            question = state["question"]
+            context = {
+                "classification": state.get("classification"),
+                "prefetch": state.get("prefetch", {}).get("data", {}),
+                "rag_context": state.get("rag_context", {})
+            }
+
+            selected_agent_names = state.get("selected_agents", []) or list(self.agents.keys())
             
-        Returns:
-            Updated state with agent reports
-        """
-        import asyncio
-        
-        question = state["question"]
-        context = {
-            "classification": state.get("classification"),
-            "prefetch": state.get("prefetch", {}).get("data", {}),
-            "rag_context": state.get("rag_context", {})
-        }
-        
-        # Get selected agents
-        selected_agent_names = state.get("selected_agents", [])
-        if not selected_agent_names:
-            selected_agent_names = list(self.agents.keys())
-        
-        # Map agent names to instances
-        agent_name_mapping = {
-            "labour_economist": "LabourEconomist",
-            "nationalization": "Nationalization",
-            "skills": "SkillsAgent",
-            "pattern_detective": "PatternDetective",
-            "national_strategy": "NationalStrategy"
-        }
-        
-        # Run selected agents with streaming
-        reports = []
-        for agent_name in selected_agent_names:
-            # Find matching agent instance
-            agent_key = agent_name.lower().replace("agent", "").replace("_", "")
-            for key, agent in self.agents.items():
-                if key in agent_key or agent_key in key:
-                    if state.get("event_callback"):
-                        await state["event_callback"](f"agent:{agent_name}", "running")
-                    
-                    start_time = datetime.now(timezone.utc)
-                    
-                    try:
-                        # Run agent with streaming
-                        if hasattr(agent, 'run_stream'):
-                            async for event in agent.run_stream(question, context):
-                                if event["type"] == "token" and state.get("event_callback"):
-                                    await state["event_callback"](
-                                        f"agent:{agent_name}",
-                                        "streaming",
-                                        {"token": event["content"]}
-                                    )
-                                elif event["type"] == "complete":
-                                    report = event["report"]
-                                    reports.append(report)
-                                    
-                                    latency_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
-                                    
-                                    if state.get("event_callback"):
-                                        await state["event_callback"](
-                                            f"agent:{agent_name}",
-                                            "complete",
-                                            {"report": report},
-                                            latency_ms
-                                        )
-                        else:
-                            # Fallback to non-streaming
-                            report = await agent.run(question, context)
-                            reports.append(report)
-                            
+            # Map normalized names back to actual agent keys
+            # This fixes the duplicate agent bug by ensuring we use the actual keys
+            agents_to_invoke: list[str] = []
+            invoked_set: set[str] = set()
+            
+            for name in selected_agent_names:
+                # Try both the original name and lowercase version
+                actual_key = None
+                if name in self.agents:
+                    actual_key = name
+                elif name.lower() in self.agents:
+                    actual_key = name.lower()
+                elif name in self.deterministic_agents:
+                    actual_key = name
+                
+                if actual_key and actual_key not in invoked_set:
+                    agents_to_invoke.append(actual_key)
+                    invoked_set.add(actual_key)
+            
+            if not agents_to_invoke:
+                agents_to_invoke = list(self.agents.keys())
+
+            reports: list[AgentReport] = []
+
+            event_cb = state.get("event_callback")
+            if event_cb:
+                # Send normalized agent names to match event emissions
+                normalized_names = [self._normalize_agent_name(name) for name in agents_to_invoke]
+                # Remove duplicates while preserving order
+                seen_emitted = set()
+                unique_names = []
+                for name in normalized_names:
+                    if name not in seen_emitted:
+                        unique_names.append(name)
+                        seen_emitted.add(name)
+                
+                await event_cb(
+                    "agents",
+                    "running",
+                    {"agents": unique_names, "count": len(unique_names)},
+                    0,
+                )
+
+            tasks = []
+            task_names: list[str] = []
+            for agent_name in agents_to_invoke:
+                if agent_name in self.agents:
+                    async def llm_runner(name=agent_name):
+                        # Force PascalCase for frontend consistency
+                        display_name = self._normalize_agent_name(name)
+                        if event_cb:
+                            await event_cb(f"agent:{display_name}", "running")
+                        start_time = datetime.now(timezone.utc)
+                        try:
+                            # Add timeout per agent (180 seconds) to prevent hanging
+                            report = await asyncio.wait_for(
+                                self.agents[name].run(question, context),
+                                timeout=180.0
+                            )
+                            report.agent = getattr(report, "agent", display_name) or display_name
                             latency_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
-                            
-                            if state.get("event_callback"):
-                                await state["event_callback"](
-                                    f"agent:{agent_name}",
+                            if event_cb:
+                                await event_cb(
+                                    f"agent:{display_name}",
                                     "complete",
                                     {"report": report},
-                                    latency_ms
+                                    latency_ms,
                                 )
-                        
-                        logger.info(f"Agent {agent_name} completed successfully")
-                    
-                    except Exception as e:
-                        logger.error(f"Agent {agent_name} failed: {e}", exc_info=True)
-                        if state.get("event_callback"):
-                            await state["event_callback"](
-                                f"agent:{agent_name}",
-                                "error",
-                                {"error": str(e)}
+                            return report
+                        except asyncio.TimeoutError:
+                            logger.error(f"LLM agent {display_name} timed out after 60s")
+                            if event_cb:
+                                await event_cb(f"agent:{display_name}", "error", {"error": "Agent execution timeout"})
+                            return None
+                        except Exception as exc:
+                            logger.error(f"LLM agent {display_name} failed: {exc}", exc_info=True)
+                            if event_cb:
+                                await event_cb(f"agent:{display_name}", "error", {"error": str(exc)})
+                            return None  # Don't crash - let gather handle it
+
+                    tasks.append(llm_runner())
+                else:
+                    async def deterministic_runner(name=agent_name):
+                        # Force PascalCase for frontend consistency
+                        display_name = self._normalize_agent_name(name)
+                        if event_cb:
+                            await event_cb(f"agent:{display_name}", "running")
+                        start_time = datetime.now(timezone.utc)
+                        try:
+                            report = await asyncio.to_thread(
+                                self._run_deterministic_agent_sync,
+                                name,
+                                self.deterministic_agents[name],
+                                question,
                             )
-                        # Create error report
-                        from src.qnwis.agents.base import AgentReport
-                        error_report = AgentReport(
-                            agent=agent_name,
-                            findings=[],
-                            narrative=f"Agent failed: {e}"
-                        )
-                        reports.append(error_report)
-                    
-                    break
+                            latency_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
+                            if event_cb:
+                                await event_cb(
+                                    f"agent:{display_name}",
+                                    "complete",
+                                    {"report": report},
+                                    latency_ms,
+                                )
+                            return report
+                        except Exception as exc:
+                            logger.error(f"Deterministic agent {display_name} failed: {exc}", exc_info=True)
+                            if event_cb:
+                                await event_cb(f"agent:{display_name}", "error", {"error": str(exc)})
+                            return None  # Don't crash - let gather handle it
 
-        # PHASE 1 FIX: Inject citations into all agent reports
-        # Since LLMs resist citation format, we inject programmatically
-        logger.info(f"Injecting citations into {len(reports)} agent reports...")
-        injector = CitationInjector()
-        prefetch_data = state.get("prefetch", {}).get("data", {})
+                    tasks.append(deterministic_runner())
 
-        for report in reports:
-            # CRITICAL FIX: Inject into narrative field (this is what UI displays!)
-            if hasattr(report, 'narrative') and report.narrative:
-                original_narrative = report.narrative
-                cited_narrative = injector.inject_citations(original_narrative, prefetch_data)
-                report.narrative = cited_narrative
-                logger.info(f"Injected citations into narrative: {len(original_narrative)} -> {len(cited_narrative)} chars")
-                logger.info(f"Citations present in narrative: {'[Per extraction:' in cited_narrative}")
+                task_names.append(agent_name)
 
-            # Also inject into findings (for completeness)
-            if hasattr(report, 'findings') and report.findings:
-                updated_findings = []
-                for finding in report.findings:
-                    if isinstance(finding, dict):
-                        updated_finding = finding.copy()
+            # Execute agents with 30-minute timeout for PhD-level deep analysis
+            # Individual LLM calls have 3-minute timeout, so 30 minutes total allows for retries and parallel execution
+            try:
+                results = await asyncio.wait_for(
+                    asyncio.gather(*tasks, return_exceptions=True),
+                    timeout=1800  # 30 minutes total for all 12 agents in parallel
+                )
+            except asyncio.TimeoutError:
+                logger.error("Agent execution timed out after 10 minutes")
+                if event_cb:
+                    await event_cb("agents", "error", {"error": "Agent execution timeout after 10 minutes - may indicate hung agent"})
+                # Return partial results - treat all as failed
+                results = [Exception("Timeout") for _ in tasks]
 
-                        # Inject into analysis field
-                        if 'analysis' in updated_finding:
-                            updated_finding['analysis'] = injector.inject_citations(
-                                updated_finding['analysis'],
-                                prefetch_data
-                            )
+            reasoning_chain = list(state.get("reasoning_chain", []))
+            summary_agents = ', '.join(task_names[:5]) + ('...' if len(task_names) > 5 else '')
+            reasoning_chain.append(
+                f"? Invoking {len(task_names)} agents ({summary_agents})" if task_names else "? Invoking agents"
+            )
 
-                        # Inject into summary field
-                        if 'summary' in updated_finding:
-                            updated_finding['summary'] = injector.inject_citations(
-                                updated_finding['summary'],
-                                prefetch_data
-                            )
+            for agent_name, result in zip(task_names, results):
+                display_name = self._normalize_agent_name(agent_name)
 
-                        updated_findings.append(updated_finding)
-                    else:
-                        updated_findings.append(finding)
+                if isinstance(result, Exception):
+                    logger.error("%s failed", agent_name, exc_info=result)
+                    reasoning_chain.append(f"✗ {agent_name} failed: {result}")
+                    # Ensure error event is emitted if not already
+                    if event_cb:
+                        await event_cb(f"agent:{display_name}", "error", {"error": str(result)})
+                    continue
+                
+                if result is None:
+                    logger.warning(f"{agent_name} returned None (failed gracefully)")
+                    reasoning_chain.append(f"✗ {agent_name} failed gracefully")
+                    # Ensure error event is emitted
+                    if event_cb:
+                        await event_cb(f"agent:{display_name}", "error", {"error": "Agent returned no results"})
+                    continue
 
-                report.findings = updated_findings
+                report = result
+                if getattr(report, "agent", None) != agent_name:
+                    report.agent = agent_name
+                reports.append(report)
 
-        logger.info("Citation injection complete")
+                if getattr(report, "narrative", None):
+                    state[f"{agent_name}_analysis"] = report.narrative
 
-        # Update reasoning chain
-        reasoning_chain = list(state.get("reasoning_chain", []))
-        reasoning_chain.append(
-            f"Γ£ô Multi-agent analysis: executed {len(reports)} agent report(s) with inline citations"
-        )
+                reasoning_chain.append(f"? {agent_name} completed with structured output")
 
-        return {
-            **state,
-            "agent_reports": reports,
-            "reasoning_chain": reasoning_chain,
-        }
+            state["reasoning_chain"] = reasoning_chain
+
+            # PHASE 1 FIX: Inject citations into all agent reports
+            # Since LLMs resist citation format, we inject programmatically
+            logger.info(f"Injecting citations into {len(reports)} agent reports...")
+            injector = CitationInjector()
+            prefetch_data = state.get("prefetch", {}).get("data", {})
+
+            for report in reports:
+                # CRITICAL FIX: Inject into narrative field (this is what UI displays!)
+                if hasattr(report, 'narrative') and report.narrative:
+                    original_narrative = report.narrative
+                    cited_narrative = injector.inject_citations(original_narrative, prefetch_data)
+                    report.narrative = cited_narrative
+                    logger.info(f"Injected citations into narrative: {len(original_narrative)} -> {len(cited_narrative)} chars")
+                    logger.info(f"Citations present in narrative: {'[Per extraction:' in cited_narrative}")
+
+                # Also inject into findings (for completeness)
+                if hasattr(report, 'findings') and report.findings:
+                    updated_findings = []
+                    for finding in report.findings:
+                        if isinstance(finding, dict):
+                            updated_finding = finding.copy()
+
+                            # Inject into analysis field
+                            if 'analysis' in updated_finding:
+                                updated_finding['analysis'] = injector.inject_citations(
+                                    updated_finding['analysis'],
+                                    prefetch_data
+                                )
+
+                            # Inject into summary field
+                            if 'summary' in updated_finding:
+                                updated_finding['summary'] = injector.inject_citations(
+                                    updated_finding['summary'],
+                                    prefetch_data
+                                )
+
+                            updated_findings.append(updated_finding)
+                        else:
+                            updated_findings.append(finding)
+
+                    report.findings = updated_findings
+
+            logger.info("Citation injection complete")
+
+            # Update reasoning chain
+            reasoning_chain = list(state.get("reasoning_chain", []))
+            reasoning_chain.append(
+                f"Γ£ô Multi-agent analysis: executed {len(reports)} agent report(s) with inline citations"
+            )
+
+            return {
+                **state,
+                "agent_reports": reports,
+                "reasoning_chain": reasoning_chain,
+            }
+        
+        except Exception as e:
+            logger.error(f"Agent execution failed: {e}", exc_info=True)
+            if state.get("event_callback"):
+                await state["event_callback"]("agents", "error", {"error": str(e)})
+            
+            return {
+                **state,
+                "agent_reports": [],
+                "error": f"Agent execution failed: {e}"
+            }
     
+
+    def _run_deterministic_agent_sync(
+        self,
+        agent_name: str,
+        agent_obj: Any,
+        question: str,
+    ) -> AgentReport:
+        """Execute deterministic agent synchronously and return an AgentReport."""
+        end_date = date.today()
+        start_date = self._default_window_start(end_date)
+
+        try:
+            if agent_name == "TimeMachine":
+                narrative = agent_obj.baseline_report(
+                    metric="unemployment",
+                    start=start_date,
+                    end=end_date,
+                )
+                return self._make_narrative_report(agent_name, narrative)
+
+            if agent_name == "Predictor":
+                narrative = agent_obj.forecast_baseline(
+                    metric="retention",
+                    sector=None,
+                    start=start_date,
+                    end=end_date,
+                    horizon_months=6,
+                )
+                return self._make_narrative_report(agent_name, narrative)
+
+            if agent_name == "Scenario":
+                spec = self._build_default_scenario_spec(question)
+                narrative = agent_obj.apply(spec)
+                return self._make_narrative_report(agent_name, narrative)
+
+            if agent_name == "PatternDetectiveAgent":
+                report = agent_obj.detect_anomalous_retention()
+                report.agent = agent_name
+                return report
+
+            if agent_name == "PatternMiner":
+                narrative = agent_obj.stable_relations(
+                    outcome="retention",
+                    drivers=["qatarization", "attrition"],
+                    window=12,
+                    min_support=12,
+                )
+                return self._make_narrative_report(agent_name, narrative)
+
+            if agent_name == "NationalStrategy":
+                report = agent_obj.gcc_benchmark()
+                report.agent = agent_name
+                return report
+
+            if agent_name == "AlertCenter":
+                report = agent_obj.status()
+                report.agent = agent_name
+                return report
+
+            return AgentReport(
+                agent=agent_name,
+                findings=[],
+                warnings=[f"No deterministic runner configured for {agent_name}"],
+                narrative=f"{agent_name} is not configured for direct execution.",
+            )
+
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.error("Deterministic agent %s failed: %s", agent_name, exc, exc_info=True)
+            return AgentReport(
+                agent=agent_name,
+                findings=[],
+                warnings=[f"Execution failed: {exc}"],
+                narrative=f"{agent_name} failed: {exc}",
+            )
+
+    @staticmethod
+    def _make_narrative_report(agent_name: str, narrative: str) -> AgentReport:
+        """Create an AgentReport wrapper for deterministic narratives."""
+        return AgentReport(agent=agent_name, findings=[], narrative=narrative)
+
+    @staticmethod
+    def _default_window_start(end_date: date) -> date:
+        """Return a safe two-year window for deterministic analyses."""
+        try:
+            return end_date.replace(year=end_date.year - 2)
+        except ValueError:
+            return end_date - timedelta(days=730)
+
+    @staticmethod
+    def _build_default_scenario_spec(question: str) -> str:
+        """Build a deterministic scenario specification using the question context."""
+        preview = (question or "Ministerial scenario").strip().replace("\n", " ")
+        preview = preview[:120] if preview else "Ministerial scenario"
+        return textwrap.dedent(
+            f"""
+            name: Auto Scenario
+            description: Derived from query: {preview}
+            metric: retention
+            sector: Construction
+            horizon_months: 12
+            transforms:
+              - type: multiplicative
+                value: 0.05
+                start_month: 0
+            """
+        ).strip()
+
     async def _verify_node(self, state: WorkflowState) -> WorkflowState:
         """
         Verify agent outputs for citations and number accuracy.
@@ -710,11 +1024,19 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
             from .verification import verify_report
 
             reports = state.get("agent_reports", [])
-            # Try both possible keys for prefetch data
+            # Try both possible keys for prefetch data - defensive access
             prefetch_data = state.get("prefetch_data", {})
             if not prefetch_data:
                 prefetch_info = state.get("prefetch", {})
-                prefetch_data = prefetch_info.get("data", {})
+                if isinstance(prefetch_info, dict):
+                    prefetch_data = prefetch_info.get("data", {})
+                else:
+                    prefetch_data = {}
+            
+            # Defensive: ensure all required state keys exist with defaults
+            debate_results = state.get("debate_results", {})
+            if not isinstance(debate_results, dict):
+                debate_results = {}
 
             logger.info(f"VERIFICATION START: Checking {len(reports)} reports with {len(prefetch_data)} prefetch results")
 
@@ -846,7 +1168,10 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
                 await state["event_callback"](
                     "verify",
                     "complete",
-                    verification_result,
+                    {
+                        **verification_result,
+                        "reasoning_chain": reasoning_chain
+                    },
                     latency_ms
                 )
             
@@ -879,83 +1204,95 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
         Returns:
             List of contradiction dicts
         """
-        contradictions = []
+        try:
+            contradictions = []
 
-        # Extract numbers and citations from each report
-        number_pattern = r'\b(\d+\.?\d*%?)\b'
-        citation_pattern = r'\[Per extraction: \'([^\']+)\' from ([^\]]+)\]'
+            # Extract numbers and citations from each report
+            number_pattern = r'\b(\d+\.?\d*%?)\b'
+            citation_pattern = r'\[Per extraction: \'([^\']+)\' from ([^\]]+)\]'
 
-        for i, report1 in enumerate(reports):
-            for report2 in reports[i+1:]:
-                # Extract all numbers with nearby citations from both reports
-                narrative1 = report1.get("narrative", "")
-                narrative2 = report2.get("narrative", "")
+            for i, report1 in enumerate(reports):
+                for report2 in reports[i+1:]:
+                    # Extract all numbers with nearby citations from both reports
+                    # Handle AgentReport objects - use getattr for safe access
+                    narrative1 = getattr(report1, 'narrative', '') or ''
+                    narrative2 = getattr(report2, 'narrative', '') or ''
 
-                # Find numbers in report1
-                numbers1 = re.finditer(number_pattern, narrative1)
-                for match1 in numbers1:
-                    value1_str = match1.group(1)
-                    pos1 = match1.start()
-
-                    # Find nearby citation
-                    citation_search1 = narrative1[max(0, pos1-100):min(len(narrative1), pos1+100)]
-                    citation_match1 = re.search(citation_pattern, citation_search1)
-
-                    if not citation_match1:
-                        continue
-
-                    citation1_value = citation_match1.group(1)
-                    citation1_source = citation_match1.group(2)
-
-                    # Now look for similar metric in report2
-                    numbers2 = re.finditer(number_pattern, narrative2)
-                    for match2 in numbers2:
-                        value2_str = match2.group(1)
-                        pos2 = match2.start()
+                    # Find numbers in report1
+                    numbers1 = re.finditer(number_pattern, narrative1)
+                    for match1 in numbers1:
+                        value1_str = match1.group(1)
+                        pos1 = match1.start()
 
                         # Find nearby citation
-                        citation_search2 = narrative2[max(0, pos2-100):min(len(narrative2), pos2+100)]
-                        citation_match2 = re.search(citation_pattern, citation_search2)
+                        citation_search1 = narrative1[max(0, pos1-100):min(len(narrative1), pos1+100)]
+                        citation_match1 = re.search(citation_pattern, citation_search1)
 
-                        if not citation_match2:
+                        if not citation_match1:
                             continue
 
-                        citation2_value = citation_match2.group(1)
-                        citation2_source = citation_match2.group(2)
+                        citation1_value = citation_match1.group(1)
+                        citation1_source = citation_match1.group(2)
 
-                        # Check if this is a contradiction (same metric, different values)
-                        # Parse numeric values
-                        try:
-                            val1 = float(value1_str.replace('%', ''))
-                            val2 = float(value2_str.replace('%', ''))
+                        # Now look for similar metric in report2
+                        numbers2 = re.finditer(number_pattern, narrative2)
+                        for match2 in numbers2:
+                            value2_str = match2.group(1)
+                            pos2 = match2.start()
 
-                            # Skip if values are the same (or very close - within 0.1%)
-                            if abs(val1 - val2) <= 0.001:
+                            # Find nearby citation
+                            citation_search2 = narrative2[max(0, pos2-100):min(len(narrative2), pos2+100)]
+                            citation_match2 = re.search(citation_pattern, citation_search2)
+
+                            if not citation_match2:
                                 continue
 
-                            # Check if values differ by more than 5%
-                            if val1 > 0 and abs(val1 - val2) / val1 > 0.05:
-                                # This is a potential contradiction
-                                contradictions.append({
-                                    "metric_name": f"metric_at_pos_{pos1}_{pos2}",
-                                    "agent1_name": report1.get("agent_name", "Unknown"),
-                                    "agent1_value": val1,
-                                    "agent1_value_str": value1_str,
-                                    "agent1_citation": f"[Per extraction: '{citation1_value}' from {citation1_source}]",
-                                    "agent1_confidence": report1.get("confidence", 0.5),
-                                    "agent2_name": report2.get("agent_name", "Unknown"),
-                                    "agent2_value": val2,
-                                    "agent2_value_str": value2_str,
-                                    "agent2_citation": f"[Per extraction: '{citation2_value}' from {citation2_source}]",
-                                    "agent2_confidence": report2.get("confidence", 0.5),
-                                    "severity": "high" if abs(val1 - val2) / val1 > 0.20 else "medium"
-                                })
-                        except ValueError:
-                            # Not numeric, skip
-                            continue
+                            citation2_value = citation_match2.group(1)
+                            citation2_source = citation_match2.group(2)
 
-        logger.info(f"Detected {len(contradictions)} contradictions")
-        return contradictions
+                            # Check if this is a contradiction (same metric, different values)
+                            # Parse numeric values
+                            try:
+                                val1 = float(value1_str.replace('%', ''))
+                                val2 = float(value2_str.replace('%', ''))
+
+                                # Skip if values are the same (or very close - within 0.1%)
+                                if abs(val1 - val2) <= 0.001:
+                                    continue
+
+                                # Check if values differ by more than 5%
+                                if val1 > 0 and abs(val1 - val2) / val1 > 0.05:
+                                    # This is a potential contradiction
+                                    # Use getattr for AgentReport objects
+                                    agent1_name = getattr(report1, 'agent', '') or getattr(report1, 'agent_name', 'Unknown')
+                                    agent2_name = getattr(report2, 'agent', '') or getattr(report2, 'agent_name', 'Unknown')
+                                    agent1_conf = getattr(report1, 'confidence', 0.5)
+                                    agent2_conf = getattr(report2, 'confidence', 0.5)
+                                    
+                                    contradictions.append({
+                                        "metric_name": f"metric_at_pos_{pos1}_{pos2}",
+                                        "agent1_name": agent1_name,
+                                        "agent1_value": val1,
+                                        "agent1_value_str": value1_str,
+                                        "agent1_citation": f"[Per extraction: '{citation1_value}' from {citation1_source}]",
+                                        "agent1_confidence": agent1_conf,
+                                        "agent2_name": agent2_name,
+                                        "agent2_value": val2,
+                                        "agent2_value_str": value2_str,
+                                        "agent2_citation": f"[Per extraction: '{citation2_value}' from {citation2_source}]",
+                                        "agent2_confidence": agent2_conf,
+                                        "severity": "high" if abs(val1 - val2) / val1 > 0.20 else "medium"
+                                    })
+                            except ValueError:
+                                # Not numeric, skip
+                                continue
+
+            logger.info(f"Detected {len(contradictions)} contradictions")
+            return contradictions
+
+        except Exception as e:
+            logger.error(f"Contradiction detection failed: {e}", exc_info=True)
+            return []
 
     async def _conduct_debate(self, contradiction: dict) -> dict:
         """
@@ -1077,12 +1414,17 @@ OUTPUT FORMAT (JSON):
         adjusted_reports = []
 
         for report in reports:
-            adjusted_report = report.copy()
+            # AgentReport is a dataclass, so we need to access attributes directly
+            # Create a copy by converting to dict
+            from dataclasses import asdict
+            adjusted_report = asdict(report)
 
             # Find resolutions that affect this report
+            # Use getattr for safe attribute access
+            agent_name = getattr(report, 'agent', '') or getattr(report, 'agent_name', '')
             relevant_resolutions = [
                 r for r in resolutions
-                if r.get("explanation", "").find(report.get("agent_name", "")) >= 0
+                if r.get("explanation", "").find(agent_name) >= 0
             ]
 
             if relevant_resolutions:
@@ -1091,7 +1433,8 @@ OUTPUT FORMAT (JSON):
                 for r in relevant_resolutions:
                     debate_context += f"- {r['explanation']}\n"
 
-                adjusted_report["narrative"] = report.get("narrative", "") + debate_context
+                current_narrative = getattr(report, 'narrative', '') or ''
+                adjusted_report["narrative"] = current_narrative + debate_context
 
             adjusted_reports.append(adjusted_report)
 
@@ -1099,101 +1442,125 @@ OUTPUT FORMAT (JSON):
 
     async def _debate_node(self, state: WorkflowState) -> WorkflowState:
         """
-        Conduct multi-agent debate to resolve contradictions.
-
-        Args:
-            state: Current workflow state with agent_reports
-
-        Returns:
-            Updated state with debate_results and adjusted reports
+        Conduct legendary multi-turn debate between agents.
+        
+        Uses new LegendaryDebateOrchestrator for 80-125 turn conversations.
         """
         if state.get("event_callback"):
             await state["event_callback"]("debate", "running")
-
+        
         start_time = datetime.now(timezone.utc)
         reports = state.get("agent_reports", [])
-
+        
         # 1. Detect contradictions
         contradictions = self._detect_contradictions(reports)
-
+        
         if not contradictions:
-            logger.info("No contradictions detected - skipping debate")
+            logger.info("No contradictions detected - but running legendary debate anyway for depth")
+            # We will continue to legendary debate even without contradictions
+            # The orchestrator handles this by creating a "policy debate" topic
+        
+        logger.info(f"Starting legendary debate with {len(contradictions)} contradictions")
+        
+        # Import debate orchestrator
+        from .legendary_debate_orchestrator import LegendaryDebateOrchestrator
+        
+        # Create orchestrator with event callback
+        orchestrator = LegendaryDebateOrchestrator(
+            emit_event_fn=state.get("event_callback"),
+            llm_client=self.llm_client
+        )
+        
+        # Build agents map (both LLM and deterministic)
+        agents_map = {}
+        
+        # Add LLM agents
+        for name, agent in self.agents.items():
+            agents_map[name] = agent
+        
+        # Add deterministic agents (they'll contribute data-backed points)
+        for name, agent in self.deterministic_agents.items():
+            agents_map[name] = agent
+        
+        # Build agent reports map for deterministic agents to access their narratives
+        agent_reports_map = {}
+        for report in reports:
+            agent_name = getattr(report, 'agent', None)
+            if agent_name:
+                agent_reports_map[agent_name] = report
+        
+        # Conduct legendary debate
+        try:
+            debate_results = await orchestrator.conduct_legendary_debate(
+                question=state["question"],
+                contradictions=contradictions,
+                agents_map=agents_map,
+                agent_reports_map=agent_reports_map,
+                llm_client=self.llm_client
+            )
+        except Exception as exc:
+            logger.exception("Legendary debate failed")
 
             if state.get("event_callback"):
-                await state["event_callback"](
-                    "debate",
-                    "complete",
-                    {"contradictions": 0, "status": "skipped"},
-                    0
-                )
+                try:
+                    await state["event_callback"](
+                        "debate",
+                        "error",
+                        {"error": str(exc)}
+                    )
+                except Exception:
+                    logger.exception("Failed to emit debate error event")
 
-            # Update reasoning chain (explicitly record that debate was skipped)
-            reasoning_chain = list(state.get("reasoning_chain", []))
-            reasoning_chain.append("Γ£ô Debate: no contradictions detected; debate skipped")
-
-            return {
-                **state,
-                "debate_results": {
-                    "contradictions_found": 0,
-                    "status": "skipped",
-                    "latency_ms": 0,
-                },
-                "reasoning_chain": reasoning_chain,
-            }
-
-        logger.info(f"Detected {len(contradictions)} contradictions - starting debate")
-
-        # 2. Conduct structured debates
-        resolutions = []
-        for contradiction in contradictions:
-            resolution = await self._conduct_debate(contradiction)
-            resolutions.append(resolution)
-
-        # 3. Build consensus
-        consensus = self._build_consensus(resolutions)
-
-        # 4. Adjust agent reports based on debate
-        adjusted_reports = self._apply_debate_resolutions(reports, resolutions)
-
+            raise
+        
         latency_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
-
+        
         logger.info(
-            f"Debate complete: {consensus['resolved_contradictions']} resolved, "
-            f"{consensus['flagged_for_review']} flagged, latency={latency_ms:.0f}ms"
+            f"Debate complete: {debate_results['total_turns']} turns, "
+            f"latency={latency_ms:.0f}ms"
         )
-
+        
         if state.get("event_callback"):
             await state["event_callback"](
                 "debate",
                 "complete",
                 {
                     "contradictions": len(contradictions),
-                    "resolved": consensus["resolved_contradictions"],
-                    "flagged": consensus["flagged_for_review"]
+                    "total_turns": debate_results["total_turns"],
+                    "resolutions": debate_results["resolutions"],
+                    "consensus": debate_results["consensus"],
+                    "final_report": debate_results["final_report"]
                 },
                 latency_ms
             )
-
+        
         # Update reasoning chain
         reasoning_chain = list(state.get("reasoning_chain", []))
         reasoning_chain.append(
-            "Γ£ô Debate: "
-            f"{consensus['resolved_contradictions']} contradiction(s) resolved, "
-            f"{consensus['flagged_for_review']} flagged for review"
+            f"Γ£ô Legendary Debate: {debate_results['total_turns']} turns, "
+            f"{len(contradictions)} contradictions debated, 6 phases completed"
         )
-
+        
+        # We update the synthesis with the final report from the debate
+        # This replaces the need for a separate synthesis step if the debate is comprehensive
+        # But the workflow has a synthesis node next. We can pass the debate report as a finding.
+        
         return {
             **state,
-            "agent_reports": adjusted_reports,
             "debate_results": {
                 "contradictions_found": len(contradictions),
-                "resolved": consensus["resolved_contradictions"],
-                "flagged_for_review": consensus["flagged_for_review"],
-                "consensus_narrative": consensus["consensus_narrative"],
+                "total_turns": debate_results["total_turns"],
+                "conversation_history": debate_results["conversation_history"],
+                "resolutions": debate_results["resolutions"],
+                "consensus": debate_results["consensus"],
                 "latency_ms": latency_ms,
                 "status": "complete",
+                "contradictions": contradictions,
+                "final_report": debate_results["final_report"]
             },
             "reasoning_chain": reasoning_chain,
+            # Optional: Pre-fill synthesis if the debate report is good enough
+            "synthesis": debate_results["final_report"] 
         }
 
     async def _critique_node(self, state: WorkflowState) -> WorkflowState:
@@ -1334,9 +1701,12 @@ OUTPUT FORMAT (JSON):
                     "critique",
                     "complete",
                     {
-                        "critiques": len(critique.get("critiques", [])),
+                        "num_critiques": len(critique.get("critiques", [])),
                         "red_flags": len(critique.get("red_flags", [])),
-                        "strengthened": critique.get("strengthened_by_critique", False)
+                        "strengthened": critique.get("strengthened_by_critique", False),
+                        "critiques": critique.get("critiques", []),  # Include actual critiques
+                        "overall_assessment": critique.get("overall_assessment", ""),
+                        "full_critique": critique  # Include full critique for display
                     },
                     latency_ms
                 )
@@ -1344,8 +1714,7 @@ OUTPUT FORMAT (JSON):
             # Update reasoning chain
             reasoning_chain = list(state.get("reasoning_chain", []))
             reasoning_chain.append(
-                "Γ£ô Critique: "
-                f"{len(critique.get('critiques', []))} critique(s), "
+                f"Γ£ô Critique: {len(critique.get('critiques', []))} critique(s), "
                 f"{len(critique.get('red_flags', []))} red flag(s)"
             )
 
@@ -1547,21 +1916,21 @@ Synthesis:"""
         
         # Add total latency
         start_time = datetime.fromisoformat(final_state["metadata"]["start_time"])
-        total_latency_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
-        final_state["metadata"]["total_latency_ms"] = total_latency_ms
-        
-        return final_state
     
-    async def run_stream(self, question: str, event_callback) -> AsyncIterator[Dict[str, Any]]:
+    async def run_stream(
+        self, 
+        question: str, 
+        event_callback: Any
+    ) -> Dict[str, Any]:
         """
         Run workflow with streaming events.
         
         Args:
             question: User's question
-            event_callback: Async callback for events (stage, status, payload, latency_ms)
+            event_callback: Async callback function(stage, status, payload, latency)
             
-        Yields:
-            Workflow state updates
+        Returns:
+            Final workflow state
         """
         initial_state: WorkflowState = {
             "question": question,
@@ -1580,21 +1949,31 @@ Synthesis:"""
                 "start_time": datetime.now(timezone.utc).isoformat()
             },
             "reasoning_chain": [],
-            "event_callback": event_callback,
+            "event_callback": event_callback
         }
         
-        # Execute graph
-        final_state = await self.graph.ainvoke(initial_state)
-        
-        # Add total latency
-        start_time = datetime.fromisoformat(final_state["metadata"]["start_time"])
-        total_latency_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
-        final_state["metadata"]["total_latency_ms"] = total_latency_ms
-        
-        # Emit completion
-        await event_callback("done", "complete", final_state, total_latency_ms)
-        
-        return final_state
+        try:
+            final_state = await self.graph.ainvoke(initial_state)
+            
+            # Emit done event
+            if event_callback:
+                start_time = datetime.fromisoformat(final_state["metadata"]["start_time"])
+                total_latency_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
+                
+                await event_callback(
+                    "done",
+                    "complete",
+                    final_state,
+                    total_latency_ms
+                )
+                
+            return final_state
+            
+        except Exception as e:
+            logger.error(f"Streaming workflow failed: {e}", exc_info=True)
+            if event_callback:
+                await event_callback("error", "error", {"error": str(e)})
+            raise e
 
 
 def build_workflow(

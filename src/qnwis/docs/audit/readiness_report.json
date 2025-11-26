@@ -2,7 +2,7 @@
   "gates": [
     {
       "name": "step_completeness",
-      "ok": false,
+      "ok": true,
       "details": {
         "steps": {
           "step_01": {
@@ -117,13 +117,11 @@
           },
           "step_11": {
             "name": "UI demos",
-            "code_ok": false,
+            "code_ok": true,
             "tests_ok": true,
             "smoke_ok": true,
             "missing": {
-              "code": [
-                "qnwis-ui/src/App.tsx"
-              ],
+              "code": [],
               "tests": [],
               "smoke": []
             }
@@ -338,38 +336,257 @@
             }
           }
         },
-        "missing": {
-          "step_11": {
-            "code": [
-              "qnwis-ui/src/App.tsx"
-            ],
-            "tests": [],
-            "smoke": []
-          }
-        }
+        "missing": {}
       },
-      "duration_ms": 15.128135681152344,
+      "duration_ms": 15.728950500488281,
       "severity": "ERROR",
       "evidence_paths": [
         "docs/IMPLEMENTATION_ROADMAP.md"
       ],
-      "timestamp": "2025-11-19T12:14:31.941034"
+      "timestamp": "2025-11-26T06:46:08.362524"
+    },
+    {
+      "name": "no_placeholders",
+      "ok": false,
+      "details": {
+        "patterns": [
+          "^\\s*(?:#\\s*)?TODO\\b.*$",
+          "^\\s*(?:#\\s*)?FIXME\\b.*$",
+          "^\\s*(?:#\\s*)?HACK\\b.*$",
+          "^\\s*(?:#\\s*)?XXX\\b.*$",
+          "^\\s*pass\\s*$",
+          "^\\s*NotImplemented\\b.*$",
+          "^\\s*raise\\s+NotImplementedError\\b.*$"
+        ],
+        "violations": [
+          {
+            "file": "src/qnwis/agents/base_llm.py",
+            "line": 258,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/agents/base_llm.py",
+            "line": 278,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/classification/classifier.py",
+            "line": 73,
+            "pattern": "^\\s*(?:#\\s*)?TODO\\b.*$",
+            "snippet": "# TODO: Implement smart classification after system is proven"
+          },
+          {
+            "file": "src/qnwis/cli/qnwis_continuity.py",
+            "line": 37,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/cli/qnwis_dr.py",
+            "line": 436,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/continuity/executor.py",
+            "line": 148,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/continuity/executor.py",
+            "line": 165,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/continuity/executor.py",
+            "line": 182,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/continuity/executor.py",
+            "line": 199,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/continuity/executor.py",
+            "line": 212,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/continuity/executor.py",
+            "line": 229,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/data/connectors/qatar_opendata_api.py",
+            "line": 192,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/dr/storage.py",
+            "line": 47,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/dr/storage.py",
+            "line": 63,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/dr/storage.py",
+            "line": 76,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/dr/storage.py",
+            "line": 89,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/dr/storage.py",
+            "line": 102,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/llm/exceptions.py",
+            "line": 8,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/llm/exceptions.py",
+            "line": 13,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/llm/exceptions.py",
+            "line": 18,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/llm/exceptions.py",
+            "line": 23,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/llm/exceptions.py",
+            "line": 28,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/llm/exceptions.py",
+            "line": 33,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/llm/parser.py",
+            "line": 231,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/orchestration/graph_llm.py",
+            "line": 1156,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/orchestration/intelligent_data_extraction.py",
+            "line": 293,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/orchestration/legendary_debate_orchestrator.py",
+            "line": 46,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/orchestration/legendary_debate_orchestrator.py",
+            "line": 79,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/orchestration/legendary_debate_orchestrator.py",
+            "line": 95,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/orchestration/master_data_extraction.py",
+            "line": 243,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/orchestration/master_data_extraction.py",
+            "line": 259,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/orchestration/prefetch_apis.py",
+            "line": 192,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/orchestration/smart_data_router.py",
+            "line": 579,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/orchestration/smart_data_router.py",
+            "line": 912,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          }
+        ]
+      },
+      "duration_ms": 2559.5462322235107,
+      "severity": "ERROR",
+      "evidence_paths": [
+        "src/qnwis/scripts/qa/grep_rules.yml"
+      ],
+      "timestamp": "2025-11-26T06:46:10.922607"
     }
   ],
   "overall_pass": false,
-  "execution_time_ms": 23.386001586914062,
-  "timestamp": "2025-11-19T12:14:31.949292",
+  "execution_time_ms": 2575.8514404296875,
+  "timestamp": "2025-11-26T06:46:10.922647",
   "summary": {
-    "total_gates": 1,
-    "total": 1,
-    "passed": 0,
+    "total_gates": 2,
+    "total": 2,
+    "passed": 1,
     "failed": 1
   },
   "artifacts": {
     "coverage.xml": "a983cdf5fa5911a848b72fb3c0e1873dc544bc88697bf45abf0d4bbfd5223104",
     "junit.xml": "1936cb6760d2944a3e93d625ce6d9911b24758cee616d5db7eb8eb0f3abf7270",
-    "src/qnwis/docs/audit/READINESS_REPORT_1_25.md": "9401fab1eed3eadca2925ad0874f0fce55fb883aab79d14b7e9576fd1a56d345",
-    "src/qnwis/docs/audit/READINESS_SUMMARY.html": "f0d6679bcd84ebfeb71f735b081daa0ab66339adb302864a796d224ba7fe84b3",
+    "src/qnwis/docs/audit/READINESS_REPORT_1_25.md": "0487732ff25b766b8ba9f1526273b400860b4a60c5e82f5f98d14e275a088588",
+    "src/qnwis/docs/audit/READINESS_SUMMARY.html": "afcf4d811901cc9caf56f64e4020967160f9f38b66be66b7e4941ff165939aec",
     "src/qnwis/docs/audit/badges/rg1_pass.svg": "9995f7f48c4cb371d7db73a0cb755b09a43f686d6f82bb85a81eb9d7b1b857d8",
     "ops_notify_report.json": "eeeb7a4be860d00f103c927d235181ddb91dc12b888dfe0f08284ff29cf686ce",
     "OPS_NOTIFY_SUMMARY.md": "292aa2e89f94f28714ca7fed8a86fc45c48d896c936d714c36b877f7c918673f",
@@ -387,9 +604,9 @@
     "docs/audit/rg7/DR_SUMMARY.md": "9ae905e6286676f0d3902004400824e35fadc37d8b4ed7047cb6d65491af0ac2",
     "docs/audit/rg7/sample_manifest.json": "d04382655812b537b43247d53653cc47421b2b4d0c0910ae482ed4c70df9be84",
     "src/qnwis/docs/audit/badges/rg7_pass.svg": "4b179dc9aa67e5dc0a76eac73c7c4c285662ee8fd575b9a6babf5413bd0a14af",
-    "docs/audit/rg8/rg8_report.json": "7d30c78381c0edba2bcf5859e3bd83e9a5b34aefa2a48aa3e471bded152fd8bc",
+    "docs/audit/rg8/rg8_report.json": "bac05d8a96ab1a444ae212a7403baca189e738a8beb208b20eb87884ebb1b2e6",
     "docs/audit/rg8/CONTINUITY_SUMMARY.md": "7baf3f961363b2dc79c05a02976bdd6fb2ca905e3747fe6de069603d66e942b5",
-    "docs/audit/rg8/sample_plan.yaml": "096a77d874dd4af82f9200275c7df64fcf9f996006239f15e5542b6713f1ea1d",
+    "docs/audit/rg8/sample_plan.yaml": "68b1f17b4d166fca0246cf860c4b8affa65afa201cad5f8aea99e9db9a1fa7c1",
     "src/qnwis/docs/audit/badges/rg8_pass.svg": "dd7d6c73ea33703864a5044faa10e6654ead7bedc00a14fe36774d78139926d6",
     "docs/audit/badges/rg8_pass.svg": "dd7d6c73ea33703864a5044faa10e6654ead7bedc00a14fe36774d78139926d6"
   },

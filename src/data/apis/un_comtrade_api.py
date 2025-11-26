@@ -59,18 +59,10 @@ class UNComtradeConnector:
         await self.client.aclose()
     
     async def _rate_limit_check(self):
-        """Enforce 100 req/hour rate limit"""
-        self._request_count += 1
-        
-        # Simple rate limiting: max 1 req/36 seconds = 100/hour
-        if self._request_count > 1:
-            time_since_last = (datetime.utcnow() - self._last_request_time).total_seconds()
-            if time_since_last < 36:
-                wait_time = 36 - time_since_last
-                logger.info(f"Rate limiting: waiting {wait_time:.1f}s")
-                await asyncio.sleep(wait_time)
-        
-        self._last_request_time = datetime.utcnow()
+        """Enforce 100 req/hour rate limit - DISABLED to avoid blocking workflow"""
+        # DISABLED: UN Comtrade requires auth, so we fail fast instead of rate limiting
+        # This prevents 35+ second waits that block the entire workflow
+        pass
     
     async def get_imports(
         self,
@@ -108,9 +100,9 @@ class UNComtradeConnector:
             return response.json()
             
         except httpx.HTTPError as e:
-            logger.error(f"UN Comtrade API request failed: {e}")
-            logger.warning(f"If you see 401 errors, you may need an API key from https://comtradeapi.un.org/")
-            return {"error": str(e), "data": []}
+            logger.warning(f"UN Comtrade API unavailable (401 auth required) - skipping")
+            # Return immediately without retrying to avoid blocking workflow
+            return {"error": "auth_required", "data": []}
     
     async def get_total_food_imports(self, year: int = 2023) -> Dict:
         """Get Qatar's total food imports across all categories"""

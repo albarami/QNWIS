@@ -1,0 +1,219 @@
+{
+  "summary": {
+    "total_tests": 15,
+    "passed": 15,
+    "failed": 0,
+    "accuracy_pct": 100.0,
+    "by_table": {
+      "world_bank_indicators": {
+        "passed": 9,
+        "failed": 0,
+        "total_rows": 2431
+      },
+      "ilo_labour_data": {
+        "passed": 2,
+        "failed": 0,
+        "total_rows": 6
+      },
+      "gcc_labour_statistics": {
+        "passed": 1,
+        "failed": 0,
+        "total_rows": 0
+      },
+      "vision_2030_targets": {
+        "passed": 2,
+        "failed": 0,
+        "total_rows": 7
+      },
+      "world_bank + ilo": {
+        "passed": 1,
+        "failed": 0,
+        "total_rows": 0
+      }
+    },
+    "duration_seconds": 47.45766,
+    "failed_tests": []
+  },
+  "all_results": [
+    {
+      "test_name": "world_bank_table_exists",
+      "table_name": "world_bank_indicators",
+      "indicator": "table_existence",
+      "expected": 1,
+      "actual": 1,
+      "passed": true,
+      "row_count": 0,
+      "error": null,
+      "deviation_pct": null,
+      "timestamp": "2025-11-25T16:37:01.792952"
+    },
+    {
+      "test_name": "world_bank_has_data",
+      "table_name": "world_bank_indicators",
+      "indicator": "row_count",
+      "expected": 100,
+      "actual": 2431,
+      "passed": true,
+      "row_count": 2431,
+      "error": null,
+      "deviation_pct": null,
+      "timestamp": "2025-11-25T16:37:01.839619"
+    },
+    {
+      "test_name": "postgres_qatar_unemployment",
+      "table_name": "world_bank_indicators",
+      "indicator": "unemployment_rate",
+      "expected": 0.1,
+      "actual": 0.126,
+      "passed": true,
+      "row_count": 0,
+      "error": null,
+      "deviation_pct": 25.999999999999996,
+      "timestamp": "2025-11-25T16:37:01.889466"
+    },
+    {
+      "test_name": "postgres_qatar_gdp",
+      "table_name": "world_bank_indicators",
+      "indicator": "gdp_current_usd",
+      "expected": 219000000000,
+      "actual": 217982967032.967,
+      "passed": true,
+      "row_count": 0,
+      "error": null,
+      "deviation_pct": 0.4643986150835568,
+      "timestamp": "2025-11-25T16:37:01.938177"
+    },
+    {
+      "test_name": "postgres_qatar_life_expectancy",
+      "table_name": "world_bank_indicators",
+      "indicator": "life_expectancy",
+      "expected": 82.4,
+      "actual": 82.368,
+      "passed": true,
+      "row_count": 0,
+      "error": null,
+      "deviation_pct": 0.038834951456323645,
+      "timestamp": "2025-11-25T16:37:01.984962"
+    },
+    {
+      "test_name": "postgres_gcc_countries_present",
+      "table_name": "world_bank_indicators",
+      "indicator": "gcc_country_coverage",
+      "expected": 6,
+      "actual": 6,
+      "passed": true,
+      "row_count": 0,
+      "error": null,
+      "deviation_pct": null,
+      "timestamp": "2025-11-25T16:37:02.032268"
+    },
+    {
+      "test_name": "postgres_indicator_coverage",
+      "table_name": "world_bank_indicators",
+      "indicator": "indicator_coverage_pct",
+      "expected": 80,
+      "actual": 100.0,
+      "passed": true,
+      "row_count": 0,
+      "error": null,
+      "deviation_pct": null,
+      "timestamp": "2025-11-25T16:37:02.079023"
+    },
+    {
+      "test_name": "postgres_no_placeholder_unemployment",
+      "table_name": "world_bank_indicators",
+      "indicator": "placeholder_data_check",
+      "expected": 0,
+      "actual": 0,
+      "passed": true,
+      "row_count": 0,
+      "error": null,
+      "deviation_pct": null,
+      "timestamp": "2025-11-25T16:37:02.126929"
+    },
+    {
+      "test_name": "postgres_data_freshness",
+      "table_name": "world_bank_indicators",
+      "indicator": "data_year",
+      "expected": 2024,
+      "actual": 2024,
+      "passed": true,
+      "row_count": 0,
+      "error": null,
+      "deviation_pct": null,
+      "timestamp": "2025-11-25T16:37:02.173646"
+    },
+    {
+      "test_name": "ilo_table_exists",
+      "table_name": "ilo_labour_data",
+      "indicator": "table_existence",
+      "expected": 1,
+      "actual": 1,
+      "passed": true,
+      "row_count": 0,
+      "error": null,
+      "deviation_pct": null,
+      "timestamp": "2025-11-25T16:37:02.223070"
+    },
+    {
+      "test_name": "ilo_has_data",
+      "table_name": "ilo_labour_data",
+      "indicator": "row_count",
+      "expected": 10,
+      "actual": 6,
+      "passed": true,
+      "row_count": 6,
+      "error": null,
+      "deviation_pct": null,
+      "timestamp": "2025-11-25T16:37:02.273364"
+    },
+    {
+      "test_name": "gcc_table_exists",
+      "table_name": "gcc_labour_statistics",
+      "indicator": "table_existence",
+      "expected": 1,
+      "actual": 1,
+      "passed": true,
+      "row_count": 0,
+      "error": null,
+      "deviation_pct": null,
+      "timestamp": "2025-11-25T16:37:02.320965"
+    },
+    {
+      "test_name": "vision2030_table_exists",
+      "table_name": "vision_2030_targets",
+      "indicator": "table_existence",
+      "expected": 1,
+      "actual": 1,
+      "passed": true,
+      "row_count": 0,
+      "error": null,
+      "deviation_pct": null,
+      "timestamp": "2025-11-25T16:37:02.368238"
+    },
+    {
+      "test_name": "vision2030_has_data",
+      "table_name": "vision_2030_targets",
+      "indicator": "row_count",
+      "expected": 5,
+      "actual": 7,
+      "passed": true,
+      "row_count": 7,
+      "error": null,
+      "deviation_pct": null,
+      "timestamp": "2025-11-25T16:37:02.415011"
+    },
+    {
+      "test_name": "cross_table_unemployment_consistency",
+      "table_name": "world_bank + ilo",
+      "indicator": "unemployment_consistency",
+      "expected": 0,
+      "actual": 0,
+      "passed": true,
+      "row_count": 0,
+      "error": "Insufficient data for cross-table comparison",
+      "deviation_pct": null,
+      "timestamp": "2025-11-25T16:37:02.465314"
+    }
+  ]
+}

@@ -32,5 +32,5 @@ Write-Host "Press Ctrl+C to stop the server" -ForegroundColor Yellow
 Write-Host "=" * 60
 Write-Host ""
 
-# Start the server
-python -m uvicorn src.qnwis.api.server:app --host 127.0.0.1 --port 8000 --reload
+# Start the server  
+python -m uvicorn src.qnwis.api.server:app --host 0.0.0.0 --port 8000 --reload

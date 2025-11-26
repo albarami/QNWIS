@@ -287,6 +287,12 @@ class ParallelDebateExecutor:
         import copy
         scenario_state = copy.deepcopy(base_state)
         
+        # CRITICAL: Remove event emitters from scenario states
+        # Internal scenario events (debate, critique, etc.) should NOT bubble up 
+        # to the main event stream - they would cause stage ordering confusion
+        scenario_state.pop('emit_event_fn', None)
+        scenario_state.pop('event_callback', None)
+        
         # Inject scenario information
         scenario_state['scenario'] = scenario
         scenario_state['scenario_id'] = scenario_id

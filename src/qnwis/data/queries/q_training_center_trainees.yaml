@@ -1,0 +1,10 @@
+id: q_training_center_trainees
+title: Training center trainees by field and demographics (Qatar Open Data)
+description: Trainees at private training centers by field of training, gender, nationality, and age groups
+source: qatar_api
+expected_unit: count
+params:
+  dataset_id: "trainees-at-the-private-training-centers-by-field-of-training-gender-nationality-and-age-groups"
+  limit: 500
+constraints:
+  freshness_sla_days: 365

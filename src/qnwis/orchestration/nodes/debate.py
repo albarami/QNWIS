@@ -8,7 +8,7 @@ based on the agent reports generated earlier in the workflow.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from ..state import IntelligenceState
 
@@ -92,10 +92,17 @@ def _extract_perspectives(state: IntelligenceState) -> List[AgentPerspective]:
     return perspectives
 
 
-def _detect_contradictions(perspectives: List[AgentPerspective]) -> List[Dict[str, str]]:
-    """Identify contradictory perspectives using heuristics."""
+def _detect_contradictions(perspectives: List[AgentPerspective]) -> List[Dict[str, Any]]:
+    """
+    Identify contradictory perspectives using heuristics.
+    
+    Returns contradictions in frontend-compatible format with:
+    - metric_name: The topic/metric being disputed
+    - agent1/agent2: The two agents with conflicting views
+    - severity: high/medium/low based on confidence delta and sentiment
+    """
 
-    contradictions: List[Dict[str, str]] = []
+    contradictions: List[Dict[str, Any]] = []
 
     for i, left in enumerate(perspectives):
         for right in perspectives[i + 1 :]:
@@ -108,15 +115,45 @@ def _detect_contradictions(perspectives: List[AgentPerspective]) -> List[Dict[st
             confidence_delta = left.confidence - right.confidence
 
             if abs(sentiment_delta) >= 1 or abs(confidence_delta) >= 0.25:
+                # Determine severity based on confidence delta
+                abs_conf_delta = abs(confidence_delta)
+                abs_sent_delta = abs(sentiment_delta)
+                
+                if abs_conf_delta >= 0.4 or abs_sent_delta >= 2:
+                    severity = "high"
+                elif abs_conf_delta >= 0.25 or abs_sent_delta >= 1:
+                    severity = "medium"
+                else:
+                    severity = "low"
+                
+                # Determine resolution winner
                 if sentiment_delta > 0 or confidence_delta > 0.25:
                     winning_agent = left.name
+                    resolution = "agent1_correct"
                 elif sentiment_delta < 0 or confidence_delta < -0.25:
                     winning_agent = right.name
+                    resolution = "agent2_correct"
                 else:
                     winning_agent = "undetermined"
+                    resolution = "both_valid"
 
+                # Build frontend-compatible contradiction object
                 contradictions.append(
                     {
+                        # Frontend-expected fields
+                        "metric_name": topic,
+                        "agent1_name": left.name,
+                        "agent1_value": 0,  # Actual value not tracked in perspectives
+                        "agent1_value_str": left.narrative[:100] + "..." if len(left.narrative) > 100 else left.narrative,
+                        "agent1_citation": ", ".join(left.facts_used[:3]) if left.facts_used else "Analysis",
+                        "agent1_confidence": left.confidence,
+                        "agent2_name": right.name,
+                        "agent2_value": 0,  # Actual value not tracked in perspectives
+                        "agent2_value_str": right.narrative[:100] + "..." if len(right.narrative) > 100 else right.narrative,
+                        "agent2_citation": ", ".join(right.facts_used[:3]) if right.facts_used else "Analysis",
+                        "agent2_confidence": right.confidence,
+                        "severity": severity,
+                        # Legacy fields for backward compatibility
                         "topic": topic,
                         "agent_a": left.name,
                         "agent_b": right.name,
@@ -124,6 +161,7 @@ def _detect_contradictions(perspectives: List[AgentPerspective]) -> List[Dict[st
                         "agent_b_confidence": f"{right.confidence:.2f}",
                         "sentiment_delta": f"{sentiment_delta:+d}",
                         "winning_agent": winning_agent,
+                        "resolution": resolution,
                     }
                 )
     return contradictions

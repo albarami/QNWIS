@@ -47,12 +47,15 @@ class SentenceEmbedder:
         
         try:
             from sentence_transformers import SentenceTransformer
+            import torch
             
-            self.model = SentenceTransformer(model_name)
+            # Force CPU to avoid meta tensor device issues
+            device = 'cpu' if not torch.cuda.is_available() else 'cuda'
+            self.model = SentenceTransformer(model_name, device=device)
             self.dimension = self.model.get_sentence_embedding_dimension()
             self.model_name = model_name
             
-            logger.info(f"Model loaded successfully. Embedding dimension: {self.dimension}")
+            logger.info(f"Model loaded successfully on {device}. Embedding dimension: {self.dimension}")
             
         except ImportError as e:
             logger.error(

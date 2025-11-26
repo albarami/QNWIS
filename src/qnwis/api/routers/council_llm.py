@@ -59,9 +59,9 @@ class CouncilRequest(BaseModel):
         description="Ministerial question to route through the multi-agent workflow.",
         examples=["What are the biggest attrition risks in healthcare for Q2?"],
     )
-    provider: Literal["anthropic", "openai", "stub"] = Field(
-        "anthropic",
-        description="LLM provider identifier. Must match configured providers.",
+    provider: Literal["azure", "anthropic", "openai"] = Field(
+        "azure",
+        description="LLM provider identifier. Azure GPT-4o is default.",
     )
     model: str | None = Field(
         None,

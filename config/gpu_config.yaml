@@ -1,0 +1,116 @@
+# Multi-GPU Configuration for QNWIS Deep Analysis Architecture
+#
+# This configuration defines GPU allocation for parallel scenario analysis
+# with fact verification on an 8 x NVIDIA A100-SXM4-80GB system.
+
+# GPU Allocation Strategy
+gpu_allocation:
+  # Embeddings on GPU 6 (shared with fact verification)
+  embeddings:
+    gpu_id: 6
+    model: "all-mpnet-base-v2"  # Production-stable, 768-dim, reliable loading
+    dimensions: 768
+    memory_limit_gb: 2.0  # Only ~0.45GB actual usage
+    shared_with: ["fact_verification"]
+    fallback_to_cpu: true
+  
+  # Fact Verification on GPU 6 (shared with embeddings)
+  fact_verification:
+    gpu_id: 6  # Shared with embeddings for optimal memory usage
+    model: "all-mpnet-base-v2"  # Same model as embeddings
+    max_documents: 500000  # Memory safety limit (~2GB embeddings + 0.4GB model = 2.4GB)
+    enable: true
+    verification_threshold: 0.75
+    memory_limit_gb: 2.0  # Total shared with embeddings
+  
+  # Parallel Scenario Execution on GPUs 0-5
+  parallel_scenarios:
+    enable: true
+    num_scenarios: 6  # Number of scenarios to generate
+    num_parallel: 6   # Number to execute simultaneously
+    gpu_range: [0, 1, 2, 3, 4, 5]  # GPUs allocated for scenarios
+    overflow_gpu: 7  # GPU 7 for overflow when >6 scenarios needed
+  
+  # GPU 7 - Overflow/Reserved
+  overflow:
+    gpu_id: 7
+    purpose: "overflow_scenarios_or_ensemble"
+    reserved: true
+
+# Model Configuration
+models:
+  # Primary LLM for all reasoning
+  primary_llm: "claude-sonnet-4-20250514"
+  
+  # Rate limiting for Claude API
+  rate_limit_per_minute: 50  # Standard tier limit
+  rate_limit_semaphore: 20   # Conservative concurrent limit
+  
+  # Embedding model
+  embedding_model: "all-mpnet-base-v2"  # Production-stable, 768-dim
+  embedding_dimensions: 768
+
+# Quality Settings
+quality:
+  # When to use parallel scenarios
+  parallel_scenario_threshold: "complex"  # simple|medium|complex|all
+  
+  # Scenario generation
+  scenarios:
+    base_case: true  # Always include base case
+    num_variations: 5  # Additional scenario variations (total 6)
+    min_scenarios: 4
+    max_scenarios: 6
+  
+  # Fact verification
+  verification:
+    enabled: true
+    real_time: true  # Verify during debates (async, non-blocking)
+    confidence_threshold: 0.75
+    target_document_count: 70000
+    max_claims_per_output: 10  # Limit claims extracted per agent output
+  
+  # Meta-synthesis
+  meta_synthesis:
+    min_scenarios_required: 2
+    temperature: 0.3
+    max_tokens: 8000
+
+# Performance Targets
+performance:
+  # Parallel execution
+  parallel:
+    target_scenarios: 6
+    target_time_seconds: 90  # 6 scenarios should complete in <90s
+    expected_speedup: 3.0    # vs sequential execution
+  
+  # Verification
+  verification:
+    max_overhead_ms_per_turn: 500  # Verification should add <500ms per debate turn
+    target_latency_ms_per_claim: 1  # <1ms per similarity check on GPU
+  
+  # GPU utilization
+  gpu:
+    target_utilization_percent: 70  # >70% average during parallel execution
+    max_memory_per_gpu_gb: 10  # Conservative limit per GPU
+    shared_gpu6_limit_gb: 10  # GPU 6 total (embeddings + verification)
+
+# Environment Overrides (can be set via environment variables)
+env_overrides:
+  enable_parallel_scenarios: "QNWIS_ENABLE_PARALLEL_SCENARIOS"  # Default: true
+  enable_fact_verification: "QNWIS_ENABLE_FACT_VERIFICATION"    # Default: true
+  claude_rate_limit: "QNWIS_CLAUDE_RATE_LIMIT"                  # Default: 50
+  gpu_device_override: "QNWIS_GPU_DEVICE"                        # Override GPU selection
+
+# Monitoring and Logging
+monitoring:
+  log_gpu_stats: true
+  log_verification_rates: true
+  log_scenario_results: true
+  log_performance_metrics: true
+  
+  # Alerts
+  alert_on_low_verification_rate: 0.70  # Alert if <70%
+  alert_on_scenario_failure: true
+  alert_on_gpu_memory_high: 0.90  # Alert if >90% GPU memory used
+

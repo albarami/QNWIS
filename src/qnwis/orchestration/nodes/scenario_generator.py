@@ -2,15 +2,16 @@
 Scenario Generator for Multi-Agent Parallel Analysis.
 
 Generates 4-6 plausible scenarios with different assumptions for parallel testing.
-Uses Claude Sonnet 4.5 with rate limiting to prevent API errors.
+Supports Azure OpenAI and Anthropic based on configuration.
 """
 
 import logging
 import json
+import os
 from typing import List, Dict, Any
-from langchain_anthropic import ChatAnthropic
 
-from ..llm_wrapper import call_llm_with_rate_limit
+from src.qnwis.llm.client import LLMClient
+from src.qnwis.llm.config import get_llm_config
 
 logger = logging.getLogger(__name__)
 
@@ -23,19 +24,19 @@ class ScenarioGenerator:
     to identify robust recommendations that work across uncertainty.
     """
     
-    def __init__(self, model: str = "claude-sonnet-4-20250514"):
+    def __init__(self, model: str = None):
         """
         Initialize scenario generator.
         
         Args:
-            model: Claude model to use. Defaults to Sonnet 4.
+            model: Model to use. Defaults to configured model for provider.
         """
-        self.llm = ChatAnthropic(
-            model=model,
-            temperature=0.3,  # Consistent but creative scenarios
-            max_tokens=4000
-        )
-        logger.info(f"Scenario generator initialized with {model}")
+        # Use environment-configured provider (azure or anthropic)
+        self.config = get_llm_config()
+        self.provider = self.config.provider
+        self.model = model or self.config.get_model(self.provider)
+        self.llm_client = LLMClient()  # Uses env config
+        logger.info(f"Scenario generator initialized with {self.provider}/{self.model}")
     
     async def generate_scenarios(
         self, 
@@ -56,30 +57,48 @@ class ScenarioGenerator:
             ValueError: If scenario generation fails or produces invalid JSON
             RuntimeError: If API call fails after retries
         """
+        response = None
         try:
             # Build prompt
+            logger.info(f"🚀 Building scenario prompt for query: {query[:100]}...")
             prompt = self._build_scenario_prompt(query, extracted_facts)
+            logger.info(f"📝 Prompt length: {len(prompt)} chars")
             
-            # Call LLM with rate limiting
-            logger.info("Generating scenarios with Claude Sonnet 4.5...")
-            response = await call_llm_with_rate_limit(self.llm, prompt)
+            # Call LLM (uses configured provider - Azure or Anthropic)
+            logger.info(f"🤖 Calling LLM: {self.provider}/{self.model}...")
+            response = await self.llm_client.generate(
+                prompt=prompt,
+                system="You are a scenario planning expert for Qatar ministerial intelligence. Output ONLY valid JSON array with 4-6 scenarios. No explanations, no markdown.",
+                max_tokens=4000,
+                temperature=0.4  # Slightly creative for diverse scenarios
+            )
+            
+            if not response:
+                raise ValueError("LLM returned empty response")
+            
+            logger.info(f"📨 LLM response received: {len(response)} chars")
             
             # Parse JSON response
-            scenarios = self._parse_scenarios(response.content)
+            scenarios = self._parse_scenarios(response)
             
             # Validate scenarios
             self._validate_scenarios(scenarios)
             
-            logger.info(f"✅ Generated {len(scenarios)} scenarios for parallel analysis")
+            logger.info(f"✅ Generated {len(scenarios)} scenarios: {[s.get('name', 'Unknown') for s in scenarios]}")
             return scenarios
             
         except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse scenario JSON: {e}")
-            logger.error(f"Raw response: {response.content[:500]}")
+            logger.error(f"❌ JSON parse error: {e}")
+            logger.error(f"📄 Raw response: {response[:1000] if response else 'None'}")
             raise ValueError(f"Invalid JSON in scenario response: {e}")
+        except ValueError as e:
+            logger.error(f"❌ Validation error: {e}")
+            raise
         except Exception as e:
-            logger.error(f"Scenario generation failed: {e}")
-            raise RuntimeError(f"Scenario generation error: {e}")
+            logger.error(f"❌ Scenario generation failed: {type(e).__name__}: {e}")
+            if response:
+                logger.error(f"📄 Response was: {response[:500]}")
+            raise RuntimeError(f"Scenario generation error: {type(e).__name__}: {e}")
     
     def _build_scenario_prompt(self, query: str, extracted_facts: Dict[str, Any]) -> str:
         """
@@ -95,6 +114,59 @@ class ScenarioGenerator:
         # Format facts (limit to 50 for context window)
         formatted_facts = self._format_facts(extracted_facts)
         
+        # Detect query type to generate relevant scenarios
+        query_lower = query.lower()
+        
+        # Determine query category and relevant scenario types
+        if any(kw in query_lower for kw in ["labor", "workforce", "employment", "qatarization", "nationalization", "jobs"]):
+            scenario_guidance = """SCENARIO TYPES (Labor/Workforce focused):
+- Base Case: Current Qatarization trajectory continues
+- Skills Gap: Private sector skill demands outpace training capacity
+- Wage Competition: GCC countries offer higher salaries, causing brain drain
+- Automation Disruption: AI/automation replaces 20% of current job targets
+- Policy Acceleration: Government mandates stricter Qatarization quotas
+- Economic Downturn: Oil price shock forces budget cuts to training programs"""
+        elif any(kw in query_lower for kw in ["oil", "energy", "gas", "lng", "hydrocarbon"]):
+            scenario_guidance = """SCENARIO TYPES (Energy focused):
+- Base Case: Oil prices stable at $70-80/barrel
+- Price Collapse: Sustained prices below $50/barrel
+- Energy Transition: Accelerated global shift to renewables
+- LNG Boom: Asian demand surge doubles LNG prices
+- Production Limits: OPEC+ cuts reduce Qatar's output quotas
+- Carbon Tax: Global carbon pricing impacts hydrocarbon exports"""
+        elif any(kw in query_lower for kw in ["tourism", "hospitality", "visitor", "fifa", "world cup"]):
+            scenario_guidance = """SCENARIO TYPES (Tourism focused):
+- Base Case: Steady post-World Cup tourism growth
+- Regional Hub: Qatar becomes primary GCC transit hub
+- Competition: Dubai/Saudi mega-projects divert visitors
+- Capacity Strain: Infrastructure limits visitor growth
+- Premium Niche: Luxury/business travel dominates
+- Health/Safety: Regional instability impacts travel"""
+        elif any(kw in query_lower for kw in ["food", "agriculture", "security", "import"]):
+            scenario_guidance = """SCENARIO TYPES (Food Security focused):
+- Base Case: Current import dependency continues
+- Supply Disruption: Major supplier crisis (climate, conflict)
+- Local Production: Domestic agriculture scales significantly
+- Regional Cooperation: GCC food security alliance forms
+- Price Shock: Global food prices spike 50%+
+- Technology: Vertical farming/desalination breakthrough"""
+        elif any(kw in query_lower for kw in ["digital", "tech", "ai", "innovation", "startup"]):
+            scenario_guidance = """SCENARIO TYPES (Digital/Tech focused):
+- Base Case: Gradual digital transformation continues
+- AI Disruption: Rapid AI adoption transforms economy
+- Talent War: Competition for tech talent intensifies
+- Cyber Risk: Major infrastructure cyber attack
+- Tech Hub: Qatar becomes regional innovation leader
+- Regulation: Strict AI/data regulations slow adoption"""
+        else:
+            scenario_guidance = """SCENARIO TYPES TO CONSIDER:
+- Base Case: Current trends continue
+- Optimistic: Favorable conditions (high oil prices, low competition, strong growth)
+- Pessimistic: Adverse conditions (oil shock, intense competition, recession)
+- Disruption: Technology or policy changes the game
+- Regional: GCC dynamics shift (Saudi/UAE competition, cooperation, conflict)
+- Demographic: Population or labor force changes"""
+        
         prompt = f"""You are a scenario planning expert for ministerial intelligence in Qatar.
 
 QUERY: {query}
@@ -103,19 +175,14 @@ EXTRACTED FACTS:
 {formatted_facts}
 
 YOUR TASK:
-Generate 4-6 critical scenarios that test different assumptions. Each scenario must:
-1. Modify one major assumption (oil prices, regional competition, technology disruption, demographic shifts, policy changes, etc.)
-2. Be plausible and grounded in real trends (not extreme outliers)
-3. Test different dimensions of risk and opportunity
-4. Be specific enough to drive different strategic decisions
+Generate 4-6 critical scenarios SPECIFICALLY TAILORED to answer this query. Each scenario must:
+1. Directly relate to the query topic (not generic economic scenarios)
+2. Modify one major assumption relevant to the question
+3. Be plausible and grounded in real trends (not extreme outliers)
+4. Test different dimensions of risk and opportunity for THIS specific issue
+5. Be specific enough to drive different strategic decisions
 
-SCENARIO TYPES TO CONSIDER:
-- Base Case: Current trends continue
-- Optimistic: Favorable conditions (high oil prices, low competition, strong growth)
-- Pessimistic: Adverse conditions (oil shock, intense competition, recession)
-- Disruption: Technology or policy changes the game
-- Regional: GCC dynamics shift (Saudi/UAE competition, cooperation, conflict)
-- Demographic: Population or labor force changes
+{scenario_guidance}
 
 REQUIRED JSON FORMAT:
 [
@@ -215,7 +282,7 @@ Generate the scenarios now:"""
     
     def _parse_scenarios(self, response_content: str) -> List[Dict[str, Any]]:
         """
-        Parse scenarios from LLM response.
+        Parse scenarios from LLM response with robust JSON extraction.
         
         Args:
             response_content: Raw LLM response
@@ -226,26 +293,66 @@ Generate the scenarios now:"""
         Raises:
             json.JSONDecodeError: If response is not valid JSON
         """
-        # Clean response (remove markdown if present)
+        if not response_content:
+            raise ValueError("Empty response from LLM")
+        
         content = response_content.strip()
+        logger.info(f"📝 Parsing scenario response ({len(content)} chars)")
         
-        # Remove markdown code blocks if present
-        if content.startswith("```"):
-            # Find the JSON array
-            lines = content.split("\n")
-            content = "\n".join([
-                line for line in lines 
-                if not line.strip().startswith("```")
-            ])
+        # Method 1: Try direct parsing first
+        try:
+            scenarios = json.loads(content)
+            if isinstance(scenarios, list):
+                logger.info(f"✅ Direct JSON parse successful: {len(scenarios)} scenarios")
+                return scenarios
+        except json.JSONDecodeError:
+            pass
         
-        # Parse JSON
-        scenarios = json.loads(content)
+        # Method 2: Remove markdown code blocks
+        if "```" in content:
+            # Extract content between code blocks
+            import re
+            json_match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', content)
+            if json_match:
+                content = json_match.group(1).strip()
+                try:
+                    scenarios = json.loads(content)
+                    if isinstance(scenarios, list):
+                        logger.info(f"✅ Markdown extraction successful: {len(scenarios)} scenarios")
+                        return scenarios
+                except json.JSONDecodeError:
+                    pass
         
-        # Ensure it's a list
-        if not isinstance(scenarios, list):
-            raise ValueError(f"Expected list of scenarios, got {type(scenarios)}")
+        # Method 3: Find JSON array in response
+        import re
+        # Look for array pattern
+        array_match = re.search(r'\[\s*\{[\s\S]*\}\s*\]', content)
+        if array_match:
+            try:
+                scenarios = json.loads(array_match.group())
+                if isinstance(scenarios, list):
+                    logger.info(f"✅ Regex extraction successful: {len(scenarios)} scenarios")
+                    return scenarios
+            except json.JSONDecodeError:
+                pass
         
-        return scenarios
+        # Method 4: Try fixing common JSON issues
+        fixed_content = content
+        # Fix trailing commas
+        fixed_content = re.sub(r',\s*}', '}', fixed_content)
+        fixed_content = re.sub(r',\s*\]', ']', fixed_content)
+        # Fix unquoted keys (common LLM error)
+        fixed_content = re.sub(r'(\s)([a-zA-Z_][a-zA-Z0-9_]*)(\s*:)', r'\1"\2"\3', fixed_content)
+        
+        try:
+            scenarios = json.loads(fixed_content)
+            if isinstance(scenarios, list):
+                logger.info(f"✅ Fixed JSON parse successful: {len(scenarios)} scenarios")
+                return scenarios
+        except json.JSONDecodeError as e:
+            logger.error(f"❌ All JSON parsing methods failed: {e}")
+            logger.error(f"📄 Raw content (first 1000 chars): {content[:1000]}")
+            raise ValueError(f"Failed to parse scenarios: {e}. Raw response: {content[:500]}")
     
     def _validate_scenarios(self, scenarios: List[Dict[str, Any]]) -> None:
         """

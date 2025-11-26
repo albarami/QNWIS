@@ -54,6 +54,9 @@ def execute(
         result = run_csv_query(spec)
     elif spec_source in ("world_bank", "gcc_stat", "vision_2030"):
         result = run_world_bank_query(spec)
+    elif spec_source == "qatar_api":
+        from ..connectors.qatar_opendata_api import run_qatar_api_query
+        result = run_qatar_api_query(spec)
     else:
         raise ValueError(f"Unsupported source: {spec_source}")
 

@@ -196,12 +196,14 @@ class LMISAPIClient:
         - Qatar_Population: 2,950,000
         - GDP: $825.7 billion
         - GDP_Capita: $279,895
-        - Unemployment: 9.9%
+        - Unemployment: 0.099% (Qatar has one of lowest unemployment rates globally)
         - Qatar_Female_Labor: 63.39%
         - Qatar_Internet_Usage: 100%
         - Qatar_Health_Coverage: 76.4%
         - Exports: $97.5 billion
         - Imports: $30.5 billion
+        
+        NOTE: Unemployment value (0.099) is already a percentage, NOT a ratio.
         
         Args:
             lang: Language ('en' or 'ar')

@@ -119,11 +119,47 @@ export const QATAR_INDICATORS: Record<string, { label: string; category: FactCat
 }
 
 /**
+ * LMIS (Ministry of Labour) indicator mappings
+ * Values from LMIS API are already percentages (e.g., 0.099 = 0.099%, NOT 9.9%)
+ */
+export const LMIS_INDICATORS: Record<string, { label: string; category: FactCategory; unit?: string; isAlreadyPercent?: boolean }> = {
+  // Main indicators - CRITICAL: These are already percentages, not ratios!
+  'Unemployment': { label: 'Qatar Unemployment Rate', category: 'labor', unit: '%', isAlreadyPercent: true },
+  'unemployment': { label: 'Qatar Unemployment Rate', category: 'labor', unit: '%', isAlreadyPercent: true },
+  'qatar_unemployment': { label: 'Qatar Unemployment Rate', category: 'labor', unit: '%', isAlreadyPercent: true },
+  'qatar_unemployment_rate': { label: 'Qatar Unemployment Rate', category: 'labor', unit: '%', isAlreadyPercent: true },
+  'Qatar_Female_Labor': { label: 'Qatar Female Labor Participation', category: 'labor', unit: '%', isAlreadyPercent: true },
+  'Qatar_Internet_Usage': { label: 'Qatar Internet Usage', category: 'demographic', unit: '%', isAlreadyPercent: true },
+  'Qatar_Health_Coverage': { label: 'Qatar Health Coverage', category: 'demographic', unit: '%', isAlreadyPercent: true },
+  'Qatar_Out_Of_School': { label: 'Qatar Out of School Rate', category: 'demographic', unit: '%', isAlreadyPercent: true },
+  'Qatar_Remittances': { label: 'Qatar Remittances (% GDP)', category: 'economic', unit: '%', isAlreadyPercent: true },
+  'Qatar_Social_Protection': { label: 'Qatar Social Protection', category: 'policy', unit: '%', isAlreadyPercent: true },
+  'Qatar_Population': { label: 'Qatar Population', category: 'demographic' },
+  'GDP': { label: 'Qatar GDP', category: 'economic', unit: 'USD' },
+  'GDP_Capita': { label: 'Qatar GDP per Capita', category: 'economic', unit: 'USD' },
+  'CPI': { label: 'Consumer Price Index', category: 'economic' },
+  'Exports': { label: 'Qatar Exports', category: 'economic', unit: 'USD' },
+  'Imports': { label: 'Qatar Imports', category: 'economic', unit: 'USD' },
+  'Total_Debt': { label: 'Qatar Total Debt (% GDP)', category: 'economic', unit: '%' },
+  
+  // GCC-STAT indicators - these are proper percentages
+  'qatar_unemployment_rate': { label: 'Qatar Unemployment Rate', category: 'labor', unit: '%' },
+  'bahrain_unemployment_rate': { label: 'Bahrain Unemployment Rate', category: 'regional', unit: '%' },
+  'kuwait_unemployment_rate': { label: 'Kuwait Unemployment Rate', category: 'regional', unit: '%' },
+  'uae_unemployment_rate': { label: 'UAE Unemployment Rate', category: 'regional', unit: '%' },
+  'saudi_unemployment_rate': { label: 'Saudi Arabia Unemployment Rate', category: 'regional', unit: '%' },
+  'oman_unemployment_rate': { label: 'Oman Unemployment Rate', category: 'regional', unit: '%' },
+  'qatar_labour_force_participation': { label: 'Qatar Labour Force Participation', category: 'labor', unit: '%' },
+  'qatar_gdp_usd': { label: 'Qatar GDP USD', category: 'economic', unit: 'B USD' },
+}
+
+/**
  * All indicator mappings combined
  */
 export const ALL_INDICATORS = {
   ...WORLD_BANK_INDICATORS,
   ...QATAR_INDICATORS,
+  ...LMIS_INDICATORS,
 }
 
 /**
@@ -141,6 +177,7 @@ export function getIndicatorLabel(code: string): string {
     .replace(/([A-Z])/g, ' $1')
     .trim()
     .split(' ')
+    .filter(word => word.length > 0)
     .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(' ')
 }

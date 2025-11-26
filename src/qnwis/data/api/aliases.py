@@ -54,4 +54,8 @@ CANONICAL_TO_IDS: dict[str, list[str]] = {
         "syn_ewi_employment_drop_latest",
         "q_ewi_employment_drop",
     ],
+    "employees_by_sector_official": ["q_employees_by_sector_nationality"],
+    "compensation_by_sector_official": ["q_compensation_by_sector"],
+    "training_enrollment": ["q_training_center_trainees"],
+    "labor_force_sector": ["q_labor_force_by_sector"],
 }

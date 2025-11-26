@@ -433,7 +433,7 @@ Your contribution (WITH DATA CITATIONS):"""
             prompt=prompt,
             system=f"You are {self.agent_name}, contributing expertise with deep data knowledge.",
             temperature=0.4,
-            max_tokens=400
+            max_tokens=1200  # Increased to allow complete responses
         )
 
     async def analyze_edge_case(
@@ -458,7 +458,7 @@ Based on your domain expertise and the debate so far, analyze:
 
 Be specific with numbers and timelines."""
         
-        return await self.llm.generate(prompt=prompt, temperature=0.4)
+        return await self.llm.generate(prompt=prompt, temperature=0.4, max_tokens=1500)
 
     async def identify_catastrophic_risks(
         self,

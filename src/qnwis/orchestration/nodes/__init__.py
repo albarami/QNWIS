@@ -23,6 +23,7 @@ from .debate import debate_node
 from .critique import critique_node
 from .verification import verification_node
 from .synthesis import synthesis_node
+from .synthesis_strategic import strategic_synthesis_node
 
 __all__ = [
     # Legacy nodes
@@ -42,4 +43,5 @@ __all__ = [
     "critique_node",
     "verification_node",
     "synthesis_node",
+    "strategic_synthesis_node",
 ]

@@ -5,6 +5,7 @@ import {
   categorizeFacts,
   CATEGORY_CONFIG,
   getSourceLabel,
+  getIndicatorUnit,
   type FactCategory 
 } from '../../utils/indicatorLabels'
 import { smartFormat } from '../../utils/formatters'
@@ -42,7 +43,8 @@ const ConfidenceBar = ({ confidence }: { confidence: number }) => {
 // Fact item component
 const FactItem = ({ fact }: { fact: ExtractedFact }) => {
   const label = getIndicatorLabel(fact.metric)
-  const formattedValue = smartFormat(fact.value)
+  const unit = getIndicatorUnit(fact.metric)
+  const formattedValue = smartFormat(fact.value, unit)
   const sourceLabel = getSourceLabel(fact.source)
   
   return (

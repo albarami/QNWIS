@@ -1,0 +1,379 @@
+{
+  "summary": {
+    "total_tests": 15,
+    "passed": 2,
+    "failed": 13,
+    "accuracy_pct": 13.333333333333334,
+    "by_domain": {
+      "labor": {
+        "passed": 0,
+        "failed": 4
+      },
+      "economy": {
+        "passed": 0,
+        "failed": 3
+      },
+      "health": {
+        "passed": 0,
+        "failed": 2
+      },
+      "demographics": {
+        "passed": 0,
+        "failed": 1
+      },
+      "education": {
+        "passed": 0,
+        "failed": 1
+      },
+      "trade": {
+        "passed": 2,
+        "failed": 1
+      },
+      "energy": {
+        "passed": 0,
+        "failed": 1
+      }
+    },
+    "duration_seconds": 12.210963,
+    "failed_tests": [
+      {
+        "test_name": "world_bank_unemployment",
+        "domain": "labor",
+        "indicator": "unemployment_rate",
+        "expected": 0.1,
+        "actual": null,
+        "passed": false,
+        "source": "World Bank API",
+        "error": "object of type 'coroutine' has no len()",
+        "deviation_pct": null,
+        "timestamp": "2025-11-25T16:28:19.915410"
+      },
+      {
+        "test_name": "world_bank_gdp",
+        "domain": "economy",
+        "indicator": "gdp_current_usd",
+        "expected": 219000000000,
+        "actual": null,
+        "passed": false,
+        "source": "World Bank API",
+        "error": "object of type 'coroutine' has no len()",
+        "deviation_pct": null,
+        "timestamp": "2025-11-25T16:28:20.242670"
+      },
+      {
+        "test_name": "world_bank_life_expectancy",
+        "domain": "health",
+        "indicator": "life_expectancy",
+        "expected": 80.4,
+        "actual": null,
+        "passed": false,
+        "source": "World Bank API",
+        "error": "object of type 'coroutine' has no len()",
+        "deviation_pct": null,
+        "timestamp": "2025-11-25T16:28:20.540907"
+      },
+      {
+        "test_name": "world_bank_labor_participation",
+        "domain": "labor",
+        "indicator": "labor_force_participation",
+        "expected": 87.8,
+        "actual": null,
+        "passed": false,
+        "source": "World Bank API",
+        "error": "object of type 'coroutine' has no len()",
+        "deviation_pct": null,
+        "timestamp": "2025-11-25T16:28:20.840715"
+      },
+      {
+        "test_name": "world_bank_gdp_per_capita",
+        "domain": "economy",
+        "indicator": "gdp_per_capita",
+        "expected": 87660,
+        "actual": null,
+        "passed": false,
+        "source": "World Bank API",
+        "error": "object of type 'coroutine' has no len()",
+        "deviation_pct": null,
+        "timestamp": "2025-11-25T16:28:21.147328"
+      },
+      {
+        "test_name": "world_bank_population",
+        "domain": "demographics",
+        "indicator": "total_population",
+        "expected": 2900000,
+        "actual": null,
+        "passed": false,
+        "source": "World Bank API",
+        "error": "object of type 'coroutine' has no len()",
+        "deviation_pct": null,
+        "timestamp": "2025-11-25T16:28:21.445765"
+      },
+      {
+        "test_name": "gcc_stat_labor_data",
+        "domain": "labor",
+        "indicator": "gcc_labor_indicators",
+        "expected": 1,
+        "actual": 0,
+        "passed": false,
+        "source": "GCC-STAT API",
+        "error": "'GCCStatClient' object has no attribute 'get_gcc_labour_indicators'",
+        "deviation_pct": null,
+        "timestamp": "2025-11-25T16:28:22.283527"
+      },
+      {
+        "test_name": "adp_labor_datasets",
+        "domain": "labor",
+        "indicator": "adp_labor_catalog",
+        "expected": 1,
+        "actual": 0,
+        "passed": false,
+        "source": "Arab Development Portal API",
+        "error": "Client error '404 Not Found' for url 'https://data.arabdevelopmentportal.org/api/explore/v2.1/catalog/datasets?limit=10&offset=0&where=theme%3D%27labor%27&refine=country%3AQAT'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404",
+        "deviation_pct": null,
+        "timestamp": "2025-11-25T16:28:24.008234"
+      },
+      {
+        "test_name": "adp_economy_datasets",
+        "domain": "economy",
+        "indicator": "adp_economy_catalog",
+        "expected": 1,
+        "actual": 0,
+        "passed": false,
+        "source": "Arab Development Portal API",
+        "error": "Client error '404 Not Found' for url 'https://data.arabdevelopmentportal.org/api/explore/v2.1/catalog/datasets?limit=10&offset=0&where=theme%3D%27economy%27&refine=country%3AQAT'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404",
+        "deviation_pct": null,
+        "timestamp": "2025-11-25T16:28:25.308367"
+      },
+      {
+        "test_name": "adp_health_datasets",
+        "domain": "health",
+        "indicator": "adp_health_catalog",
+        "expected": 1,
+        "actual": 0,
+        "passed": false,
+        "source": "Arab Development Portal API",
+        "error": "Client error '404 Not Found' for url 'https://data.arabdevelopmentportal.org/api/explore/v2.1/catalog/datasets?limit=10&offset=0&where=theme%3D%27health%27&refine=country%3AQAT'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404",
+        "deviation_pct": null,
+        "timestamp": "2025-11-25T16:28:26.706388"
+      },
+      {
+        "test_name": "adp_education_datasets",
+        "domain": "education",
+        "indicator": "adp_education_catalog",
+        "expected": 1,
+        "actual": 0,
+        "passed": false,
+        "source": "Arab Development Portal API",
+        "error": "Client error '404 Not Found' for url 'https://data.arabdevelopmentportal.org/api/explore/v2.1/catalog/datasets?limit=10&offset=0&where=theme%3D%27education%27&refine=country%3AQAT'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404",
+        "deviation_pct": null,
+        "timestamp": "2025-11-25T16:28:28.188207"
+      },
+      {
+        "test_name": "adp_trade_datasets",
+        "domain": "trade",
+        "indicator": "adp_trade_catalog",
+        "expected": 1,
+        "actual": 0,
+        "passed": false,
+        "source": "Arab Development Portal API",
+        "error": "Client error '404 Not Found' for url 'https://data.arabdevelopmentportal.org/api/explore/v2.1/catalog/datasets?limit=10&offset=0&where=theme%3D%27trade%27&refine=country%3AQAT'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404",
+        "deviation_pct": null,
+        "timestamp": "2025-11-25T16:28:29.647281"
+      },
+      {
+        "test_name": "adp_energy_datasets",
+        "domain": "energy",
+        "indicator": "adp_energy_catalog",
+        "expected": 1,
+        "actual": 0,
+        "passed": false,
+        "source": "Arab Development Portal API",
+        "error": "Client error '404 Not Found' for url 'https://data.arabdevelopmentportal.org/api/explore/v2.1/catalog/datasets?limit=10&offset=0&where=theme%3D%27energy%27&refine=country%3AQAT'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404",
+        "deviation_pct": null,
+        "timestamp": "2025-11-25T16:28:31.051232"
+      }
+    ]
+  },
+  "all_results": [
+    {
+      "test_name": "world_bank_unemployment",
+      "domain": "labor",
+      "indicator": "unemployment_rate",
+      "expected": 0.1,
+      "actual": null,
+      "passed": false,
+      "source": "World Bank API",
+      "error": "object of type 'coroutine' has no len()",
+      "deviation_pct": null,
+      "timestamp": "2025-11-25T16:28:19.915410"
+    },
+    {
+      "test_name": "world_bank_gdp",
+      "domain": "economy",
+      "indicator": "gdp_current_usd",
+      "expected": 219000000000,
+      "actual": null,
+      "passed": false,
+      "source": "World Bank API",
+      "error": "object of type 'coroutine' has no len()",
+      "deviation_pct": null,
+      "timestamp": "2025-11-25T16:28:20.242670"
+    },
+    {
+      "test_name": "world_bank_life_expectancy",
+      "domain": "health",
+      "indicator": "life_expectancy",
+      "expected": 80.4,
+      "actual": null,
+      "passed": false,
+      "source": "World Bank API",
+      "error": "object of type 'coroutine' has no len()",
+      "deviation_pct": null,
+      "timestamp": "2025-11-25T16:28:20.540907"
+    },
+    {
+      "test_name": "world_bank_labor_participation",
+      "domain": "labor",
+      "indicator": "labor_force_participation",
+      "expected": 87.8,
+      "actual": null,
+      "passed": false,
+      "source": "World Bank API",
+      "error": "object of type 'coroutine' has no len()",
+      "deviation_pct": null,
+      "timestamp": "2025-11-25T16:28:20.840715"
+    },
+    {
+      "test_name": "world_bank_gdp_per_capita",
+      "domain": "economy",
+      "indicator": "gdp_per_capita",
+      "expected": 87660,
+      "actual": null,
+      "passed": false,
+      "source": "World Bank API",
+      "error": "object of type 'coroutine' has no len()",
+      "deviation_pct": null,
+      "timestamp": "2025-11-25T16:28:21.147328"
+    },
+    {
+      "test_name": "world_bank_population",
+      "domain": "demographics",
+      "indicator": "total_population",
+      "expected": 2900000,
+      "actual": null,
+      "passed": false,
+      "source": "World Bank API",
+      "error": "object of type 'coroutine' has no len()",
+      "deviation_pct": null,
+      "timestamp": "2025-11-25T16:28:21.445765"
+    },
+    {
+      "test_name": "gcc_stat_labor_data",
+      "domain": "labor",
+      "indicator": "gcc_labor_indicators",
+      "expected": 1,
+      "actual": 0,
+      "passed": false,
+      "source": "GCC-STAT API",
+      "error": "'GCCStatClient' object has no attribute 'get_gcc_labour_indicators'",
+      "deviation_pct": null,
+      "timestamp": "2025-11-25T16:28:22.283527"
+    },
+    {
+      "test_name": "adp_labor_datasets",
+      "domain": "labor",
+      "indicator": "adp_labor_catalog",
+      "expected": 1,
+      "actual": 0,
+      "passed": false,
+      "source": "Arab Development Portal API",
+      "error": "Client error '404 Not Found' for url 'https://data.arabdevelopmentportal.org/api/explore/v2.1/catalog/datasets?limit=10&offset=0&where=theme%3D%27labor%27&refine=country%3AQAT'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404",
+      "deviation_pct": null,
+      "timestamp": "2025-11-25T16:28:24.008234"
+    },
+    {
+      "test_name": "adp_economy_datasets",
+      "domain": "economy",
+      "indicator": "adp_economy_catalog",
+      "expected": 1,
+      "actual": 0,
+      "passed": false,
+      "source": "Arab Development Portal API",
+      "error": "Client error '404 Not Found' for url 'https://data.arabdevelopmentportal.org/api/explore/v2.1/catalog/datasets?limit=10&offset=0&where=theme%3D%27economy%27&refine=country%3AQAT'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404",
+      "deviation_pct": null,
+      "timestamp": "2025-11-25T16:28:25.308367"
+    },
+    {
+      "test_name": "adp_health_datasets",
+      "domain": "health",
+      "indicator": "adp_health_catalog",
+      "expected": 1,
+      "actual": 0,
+      "passed": false,
+      "source": "Arab Development Portal API",
+      "error": "Client error '404 Not Found' for url 'https://data.arabdevelopmentportal.org/api/explore/v2.1/catalog/datasets?limit=10&offset=0&where=theme%3D%27health%27&refine=country%3AQAT'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404",
+      "deviation_pct": null,
+      "timestamp": "2025-11-25T16:28:26.706388"
+    },
+    {
+      "test_name": "adp_education_datasets",
+      "domain": "education",
+      "indicator": "adp_education_catalog",
+      "expected": 1,
+      "actual": 0,
+      "passed": false,
+      "source": "Arab Development Portal API",
+      "error": "Client error '404 Not Found' for url 'https://data.arabdevelopmentportal.org/api/explore/v2.1/catalog/datasets?limit=10&offset=0&where=theme%3D%27education%27&refine=country%3AQAT'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404",
+      "deviation_pct": null,
+      "timestamp": "2025-11-25T16:28:28.188207"
+    },
+    {
+      "test_name": "adp_trade_datasets",
+      "domain": "trade",
+      "indicator": "adp_trade_catalog",
+      "expected": 1,
+      "actual": 0,
+      "passed": false,
+      "source": "Arab Development Portal API",
+      "error": "Client error '404 Not Found' for url 'https://data.arabdevelopmentportal.org/api/explore/v2.1/catalog/datasets?limit=10&offset=0&where=theme%3D%27trade%27&refine=country%3AQAT'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404",
+      "deviation_pct": null,
+      "timestamp": "2025-11-25T16:28:29.647281"
+    },
+    {
+      "test_name": "adp_energy_datasets",
+      "domain": "energy",
+      "indicator": "adp_energy_catalog",
+      "expected": 1,
+      "actual": 0,
+      "passed": false,
+      "source": "Arab Development Portal API",
+      "error": "Client error '404 Not Found' for url 'https://data.arabdevelopmentportal.org/api/explore/v2.1/catalog/datasets?limit=10&offset=0&where=theme%3D%27energy%27&refine=country%3AQAT'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404",
+      "deviation_pct": null,
+      "timestamp": "2025-11-25T16:28:31.051232"
+    },
+    {
+      "test_name": "escwa_qatar_exports",
+      "domain": "trade",
+      "indicator": "qatar_exports",
+      "expected": 1,
+      "actual": 7,
+      "passed": true,
+      "source": "ESCWA Trade API",
+      "error": null,
+      "deviation_pct": null,
+      "timestamp": "2025-11-25T16:28:31.326705"
+    },
+    {
+      "test_name": "escwa_qatar_imports",
+      "domain": "trade",
+      "indicator": "qatar_imports",
+      "expected": 1,
+      "actual": 7,
+      "passed": true,
+      "source": "ESCWA Trade API",
+      "error": null,
+      "deviation_pct": null,
+      "timestamp": "2025-11-25T16:28:31.593147"
+    }
+  ]
+}

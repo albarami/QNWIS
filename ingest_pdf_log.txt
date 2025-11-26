@@ -1,0 +1,262 @@
+﻿python : 2025-11-25 16:04:28,466 - INFO - Loading sentence-transformers model: all-mpnet-base-v2
+At line:1 char:17
++ cd d:\lmis_int; python scripts\ingest_rd_reports.py 2>&1 | Out-File - ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (2025-11-25 16:0...l-mpnet-base-v2:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+2025-11-25 16:04:28,470 - INFO - Load pretrained SentenceTransformer: all-mpnet-base-v2
+2025-11-25 16:04:36,829 - INFO - Model loaded successfully on cuda. Embedding dimension: 768
+2025-11-25 16:04:36,829 - INFO - DocumentStore initialized with sentence-transformers (all-mpnet-base-v2, 24h TTL)
+2025-11-25 16:04:38,138 - INFO - Added 6 documents to store
+2025-11-25 16:04:38,138 - INFO - Initialized knowledge base with 6 foundational documents
+2025-11-25 16:04:38,465 - INFO - Added 4 documents to store
+2025-11-25 16:04:39,181 - INFO - Added 9 documents to store
+2025-11-25 16:04:40,417 - INFO - Added 18 documents to store
+2025-11-25 16:04:42,421 - INFO - Added 31 documents to store
+2025-11-25 16:04:51,799 - INFO - Added 125 documents to store
+2025-11-25 16:04:57,977 - INFO - Added 78 documents to store
+2025-11-25 16:05:03,644 - INFO - Added 69 documents to store
+2025-11-25 16:05:10,765 - INFO - Added 92 documents to store
+2025-11-25 16:05:16,927 - INFO - Added 81 documents to store
+2025-11-25 16:05:21,423 - INFO - Added 55 documents to store
+2025-11-25 16:05:27,084 - INFO - Added 79 documents to store
+2025-11-25 16:05:35,155 - INFO - Added 108 documents to store
+2025-11-25 16:05:42,141 - INFO - Added 95 documents to store
+2025-11-25 16:05:45,741 - INFO - Added 50 documents to store
+2025-11-25 16:05:52,429 - INFO - Added 87 documents to store
+2025-11-25 16:05:58,481 - INFO - Added 77 documents to store
+2025-11-25 16:05:59,637 - INFO - Added 16 documents to store
+2025-11-25 16:06:02,940 - INFO - Added 33 documents to store
+2025-11-25 16:06:07,623 - INFO - Added 60 documents to store
+2025-11-25 16:06:13,885 - INFO - Added 79 documents to store
+2025-11-25 16:06:19,118 - INFO - Added 60 documents to store
+2025-11-25 16:06:25,986 - INFO - Added 80 documents to store
+2025-11-25 16:06:33,037 - INFO - Added 86 documents to store
+2025-11-25 16:06:35,906 - INFO - Added 31 documents to store
+2025-11-25 16:06:42,632 - INFO - Added 85 documents to store
+2025-11-25 16:06:49,048 - INFO - Added 78 documents to store
+2025-11-25 16:06:49,187 - INFO - Added 2 documents to store
+2025-11-25 16:06:49,585 - INFO - Added 6 documents to store
+2025-11-25 16:06:49,832 - INFO - Added 4 documents to store
+2025-11-25 16:06:50,086 - INFO - Added 4 documents to store
+2025-11-25 16:06:50,243 - INFO - Added 2 documents to store
+2025-11-25 16:06:50,439 - INFO - Added 3 documents to store
+2025-11-25 16:06:51,171 - INFO - Added 6 documents to store
+2025-11-25 16:06:51,422 - INFO - Added 4 documents to store
+2025-11-25 16:06:51,645 - INFO - Added 4 documents to store
+2025-11-25 16:06:51,939 - INFO - Added 5 documents to store
+2025-11-25 16:06:52,515 - INFO - Added 7 documents to store
+2025-11-25 16:06:53,110 - INFO - Added 10 documents to store
+2025-11-25 16:06:55,998 - INFO - Added 45 documents to store
+2025-11-25 16:06:58,266 - INFO - Added 33 documents to store
+2025-11-25 16:06:58,899 - INFO - Added 11 documents to store
+2025-11-25 16:06:59,841 - INFO - Added 12 documents to store
+2025-11-25 16:07:00,300 - INFO - Added 8 documents to store
+2025-11-25 16:07:00,897 - INFO - Added 10 documents to store
+2025-11-25 16:07:01,485 - INFO - Added 6 documents to store
+2025-11-25 16:07:01,894 - INFO - Added 7 documents to store
+2025-11-25 16:07:02,578 - INFO - Added 8 documents to store
+2025-11-25 16:07:03,226 - INFO - Added 11 documents to store
+2025-11-25 16:07:03,483 - INFO - Added 4 documents to store
+2025-11-25 16:07:04,278 - INFO - Added 11 documents to store
+2025-11-25 16:07:06,202 - INFO - Added 28 documents to store
+2025-11-25 16:07:06,994 - INFO - Added 10 documents to store
+2025-11-25 16:07:07,932 - INFO - Added 16 documents to store
+2025-11-25 16:07:08,444 - INFO - Added 5 documents to store
+2025-11-25 16:07:08,667 - INFO - Added 4 documents to store
+2025-11-25 16:07:09,070 - INFO - Added 7 documents to store
+================================================================================
+[RAG INGESTION] R&D PDF Reports -> Document Store
+================================================================================
+   Found 56 PDF files
+   Chunk size: 1500 characters
+================================================================================
+
+[1/56] Processing: BGI Summary GenAI and the Workforce 2023 (2).pdf...
+   [OK] Added 4 chunks
+
+[2/56] Processing: REPORT OF WORLD-CLASS LABOR MARKET INFORMATION SYSTEM- CASE ...
+   [OK] Added 9 chunks
+
+[3/56] Processing: Report_Comprehensive Overview of Qatar's Labor Landscape-Ins...
+   [OK] Added 18 chunks
+
+[4/56] Processing: Report_FOSTERING A KNOWLEDGE-BASED ECONOMY-THE ROLE OF ADVAN...
+   [OK] Added 31 chunks
+
+[5/56] Processing: research_report_2-Q10_EN_2025-09-22_v1.pdf...
+   [OK] Added 125 chunks
+
+[6/56] Processing: research_report_2-Q1_EN_2025-05-26_v2.pdf...
+   [OK] Added 78 chunks
+
+[7/56] Processing: research_report_2-Q2_EN_2025-06-03_v2.pdf...
+   [OK] Added 69 chunks
+
+[8/56] Processing: research_report_2-Q3_EN_2025-06-09_v2.pdf...
+   [OK] Added 92 chunks
+
+[9/56] Processing: research_report_2-Q4_EN_2025-06-09_v2.pdf...
+   [OK] Added 81 chunks
+
+[10/56] Processing: research_report_2-Q5_EN_2025-07-08_v2.pdf...
+   [OK] Added 55 chunks
+
+[11/56] Processing: research_report_2-Q6_EN_2025-07-15_v2.pdf...
+   [OK] Added 79 chunks
+
+[12/56] Processing: research_report_2-Q7_EN_2025-09-09_v2.pdf...
+   [OK] Added 108 chunks
+
+[13/56] Processing: research_report_2-Q8_EN_2025-08-28_v2.pdf...
+   [OK] Added 95 chunks
+
+[14/56] Processing: research_report_2-Q9_ EN_2025-08-24.pdf...
+   [OK] Added 50 chunks
+
+[15/56] Processing: research_report_3-Q1_EN_2025-10-14_v1.pdf...
+   [OK] Added 87 chunks
+
+[16/56] Processing: research_report_3-Q2_EN_2025-10-29_v2.pdf...
+   [OK] Added 77 chunks
+
+[17/56] Processing: research_report_Q1_ EN_2025-01-02.pdf...
+   [OK] Added 16 chunks
+
+[18/56] Processing: research_report_Q2_EN_2025-01-12-with-Data.pdf...
+   [OK] Added 33 chunks
+
+[19/56] Processing: research_report_Q3_EN_2025-01-21-with-Data3.pdf...
+   [OK] Added 60 chunks
+
+[20/56] Processing: research_report_Q4_EN_2025-01-30-with-Data.pdf...
+   [OK] Added 79 chunks
+
+[21/56] Processing: research_report_Q5_EN_2025-02-22-v3.pdf...
+   [OK] Added 60 chunks
+
+[22/56] Processing: research_report_Q6_AR_2025-02-28-v3.pdf...
+   [OK] Added 80 chunks
+
+[23/56] Processing: research_report_Q6_EN_2025-02-28-v3.pdf...
+   [OK] Added 86 chunks
+
+[24/56] Processing: research_report_Q7_EN_2025-05-30.pdf...
+   [OK] Added 31 chunks
+
+[25/56] Processing: research_report_Q8_EN_2025-05-12-v3.pdf...
+   [OK] Added 85 chunks
+
+[26/56] Processing: research_report_QX_EN_2025-02-20 2.pdf...
+   [OK] Added 78 chunks
+
+[27/56] Processing: Resume BGI Skills Compass Report 2023.pdf...
+   [OK] Added 2 chunks
+
+[28/56] Processing: Summary of 2023 State of Data + AI .pdf...
+   [OK] Added 6 chunks
+
+[29/56] Processing: Summary of Global Economic Prospects 2023.pdf...
+   [OK] Added 4 chunks
+
+[30/56] Processing: SUMMARY-DIGITIZATION, AI, AND THE FUTURE OF WORK- IMPERATIVE...
+   [OK] Added 4 chunks
+
+[31/56] Processing: SUMMARY-Future_of_Work_EmployerÆs_Edition_Pulse_Check.pdf...
+   [OK] Added 2 chunks
+
+[32/56] Processing: SUMMARY-Shifting_Skills_Moving_Targets_and_Remaking_the_Work...
+   [OK] Added 3 chunks
+
+[33/56] Processing: SUMMARY-The economic potential of generative AI- The next pr...
+   [OK] Added 6 chunks
+
+[34/56] Processing: Summary-The Rise of the Knowledge Graph.pdf...
+   [OK] Added 4 chunks
+
+[35/56] Processing: SUMMARY-Unleashing_The_Skills_Economy.pdf...
+   [OK] Added 4 chunks
+
+[36/56] Processing: SUMMARY-WEF_The_Future_of_Jobs_2023.pdf...
+   [OK] Added 5 chunks
+
+[37/56] Processing: Summary_Anticipating and matching skills and jobs.pdf...
+   [OK] Added 7 chunks
+
+[38/56] Processing: Summary_Application of Blockchain and Smart Contracts in Emp...
+   [OK] Added 10 chunks
+
+[39/56] Processing: Summary_DEVELOPING AND RUNNING AN ESTABLISHMENT SKILLS SURVE...
+   [OK] Added 45 chunks
+
+[40/56] Processing: Summary_DEVELOPING SKILLS FORESIGHTS, SCENARIOS AND FORECAST...
+   [OK] Added 33 chunks
+
+[41/56] Processing: Summary_Digitalization during the COVID-19 Crisis  Implicati...
+   [OK] Added 11 chunks
+
+[42/56] Processing: Summary_Generative AI and Jobs- A global analysis of potenti...
+   [OK] Added 12 chunks
+
+[43/56] Processing: Summary_Knowledge Graphs - Data in Context for Responsive Bu...
+   [OK] Added 8 chunks
+
+[44/56] Processing: Summary_Qatar Digital Investment Opportunities 3rd Edition.p...
+   [OK] Added 10 chunks
+
+[45/56] Processing: Summary_Qatar Economic Outlook 2021 - 2023 .pdf...
+   [OK] Added 6 chunks
+
+[46/56] Processing: Summary_Qatar's ICT Landscape & Digital Trends 2022_Improved...
+   [OK] Added 7 chunks
+
+[47/56] Processing: Summary_QatarÆs ICT Landscape & Digital Trends 2022_Improved...
+   [OK] Added 8 chunks
+
+[48/56] Processing: Summary_QatarÆs manufacturing sector- Bridging the skills ga...
+   [OK] Added 11 chunks
+
+[49/56] Processing: Summary_Skills trends  in the Arab region  in the wake of Ch...
+   [OK] Added 4 chunks
+
+[50/56] Processing: Summary_The Arab region may be missing  the Fourth Industria...
+   [OK] Added 11 chunks
+
+[51/56] Processing: Summary_The feasibility of using big data  in anticipating a...
+   [OK] Added 28 chunks
+
+[52/56] Processing: Summary_The Future of Jobs in the Era of AI.pdf...
+   [OK] Added 10 chunks
+
+[53/56] Processing: Summary_The state of AI in 2023- Generative AIÆs breakout ye...
+   [OK] Added 16 chunks
+
+[54/56] Processing: Summary_What Are the Binding Constraints for a Knowledge-Bas...
+   [OK] Added 5 chunks
+
+[55/56] Processing: Summary_What's the future of generative AI_ An early view in...
+   [OK] Added 4 chunks
+
+[56/56] Processing: Summary_Workforce of the future- The competing forces shapin...
+   [OK] Added 7 chunks
+
+================================================================================
+[COMPLETE] R&D Report Ingestion Finished
+================================================================================
+   Files processed: 56/56
+   Total chunks added: 1959
+   Document store: 6 -> 1965 documents
+
+   Document types:
+      quarterly_research: 21 files
+      ai_impact_study: 11 files
+      skills_analysis: 9 files
+      research_report: 8 files
+      case_study: 2 files
+      labor_analysis: 2 files
+      economic_analysis: 2 files
+      strategic_planning: 1 files
+================================================================================
+
+[SUCCESS] Ingested 1959 chunks from 56 files

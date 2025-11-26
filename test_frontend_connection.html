@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>QNWIS Backend Connection Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1e293b;
+            color: #e2e8f0;
+        }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #065f46; }
+        .error { background: #991b1b; }
+        .info { background: #1e40af; }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background: #06b6d4;
+            color: #0f172a;
+            border: none;
+            border-radius: 5px;
+        }
+        pre { background: #0f172a; padding: 15px; border-radius: 5px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>QNWIS Backend Connection Test</h1>
+
+    <div id="status"></div>
+
+    <h3>1. Test Backend Health</h3>
+    <button onclick="testHealth()">Test /health</button>
+    <pre id="healthResult"></pre>
+
+    <h3>2. Test Stream Endpoint</h3>
+    <button onclick="testStream()">Test /api/v1/council/stream</button>
+    <pre id="streamResult"></pre>
+
+    <script>
+        const API_URL = 'http://localhost:8000';
+
+        async function testHealth() {
+            const result = document.getElementById('healthResult');
+            const status = document.getElementById('status');
+
+            status.innerHTML = '<div class="status info">Testing health endpoint...</div>';
+            result.textContent = 'Loading...';
+
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                const data = await response.json();
+                result.textContent = JSON.stringify(data, null, 2);
+                status.innerHTML = '<div class="status success">✓ Backend is accessible!</div>';
+            } catch (error) {
+                result.textContent = error.toString();
+                status.innerHTML = '<div class="status error">✗ Backend connection failed! Make sure backend is running on port 8000.</div>';
+            }
+        }
+
+        async function testStream() {
+            const result = document.getElementById('streamResult');
+            const status = document.getElementById('status');
+
+            status.innerHTML = '<div class="status info">Testing stream endpoint...</div>';
+            result.textContent = 'Connecting to stream...\n';
+
+            try {
+                const response = await fetch(`${API_URL}/api/v1/council/stream`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        question: 'What are the unemployment rates?',
+                        provider: 'stub'
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let eventCount = 0;
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const text = decoder.decode(value);
+                    const lines = text.split('\n');
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            eventCount++;
+                            const data = line.substring(6);
+                            result.textContent += `Event ${eventCount}: ${data}\n`;
+
+                            if (eventCount >= 10) {
+                                reader.cancel();
+                                status.innerHTML = '<div class="status success">✓ Stream endpoint working! (showing first 10 events)</div>';
+                                return;
+                            }
+                        }
+                    }
+                }
+
+                status.innerHTML = '<div class="status success">✓ Stream completed successfully!</div>';
+            } catch (error) {
+                result.textContent += '\nERROR: ' + error.toString();
+                status.innerHTML = '<div class="status error">✗ Stream connection failed!</div>';
+            }
+        }
+
+        // Auto-run health check on load
+        window.onload = () => {
+            testHealth();
+        };
+    </script>
+</body>
+</html>

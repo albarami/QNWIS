@@ -1,0 +1,645 @@
+﻿python : No data returned for EN.ATM.CO2E.PC
+At line:1 char:86
++ ... 432/qnwis"; python scripts\etl_world_bank_to_postgres.py 2>&1 | Out-F ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (No data returned for EN.ATM.CO2E.PC:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+No data returned for EN.ATM.CO2E.PC
+No data returned for EN.ATM.CO2E.PC
+No data returned for EN.ATM.CO2E.PC
+No data returned for EN.ATM.CO2E.PC
+================================================================================
+[ETL] WORLD BANK -> POSTGRESQL (EXPANDED)
+   Indicators: 31
+   Countries: 6 GCC nations
+================================================================================
+
+[CLEANUP] Clearing old World Bank data...
+   Deleted 1493 old records
+
+============================================================
+[COUNTRY] Processing: Qatar (QAT)
+============================================================
+
+[FETCH] SL.UEM.TOTL.ZS: Unemployment, total (% of labor force)...
+   [OK] Loaded 15 records
+
+[FETCH] SL.UEM.TOTL.NE.ZS: Unemployment, total (% of total labor force) (nati...
+   [OK] Loaded 13 records
+
+[FETCH] SL.TLF.CACT.ZS: Labor force participation rate, total (% of popula...
+   [OK] Loaded 15 records
+
+[FETCH] SL.TLF.CACT.MA.ZS: Labor force participation rate, male (% of male po...
+   [OK] Loaded 15 records
+
+[FETCH] SL.TLF.CACT.FE.ZS: Labor force participation rate, female (% of femal...
+   [OK] Loaded 15 records
+
+[FETCH] SL.EMP.TOTL.SP.ZS: Employment to population ratio, 15+, total (%)...
+   [OK] Loaded 15 records
+
+[FETCH] SL.GDP.PCAP.EM.KD: GDP per person employed (constant 2017 PPP $)...
+   [OK] Loaded 15 records
+
+[FETCH] NY.GDP.MKTP.CD: GDP (current US$)...
+   [OK] Loaded 15 records
+
+[FETCH] NY.GDP.MKTP.KD.ZG: GDP growth (annual %)...
+   [OK] Loaded 15 records
+
+[FETCH] NY.GDP.PCAP.CD: GDP per capita (current US$)...
+   [OK] Loaded 15 records
+
+[FETCH] NV.IND.TOTL.ZS: Industry, value added (% of GDP)...
+   [OK] Loaded 14 records
+
+[FETCH] NV.SRV.TOTL.ZS: Services, value added (% of GDP)...
+   [OK] Loaded 14 records
+
+[FETCH] NV.AGR.TOTL.ZS: Agriculture, value added (% of GDP)...
+   [OK] Loaded 15 records
+
+[FETCH] SH.XPD.CHEX.GD.ZS: Current health expenditure (% of GDP)...
+   [OK] Loaded 13 records
+
+[FETCH] SP.DYN.LE00.IN: Life expectancy at birth, total (years)...
+   [OK] Loaded 14 records
+
+[FETCH] SH.MED.BEDS.ZS: Hospital beds (per 1,000 people)...
+   [OK] Loaded 10 records
+
+[FETCH] SE.TER.ENRR: School enrollment, tertiary (% gross)...
+   [OK] Loaded 13 records
+
+[FETCH] SE.SEC.ENRR: School enrollment, secondary (% gross)...
+   [OK] Loaded 13 records
+
+[FETCH] SE.XPD.TOTL.GD.ZS: Government expenditure on education, total (% of G...
+   [OK] Loaded 8 records
+
+[FETCH] IT.NET.USER.ZS: Individuals using the Internet (% of population)...
+   [OK] Loaded 14 records
+
+[FETCH] IT.CEL.SETS.P2: Mobile cellular subscriptions (per 100 people)...
+   [OK] Loaded 14 records
+
+[FETCH] IS.AIR.DPRT: Air transport, registered carrier departures world...
+   [OK] Loaded 12 records
+
+[FETCH] NE.EXP.GNFS.ZS: Exports of goods and services (% of GDP)...
+   [OK] Loaded 13 records
+
+[FETCH] NE.IMP.GNFS.ZS: Imports of goods and services (% of GDP)...
+   [OK] Loaded 13 records
+
+[FETCH] BX.KLT.DINV.WD.GD.ZS: Foreign direct investment, net inflows (% of GDP)...
+   [OK] Loaded 15 records
+
+[FETCH] NY.GDS.TOTL.ZS: Gross savings (% of GDP)...
+   [OK] Loaded 13 records
+
+[FETCH] EG.USE.ELEC.KH.PC: Electric power consumption (kWh per capita)...
+   [OK] Loaded 13 records
+
+[FETCH] EN.ATM.CO2E.PC: CO2 emissions (metric tons per capita)...
+   [WARN] No data available for QAT
+
+[FETCH] EG.FEC.RNEW.ZS: Renewable energy consumption (% of total final ene...
+   [OK] Loaded 12 records
+
+[FETCH] SP.POP.TOTL: Population, total...
+   [OK] Loaded 15 records
+
+[FETCH] SP.URB.TOTL.IN.ZS: Urban population (% of total population)...
+   [OK] Loaded 15 records
+
+   [TOTAL] Qatar: 411 records
+
+============================================================
+[COUNTRY] Processing: Saudi Arabia (SAU)
+============================================================
+
+[FETCH] SL.UEM.TOTL.ZS: Unemployment, total (% of labor force)...
+   [OK] Loaded 15 records
+
+[FETCH] SL.UEM.TOTL.NE.ZS: Unemployment, total (% of total labor force) (nati...
+   [OK] Loaded 14 records
+
+[FETCH] SL.TLF.CACT.ZS: Labor force participation rate, total (% of popula...
+   [OK] Loaded 15 records
+
+[FETCH] SL.TLF.CACT.MA.ZS: Labor force participation rate, male (% of male po...
+   [OK] Loaded 15 records
+
+[FETCH] SL.TLF.CACT.FE.ZS: Labor force participation rate, female (% of femal...
+   [OK] Loaded 15 records
+
+[FETCH] SL.EMP.TOTL.SP.ZS: Employment to population ratio, 15+, total (%)...
+   [OK] Loaded 15 records
+
+[FETCH] SL.GDP.PCAP.EM.KD: GDP per person employed (constant 2017 PPP $)...
+   [OK] Loaded 15 records
+
+[FETCH] NY.GDP.MKTP.CD: GDP (current US$)...
+   [OK] Loaded 15 records
+
+[FETCH] NY.GDP.MKTP.KD.ZG: GDP growth (annual %)...
+   [OK] Loaded 15 records
+
+[FETCH] NY.GDP.PCAP.CD: GDP per capita (current US$)...
+   [OK] Loaded 15 records
+
+[FETCH] NV.IND.TOTL.ZS: Industry, value added (% of GDP)...
+   [OK] Loaded 15 records
+
+[FETCH] NV.SRV.TOTL.ZS: Services, value added (% of GDP)...
+   [OK] Loaded 15 records
+
+[FETCH] NV.AGR.TOTL.ZS: Agriculture, value added (% of GDP)...
+   [OK] Loaded 15 records
+
+[FETCH] SH.XPD.CHEX.GD.ZS: Current health expenditure (% of GDP)...
+   [OK] Loaded 13 records
+
+[FETCH] SP.DYN.LE00.IN: Life expectancy at birth, total (years)...
+   [OK] Loaded 14 records
+
+[FETCH] SH.MED.BEDS.ZS: Hospital beds (per 1,000 people)...
+   [OK] Loaded 12 records
+
+[FETCH] SE.TER.ENRR: School enrollment, tertiary (% gross)...
+   [OK] Loaded 14 records
+
+[FETCH] SE.SEC.ENRR: School enrollment, secondary (% gross)...
+   [OK] Loaded 11 records
+
+[FETCH] SE.XPD.TOTL.GD.ZS: Government expenditure on education, total (% of G...
+   [OK] Loaded 1 records
+
+[FETCH] IT.NET.USER.ZS: Individuals using the Internet (% of population)...
+   [OK] Loaded 15 records
+
+[FETCH] IT.CEL.SETS.P2: Mobile cellular subscriptions (per 100 people)...
+   [OK] Loaded 14 records
+
+[FETCH] IS.AIR.DPRT: Air transport, registered carrier departures world...
+   [OK] Loaded 12 records
+
+[FETCH] NE.EXP.GNFS.ZS: Exports of goods and services (% of GDP)...
+   [OK] Loaded 15 records
+
+[FETCH] NE.IMP.GNFS.ZS: Imports of goods and services (% of GDP)...
+   [OK] Loaded 15 records
+
+[FETCH] BX.KLT.DINV.WD.GD.ZS: Foreign direct investment, net inflows (% of GDP)...
+   [OK] Loaded 15 records
+
+[FETCH] NY.GDS.TOTL.ZS: Gross savings (% of GDP)...
+   [OK] Loaded 15 records
+
+[FETCH] EG.USE.ELEC.KH.PC: Electric power consumption (kWh per capita)...
+   [OK] Loaded 13 records
+
+[FETCH] EN.ATM.CO2E.PC: CO2 emissions (metric tons per capita)...
+   [WARN] No data available for SAU
+
+[FETCH] EG.FEC.RNEW.ZS: Renewable energy consumption (% of total final ene...
+   [OK] Loaded 12 records
+
+[FETCH] SP.POP.TOTL: Population, total...
+   [OK] Loaded 15 records
+
+[FETCH] SP.URB.TOTL.IN.ZS: Urban population (% of total population)...
+   [OK] Loaded 15 records
+
+   [TOTAL] Saudi Arabia: 415 records
+
+============================================================
+[COUNTRY] Processing: United Arab Emirates (ARE)
+============================================================
+
+[FETCH] SL.UEM.TOTL.ZS: Unemployment, total (% of labor force)...
+   [OK] Loaded 15 records
+
+[FETCH] SL.UEM.TOTL.NE.ZS: Unemployment, total (% of total labor force) (nati...
+   [OK] Loaded 9 records
+
+[FETCH] SL.TLF.CACT.ZS: Labor force participation rate, total (% of popula...
+   [OK] Loaded 15 records
+
+[FETCH] SL.TLF.CACT.MA.ZS: Labor force participation rate, male (% of male po...
+   [OK] Loaded 15 records
+
+[FETCH] SL.TLF.CACT.FE.ZS: Labor force participation rate, female (% of femal...
+   [OK] Loaded 15 records
+
+[FETCH] SL.EMP.TOTL.SP.ZS: Employment to population ratio, 15+, total (%)...
+   [OK] Loaded 15 records
+
+[FETCH] SL.GDP.PCAP.EM.KD: GDP per person employed (constant 2017 PPP $)...
+   [OK] Loaded 15 records
+
+[FETCH] NY.GDP.MKTP.CD: GDP (current US$)...
+   [OK] Loaded 15 records
+
+[FETCH] NY.GDP.MKTP.KD.ZG: GDP growth (annual %)...
+   [OK] Loaded 15 records
+
+[FETCH] NY.GDP.PCAP.CD: GDP per capita (current US$)...
+   [OK] Loaded 15 records
+
+[FETCH] NV.IND.TOTL.ZS: Industry, value added (% of GDP)...
+   [OK] Loaded 14 records
+
+[FETCH] NV.SRV.TOTL.ZS: Services, value added (% of GDP)...
+   [OK] Loaded 14 records
+No data returned for EN.ATM.CO2E.PC
+
+[FETCH] NV.AGR.TOTL.ZS: Agriculture, value added (% of GDP)...
+   [OK] Loaded 14 records
+
+[FETCH] SH.XPD.CHEX.GD.ZS: Current health expenditure (% of GDP)...
+   [OK] Loaded 13 records
+
+[FETCH] SP.DYN.LE00.IN: Life expectancy at birth, total (years)...
+   [OK] Loaded 14 records
+
+[FETCH] SH.MED.BEDS.ZS: Hospital beds (per 1,000 people)...
+   [OK] Loaded 12 records
+
+[FETCH] SE.TER.ENRR: School enrollment, tertiary (% gross)...
+   [OK] Loaded 7 records
+
+[FETCH] SE.SEC.ENRR: School enrollment, secondary (% gross)...
+   [OK] Loaded 7 records
+
+[FETCH] SE.XPD.TOTL.GD.ZS: Government expenditure on education, total (% of G...
+   [OK] Loaded 3 records
+
+[FETCH] IT.NET.USER.ZS: Individuals using the Internet (% of population)...
+   [OK] Loaded 15 records
+
+[FETCH] IT.CEL.SETS.P2: Mobile cellular subscriptions (per 100 people)...
+   [OK] Loaded 14 records
+
+[FETCH] IS.AIR.DPRT: Air transport, registered carrier departures world...
+   [OK] Loaded 12 records
+
+[FETCH] NE.EXP.GNFS.ZS: Exports of goods and services (% of GDP)...
+   [OK] Loaded 14 records
+
+[FETCH] NE.IMP.GNFS.ZS: Imports of goods and services (% of GDP)...
+   [OK] Loaded 14 records
+
+[FETCH] BX.KLT.DINV.WD.GD.ZS: Foreign direct investment, net inflows (% of GDP)...
+   [OK] Loaded 15 records
+
+[FETCH] NY.GDS.TOTL.ZS: Gross savings (% of GDP)...
+   [OK] Loaded 14 records
+
+[FETCH] EG.USE.ELEC.KH.PC: Electric power consumption (kWh per capita)...
+   [OK] Loaded 13 records
+
+[FETCH] EN.ATM.CO2E.PC: CO2 emissions (metric tons per capita)...
+   [WARN] No data available for ARE
+
+[FETCH] EG.FEC.RNEW.ZS: Renewable energy consumption (% of total final ene...
+   [OK] Loaded 12 records
+
+[FETCH] SP.POP.TOTL: Population, total...
+   [OK] Loaded 15 records
+
+[FETCH] SP.URB.TOTL.IN.ZS: Urban population (% of total population)...
+   [OK] Loaded 15 records
+
+   [TOTAL] United Arab Emirates: 395 records
+
+============================================================
+[COUNTRY] Processing: Kuwait (KWT)
+============================================================
+
+[FETCH] SL.UEM.TOTL.ZS: Unemployment, total (% of labor force)...
+   [OK] Loaded 15 records
+
+[FETCH] SL.UEM.TOTL.NE.ZS: Unemployment, total (% of total labor force) (nati...
+   [OK] Loaded 4 records
+
+[FETCH] SL.TLF.CACT.ZS: Labor force participation rate, total (% of popula...
+   [OK] Loaded 15 records
+
+[FETCH] SL.TLF.CACT.MA.ZS: Labor force participation rate, male (% of male po...
+   [OK] Loaded 15 records
+
+[FETCH] SL.TLF.CACT.FE.ZS: Labor force participation rate, female (% of femal...
+   [OK] Loaded 15 records
+
+[FETCH] SL.EMP.TOTL.SP.ZS: Employment to population ratio, 15+, total (%)...
+   [OK] Loaded 15 records
+
+[FETCH] SL.GDP.PCAP.EM.KD: GDP per person employed (constant 2017 PPP $)...
+   [OK] Loaded 15 records
+
+[FETCH] NY.GDP.MKTP.CD: GDP (current US$)...
+   [OK] Loaded 15 records
+
+[FETCH] NY.GDP.MKTP.KD.ZG: GDP growth (annual %)...
+   [OK] Loaded 15 records
+
+[FETCH] NY.GDP.PCAP.CD: GDP per capita (current US$)...
+   [OK] Loaded 15 records
+
+[FETCH] NV.IND.TOTL.ZS: Industry, value added (% of GDP)...
+   [OK] Loaded 15 records
+
+[FETCH] NV.SRV.TOTL.ZS: Services, value added (% of GDP)...
+   [OK] Loaded 15 records
+
+[FETCH] NV.AGR.TOTL.ZS: Agriculture, value added (% of GDP)...
+   [OK] Loaded 15 records
+
+[FETCH] SH.XPD.CHEX.GD.ZS: Current health expenditure (% of GDP)...
+   [OK] Loaded 13 records
+
+[FETCH] SP.DYN.LE00.IN: Life expectancy at birth, total (years)...
+   [OK] Loaded 14 records
+
+[FETCH] SH.MED.BEDS.ZS: Hospital beds (per 1,000 people)...
+   [OK] Loaded 11 records
+
+[FETCH] SE.TER.ENRR: School enrollment, tertiary (% gross)...
+   [OK] Loaded 8 records
+
+[FETCH] SE.SEC.ENRR: School enrollment, secondary (% gross)...
+   [OK] Loaded 6 records
+
+[FETCH] SE.XPD.TOTL.GD.ZS: Government expenditure on education, total (% of G...
+   [OK] Loaded 9 records
+
+[FETCH] IT.NET.USER.ZS: Individuals using the Internet (% of population)...
+   [OK] Loaded 14 records
+
+[FETCH] IT.CEL.SETS.P2: Mobile cellular subscriptions (per 100 people)...
+   [OK] Loaded 14 records
+
+[FETCH] IS.AIR.DPRT: Air transport, registered carrier departures world...
+   [OK] Loaded 12 records
+
+[FETCH] NE.EXP.GNFS.ZS: Exports of goods and services (% of GDP)...
+   [OK] Loaded 13 records
+
+[FETCH] NE.IMP.GNFS.ZS: Imports of goods and services (% of GDP)...
+   [OK] Loaded 13 records
+
+[FETCH] BX.KLT.DINV.WD.GD.ZS: Foreign direct investment, net inflows (% of GDP)...
+   [OK] Loaded 15 records
+
+[FETCH] NY.GDS.TOTL.ZS: Gross savings (% of GDP)...
+   [OK] Loaded 13 records
+
+[FETCH] EG.USE.ELEC.KH.PC: Electric power consumption (kWh per capita)...
+   [OK] Loaded 13 records
+
+[FETCH] EN.ATM.CO2E.PC: CO2 emissions (metric tons per capita)...
+   [WARN] No data available for KWT
+
+[FETCH] EG.FEC.RNEW.ZS: Renewable energy consumption (% of total final ene...
+   [OK] Loaded 12 records
+
+[FETCH] SP.POP.TOTL: Population, total...
+   [OK] Loaded 15 records
+
+[FETCH] SP.URB.TOTL.IN.ZS: Urban population (% of total population)...
+   [OK] Loaded 15 records
+
+   [TOTAL] Kuwait: 394 records
+
+============================================================
+[COUNTRY] Processing: Bahrain (BHR)
+============================================================
+
+[FETCH] SL.UEM.TOTL.ZS: Unemployment, total (% of labor force)...
+   [OK] Loaded 15 records
+
+[FETCH] SL.UEM.TOTL.NE.ZS: Unemployment, total (% of total labor force) (nati...
+   [OK] Loaded 3 records
+
+[FETCH] SL.TLF.CACT.ZS: Labor force participation rate, total (% of popula...
+   [OK] Loaded 15 records
+
+[FETCH] SL.TLF.CACT.MA.ZS: Labor force participation rate, male (% of male po...
+   [OK] Loaded 15 records
+
+[FETCH] SL.TLF.CACT.FE.ZS: Labor force participation rate, female (% of femal...
+   [OK] Loaded 15 records
+
+[FETCH] SL.EMP.TOTL.SP.ZS: Employment to population ratio, 15+, total (%)...
+   [OK] Loaded 15 records
+
+[FETCH] SL.GDP.PCAP.EM.KD: GDP per person employed (constant 2017 PPP $)...
+   [OK] Loaded 15 records
+
+[FETCH] NY.GDP.MKTP.CD: GDP (current US$)...
+   [OK] Loaded 15 records
+
+[FETCH] NY.GDP.MKTP.KD.ZG: GDP growth (annual %)...
+   [OK] Loaded 15 records
+
+[FETCH] NY.GDP.PCAP.CD: GDP per capita (current US$)...
+   [OK] Loaded 15 records
+
+[FETCH] NV.IND.TOTL.ZS: Industry, value added (% of GDP)...
+   [OK] Loaded 14 records
+
+[FETCH] NV.SRV.TOTL.ZS: Services, value added (% of GDP)...
+   [OK] Loaded 14 records
+
+[FETCH] NV.AGR.TOTL.ZS: Agriculture, value added (% of GDP)...
+   [OK] Loaded 14 records
+
+[FETCH] SH.XPD.CHEX.GD.ZS: Current health expenditure (% of GDP)...
+   [OK] Loaded 13 records
+
+[FETCH] SP.DYN.LE00.IN: Life expectancy at birth, total (years)...
+   [OK] Loaded 14 records
+
+[FETCH] SH.MED.BEDS.ZS: Hospital beds (per 1,000 people)...
+   [OK] Loaded 10 records
+
+[FETCH] SE.TER.ENRR: School enrollment, tertiary (% gross)...
+   [OK] Loaded 14 records
+
+[FETCH] SE.SEC.ENRR: School enrollment, secondary (% gross)...
+   [OK] Loaded 13 records
+
+[FETCH] SE.XPD.TOTL.GD.ZS: Government expenditure on education, total (% of G...
+   [OK] Loaded 14 records
+
+[FETCH] IT.NET.USER.ZS: Individuals using the Internet (% of population)...
+   [OK] Loaded 15 records
+
+[FETCH] IT.CEL.SETS.P2: Mobile cellular subscriptions (per 100 people)...
+   [OK] Loaded 14 records
+
+[FETCH] IS.AIR.DPRT: Air transport, registered carrier departures world...
+   [OK] Loaded 12 records
+
+[FETCH] NE.EXP.GNFS.ZS: Exports of goods and services (% of GDP)...
+   [OK] Loaded 14 records
+
+[FETCH] NE.IMP.GNFS.ZS: Imports of goods and services (% of GDP)...
+   [OK] Loaded 14 records
+
+[FETCH] BX.KLT.DINV.WD.GD.ZS: Foreign direct investment, net inflows (% of GDP)...
+   [OK] Loaded 15 records
+
+[FETCH] NY.GDS.TOTL.ZS: Gross savings (% of GDP)...
+   [OK] Loaded 14 records
+
+[FETCH] EG.USE.ELEC.KH.PC: Electric power consumption (kWh per capita)...
+   [OK] Loaded 14 records
+
+[FETCH] EN.ATM.CO2E.PC: CO2 emissions (metric tons per capita)...
+   [WARN] No data available for BHR
+
+[FETCH] EG.FEC.RNEW.ZS: Renewable energy consumption (% of total final ene...
+   [OK] Loaded 12 records
+
+[FETCH] SP.POP.TOTL: Population, total...
+   [OK] Loaded 15 records
+
+[FETCH] SP.URB.TOTL.IN.ZS: Urban population (% of total population)...
+   [OK] Loaded 15 records
+
+   [TOTAL] Bahrain: 412 records
+
+============================================================
+[COUNTRY] Processing: Oman (OMN)
+============================================================
+
+[FETCH] SL.UEM.TOTL.ZS: Unemployment, total (% of labor force)...
+   [OK] Loaded 15 records
+
+[FETCH] SL.UEM.TOTL.NE.ZS: Unemployment, total (% of total labor force) (nati...
+   [OK] Loaded 5 records
+
+[FETCH] SL.TLF.CACT.ZS: Labor force participation rate, total (% of popula...
+   [OK] Loaded 15 records
+
+[FETCH] SL.TLF.CACT.MA.ZS: Labor force participation rate, male (% of male po...
+   [OK] Loaded 15 records
+
+[FETCH] SL.TLF.CACT.FE.ZS: Labor force participation rate, female (% of femal...
+   [OK] Loaded 15 records
+
+[FETCH] SL.EMP.TOTL.SP.ZS: Employment to population ratio, 15+, total (%)...
+   [OK] Loaded 15 records
+
+[FETCH] SL.GDP.PCAP.EM.KD: GDP per person employed (constant 2017 PPP $)...
+   [OK] Loaded 15 records
+
+[FETCH] NY.GDP.MKTP.CD: GDP (current US$)...
+   [OK] Loaded 15 records
+
+[FETCH] NY.GDP.MKTP.KD.ZG: GDP growth (annual %)...
+   [OK] Loaded 15 records
+
+[FETCH] NY.GDP.PCAP.CD: GDP per capita (current US$)...
+   [OK] Loaded 15 records
+
+[FETCH] NV.IND.TOTL.ZS: Industry, value added (% of GDP)...
+   [OK] Loaded 15 records
+
+[FETCH] NV.SRV.TOTL.ZS: Services, value added (% of GDP)...
+   [OK] Loaded 15 records
+
+[FETCH] NV.AGR.TOTL.ZS: Agriculture, value added (% of GDP)...
+   [OK] Loaded 15 records
+
+[FETCH] SH.XPD.CHEX.GD.ZS: Current health expenditure (% of GDP)...
+   [OK] Loaded 13 records
+
+[FETCH] SP.DYN.LE00.IN: Life expectancy at birth, total (years)...
+   [OK] Loaded 14 records
+
+[FETCH] SH.MED.BEDS.ZS: Hospital beds (per 1,000 people)...
+   [OK] Loaded 11 records
+
+[FETCH] SE.TER.ENRR: School enrollment, tertiary (% gross)...
+   [OK] Loaded 11 records
+
+[FETCH] SE.SEC.ENRR: School enrollment, secondary (% gross)...
+   [OK] Loaded 11 records
+
+[FETCH] SE.XPD.TOTL.GD.ZS: Government expenditure on education, total (% of G...
+   [OK] Loaded 6 records
+
+[FETCH] IT.NET.USER.ZS: Individuals using the Internet (% of population)...
+   [OK] Loaded 15 records
+
+[FETCH] IT.CEL.SETS.P2: Mobile cellular subscriptions (per 100 people)...
+   [OK] Loaded 14 records
+
+[FETCH] IS.AIR.DPRT: Air transport, registered carrier departures world...
+   [OK] Loaded 12 records
+
+[FETCH] NE.EXP.GNFS.ZS: Exports of goods and services (% of GDP)...
+   [OK] Loaded 14 records
+
+[FETCH] NE.IMP.GNFS.ZS: Imports of goods and services (% of GDP)...
+   [OK] Loaded 14 records
+
+[FETCH] BX.KLT.DINV.WD.GD.ZS: Foreign direct investment, net inflows (% of GDP)...
+   [OK] Loaded 15 records
+
+[FETCH] NY.GDS.TOTL.ZS: Gross savings (% of GDP)...
+   [OK] Loaded 14 records
+
+[FETCH] EG.USE.ELEC.KH.PC: Electric power consumption (kWh per capita)...
+   [OK] Loaded 13 records
+
+[FETCH] EN.ATM.CO2E.PC: CO2 emissions (metric tons per capita)...
+   [WARN] No data available for OMN
+
+[FETCH] EG.FEC.RNEW.ZS: Renewable energy consumption (% of total final ene...
+   [OK] Loaded 12 records
+
+[FETCH] SP.POP.TOTL: Population, total...
+   [OK] Loaded 15 records
+
+[FETCH] SP.URB.TOTL.IN.ZS: Urban population (% of total population)...
+   [OK] Loaded 15 records
+
+   [TOTAL] Oman: 404 records
+
+================================================================================
+[COMPLETE] ETL FINISHED
+   Total records loaded: 2431
+   Countries: 6
+   Indicators: 31
+================================================================================
+
+[VALIDATE] Checking data quality...
+
+   Qatar Unemployment (should be < 1%):
+      2024: 0.13% [OK]
+      2023: 0.13% [OK]
+      2022: 0.13% [OK]
+      2021: 0.14% [OK]
+      2020: 0.14% [OK]
+
+   Data coverage by country:
+      ARE: 30 indicators [OK]
+      BHR: 30 indicators [OK]
+      KWT: 30 indicators [OK]
+      OMN: 30 indicators [OK]
+      QAT: 30 indicators [OK]
+      SAU: 30 indicators [OK]
+
+   Total records: 2431
+
+============================================================
+   Validation: 12/12 checks passed
+   [SUCCESS] DATA QUALITY: GOOD
+============================================================

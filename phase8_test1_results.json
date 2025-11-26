@@ -1,0 +1,52 @@
+{
+  "test_name": "FOOD SECURITY",
+  "agents_invoked": [
+    "AlertCenter",
+    "MacroEconomist",
+    "MicroEconomist",
+    "NationalStrategy",
+    "Nationalization",
+    "PatternDetective",
+    "PatternDetectiveAgent",
+    "PatternMiner",
+    "Predictor",
+    "Scenario",
+    "SkillsAgent",
+    "TimeMachine"
+  ],
+  "debate_turns_count": 43,
+  "debate_turns_sample": [
+    {
+      "agent": "MicroEconomist",
+      "type": "opening_statement",
+      "preview": "# Microeconomic Analysis: Qatar Food Valley Investment\n\n## Cost-Benefit and Resource Allocation Assessment\n\nFrom a microeconomic perspective, the $15B Food Valley investment presents significant effic"
+    },
+    {
+      "agent": "MacroEconomist",
+      "type": "opening_statement",
+      "preview": "# Macroeconomic Analysis: Qatar's $15B Food Valley Investment\n\n## Economic Viability Assessment\n\nFrom a macroeconomic perspective, Qatar's proposed $15B investment in food self-sufficiency presents **"
+    },
+    {
+      "agent": "Nationalization",
+      "type": "opening_statement",
+      "preview": "# Nationalization Analysis: Qatar Food Valley Investment\n\n## Strategic Sovereignty Assessment\n\nFrom a nationalization perspective, Qatar's $15B Food Valley investment represents a **critical strategic"
+    },
+    {
+      "agent": "SkillsAgent",
+      "type": "opening_statement",
+      "preview": "# Skills Analysis: Qatar Food Valley Project\n\n## Technical Feasibility & Human Capital Assessment\n\nFrom a skills and implementation perspective, this $15B investment faces **significant human capital "
+    },
+    {
+      "agent": "PatternDetective",
+      "type": "opening_statement",
+      "preview": "# PatternDetectiveLLM Analysis: Qatar Food Valley Investment\n\n## Pattern Recognition in Agricultural Self-Sufficiency Projects\n\nAnalyzing the $15B Food Valley investment through historical patterns re"
+    }
+  ],
+  "errors": [
+    "Cannot copy out of meta tensor; no data! Please use torch.nn.Module.to_empty() instead of torch.nn.Module.to() when moving module from meta to a different device.",
+    "Nationalization failed to produce report. Details: {\"question_preview\": \"Should Qatar invest $15B in Food Valley project targeting 40% food self-sufficiency by 2030?\", \"context_keys\": [\"classification\", \"debate_context\", \"prefetch\", \"rag_context\"], \"errors\": [\"Nationalization error: Invalid JSON: Expecting ',' delimiter: line 14 column 4 (char 770)\"]}",
+    "Agent returned no results",
+    "workflow_timeout"
+  ],
+  "success": false
+}

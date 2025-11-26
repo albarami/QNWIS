@@ -25,8 +25,9 @@ from .nodes import (
 )
 # Import legendary debate node instead of simplified debate
 from .nodes.debate_legendary import legendary_debate_node
-# Import ministerial synthesis for executive-ready output
-from .nodes.synthesis_ministerial import ministerial_synthesis_node
+# Import legendary synthesis for consultant-killing output
+from .nodes.synthesis_legendary import legendary_synthesis_node_sync as legendary_synthesis_node
+from .nodes.synthesis_strategic import strategic_synthesis_node
 # Import parallel scenario analysis components
 from .nodes.scenario_generator import ScenarioGenerator
 from .parallel_executor import ParallelDebateExecutor
@@ -89,28 +90,69 @@ async def scenario_generation_node(state: IntelligenceState) -> IntelligenceStat
     logger.info(f"Query complexity: {complexity} - proceeding with FULL analysis (minister-grade)")
     
     try:
-        logger.info("Generating scenarios for parallel analysis...")
+        logger.info("🚀 Generating scenarios for parallel analysis...")
         generator = ScenarioGenerator()
         
-        # Await async scenario generation (don't use asyncio.run - we're already in async context)
+        # Await async scenario generation
+        query = state.get('query', '')
+        facts = state.get('extracted_facts', [])
+        
+        if not query:
+            raise ValueError("No query provided for scenario generation")
+        
+        logger.info(f"📝 Query for scenarios: {query[:100]}...")
+        logger.info(f"📊 Facts count: {len(facts) if isinstance(facts, list) else 'dict format'}")
+        
         scenarios = await generator.generate_scenarios(
-            query=state['query'],
-            extracted_facts=state.get('extracted_facts', {})
+            query=query,
+            extracted_facts=facts
         )
         
-        state['scenarios'] = scenarios
-        state['reasoning_chain'].append(
-            f"🎯 Generated {len(scenarios)} scenarios for parallel GPU analysis"
-        )
-        
-        logger.info(f"✅ Generated {len(scenarios)} scenarios")
-        return state
+        if scenarios and len(scenarios) >= 4:
+            state['scenarios'] = scenarios
+            state['reasoning_chain'].append(
+                f"🎯 Generated {len(scenarios)} scenarios for parallel GPU analysis"
+            )
+            logger.info(f"✅ Scenarios: {[s.get('name', 'Unknown') for s in scenarios]}")
+            return state
+        else:
+            raise ValueError(f"Insufficient scenarios generated: {len(scenarios) if scenarios else 0}")
         
     except Exception as e:
-        logger.error(f"Scenario generation failed: {e}", exc_info=True)
-        # Fall back to single analysis
-        state['scenarios'] = None
-        state['warnings'].append(f"Scenario generation failed: {e}")
+        error_msg = f"{type(e).__name__}: {e}"
+        logger.error(f"❌ Scenario generation failed: {error_msg}", exc_info=True)
+        
+        # Create intelligent default scenarios based on query keywords
+        query_lower = state.get('query', '').lower()
+        
+        if any(kw in query_lower for kw in ['qatarization', 'workforce', 'labor', 'employment']):
+            default_scenarios = [
+                {"id": "base", "name": "Base Case", "description": "Current Qatarization trajectory continues with gradual private sector improvement", "probability": 0.35, "modified_assumptions": {"qatarization_rate": "steady"}},
+                {"id": "acceleration", "name": "Policy Acceleration", "description": "Government mandates stricter quotas, faster enforcement", "probability": 0.25, "modified_assumptions": {"policy_intensity": "high"}},
+                {"id": "skills_gap", "name": "Skills Gap Crisis", "description": "Private sector demand outpaces Qatari skill development", "probability": 0.20, "modified_assumptions": {"skills_mismatch": "severe"}},
+                {"id": "competition", "name": "GCC Competition", "description": "Saudi/UAE offer better packages, causing talent drain", "probability": 0.20, "modified_assumptions": {"regional_competition": "intense"}},
+            ]
+        elif any(kw in query_lower for kw in ['oil', 'energy', 'gas', 'lng']):
+            default_scenarios = [
+                {"id": "base", "name": "Stable Prices", "description": "Oil at $70-80/barrel, steady LNG demand", "probability": 0.35, "modified_assumptions": {"oil_price": 75}},
+                {"id": "price_crash", "name": "Price Collapse", "description": "Sustained prices below $50, fiscal pressure", "probability": 0.20, "modified_assumptions": {"oil_price": 45}},
+                {"id": "lng_boom", "name": "LNG Demand Surge", "description": "Asian energy transition drives LNG premium", "probability": 0.25, "modified_assumptions": {"lng_premium": "high"}},
+                {"id": "transition", "name": "Energy Transition", "description": "Accelerated global shift reduces hydrocarbon demand", "probability": 0.20, "modified_assumptions": {"transition_speed": "fast"}},
+            ]
+        else:
+            default_scenarios = [
+                {"id": "base", "name": "Base Case", "description": "Current trends continue with moderate growth", "probability": 0.35, "modified_assumptions": {"growth_rate": 0.03}},
+                {"id": "optimistic", "name": "Optimistic", "description": "Favorable conditions drive accelerated progress", "probability": 0.25, "modified_assumptions": {"growth_rate": 0.05}},
+                {"id": "pessimistic", "name": "Pessimistic", "description": "External shocks create headwinds", "probability": 0.20, "modified_assumptions": {"growth_rate": 0.01}},
+                {"id": "disruption", "name": "Disruption", "description": "Major structural change reshapes landscape", "probability": 0.20, "modified_assumptions": {"disruption_level": "high"}},
+            ]
+        
+        state['scenarios'] = default_scenarios
+        state['warnings'].append(f"Scenario generation error ({error_msg}) - using context-aware defaults")
+        state['reasoning_chain'].append(
+            f"⚠️ Used default scenarios due to generation error: {error_msg}"
+        )
+        logger.warning(f"✅ Fallback: Using {len(default_scenarios)} context-aware default scenarios")
         return state
 
 
@@ -277,7 +319,7 @@ def build_base_workflow() -> StateGraph:
     workflow.add_node("debate", legendary_debate_node)
     workflow.add_node("critique", critique_node)
     workflow.add_node("verification", verification_node)
-    workflow.add_node("synthesis", ministerial_synthesis_node)
+    workflow.add_node("synthesis", legendary_synthesis_node)
     
     # Wire nodes in sequence
     workflow.set_entry_point("financial")
@@ -324,7 +366,7 @@ def create_intelligence_graph() -> StateGraph:
     workflow.add_node("debate", legendary_debate_node)
     workflow.add_node("critique", critique_node)
     workflow.add_node("verification", verification_node)
-    workflow.add_node("synthesis", ministerial_synthesis_node)
+    workflow.add_node("synthesis", legendary_synthesis_node)
 
     # === Entry point ===
     workflow.set_entry_point("classifier")

@@ -1,0 +1,10 @@
+id: q_labor_force_by_sector
+title: Labor force by sector (Qatar Open Data)
+description: Labor force participation by economic sector from Planning and Statistics Authority
+source: qatar_api
+expected_unit: count
+params:
+  dataset_id: "number-of-labor-force-by-sector-thousand"
+  limit: 500
+constraints:
+  freshness_sla_days: 365

@@ -1,0 +1,11 @@
+id: q_compensation_by_sector
+title: Employee compensation by sector (Qatar Open Data)
+description: Official compensation of employees by economic activity from Planning and Statistics Authority
+source: qatar_api
+expected_unit: qar
+params:
+  dataset_id: "number-of-employees-and-compensation-of-employees-by-nationality-and-main-economic-activity"
+  where: "labor_indicator='Compensation of Employees'"
+  limit: 1000
+constraints:
+  freshness_sla_days: 365

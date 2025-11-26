@@ -105,7 +105,7 @@ export function DebatePanel({ debate, debateTurns = [], isStreaming = false }: D
                     resolution.action === 'flag_for_review' ? 'bg-yellow-500/20 text-yellow-300' :
                     'bg-blue-500/20 text-blue-300'
                   }`}>
-                    {resolution.action?.replace(/_/g, ' ').toUpperCase()}
+                    {(resolution.action || 'pending').replace(/_/g, ' ').toUpperCase()}
                   </span>
                 </div>
                 <p className="text-sm text-slate-300 whitespace-pre-wrap">{resolution.explanation}</p>
@@ -136,7 +136,7 @@ export function DebatePanel({ debate, debateTurns = [], isStreaming = false }: D
                   item.severity === 'high' ? 'text-red-400' :
                   item.severity === 'medium' ? 'text-amber-400' : 'text-slate-400'
                 }`}>
-                  Severity: {item.severity.toUpperCase()}
+                  Severity: {(item.severity || 'unknown').toUpperCase()}
                 </p>
               </div>
             ))}

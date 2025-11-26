@@ -1,0 +1,11 @@
+id: q_employees_by_sector_nationality
+title: Employee counts by sector and nationality (Qatar Open Data)
+description: Official data on employee numbers by economic activity and nationality from Planning and Statistics Authority
+source: qatar_api
+expected_unit: count
+params:
+  dataset_id: "number-of-employees-and-compensation-of-employees-by-nationality-and-main-economic-activity"
+  where: "labor_indicator='Number of Employees'"
+  limit: 1000
+constraints:
+  freshness_sla_days: 365

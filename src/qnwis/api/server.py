@@ -192,10 +192,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:3003", "http://localhost:3004", "http://localhost:3005", "http://localhost:5173"],
+        allow_origins=["*"],  # Allow all origins for development
         allow_methods=["*"],
         allow_headers=["*"],
-        allow_credentials=True,
+        allow_credentials=False,  # Must be False when allow_origins=["*"]
     )
     attach_security(app)
     app.add_middleware(GZipMiddleware, minimum_size=GZIP_MIN_BYTES)

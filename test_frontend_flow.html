@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frontend Flow Test - QNWIS</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1a1a1a;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        input, button {
+            font-size: 16px;
+            padding: 12px 16px;
+            margin: 8px 0;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        input {
+            width: calc(100% - 34px);
+        }
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        button:hover {
+            background: #1d4ed8;
+        }
+        button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 12px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        .status.idle { background: #f3f4f6; color: #374151; }
+        .status.connecting { background: #fef3c7; color: #92400e; }
+        .status.streaming { background: #dbeafe; color: #1e40af; }
+        .status.complete { background: #d1fae5; color: #065f46; }
+        .status.error { background: #fee2e2; color: #991b1b; }
+        .events {
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 20px;
+            border-radius: 4px;
+            max-height: 500px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .event {
+            margin: 8px 0;
+            padding: 4px 0;
+            border-bottom: 1px solid #374151;
+        }
+        .event:last-child {
+            border-bottom: none;
+        }
+        .event-stage {
+            color: #60a5fa;
+            font-weight: bold;
+        }
+        .event-status {
+            color: #34d399;
+        }
+        .event-error {
+            color: #f87171;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Frontend Flow Test</h1>
+        <p class="subtitle">Test the streaming endpoint to verify no crashes or errors</p>
+        
+        <input type="text" id="question" placeholder="Enter your question..." value="What is the unemployment rate in Qatar?">
+        <button id="submitBtn" onclick="testStream()">Submit Question</button>
+        
+        <div id="status" class="status idle">Status: Idle</div>
+        
+        <h3>Stream Events</h3>
+        <div class="events" id="events">
+            <div style="color: #9ca3af;">Waiting for stream...</div>
+        </div>
+    </div>
+
+    <script>
+        const eventsDiv = document.getElementById('events');
+        const statusDiv = document.getElementById('status');
+        const submitBtn = document.getElementById('submitBtn');
+        const questionInput = document.getElementById('question');
+
+        function updateStatus(message, type) {
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+        }
+
+        function addEvent(stage, status, details = '') {
+            const eventDiv = document.createElement('div');
+            eventDiv.className = 'event';
+            
+            const timestamp = new Date().toLocaleTimeString();
+            let html = `[${timestamp}] <span class="event-stage">${stage}</span> → <span class="event-status">${status}</span>`;
+            
+            if (details) {
+                html += `<br>  ${details}`;
+            }
+            
+            eventDiv.innerHTML = html;
+            eventsDiv.appendChild(eventDiv);
+            eventsDiv.scrollTop = eventsDiv.scrollHeight;
+        }
+
+        async function testStream() {
+            const question = questionInput.value.trim();
+            if (!question) {
+                alert('Please enter a question');
+                return;
+            }
+
+            // Clear previous events
+            eventsDiv.innerHTML = '';
+            submitBtn.disabled = true;
+            updateStatus('Connecting to stream...', 'connecting');
+
+            const controller = new AbortController();
+            let eventCount = 0;
+            let startTime = Date.now();
+
+            try {
+                const response = await fetch('/api/v1/council/stream', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ question }),
+                    signal: controller.signal,
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                updateStatus('Stream connected - receiving events', 'streaming');
+                addEvent('connection', 'established', `Status: ${response.status}`);
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop() || '';
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.slice(6));
+                                eventCount++;
+                                
+                                const stage = data.stage || 'unknown';
+                                const status = data.status || 'unknown';
+                                const payload = data.payload || {};
+                                
+                                let details = '';
+                                if (payload.classification) {
+                                    details = `Complexity: ${payload.classification.complexity}`;
+                                } else if (payload.fact_count) {
+                                    details = `Facts extracted: ${payload.fact_count}`;
+                                } else if (payload.selected_agents) {
+                                    details = `Agents: ${payload.selected_agents.join(', ')}`;
+                                }
+
+                                addEvent(stage, status, details);
+
+                                if (stage === 'done' && status === 'complete') {
+                                    const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+                                    updateStatus(`✅ Complete! (${eventCount} events in ${duration}s)`, 'complete');
+                                    submitBtn.disabled = false;
+                                    return;
+                                }
+
+                                if (status === 'error') {
+                                    throw new Error(payload.error || 'Stream error');
+                                }
+                            } catch (parseError) {
+                                console.error('Failed to parse event:', parseError);
+                            }
+                        }
+                    }
+                }
+
+            } catch (error) {
+                console.error('Stream error:', error);
+                updateStatus(`❌ Error: ${error.message}`, 'error');
+                addEvent('error', 'failed', error.message);
+            } finally {
+                submitBtn.disabled = false;
+            }
+        }
+
+        // Test on load
+        console.log('Frontend test page loaded. Click Submit to test the stream.');
+    </script>
+</body>
+</html>

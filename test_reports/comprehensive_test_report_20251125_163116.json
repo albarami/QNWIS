@@ -1,0 +1,177 @@
+{
+  "metadata": {
+    "start_time": "2025-11-25T16:29:55.800742",
+    "quick_mode": false,
+    "domain_filter": null,
+    "end_time": "2025-11-25T16:31:16.136607"
+  },
+  "test_suites": {
+    "API Accuracy": {
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "errors": 0,
+      "total": 0,
+      "return_code": 1,
+      "output_preview": "============================= test session starts =============================\ncollected 17 items\n\ntests\\ab_testing\\test_api_accuracy.py FFFFFFFssssssss..                  [100%]\n\n================================== FAILURES ===================================\n________________ TestWorldBankAPI.test_qatar_unemployment_rate ________________\ntests\\ab_testing\\test_api_accuracy.py:133: in test_qatar_unemployment_rate\n    if result and len(result) > 0:\n                  ^^^^^^^^^^^\nE   TypeError: obje"
+    },
+    "PostgreSQL Accuracy": {
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "errors": 0,
+      "total": 0,
+      "return_code": 1,
+      "output_preview": "============================= test session starts =============================\ncollected 15 items\n\ntests\\ab_testing\\test_postgres_accuracy.py ....F..........               [100%]\n\n================================== FAILURES ===================================\n______ TestWorldBankIndicatorsTable.test_qatar_life_expectancy_accuracy _______\ntests\\ab_testing\\test_postgres_accuracy.py:319: in test_qatar_life_expectancy_accuracy\n    assert passed\nE   assert False\n=============================== tests"
+    },
+    "Knowledge Graph & RAG": {
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "errors": 0,
+      "total": 0,
+      "return_code": 0,
+      "output_preview": "============================= test session starts =============================\ncollected 19 items\n\ntests\\ab_testing\\test_knowledge_graph_accuracy.py .ssssss............    [100%]\n\n=============================== tests coverage ================================\n_______________ coverage: platform win32, python 3.11.8-final-0 _______________\n\nName                                           Stmts   Miss  Cover   Missing\n----------------------------------------------------------------------------\nsrc\\"
+    },
+    "Data Extraction": {
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "errors": 2,
+      "total": 2,
+      "return_code": 2,
+      "output_preview": "============================= test session starts =============================\ncollected 0 items / 1 error\n\n=================================== ERRORS ====================================\n________ ERROR collecting tests/ab_testing/test_extraction_accuracy.py ________\nC:\\Users\\admin-salim\\AppData\\Roaming\\Python\\Python311\\site-packages\\_pytest\\python.py:498: in importtestmodule\n    mod = import_path(\nC:\\Users\\admin-salim\\AppData\\Roaming\\Python\\Python311\\site-packages\\_pytest\\pathlib.py:587: in im"
+    },
+    "Integration Tests": {
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "errors": 0,
+      "total": 0,
+      "return_code": 0,
+      "output_preview": "============================= test session starts =============================\ncollected 11 items\n\ntests\\integration\\test_data_accuracy.py ...........                      [100%]\n\n============================== warnings summary ===============================\ntests/integration/test_data_accuracy.py::TestKnowledgeGraph::test_graph_has_qatar_entities\ntests/integration/test_data_accuracy.py::TestKnowledgeGraph::test_graph_has_relationships\n  C:\\Users\\admin-salim\\AppData\\Roaming\\Python\\Python311\\si"
+    }
+  },
+  "overall_summary": {
+    "total_tests": 2,
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "errors": 2,
+    "accuracy_pct": 0.0,
+    "duration_seconds": 80.335865
+  },
+  "infrastructure": {
+    "ground_truth": {
+      "domains": 9,
+      "total_indicators": 34,
+      "coverage": {
+        "labor": {
+          "indicators": [
+            "unemployment_rate",
+            "labor_force_participation",
+            "employment_to_population_ratio",
+            "qatarization_target_overall",
+            "total_workforce",
+            "expatriate_ratio"
+          ],
+          "count": 6
+        },
+        "economy": {
+          "indicators": [
+            "gdp_current_usd",
+            "gdp_per_capita",
+            "gdp_growth_rate",
+            "industry_pct_gdp",
+            "services_pct_gdp",
+            "fdi_net_inflows_pct_gdp"
+          ],
+          "count": 6
+        },
+        "health": {
+          "indicators": [
+            "life_expectancy",
+            "health_expenditure_pct_gdp",
+            "hospital_beds_per_1000"
+          ],
+          "count": 3
+        },
+        "education": {
+          "indicators": [
+            "tertiary_enrollment_rate",
+            "education_spending_pct_gdp",
+            "literacy_rate"
+          ],
+          "count": 3
+        },
+        "trade": {
+          "indicators": [
+            "exports_pct_gdp",
+            "imports_pct_gdp",
+            "trade_balance_surplus",
+            "lng_export_capacity"
+          ],
+          "count": 4
+        },
+        "energy": {
+          "indicators": [
+            "oil_production",
+            "natural_gas_production",
+            "co2_emissions_per_capita",
+            "electricity_consumption_per_capita"
+          ],
+          "count": 4
+        },
+        "demographics": {
+          "indicators": [
+            "total_population",
+            "urban_population_pct",
+            "median_age"
+          ],
+          "count": 3
+        },
+        "tourism": {
+          "indicators": [
+            "international_arrivals",
+            "tourism_receipts"
+          ],
+          "count": 2
+        },
+        "finance": {
+          "indicators": [
+            "inflation_rate",
+            "current_account_balance_pct_gdp",
+            "government_debt_pct_gdp"
+          ],
+          "count": 3
+        }
+      }
+    },
+    "database": {
+      "connected": true,
+      "tables": [
+        "employment_records",
+        "ilo_labour_data",
+        "gcc_labour_statistics",
+        "vision_2030_targets",
+        "world_bank_indicators",
+        "qatar_open_data",
+        "query_audit_log",
+        "data_freshness_log",
+        "schema_version",
+        "fao_data",
+        "document_embeddings"
+      ],
+      "row_counts": {
+        "world_bank_indicators": 2431,
+        "ilo_labour_data": 6,
+        "gcc_labour_statistics": 6
+      }
+    },
+    "apis": {
+      "world_bank": "available",
+      "arab_dev_portal": "available",
+      "escwa_trade": "available"
+    }
+  }
+}

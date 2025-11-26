@@ -1,0 +1,257 @@
+{
+  "summary": {
+    "total_tests": 19,
+    "passed": 15,
+    "failed": 4,
+    "accuracy_pct": 78.94736842105263,
+    "by_component": {
+      "knowledge_graph": {
+        "passed": 5,
+        "failed": 2
+      },
+      "rag": {
+        "passed": 7,
+        "failed": 2
+      },
+      "embeddings": {
+        "passed": 3,
+        "failed": 0
+      }
+    },
+    "duration_seconds": 46.876051,
+    "failed_tests": [
+      {
+        "test_name": "kg_file_exists",
+        "component": "knowledge_graph",
+        "metric": "file_existence",
+        "expected": true,
+        "actual": false,
+        "passed": false,
+        "error": null,
+        "timestamp": "2025-11-25T16:37:49.675346"
+      },
+      {
+        "test_name": "kg_node_attributes",
+        "component": "knowledge_graph",
+        "metric": "attribute_coverage_pct",
+        "expected": 50,
+        "actual": 0.0,
+        "passed": false,
+        "error": null,
+        "timestamp": "2025-11-25T16:37:49.957399"
+      },
+      {
+        "test_name": "rag_relevance_quality",
+        "component": "rag",
+        "metric": "relevance_score",
+        "expected": 2,
+        "actual": 0,
+        "passed": false,
+        "error": null,
+        "timestamp": "2025-11-25T16:37:50.081991"
+      },
+      {
+        "test_name": "rag_rd_documents",
+        "component": "rag",
+        "metric": "rd_document_count",
+        "expected": 1,
+        "actual": 0,
+        "passed": false,
+        "error": null,
+        "timestamp": "2025-11-25T16:37:50.101067"
+      }
+    ]
+  },
+  "all_results": [
+    {
+      "test_name": "kg_file_exists",
+      "component": "knowledge_graph",
+      "metric": "file_existence",
+      "expected": true,
+      "actual": false,
+      "passed": false,
+      "error": null,
+      "timestamp": "2025-11-25T16:37:49.675346"
+    },
+    {
+      "test_name": "kg_has_nodes",
+      "component": "knowledge_graph",
+      "metric": "node_count",
+      "expected": 10,
+      "actual": 68,
+      "passed": true,
+      "error": null,
+      "timestamp": "2025-11-25T16:37:49.686085"
+    },
+    {
+      "test_name": "kg_has_edges",
+      "component": "knowledge_graph",
+      "metric": "edge_count",
+      "expected": 5,
+      "actual": 598,
+      "passed": true,
+      "error": null,
+      "timestamp": "2025-11-25T16:37:49.696065"
+    },
+    {
+      "test_name": "kg_has_qatar_entities",
+      "component": "knowledge_graph",
+      "metric": "qatar_entity_count",
+      "expected": 1,
+      "actual": 3,
+      "passed": true,
+      "error": null,
+      "timestamp": "2025-11-25T16:37:49.923587"
+    },
+    {
+      "test_name": "kg_has_sector_nodes",
+      "component": "knowledge_graph",
+      "metric": "sector_node_count",
+      "expected": 3,
+      "actual": 9,
+      "passed": true,
+      "error": null,
+      "timestamp": "2025-11-25T16:37:49.934543"
+    },
+    {
+      "test_name": "kg_connectivity",
+      "component": "knowledge_graph",
+      "metric": "weak_connectivity",
+      "expected": true,
+      "actual": true,
+      "passed": true,
+      "error": null,
+      "timestamp": "2025-11-25T16:37:49.947171"
+    },
+    {
+      "test_name": "kg_node_attributes",
+      "component": "knowledge_graph",
+      "metric": "attribute_coverage_pct",
+      "expected": 50,
+      "actual": 0.0,
+      "passed": false,
+      "error": null,
+      "timestamp": "2025-11-25T16:37:49.957399"
+    },
+    {
+      "test_name": "rag_store_exists",
+      "component": "rag",
+      "metric": "store_availability",
+      "expected": true,
+      "actual": true,
+      "passed": true,
+      "error": null,
+      "timestamp": "2025-11-25T16:37:49.960398"
+    },
+    {
+      "test_name": "rag_has_documents",
+      "component": "rag",
+      "metric": "document_count",
+      "expected": 10,
+      "actual": 6,
+      "passed": true,
+      "error": null,
+      "timestamp": "2025-11-25T16:37:49.962447"
+    },
+    {
+      "test_name": "rag_labor_search",
+      "component": "rag",
+      "metric": "search_results",
+      "expected": 1,
+      "actual": 5,
+      "passed": true,
+      "error": null,
+      "timestamp": "2025-11-25T16:37:49.982856"
+    },
+    {
+      "test_name": "rag_economy_search",
+      "component": "rag",
+      "metric": "search_results",
+      "expected": 1,
+      "actual": 5,
+      "passed": true,
+      "error": null,
+      "timestamp": "2025-11-25T16:37:50.002937"
+    },
+    {
+      "test_name": "rag_energy_search",
+      "component": "rag",
+      "metric": "search_results",
+      "expected": 1,
+      "actual": 5,
+      "passed": true,
+      "error": null,
+      "timestamp": "2025-11-25T16:37:50.022750"
+    },
+    {
+      "test_name": "rag_health_search",
+      "component": "rag",
+      "metric": "search_results",
+      "expected": 1,
+      "actual": 5,
+      "passed": true,
+      "error": null,
+      "timestamp": "2025-11-25T16:37:50.042142"
+    },
+    {
+      "test_name": "rag_education_search",
+      "component": "rag",
+      "metric": "search_results",
+      "expected": 1,
+      "actual": 5,
+      "passed": true,
+      "error": null,
+      "timestamp": "2025-11-25T16:37:50.062041"
+    },
+    {
+      "test_name": "rag_relevance_quality",
+      "component": "rag",
+      "metric": "relevance_score",
+      "expected": 2,
+      "actual": 0,
+      "passed": false,
+      "error": null,
+      "timestamp": "2025-11-25T16:37:50.081991"
+    },
+    {
+      "test_name": "rag_rd_documents",
+      "component": "rag",
+      "metric": "rd_document_count",
+      "expected": 1,
+      "actual": 0,
+      "passed": false,
+      "error": null,
+      "timestamp": "2025-11-25T16:37:50.101067"
+    },
+    {
+      "test_name": "embedder_exists",
+      "component": "embeddings",
+      "metric": "embedder_availability",
+      "expected": true,
+      "actual": true,
+      "passed": true,
+      "error": null,
+      "timestamp": "2025-11-25T16:37:55.974072"
+    },
+    {
+      "test_name": "embedding_dimension",
+      "component": "embeddings",
+      "metric": "vector_dimension",
+      "expected": "384|768|1024",
+      "actual": 768,
+      "passed": true,
+      "error": null,
+      "timestamp": "2025-11-25T16:37:55.995169"
+    },
+    {
+      "test_name": "semantic_similarity",
+      "component": "embeddings",
+      "metric": "similarity_ordering",
+      "expected": "related > unrelated",
+      "actual": "0.897 vs 0.038",
+      "passed": true,
+      "error": null,
+      "timestamp": "2025-11-25T16:37:56.048831"
+    }
+  ]
+}

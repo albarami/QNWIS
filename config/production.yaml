@@ -1,0 +1,154 @@
+# Production Configuration for Multi-GPU Deep Analysis System
+# Date: November 24, 2025
+# Status: Production Ready
+
+# Logging Configuration
+logging:
+  level: INFO  # Production level (not DEBUG)
+  format: json  # Structured logging for production
+  enable_redaction: true  # Redact sensitive data
+  file: logs/production.log
+  max_size_mb: 100
+  backup_count: 10
+
+# GPU Features (All Enabled)
+gpu:
+  enable_all_features: true
+  
+  # Parallel Scenarios
+  parallel_scenarios:
+    enabled: true
+    num_scenarios: 6
+    gpu_range: [0, 1, 2, 3, 4, 5]
+    overflow_gpu: 7
+    target_speedup: 3.0
+    max_time_seconds: 5400  # 90 minutes max
+  
+  # Fact Verification  
+  fact_verification:
+    enabled: true
+    gpu_id: 6
+    model: "all-mpnet-base-v2"
+    dimensions: 768
+    max_documents: 500000
+    verification_threshold: 0.75
+    pre_index_at_startup: true
+    target_verification_rate: 0.70
+  
+  # Embeddings
+  embeddings:
+    gpu_id: 6  # Shared with fact verification
+    model: "all-mpnet-base-v2"
+    dimensions: 768
+    memory_limit_gb: 2.0
+
+# Rate Limiting
+rate_limiting:
+  enabled: true
+  requests_per_minute: 50  # Claude API limit
+  semaphore_limit: 20  # Concurrent requests
+  retry_on_429: true
+  backoff_factor: 2
+
+# Document Pre-Indexing
+document_indexing:
+  enabled: true
+  sources:
+    - world_bank
+    - gcc_stat
+    - mol_lmis
+    - imf_reports
+  target_count: 70000
+  startup_timeout_seconds: 120
+  log_progress: true
+
+# Error Reporting
+error_handling:
+  enabled: true
+  log_errors: true
+  report_to_monitoring: true
+  graceful_degradation: true
+  fallback_to_cpu: true
+  emergency_synthesis: true
+
+# Monitoring
+monitoring:
+  enabled: true
+  metrics_port: 9090
+  health_check_port: 8000
+  
+  # Alerts
+  alerts:
+    gpu_memory_threshold_gb: 8.0  # Alert if GPU 6 >8GB
+    query_latency_threshold_s: 120  # Alert if query >120s
+    error_rate_threshold: 0.05  # Alert if >5% errors
+    verification_rate_threshold: 0.60  # Alert if <60%
+  
+  # Metrics to Track
+  track:
+    - gpu_utilization
+    - gpu_memory_usage
+    - query_latency
+    - agent_response_times
+    - verification_accuracy
+    - rate_limit_usage
+    - error_rates
+    - debate_turn_counts
+
+# Performance Targets
+performance:
+  simple_query_max_seconds: 30
+  complex_query_max_seconds: 5400  # 90 minutes
+  parallel_scenarios_max_seconds: 5400  # 90 minutes
+  verification_max_ms_per_claim: 1000
+  target_parallel_speedup: 3.0
+
+# LangGraph Workflow
+workflow:
+  implementation: langgraph  # Use modular workflow (default)
+  enable_conditional_routing: true
+  simple_query_fast_path: true
+  debate_adaptive_depth: true
+
+# LLM Configuration
+llm:
+  provider: anthropic
+  model: claude-sonnet-4-20250514
+  timeout_seconds: 60
+  max_retries: 3
+  temperature: 0.3
+
+# Database
+database:
+  url: ${DATABASE_URL}  # From environment
+  pool_size: 10
+  max_overflow: 20
+  echo: false  # Don't log SQL in production
+
+# Cache
+cache:
+  redis_url: ${REDIS_URL}  # From environment
+  default_ttl_seconds: 3600
+  enable_warming: false  # Disabled in production
+  
+# Security
+security:
+  auth_bypass: false  # Enable auth in production
+  cors_origins:
+    - https://qnwis.gov.qa
+    - https://app.qnwis.gov.qa
+  rate_limiting: true
+  api_key_required: true
+
+# Features
+features:
+  enable_streaming: true
+  enable_real_time_debate: true
+  enable_confidence_scoring: true
+  enable_citation_enforcement: true
+
+# Environment
+environment: production
+deployment_date: 2025-11-24
+version: 1.0.0
+

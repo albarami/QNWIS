@@ -41,8 +41,8 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
     logger.info(f"🔍 legendary_debate_node: emit_event_fn={'FOUND' if emit_event_fn else 'MISSING'}")
     logger.info(f"🔍 legendary_debate_node: state keys={list(state.keys())[:10]}")
 
-    # Create LLM client for debate
-    llm_client = LLMClient(provider="anthropic")
+    # Create LLM client for debate - uses provider from environment (QNWIS_LLM_PROVIDER)
+    llm_client = LLMClient()  # Will use Azure if configured
 
     # Build agent reports map from state
     agent_reports_map = {}

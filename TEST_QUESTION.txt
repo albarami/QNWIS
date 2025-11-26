@@ -1,0 +1,196 @@
+TEST QUESTION FOR LEGENDARY DEBATE SYSTEM
+==========================================
+
+Copy-paste this into the frontend:
+
+What are the risks of increasing Qatar's Qatarization target to 80% by 2028 while maintaining 5% GDP growth?
+
+
+PROVIDER: anthropic
+
+
+WHY THIS QUESTION?
+------------------
+This question is PERFECT for testing legendary debate because:
+
+1. ✅ Complex Policy Question
+   - Multiple competing objectives (Qatarization vs GDP growth)
+   - Requires multi-domain analysis
+
+2. ✅ Will Trigger Contradictions
+   - LabourEconomist: May see labor market risks
+   - Skills: May warn about skills gaps
+   - NationalStrategy: May support for policy goals
+   - FinancialEconomist: May worry about productivity
+   - Nationalization: May see political benefits
+
+3. ✅ Demands Edge Case Analysis
+   - What if global recession hits?
+   - What if oil prices crash?
+   - What if skills shortage is worse than expected?
+
+4. ✅ Requires Risk Assessment
+   - Catastrophic failure scenarios
+   - Economic tail risks
+   - Political/social risks
+
+5. ✅ Forces Consensus Building
+   - Agents must reconcile conflicting views
+   - Must find balanced recommendation
+   - Real ministerial-grade synthesis needed
+
+
+EXPECTED DEBATE FLOW
+--------------------
+
+Phase 1: Opening Statements (2 min, 12 turns)
+- Each agent states initial position
+- LabourEconomist: "80% is ambitious but achievable if..."
+- Skills: "Major skills gap concerns..."
+- NationalStrategy: "Aligns with Vision 2030..."
+
+Phase 2: Challenge/Defense (6-10 min, 20-40 turns)
+- Contradictions detected:
+  * Growth projections differ
+  * Skills readiness estimates conflict
+  * Timeline feasibility disputed
+- Agents challenge each other
+- Consensus phrases appear: "I acknowledge...", "We agree..."
+
+Phase 3: Edge Cases (4 min, 15 turns)
+- LLM generates 5 edge case scenarios
+- Agents analyze:
+  * "Global recession + oil price collapse"
+  * "Faster-than-expected automation"
+  * "Expatriate exodus scenario"
+
+Phase 4: Risk Analysis (3 min, 12 turns)
+- Devil's advocate mode
+- Worst-case catastrophic failures identified
+- Cross-agent risk assessment
+
+Phase 5: Consensus (1 min, 4 turns)
+- Final positions stated
+- Confidence levels shared
+- Common ground found
+
+Phase 6: Synthesis (1 min, 1 turn)
+- Moderator synthesizes final report
+- Balanced recommendation
+- Caveats and risks noted
+
+
+WHAT YOU'LL SEE IN FRONTEND
+----------------------------
+
+Real-time conversation turns appearing:
+
+🔵 LabourEconomist - Opening Statement
+"Based on labor market analysis, achieving 80% Qatarization 
+by 2028 requires [Per extraction: '45,000 new Qatari workers' 
+from LMIS Database] annually..."
+
+🔴 Skills - Challenge
+"I must challenge this assumption. Our skills assessment 
+shows only [Per extraction: '12,000 qualified graduates' 
+from Education Ministry] per year..."
+
+🟢 LabourEconomist - Response
+"I acknowledge your point about current graduation rates. 
+However, we agree that accelerated training programs could..."
+
+🟣 PatternDetective - Contribution
+"Looking at historical trends, I notice that previous 
+Qatarization initiatives faced implementation gaps of..."
+
+...and so on for 64-84 total turns!
+
+
+EXPECTED FINAL OUTPUT
+---------------------
+
+After 25-32 minutes, you'll see:
+
+✅ Legendary Debate Complete
+   - 78 conversation turns
+   - 6 phases completed
+   - 3 contradictions resolved
+   - 2 flagged for review
+   
+✅ Final Intelligence Report
+   "After extensive multi-agent deliberation, the consensus 
+   recommendation is..."
+   
+   KEY FINDINGS:
+   - 80% target is technically feasible with caveats
+   - 5% GDP growth requires productivity enhancements
+   - Critical path: skills development acceleration
+   - Risk factors: global economic conditions, expatriate retention
+   - Recommended phased approach: 60% by 2026, 70% by 2027, 80% by 2028
+   
+   CONFIDENCE: 72% (high with caveats)
+   
+   RED FLAGS:
+   - Skills gap wider than official estimates
+   - Implementation timeline aggressive
+   - Requires sustained government investment
+
+
+MONITORING THE TEST
+-------------------
+
+Backend terminal will show:
+- [INFO] Phase 1: Opening Statements starting
+- [INFO] Phase 2: Challenge/Defense - 3 contradictions detected
+- [INFO] Consensus detected after round 4
+- [INFO] Phase 3: Edge cases - 5 scenarios generated
+- [INFO] Phase 4: Risk analysis - 4 agents identifying risks
+- [INFO] Phase 5: Consensus building
+- [INFO] Phase 6: Final synthesis
+- [INFO] Debate complete: 78 turns, latency=1247352ms
+
+Frontend will show:
+- Live conversation stream
+- Auto-scrolling to latest turn
+- Color-coded by turn type
+- Agent names and timestamps
+- Turn counter (Turn 42/125)
+
+
+SUCCESS CRITERIA
+----------------
+
+✅ All 12 agents participate
+✅ Contradictions detected and debated
+✅ Consensus phrases appear ("I acknowledge...", "We agree...")
+✅ Edge cases analyzed with domain expertise
+✅ Risks identified with severity ratings
+✅ Final synthesis is coherent and balanced
+✅ 64-84 turns generated
+✅ 17-21 minutes for debate phase
+✅ 25-32 minutes total execution
+✅ Frontend shows all conversation turns
+✅ Auto-scroll works
+✅ No crashes or timeouts
+
+
+TROUBLESHOOTING
+---------------
+
+If debate doesn't start:
+- Check backend logs for "legendary_debate_orchestrator" import errors
+- Verify all agent conversation methods exist
+- Check timeouts are set to 30 minutes
+
+If turns don't appear in frontend:
+- Check browser console for SSE connection
+- Verify "debate:turn" events are being captured
+- Check DebateConversation component is rendering
+
+If debate times out:
+- Check 30-minute timeout is set (not 3 minutes)
+- Verify Anthropic API key is working
+- Check backend isn't hitting rate limits
+
+
+NOW GO TEST IT! 🚀

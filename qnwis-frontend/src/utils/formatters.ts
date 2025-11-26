@@ -98,11 +98,21 @@ export function formatNumber(value: number, decimals: number = 0): string {
 /**
  * Smart format a value based on its characteristics
  * Automatically detects and formats percentages, currencies, large numbers
+ * 
+ * IMPORTANT: When unit='%' is provided, the value is treated as already being
+ * a percentage (e.g., 0.099 displays as 0.099%, NOT converted to 9.9%).
+ * This is critical for Qatar unemployment data from LMIS which is already
+ * in percentage form.
  */
 export function smartFormat(
-  value: string | number | boolean, 
+  value: string | number | boolean | null | undefined, 
   unit?: string
 ): string {
+  // Handle null/undefined
+  if (value === null || value === undefined) {
+    return '—'
+  }
+  
   // Handle booleans
   if (typeof value === 'boolean') {
     return value ? 'Yes' : 'No'
@@ -125,7 +135,10 @@ export function smartFormat(
   if (unit) {
     const unitLower = unit.toLowerCase()
     
+    // CRITICAL FIX: When unit is '%', the value IS ALREADY a percentage
+    // Do NOT multiply by 100. E.g., 0.099 with unit='%' means 0.099%
     if (unitLower === '%' || unitLower.includes('percent')) {
+      // Value is already a percentage - format directly
       return formatPercentage(numValue)
     }
     
@@ -137,13 +150,28 @@ export function smartFormat(
       return formatCurrency(numValue, 'QAR')
     }
     
+    if (unitLower === 'b usd' || unitLower.includes('billion')) {
+      return `$${formatLargeNumber(numValue * 1e9)}`
+    }
+    
     // Format with unit suffix
     return `${formatLargeNumber(numValue)} ${unit}`
   }
   
-  // Auto-detect percentage (values between 0 and 1 that look like ratios)
-  if (numValue > 0 && numValue < 1 && numValue !== Math.floor(numValue)) {
+  // NO UNIT PROVIDED - apply auto-detection heuristics
+  // But be MORE CONSERVATIVE with small values to avoid Qatar unemployment errors
+  
+  // Auto-detect percentage for values between 0.01 and 1 (NOT tiny values like 0.001)
+  // Tiny values (< 0.01) are likely already percentages, not ratios
+  if (numValue >= 0.01 && numValue < 1 && numValue !== Math.floor(numValue)) {
     return formatDecimalAsPercentage(numValue)
+  }
+  
+  // Very small values (< 0.01) are likely already percentages
+  // E.g., 0.099 from LMIS unemployment is 0.099%, not 9.9%
+  if (numValue > 0 && numValue < 0.01) {
+    // Display as-is with % since it's likely already a percentage
+    return formatPercentage(numValue)
   }
   
   // Auto-detect percentage (values that look like percentages already)

@@ -6,6 +6,8 @@ import { AgentGrid } from './components/agents/AgentGrid'
 import { DebatePanel } from './components/debate/DebatePanel'
 import { CritiquePanel } from './components/critique/CritiquePanel'
 import { ExecutiveSummary } from './components/results/ExecutiveSummary'
+import { StrategicBriefing } from './components/results/StrategicBriefing'
+import { LegendaryBriefing } from './components/results/LegendaryBriefing'
 import { ExtractedFacts } from './components/results/ExtractedFacts'
 import { ParallelScenarios } from './components/results/ParallelScenarios'
 import { ParallelExecutionProgress } from './components/workflow/ParallelExecutionProgress'
@@ -67,7 +69,7 @@ function ConnectionStatus({ status, isStreaming }: { status: string; isStreaming
 function App() {
   const { state, connect, cancel } = useWorkflowStream()
   const [question, setQuestion] = useState('What are the implications of raising minimum wage?')
-  const [provider, setProvider] = useState<'anthropic' | 'openai'>('anthropic')
+  const provider = 'azure' as const  // Azure GPT-4o is the default and only provider
   
   // Safety check: ensure state exists
   if (!state) {
@@ -133,23 +135,10 @@ function App() {
 
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <span className="text-xs text-slate-500">Provider:</span>
-                <div className="flex gap-2">
-                  {['anthropic', 'openai'].map((option) => (
-                    <button
-                      key={option}
-                      type="button"
-                      onClick={() => setProvider(option as typeof provider)}
-                      className={`rounded-lg px-3 py-1.5 text-xs font-medium transition border ${
-                        provider === option
-                          ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50'
-                          : 'border-slate-600 text-slate-400 hover:border-slate-500'
-                      }`}
-                    >
-                      {option}
-                    </button>
-                  ))}
-                </div>
+                <span className="text-xs text-slate-500">Powered by:</span>
+                <span className="rounded-lg px-3 py-1.5 text-xs font-medium bg-cyan-500/20 text-cyan-300 border border-cyan-500/50">
+                  Azure GPT-4o
+                </span>
               </div>
 
               <div className="flex gap-3">
@@ -259,10 +248,21 @@ function App() {
           </section>
         )}
 
-        {/* Executive Summary - Full Width */}
+        {/* Legendary Strategic Intelligence Briefing - The Crown Jewel */}
         {state.synthesis && (
           <section className="mt-8">
-            <ExecutiveSummary synthesis={state.synthesis} />
+            <LegendaryBriefing 
+              synthesis={state.synthesis} 
+              confidence={state.finalState?.confidence || 0.75}
+              stats={{
+                n_facts: state.extractedFacts?.length || 0,
+                n_scenarios: state.scenarioProgress?.size || 6,
+                n_turns: state.debate?.total_turns || 0,
+                n_experts: 6,
+                n_challenges: state.debate?.contradictions_found || 0,
+                n_consensus: state.debate?.resolved || 0,
+              }}
+            />
           </section>
         )}
 

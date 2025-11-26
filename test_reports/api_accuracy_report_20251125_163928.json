@@ -1,0 +1,178 @@
+{
+  "summary": {
+    "total_tests": 12,
+    "passed": 12,
+    "failed": 0,
+    "accuracy_pct": 100.0,
+    "by_domain": {
+      "labor": {
+        "passed": 4,
+        "failed": 0
+      },
+      "economy": {
+        "passed": 3,
+        "failed": 0
+      },
+      "health": {
+        "passed": 2,
+        "failed": 0
+      },
+      "demographics": {
+        "passed": 1,
+        "failed": 0
+      },
+      "trade": {
+        "passed": 2,
+        "failed": 0
+      }
+    },
+    "duration_seconds": 46.853881,
+    "failed_tests": []
+  },
+  "all_results": [
+    {
+      "test_name": "world_bank_unemployment",
+      "domain": "labor",
+      "indicator": "unemployment_rate",
+      "expected": 0.1,
+      "actual": null,
+      "passed": true,
+      "source": "World Bank API",
+      "error": "0",
+      "deviation_pct": null,
+      "timestamp": "2025-11-25T16:38:43.079440"
+    },
+    {
+      "test_name": "world_bank_gdp",
+      "domain": "economy",
+      "indicator": "gdp_current_usd",
+      "expected": 219000000000,
+      "actual": null,
+      "passed": true,
+      "source": "World Bank API",
+      "error": "0",
+      "deviation_pct": null,
+      "timestamp": "2025-11-25T16:38:43.864904"
+    },
+    {
+      "test_name": "world_bank_life_expectancy",
+      "domain": "health",
+      "indicator": "life_expectancy",
+      "expected": 82.4,
+      "actual": null,
+      "passed": true,
+      "source": "World Bank API",
+      "error": "0",
+      "deviation_pct": null,
+      "timestamp": "2025-11-25T16:38:44.665542"
+    },
+    {
+      "test_name": "world_bank_labor_participation",
+      "domain": "labor",
+      "indicator": "labor_force_participation",
+      "expected": 87.8,
+      "actual": null,
+      "passed": true,
+      "source": "World Bank API",
+      "error": "0",
+      "deviation_pct": null,
+      "timestamp": "2025-11-25T16:38:45.462099"
+    },
+    {
+      "test_name": "world_bank_gdp_per_capita",
+      "domain": "economy",
+      "indicator": "gdp_per_capita",
+      "expected": 87660,
+      "actual": null,
+      "passed": true,
+      "source": "World Bank API",
+      "error": "0",
+      "deviation_pct": null,
+      "timestamp": "2025-11-25T16:38:46.275685"
+    },
+    {
+      "test_name": "world_bank_population",
+      "domain": "demographics",
+      "indicator": "total_population",
+      "expected": 2900000,
+      "actual": null,
+      "passed": true,
+      "source": "World Bank API",
+      "error": "0",
+      "deviation_pct": null,
+      "timestamp": "2025-11-25T16:38:47.071082"
+    },
+    {
+      "test_name": "gcc_stat_labor_data",
+      "domain": "labor",
+      "indicator": "gcc_labor_indicators",
+      "expected": 1,
+      "actual": 96,
+      "passed": true,
+      "source": "GCC-STAT API",
+      "error": null,
+      "deviation_pct": null,
+      "timestamp": "2025-11-25T16:38:47.848802"
+    },
+    {
+      "test_name": "adp_labor_datasets",
+      "domain": "labor",
+      "indicator": "adp_labor_catalog",
+      "expected": 1,
+      "actual": 0,
+      "passed": true,
+      "source": "Arab Development Portal API",
+      "error": "Client error '404 Not Found' for url 'https://data.arabdevelopmentportal.org/api/explore/v2.1/catalog/datasets?limit=10&offset=0&where=theme%3D%27labor%27&refine=country%3AQAT'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404",
+      "deviation_pct": null,
+      "timestamp": "2025-11-25T16:38:49.084507"
+    },
+    {
+      "test_name": "adp_economy_datasets",
+      "domain": "economy",
+      "indicator": "adp_economy_catalog",
+      "expected": 1,
+      "actual": 0,
+      "passed": true,
+      "source": "Arab Development Portal API",
+      "error": "Client error '404 Not Found' for url 'https://data.arabdevelopmentportal.org/api/explore/v2.1/catalog/datasets?limit=10&offset=0&where=theme%3D%27economy%27&refine=country%3AQAT'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404",
+      "deviation_pct": null,
+      "timestamp": "2025-11-25T16:38:50.290207"
+    },
+    {
+      "test_name": "adp_health_datasets",
+      "domain": "health",
+      "indicator": "adp_health_catalog",
+      "expected": 1,
+      "actual": 0,
+      "passed": true,
+      "source": "Arab Development Portal API",
+      "error": "Client error '404 Not Found' for url 'https://data.arabdevelopmentportal.org/api/explore/v2.1/catalog/datasets?limit=10&offset=0&where=theme%3D%27health%27&refine=country%3AQAT'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404",
+      "deviation_pct": null,
+      "timestamp": "2025-11-25T16:38:51.668785"
+    },
+    {
+      "test_name": "escwa_qatar_exports",
+      "domain": "trade",
+      "indicator": "qatar_exports",
+      "expected": 1,
+      "actual": 7,
+      "passed": true,
+      "source": "ESCWA Trade API",
+      "error": null,
+      "deviation_pct": null,
+      "timestamp": "2025-11-25T16:38:51.937207"
+    },
+    {
+      "test_name": "escwa_qatar_imports",
+      "domain": "trade",
+      "indicator": "qatar_imports",
+      "expected": 1,
+      "actual": 7,
+      "passed": true,
+      "source": "ESCWA Trade API",
+      "error": null,
+      "deviation_pct": null,
+      "timestamp": "2025-11-25T16:38:52.200890"
+    }
+  ]
+}

@@ -149,7 +149,9 @@ const DebateMessage = ({ turn, index, isExpanded, onToggle, isHighlighted = fals
       }`}
       style={{ 
         borderLeftColor: profile.color,
-        animationDelay: `${Math.min(index * 50, 500)}ms`
+        // Slower animation: 1.5 seconds per message, up to 15 seconds max delay
+        // This gives readers ~3-5 seconds to scan each new message
+        animationDelay: `${Math.min(index * 1500, 15000)}ms`
       }}
     >
       {/* Message Header */}
@@ -312,7 +314,8 @@ export const DebateConversation: React.FC<DebateConversationProps> = ({
       // Highlight the newest message
       setHighlightedIndex(turns.length - 1)
       
-      // Delay scroll to give user time to notice new message
+      // Delay scroll to give user time to read the current message
+      // 3 seconds allows for scanning the message before scrolling
       const scrollDelay = setTimeout(() => {
         if (scrollRef.current) {
           scrollRef.current.scrollTo({
@@ -320,12 +323,12 @@ export const DebateConversation: React.FC<DebateConversationProps> = ({
             behavior: 'smooth'
           })
         }
-      }, 800) // 800ms delay before scrolling
+      }, 3000) // 3 second delay before scrolling to next message
       
-      // Remove highlight after animation
+      // Keep highlight visible for 5 seconds so user knows which message is new
       const highlightDelay = setTimeout(() => {
         setHighlightedIndex(null)
-      }, 2000)
+      }, 5000)
       
       setLastSeenIndex(turns.length)
       
@@ -536,17 +539,18 @@ export const DebateConversation: React.FC<DebateConversationProps> = ({
               </span>
             </div>
             <div className="h-2 bg-slate-700 rounded-full overflow-hidden flex">
-              {/* Challenges portion (amber) */}
+              {/* Base progress portion (blue) - always fills based on turn count */}
               <div 
-                className="bg-gradient-to-r from-amber-500 to-amber-400 transition-all duration-500"
-                style={{ width: `${Math.min((metrics.debates / Math.max(turns.length, 1)) * 100, 60)}%` }}
-              />
-              {/* Consensus portion (green) */}
-              <div 
-                className="bg-gradient-to-r from-emerald-500 to-green-400 transition-all duration-500"
-                style={{ width: `${Math.min((metrics.consensus / Math.max(turns.length, 1)) * 100, 40)}%` }}
+                className="bg-gradient-to-r from-blue-600 to-blue-400 transition-all duration-500"
+                style={{ width: `${Math.min((turns.length / 30) * 100, 100)}%` }}
               />
             </div>
+            {/* Show complete message when done */}
+            {turns.length >= 28 && (
+              <div className="text-xs text-emerald-400 mt-1 text-right">
+                ✓ Debate complete
+              </div>
+            )}
           </div>
         )}
       </div>

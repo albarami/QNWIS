@@ -285,13 +285,13 @@ export const ALL_STAGES: WorkflowStage[] = [
   'rag',
   'scenario_gen',
   'parallel_exec',
-  'meta_synthesis',
-  'agent_selection',
-  'agents',
-  'debate',
-  'critique',
-  'verify',
-  'synthesize',
+  'agent_selection',  // Parallel scenarios select agents internally
+  'agents',           // Agents run inside parallel scenarios
+  'debate',           // Main debate across all scenarios
+  'critique',         // Devil's advocate review
+  'verify',           // Fact verification
+  'meta_synthesis',   // Final cross-scenario synthesis (AFTER verify)
+  'synthesize',       // Legendary briefing generation
   'done',
 ]
 

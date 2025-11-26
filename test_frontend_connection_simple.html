@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Frontend Connection</title>
+</head>
+<body>
+    <h1>Testing Connection to Backend</h1>
+    <button onclick="testConnection()">Test Connection</button>
+    <pre id="result"></pre>
+
+    <script>
+        async function testConnection() {
+            const resultEl = document.getElementById('result');
+            resultEl.textContent = 'Testing...';
+            
+            try {
+                // Test 1: Health check
+                const healthResponse = await fetch('http://localhost:8000/health');
+                const healthData = await healthResponse.json();
+                resultEl.textContent = 'Backend connection: OK\n';
+                resultEl.textContent += JSON.stringify(healthData, null, 2);
+                
+                // Test 2: Try SSE endpoint
+                resultEl.textContent += '\n\nTrying SSE endpoint...\n';
+                
+                const response = await fetch('http://localhost:8000/api/v1/council/stream', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        question: 'test query'
+                    })
+                });
+                
+                resultEl.textContent += `SSE endpoint status: ${response.status}\n`;
+                
+                if (response.ok) {
+                    resultEl.textContent += 'Connection works!';
+                } else {
+                    resultEl.textContent += `Error: ${response.statusText}`;
+                }
+                
+            } catch (error) {
+                resultEl.textContent = 'ERROR:\n' + error.toString();
+            }
+        }
+    </script>
+</body>
+</html>
+

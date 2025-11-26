@@ -11,9 +11,9 @@ Synthesizes insights across multiple parallel scenario analyses to identify:
 import logging
 from typing import List, Dict, Any
 from datetime import datetime
-from langchain_anthropic import ChatAnthropic
 
-from ..llm_wrapper import call_llm_with_rate_limit
+from src.qnwis.llm.client import LLMClient
+from src.qnwis.llm.config import get_llm_config
 
 logger = logging.getLogger(__name__)
 
@@ -39,12 +39,10 @@ async def meta_synthesis_node(scenario_results: List[Dict[str, Any]]) -> str:
     start_time = datetime.now()
     
     try:
-        # Initialize LLM
-        llm = ChatAnthropic(
-            model="claude-sonnet-4-20250514",
-            temperature=0.3,
-            max_tokens=8000
-        )
+        # Initialize LLM using environment-configured provider (Azure or Anthropic)
+        config = get_llm_config()
+        llm_client = LLMClient()
+        logger.info(f"Meta-synthesis using {config.provider}/{config.get_model(config.provider)}")
         
         # Extract and format scenario summaries
         scenario_summaries = _extract_scenario_summaries(scenario_results)
@@ -52,10 +50,13 @@ async def meta_synthesis_node(scenario_results: List[Dict[str, Any]]) -> str:
         # Build synthesis prompt
         prompt = _build_synthesis_prompt(scenario_summaries, scenario_results)
         
-        # Call LLM with rate limiting
-        logger.info("Synthesizing insights with Claude Sonnet 4...")
-        response = await call_llm_with_rate_limit(llm, prompt)
-        synthesis = response.content
+        # Call LLM (uses configured provider - Azure or Anthropic)
+        logger.info(f"Synthesizing insights with {config.provider}...")
+        synthesis = await llm_client.generate(
+            prompt=prompt,
+            system="You are a strategic synthesis expert for ministerial leadership.",
+            max_tokens=8000
+        )
         
         # Validate synthesis
         _validate_synthesis(synthesis)

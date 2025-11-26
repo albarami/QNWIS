@@ -13,7 +13,7 @@ import { safeParseWorkflowEvent } from '../utils/eventParser'
 
 interface ConnectParams {
   question: string
-  provider?: 'anthropic' | 'openai'
+  provider?: 'azure' | 'anthropic' | 'openai'
 }
 
 interface UseWorkflowStreamResult {
@@ -541,6 +541,12 @@ function reduceEvent(state: AppState, event: WorkflowEvent): AppState {
     if (event.latency_ms) {
       next.stageTiming.set('done', event.latency_ms)
     }
+    
+    // REAL DATA POLICY: Agent/scenario status should come from actual events
+    // If workflow completed but some agents still show pending, that indicates
+    // the backend didn't emit proper events - which needs to be fixed in backend
+    // However, we still set agentsRunning = false as workflow is done
+    next.agentsRunning = false
   }
 
   // Update current stage for any valid workflow stage
@@ -582,7 +588,7 @@ export function useWorkflowStream(): UseWorkflowStreamResult {
     setState((prev) => ({ ...prev, connectionStatus: 'idle', isStreaming: false }))
   }, [])
 
-  const connect = useCallback(async ({ question, provider = 'anthropic' }: ConnectParams) => {
+  const connect = useCallback(async ({ question, provider = 'azure' }: ConnectParams) => {
     if (!question.trim()) {
       throw new Error('Question is required')
     }
