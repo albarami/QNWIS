@@ -246,9 +246,14 @@ class ParallelDebateExecutor:
                 gpu_id=gpu_id
             )
             
+            # DEBUG: Log debate depth
+            logger.warning(f"🎯 Scenario {scenario_name}: debate_depth={scenario_state.get('debate_depth', 'NOT SET')}")
+            
             # Execute workflow for this scenario
             # Rate limiting happens at individual LLM call level, not here
+            logger.warning(f"🚀 Starting workflow.ainvoke for scenario: {scenario_name}")
             result = await workflow.ainvoke(scenario_state)
+            logger.warning(f"✅ workflow.ainvoke completed for scenario: {scenario_name}")
             
             # Remove non-serializable fields (functions, callbacks)
             # These cannot be sent over SSE

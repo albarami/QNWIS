@@ -391,14 +391,20 @@ class LegendaryDebateOrchestrator:
         logger.warning(f"🎚️ CONFIGURED MAX_TURNS_TOTAL = {self.MAX_TURNS_TOTAL}")
         
         # Phase 1: Opening Statements
+        logger.warning(f"🔥 PHASE 1 START: turn_counter={self.turn_counter}, MAX_TURNS_TOTAL={self.MAX_TURNS_TOTAL}")
         await self._phase_1_opening_statements(agents_map)
+        logger.warning(f"🔥 PHASE 1 DONE: turn_counter={self.turn_counter}")
         
         # Phase 2: Challenge/Defense (reduced for production)
+        logger.warning(f"🔥 PHASE 2 START: turn_counter={self.turn_counter}")
         await self._phase_2_challenge_defense(contradictions, agents_map)
+        logger.warning(f"🔥 PHASE 2 DONE: turn_counter={self.turn_counter}")
         
         # Circuit breaker after Phase 2 - but ensure we generate summary
-        if self.turn_counter >= self.MAX_TURNS_TOTAL * 0.75:  # At 75% capacity
-            logger.warning(f"Approaching MAX_TURNS_TOTAL ({self.MAX_TURNS_TOTAL}), fast-tracking to synthesis")
+        circuit_breaker_threshold = self.MAX_TURNS_TOTAL * 0.75
+        logger.warning(f"🔥 CIRCUIT BREAKER CHECK: turn_counter={self.turn_counter} vs threshold={circuit_breaker_threshold}")
+        if self.turn_counter >= circuit_breaker_threshold:
+            logger.warning(f"⚠️ CIRCUIT BREAKER TRIGGERED! Approaching MAX_TURNS_TOTAL ({self.MAX_TURNS_TOTAL}), fast-tracking to synthesis")
             # Skip edge cases and risk analysis, go straight to synthesis
             consensus_data = await self._phase_5_consensus_building(agents_map, llm_client)
             final_report = await self._phase_6_final_synthesis(self.conversation_history, llm_client)

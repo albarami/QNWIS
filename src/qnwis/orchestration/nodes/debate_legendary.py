@@ -40,6 +40,10 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
     emit_event_fn = state.get("emit_event_fn")
     logger.info(f"🔍 legendary_debate_node: emit_event_fn={'FOUND' if emit_event_fn else 'MISSING'}")
     logger.info(f"🔍 legendary_debate_node: state keys={list(state.keys())[:10]}")
+    
+    # DEBUG: Log debate_depth to diagnose 41-turn issue
+    debate_depth_from_state = state.get("debate_depth", "NOT_IN_STATE")
+    logger.warning(f"🎯 DEBATE NODE: debate_depth from state = '{debate_depth_from_state}'")
 
     # Create LLM client for debate - uses provider from environment (QNWIS_LLM_PROVIDER)
     llm_client = LLMClient()  # Will use Azure if configured
