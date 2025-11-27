@@ -499,21 +499,54 @@ def create_intelligence_graph() -> StateGraph:
     # 5. Final meta-synthesis combines everything
     workflow.add_edge("parallel_exec", "aggregate_scenarios")
     workflow.add_edge("aggregate_scenarios", "debate")  # Main debate on scenario results
-    workflow.add_edge("debate", "arithmetic_validator")  # VALIDATE MATH AFTER DEBATE
-    workflow.add_edge("arithmetic_validator", "critique")
-    workflow.add_edge("critique", "verification")
-    workflow.add_edge("verification", "meta_synthesis")  # Meta-synthesis combines everything
-    workflow.add_edge("meta_synthesis", END)
     
-    # === SINGLE PATH (Bug Fix #2 - complete path to END) ===
+    # === SINGLE PATH entry ===
     workflow.add_edge("financial", "market")
     workflow.add_edge("market", "operations")
     workflow.add_edge("operations", "research")
-    workflow.add_edge("research", "debate")
-    workflow.add_edge("debate", "critique")
+    workflow.add_edge("research", "debate")  # Single path joins debate
+    
+    # === CONDITIONAL ROUTING AFTER DEBATE (FIX: avoid conflicting edges) ===
+    # Parallel path → arithmetic_validator → critique
+    # Single path → critique directly
+    def route_after_debate(state):
+        """Route based on whether we're on parallel or single path."""
+        if state.get("scenarios") and len(state.get("scenarios", [])) > 0:
+            return "parallel_validation"
+        return "single_critique"
+    
+    workflow.add_conditional_edges(
+        "debate",
+        route_after_debate,
+        {
+            "parallel_validation": "arithmetic_validator",
+            "single_critique": "critique"
+        }
+    )
+    
+    # Parallel path continues: arithmetic_validator → critique → verification → meta_synthesis
+    workflow.add_edge("arithmetic_validator", "critique")
     workflow.add_edge("critique", "verification")
-    workflow.add_edge("verification", "synthesis")
-    workflow.add_edge("synthesis", END)  # Single path terminates here
+    
+    # === CONDITIONAL ROUTING AFTER VERIFICATION (FIX: avoid conflicting edges) ===
+    def route_after_verification(state):
+        """Route to meta_synthesis (parallel) or synthesis (single)."""
+        if state.get("scenarios") and len(state.get("scenarios", [])) > 0:
+            return "meta_synthesis"
+        return "synthesis"
+    
+    workflow.add_conditional_edges(
+        "verification",
+        route_after_verification,
+        {
+            "meta_synthesis": "meta_synthesis",
+            "synthesis": "synthesis"
+        }
+    )
+    
+    # Both paths terminate at END
+    workflow.add_edge("meta_synthesis", END)
+    workflow.add_edge("synthesis", END)
     
     logger.info("✅ Intelligence graph compiled with parallel and single paths")
 

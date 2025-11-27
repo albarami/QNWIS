@@ -483,7 +483,11 @@ async def run_workflow_stream(
             "research_analysis": None,
             "debate_synthesis": None,
             "debate_results": None,
+            "conversation_history": [],  # Debate turns for stats
+            "aggregate_debate_stats": None,  # Parallel scenario stats
             "critique_report": None,
+            "critique_results": None,  # Structured critique data
+            "meta_synthesis": None,  # Parallel path synthesis
             "fact_check_results": None,
             "fabrication_detected": False,
             "final_synthesis": None,

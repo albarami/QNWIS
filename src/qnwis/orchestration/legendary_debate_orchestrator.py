@@ -230,8 +230,8 @@ class LegendaryDebateOrchestrator:
         }
     }
     
-    # Default configuration (will be overridden by classification)
-    MAX_TURNS_TOTAL = 30
+    # Default configuration - USE LEGENDARY DEPTH by default for ministerial queries!
+    MAX_TURNS_TOTAL = 150  # Changed from 30 to ensure legendary depth
     MAX_TURNS_PER_PHASE = DEBATE_CONFIGS["standard"]["phases"]
     
     def __init__(self, emit_event_fn: Callable, llm_client: LLMClient):
@@ -380,13 +380,15 @@ class LegendaryDebateOrchestrator:
                 "legendary": "complex"   # 100-150 turns
             }
             complexity = depth_to_complexity.get(debate_depth, "complex")
-            logger.info(f"🎚️ Using USER-SELECTED debate depth: {debate_depth} → {complexity}")
+            logger.warning(f"🎚️ DEBATE DEPTH: {debate_depth} → complexity={complexity}")
+            logger.warning(f"🎚️ EXPECTED TURNS: {self.DEBATE_CONFIGS.get(complexity, {}).get('max_turns', 'UNKNOWN')}")
         else:
             # Fallback to auto-detection
             complexity = self._detect_question_complexity(question)
             logger.info(f"🔍 Auto-detected complexity: {complexity}")
         
         self._apply_debate_config(complexity)
+        logger.warning(f"🎚️ CONFIGURED MAX_TURNS_TOTAL = {self.MAX_TURNS_TOTAL}")
         
         # Phase 1: Opening Statements
         await self._phase_1_opening_statements(agents_map)

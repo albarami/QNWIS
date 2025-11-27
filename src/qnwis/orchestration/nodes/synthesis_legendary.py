@@ -526,19 +526,29 @@ Use the data provided above. Every claim MUST be traced to evidence.
 7. **Red Flags MUST Be Addressed** - Every red flag requires a response in recommendations showing how it's mitigated.
 8. **Edge Cases Surface** - Edge case findings must appear in Risk Intelligence section.
 
-## LEGENDARY WRITING VOICE (CRITICAL):
+## LEGENDARY WRITING VOICE (CRITICAL - WRITE LIKE MCKINSEY SENIOR PARTNER):
+Your voice MUST sound like a McKinsey Senior Partner briefing a minister, NOT a bureaucrat writing a memo.
+
+FORBIDDEN PHRASES (NEVER USE):
+- "represents a pivotal decision" → DELETE
+- "significant implications" → DELETE  
+- "it is recommended that" → "The Ministry should"
+- "consideration should be given" → "Act now to"
+- "various factors" → Name the specific factors
+- "stakeholders" without names → Name the actual entities
+
 Your opening paragraph MUST:
-1. **Open with stakes, not facts** - "X faces a strategic inflection point..." NOT "X should not directly..."
-2. **Challenge assumptions** - Question the premise of the original question
-3. **Preview the decisive insight** - The one breakthrough from {stats["n_turns"]} turns of debate
-4. **Use active, confident voice** - NO passive constructions ("should be considered", "it is recommended")
-5. **Include specific numbers with context** - Not just "QR 15B vs QR 40B" but "2.6x gap obscures the reality: per-unit efficiency is 2x higher"
+1. **First sentence contains a SPECIFIC NUMBER and CHALLENGES AN ASSUMPTION** - "A 15% wage increase will raise costs 7-10%—but the Ministry is asking the wrong question."
+2. **Second sentence reveals THE INSIGHT** - The breakthrough from {stats["n_turns"]} turns of expert debate
+3. **Third sentence states the STRATEGIC CHOICE** - "Implement in isolation = crisis. Implement as structural pivot = competitive advantage."
+4. **Active voice only** - "The Ministry should" NOT "It is recommended"
+5. **Every claim is sourced** - [Turn X], [Fact #Y], [Scenario Z]
 
-BAD OPENING (bureaucratic memo):
-"Qatar should not directly increase its QR 15 billion tourism allocation to match Saudi Arabia's QR 40 billion investment."
+BAD OPENING (bureaucratic - NEVER WRITE THIS):
+"Qatar's proposed 15% minimum wage increase represents a pivotal decision with significant economic, social, and geopolitical implications."
 
-LEGENDARY OPENING (PhD scholar + consultant):
-"Qatar faces a strategic inflection point that will define its tourism sector for a generation. Saudi Arabia's QR 40 billion NEOM bet is not a budget competition Qatar can win—nor should it try. The 2.6x funding gap obscures the strategic reality: [specific insight from Consensus Turn X]. Our {stats["n_turns"]}-turn expert deliberation surfaced a decisive conclusion: [the core recommendation]."
+LEGENDARY OPENING (McKinsey Partner voice - WRITE THIS):
+"A 15% minimum wage increase will raise Qatar's construction costs by 7-10% [Fact #12]—but the Ministry is asking the wrong question. The real issue isn't whether to raise wages; it's whether Qatar's construction sector can survive the next decade without fundamental restructuring [Turn 23]. Our {stats["n_turns"]}-turn expert deliberation reveals that wage reform, automation investment, and regional labor dynamics are inseparable [Consensus: Turn 41]. Implement the increase in isolation, and you accelerate a crisis. Implement it as part of a structural pivot, and you position Qatar's construction sector for global competitiveness beyond the hydrocarbon era [Scenario 3: Automation Accelerates]."
 
 ## METRIC PRESENTATION (CRITICAL):
 NEVER show raw database codes. Transform ALL metrics:
@@ -558,27 +568,32 @@ Before finalizing, explicitly address EACH red flag:
 - Red Flag #2 [issue] → Addressed by [specific recommendation element]
 If a flag cannot be fully addressed, acknowledge it as a limitation."
 
-## SPECIFICITY REQUIREMENTS (DOMAIN AGNOSTIC):
-When making recommendations, you MUST be SPECIFIC using data from the analysis:
-- **Name actual entities** - Use specific institutions, programs, locations, assets mentioned in the facts
-- **Use real numbers** - Extract actual figures from the evidence (budgets, targets, timelines)
-- **Reference the context** - Your recommendations must fit the specific domain of the query
-- **No generic advice** - "Invest in training" is UNACCEPTABLE. Instead: "Allocate [specific amount] to [specific program] targeting [specific gap identified in Fact #X]"
+## QATAR SPECIFICITY REQUIREMENTS (MANDATORY):
+Your recommendations CANNOT be generic. If a recommendation could apply to "any Gulf country," REWRITE it with Qatar-specific details.
 
-The system is domain agnostic. Whether the query is about:
-- Qatar tourism vs Saudi competition
-- Workforce nationalization policies
-- Energy sector transformation  
-- Any other domain
+WHEN RECOMMENDING PROGRAMS FOR QATAR, YOU MUST NAME:
+- **Specific institutions**: Ashghal, Qatar Rail, Qatar Foundation, Qatar University, QFFD, QIA, QFC, Sidra, HMC
+- **Specific projects**: Lusail City, FIFA 2022 stadiums, Metro expansion, Education City, Hamad Port
+- **Specific companies**: QatarEnergy, Ooredoo, Qatar Airways, QNB, Industries Qatar
+- **Specific funds/programs**: Vision 2030, National Development Strategy, Qatar Science & Technology Park
 
-Your synthesis must draw from the ACTUAL DATA provided, not assumptions. Name the specific:
-- Programs, institutions, and initiatives mentioned in the facts
-- Geographic locations and assets identified in the evidence
-- Numerical targets and budgets from official sources
-- Stakeholders and responsible parties from the debate
+GENERIC (UNACCEPTABLE):
+"Launch workforce upskilling program targeting 50,000 workers"
 
-Example of GENERIC (bad): "Invest in workforce development programs"
-Example of SPECIFIC (good): "Allocate [amount from Fact #X] to [program name from evidence] targeting [gap identified in Turn Y] [Addresses Red Flag #Z]"
+QATAR-SPECIFIC (REQUIRED):
+"Launch QR 200M Construction Skills Accelerator targeting 50,000 workers:
+- Track 1: Automation Operators (20,000 workers) — Partner with Ashghal and Qatar Rail for robotic systems training
+- Track 2: Safety Specialists (15,000 workers) — FIFA stadium maintenance certification through Qatar University
+- Track 3: Project Management (15,000 workers) — Transition supervisors through Qatar Foundation programs
+Lead: Ministry of Labour + Qatar Foundation. Timeline: First cohort March 2026.
+Success metric: 70% job placement within 90 days. [Addresses Red Flag #2: Lack of specificity]"
+
+ALWAYS include:
+- Specific budget (QR amount from facts or estimated)
+- Specific timeline (month/year)
+- Specific partners (named institutions)
+- Success metrics (quantified)
+- Which Red Flag this addresses
 
 ## OUTPUT STRUCTURE (Follow EXACTLY):
 

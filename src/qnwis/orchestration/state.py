@@ -82,7 +82,10 @@ class IntelligenceState(TypedDict, total=False):
     # Debate & Critique
     debate_synthesis: Annotated[Optional[str], take_last]
     debate_results: Annotated[Optional[Dict[str, Any]], take_last]
+    conversation_history: Annotated[List[Dict[str, Any]], merge_lists]  # Debate turns for stats
+    aggregate_debate_stats: Annotated[Optional[Dict[str, Any]], take_last]  # Parallel scenario stats
     critique_report: Annotated[Optional[str], take_last]
+    critique_results: Annotated[Optional[Dict[str, Any]], take_last]  # Structured critique data
 
     # Verification
     fact_check_results: Annotated[Optional[Dict[str, Any]], take_last]
@@ -90,6 +93,7 @@ class IntelligenceState(TypedDict, total=False):
 
     # Final Output
     final_synthesis: Annotated[Optional[str], take_last]
+    meta_synthesis: Annotated[Optional[str], take_last]  # Parallel path synthesis
     confidence_score: Annotated[float, take_last]  # 0.0 to 1.0
     reasoning_chain: Annotated[List[str], merge_lists]
 
