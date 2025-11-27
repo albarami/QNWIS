@@ -159,6 +159,20 @@ function reduceEvent(state: AppState, event: WorkflowEvent): AppState {
     }
   }
 
+  // Handle feasibility check events (first-principles reasoning)
+  if (event.stage === 'feasibility_check') {
+    const payload = event.payload as any
+    console.log('🔢 FEASIBILITY_CHECK event:', event.status, payload)
+    
+    if (event.status === 'error' && payload?.verdict === 'INFEASIBLE') {
+      // Target is arithmetically impossible - short-circuit
+      next.targetInfeasible = true
+      next.infeasibilityReason = payload?.explanation || 'Target is not arithmetically achievable'
+      next.feasibleAlternative = payload?.alternative || null
+      console.log('⛔ TARGET INFEASIBLE:', next.infeasibilityReason)
+    }
+  }
+
   if (event.stage === 'agent_selection' && event.payload) {
     const payload = event.payload as any
     console.log('🤖 AGENT_SELECTION event received:', payload)

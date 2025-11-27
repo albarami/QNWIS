@@ -292,6 +292,10 @@ export interface AppState {
   // Agent execution tracking
   agentsExpected: number
   agentsRunning: boolean
+  // Feasibility gate (first-principles reasoning)
+  targetInfeasible: boolean
+  infeasibilityReason: string | null
+  feasibleAlternative: string | null
 }
 
 export const ALL_STAGES: WorkflowStage[] = [

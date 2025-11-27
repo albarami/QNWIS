@@ -206,9 +206,64 @@ function App() {
         </section>
 
         {/* ============================================
+            INFEASIBILITY ALERT - When target is impossible
+            ============================================ */}
+        {state.targetInfeasible && (
+          <section className="mb-8">
+            <div className="bg-gradient-to-r from-red-900/40 via-red-800/30 to-red-900/40 border-2 border-red-500/60 rounded-2xl p-8 shadow-lg shadow-red-500/10">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 w-16 h-16 rounded-xl bg-red-500/20 flex items-center justify-center">
+                  <span className="text-4xl">⛔</span>
+                </div>
+                <div className="flex-1 space-y-4">
+                  <div>
+                    <h2 className="text-2xl font-bold text-red-400 mb-2">
+                      First-Principles Check: Target NOT Achievable
+                    </h2>
+                    <p className="text-slate-300 text-lg leading-relaxed">
+                      {state.infeasibilityReason || 'This target fails basic arithmetic feasibility checks.'}
+                    </p>
+                  </div>
+                  
+                  {state.feasibleAlternative && (
+                    <div className="bg-emerald-900/30 border border-emerald-500/40 rounded-xl p-4">
+                      <h3 className="text-emerald-400 font-semibold mb-2 flex items-center gap-2">
+                        <span>💡</span> Feasible Alternative
+                      </h3>
+                      <p className="text-slate-300">{state.feasibleAlternative}</p>
+                    </div>
+                  )}
+                  
+                  <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-600/50">
+                    <h3 className="text-amber-400 font-semibold mb-2 flex items-center gap-2">
+                      <span>🔢</span> Why This Matters
+                    </h3>
+                    <p className="text-slate-400 text-sm">
+                      Before investing analytical resources into <strong>HOW</strong> to achieve a target, 
+                      we first verify <strong>IF</strong> it's achievable. This query failed basic arithmetic checks — 
+                      the required numbers exceed what is physically possible. Rather than waste compute debating 
+                      impossible scenarios, we provide this explanation so you can revise the target.
+                    </p>
+                  </div>
+                  
+                  <div className="flex items-center gap-3 pt-2">
+                    <span className="px-3 py-1 rounded-full bg-red-500/20 text-red-300 text-sm font-medium border border-red-500/30">
+                      Verdict: INFEASIBLE
+                    </span>
+                    <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-sm font-medium border border-emerald-500/30">
+                      Confidence: 99% (Arithmetic Certainty)
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* ============================================
             MAIN CONTENT - Two Column Layout
             ============================================ */}
-        {showTwoColumnLayout && (
+        {showTwoColumnLayout && !state.targetInfeasible && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* ----------------------------------------
                 LEFT SIDEBAR (4 cols) - Progress & Facts

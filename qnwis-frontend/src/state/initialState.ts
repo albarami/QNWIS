@@ -34,6 +34,10 @@ export function createInitialState(): AppState {
     // Agent execution tracking
     agentsExpected: 0,
     agentsRunning: false,
+    // Feasibility gate
+    targetInfeasible: false,
+    infeasibilityReason: null,
+    feasibleAlternative: null,
   }
 }
 

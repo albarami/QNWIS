@@ -80,7 +80,7 @@ class ScenarioGenerator:
         max_retries: int = 2
     ) -> List[Dict[str, Any]]:
         """
-        Generate 4-6 critical scenarios for parallel testing.
+        Generate exactly 6 critical scenarios for parallel testing.
         
         ENHANCED: Includes stake-prompting validation for specific scenarios.
         
@@ -110,7 +110,7 @@ class ScenarioGenerator:
                 logger.info(f"🤖 Calling LLM: {self.provider}/{self.model}...")
                 response = await self.llm_client.generate(
                     prompt=prompt,
-                    system="You are a scenario planning expert for Qatar ministerial intelligence. Output ONLY valid JSON array with 4-6 scenarios. No explanations, no markdown.",
+                    system="You are a scenario planning expert for Qatar ministerial intelligence. Output ONLY valid JSON array with EXACTLY 6 scenarios. No explanations, no markdown.",
                     max_tokens=4000,
                     temperature=0.5  # Balanced creativity/consistency for stake specificity
                 )
