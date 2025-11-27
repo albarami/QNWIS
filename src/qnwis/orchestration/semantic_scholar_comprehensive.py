@@ -83,8 +83,10 @@ async def extract_semantic_scholar_comprehensive(query: str) -> List[Dict[str, A
                 for paper in papers:
                     paper_id = paper.get("paperId", "")
                     if paper_id and paper_id not in seen_paper_ids:
-                        seen_paper_ids.add(paper_id)
-                        all_papers.append(_format_paper_as_fact(paper))
+                        # Filter out irrelevant CS/NLP meta-papers
+                        if _is_relevant_paper(paper, query):
+                            seen_paper_ids.add(paper_id)
+                            all_papers.append(_format_paper_as_fact(paper))
                 
                 logger.debug(f"    Found {len(papers)} papers")
                 
@@ -151,6 +153,73 @@ async def extract_semantic_scholar_comprehensive(query: str) -> List[Dict[str, A
         logger.error(f"Semantic Scholar comprehensive extraction error: {e}")
     
     return all_papers
+
+
+def _is_relevant_paper(paper: Dict[str, Any], original_query: str) -> bool:
+    """
+    Filter out irrelevant papers - especially CS/NLP meta-papers.
+    
+    When searching for "Qatar labor policy", we don't want papers about
+    "Knowledge Graph construction" or "BERT for text classification".
+    """
+    title = (paper.get("title") or "").lower()
+    abstract = (paper.get("abstract") or "").lower()
+    fields = paper.get("fieldsOfStudy") or []
+    
+    # =================================================================
+    # EXCLUDE: Computer Science meta-papers (about techniques, not policy)
+    # =================================================================
+    cs_meta_keywords = [
+        # NLP/ML technique papers
+        "knowledge graph", "rdf", "ontology", "semantic web", "linked data",
+        "transformer", "bert", "gpt", "language model", "neural network",
+        "deep learning", "machine learning algorithm", "text classification",
+        "named entity recognition", "relation extraction", "text mining",
+        "information retrieval", "document clustering", "word embedding",
+        # Software/systems papers  
+        "repository", "github", "codebase", "software engineering",
+        "api design", "database schema", "query optimization",
+        # Pure methodology papers
+        "benchmark", "evaluation metric", "dataset", "annotation",
+    ]
+    
+    # Check if title contains CS meta-keywords
+    cs_keyword_count = sum(1 for kw in cs_meta_keywords if kw in title)
+    if cs_keyword_count >= 2:
+        return False  # Likely a CS methodology paper
+    
+    # Check fieldsOfStudy - reject pure CS papers
+    if fields:
+        field_names = [f.lower() if isinstance(f, str) else f.get("category", "").lower() for f in fields]
+        pure_cs_fields = {"computer science", "mathematics", "engineering"}
+        policy_fields = {"economics", "political science", "sociology", "business", 
+                        "environmental science", "geography", "medicine", "law"}
+        
+        # If ALL fields are CS/Math and NONE are policy-related, reject
+        if all(f in pure_cs_fields for f in field_names) and not any(f in policy_fields for f in field_names):
+            # Unless it's specifically about the query domain
+            query_lower = original_query.lower()
+            domain_keywords = ["labor", "employment", "workforce", "economy", "policy", 
+                              "qatar", "gcc", "tourism", "energy", "trade"]
+            if not any(kw in title or kw in abstract for kw in domain_keywords):
+                return False
+    
+    # =================================================================
+    # INCLUDE: Papers with domain relevance
+    # =================================================================
+    # Bonus: papers mentioning specific regions/policies are more likely relevant
+    relevance_keywords = [
+        "qatar", "gcc", "gulf", "middle east", "saudi", "uae", "bahrain", "kuwait", "oman",
+        "labor market", "workforce", "employment", "unemployment", "nationalization",
+        "economic policy", "fiscal policy", "monetary policy", "trade policy",
+        "tourism sector", "energy sector", "diversification", "vision 2030"
+    ]
+    
+    if any(kw in title or kw in abstract for kw in relevance_keywords):
+        return True  # Definitely relevant
+    
+    # Default: include if not filtered out
+    return True
 
 
 def _generate_query_variations(query: str) -> List[str]:

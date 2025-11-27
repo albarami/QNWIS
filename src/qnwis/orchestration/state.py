@@ -59,6 +59,13 @@ class IntelligenceState(TypedDict, total=False):
     # Input - keep_first ensures query is set once and never overwritten
     query: Annotated[str, keep_first]
     complexity: Annotated[str, take_last]  # Can be updated by classifier
+    debate_depth: Annotated[str, keep_first]  # User-selected: standard/deep/legendary (25-40/50-100/100-150 turns)
+
+    # Feasibility Gate (first-principles reasoning)
+    target_infeasible: Annotated[bool, take_last]  # True if target is arithmetically impossible
+    feasibility_check: Annotated[Optional[Dict[str, Any]], take_last]  # Feasibility analysis result
+    infeasibility_reason: Annotated[Optional[str], take_last]  # Why target is infeasible
+    feasible_alternative: Annotated[Optional[str], take_last]  # Suggested feasible alternative
 
     # Data Extraction (from prefetch/cache)
     extracted_facts: Annotated[List[Dict[str, Any]], merge_lists]

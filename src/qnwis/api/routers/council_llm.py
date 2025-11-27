@@ -68,6 +68,10 @@ class CouncilRequest(BaseModel):
         max_length=120,
         description="Optional provider/model override (e.g., claude-3-sonnet).",
     )
+    debate_depth: Literal["standard", "deep", "legendary"] = Field(
+        "legendary",
+        description="Controls debate turns: standard=25-40, deep=50-100, legendary=100-150. Default is legendary for maximum depth.",
+    )
 
     @field_validator("question")
     @classmethod
@@ -235,7 +239,7 @@ async def council_stream_llm(
             heartbeat.timestamp = datetime.now(timezone.utc).isoformat()
             yield f"event: heartbeat\n{_serialize_sse(heartbeat)}"
 
-            logger.info(f"🔄 About to call run_workflow_stream from streaming.py")
+            logger.info(f"🔄 About to call run_workflow_stream from streaming.py (debate_depth={req.debate_depth})")
             try:
                 async with _async_timeout(STREAM_TIMEOUT_SECONDS):
                     async for event in run_workflow_stream(
@@ -243,6 +247,7 @@ async def council_stream_llm(
                         data_client=data_client,
                         llm_client=llm_client,
                         classifier=classifier,
+                        debate_depth=req.debate_depth,  # User-selected debate depth
                     ):
                         logger.info(f"📥 Received event from run_workflow_stream: {event.stage}")
                         try:

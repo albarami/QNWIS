@@ -24,6 +24,19 @@ from .critique import critique_node
 from .verification import verification_node
 from .synthesis import synthesis_node
 from .synthesis_strategic import strategic_synthesis_node
+from .scenario_generator import ScenarioGenerator
+from .scenario_baseline_requirements import (
+    analyze_query_requirements,
+    enhance_facts_with_scenario_baselines,
+    format_baselines_for_prompt,
+    SCENARIO_BASELINE_REQUIREMENTS,
+)
+from .first_principles_reasoning import (
+    feasibility_gate_node,
+    arithmetic_validator_node,
+    enhance_agent_prompt_with_first_principles,
+    FIRST_PRINCIPLES_PROTOCOL,
+)
 
 __all__ = [
     # Legacy nodes
@@ -44,4 +57,15 @@ __all__ = [
     "verification_node",
     "synthesis_node",
     "strategic_synthesis_node",
+    # Scenario generation
+    "ScenarioGenerator",
+    "analyze_query_requirements",
+    "enhance_facts_with_scenario_baselines",
+    "format_baselines_for_prompt",
+    "SCENARIO_BASELINE_REQUIREMENTS",
+    # First-principles reasoning
+    "feasibility_gate_node",
+    "arithmetic_validator_node",
+    "enhance_agent_prompt_with_first_principles",
+    "FIRST_PRINCIPLES_PROTOCOL",
 ]

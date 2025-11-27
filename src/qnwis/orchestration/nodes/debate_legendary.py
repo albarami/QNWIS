@@ -111,15 +111,18 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
         # Debate will work with just the orchestrator's LLM capabilities
 
     # Conduct legendary debate
+    # Get user-selected debate depth from state (default: legendary = 100-150 turns)
+    debate_depth = state.get("debate_depth", "legendary")
     try:
-        logger.info(f"🚀 STARTING legendary debate with {len(contradictions)} contradictions")
+        logger.info(f"🚀 STARTING legendary debate with {len(contradictions)} contradictions (depth={debate_depth})")
         debate_results = await orchestrator.conduct_legendary_debate(
             question=state.get("query", ""),
             contradictions=contradictions,
             agents_map=agents_map,
             agent_reports_map=agent_reports_map,
             llm_client=llm_client,
-            extracted_facts=state.get("extracted_facts", [])
+            extracted_facts=state.get("extracted_facts", []),
+            debate_depth=debate_depth  # Pass user-selected depth
         )
         logger.info(f"✅ Legendary debate SUCCEEDED: {debate_results['total_turns']} turns")
 

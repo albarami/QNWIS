@@ -14,6 +14,7 @@ import { safeParseWorkflowEvent } from '../utils/eventParser'
 interface ConnectParams {
   question: string
   provider?: 'azure' | 'anthropic' | 'openai'
+  debate_depth?: 'standard' | 'deep' | 'legendary'  // Controls debate turns: standard=25-40, deep=50-100, legendary=100-150
 }
 
 interface UseWorkflowStreamResult {
@@ -596,7 +597,7 @@ export function useWorkflowStream(): UseWorkflowStreamResult {
     setState((prev) => ({ ...prev, connectionStatus: 'idle', isStreaming: false }))
   }, [])
 
-  const connect = useCallback(async ({ question, provider = 'azure' }: ConnectParams) => {
+  const connect = useCallback(async ({ question, provider = 'azure', debate_depth = 'legendary' }: ConnectParams) => {
     if (!question.trim()) {
       throw new Error('Question is required')
     }
@@ -614,13 +615,15 @@ export function useWorkflowStream(): UseWorkflowStreamResult {
       startTime: new Date().toISOString(),
     }))
 
+    console.log(`🎯 Starting analysis with debate_depth: ${debate_depth}`)
+
     await fetchEventSource(SSE_ENDPOINT, {
       method: 'POST',
       signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ question, provider }),
+      body: JSON.stringify({ question, provider, debate_depth }),
       async onopen(response) {
         if (!response.ok) {
           let errorMsg = `Connection failed: ${response.status} ${response.statusText}`

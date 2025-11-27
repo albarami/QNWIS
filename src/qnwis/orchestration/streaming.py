@@ -407,7 +407,8 @@ async def run_workflow_stream(
     query_registry: Optional[Any] = None,
     classifier: Optional[Any] = None,
     provider: str = None,  # Uses QNWIS_LLM_PROVIDER from env
-    request_id: Optional[str] = None
+    request_id: Optional[str] = None,
+    debate_depth: str = "legendary"  # User-selected: standard=25-40, deep=50-100, legendary=100-150
 ) -> AsyncIterator[WorkflowEvent]:
     """
     Run the LangGraph workflow and emit stage events in execution order.
@@ -424,6 +425,7 @@ async def run_workflow_stream(
         classifier: Classifier (for legacy compatibility)
         provider: LLM provider
         request_id: Request ID for logging
+        debate_depth: Controls debate turns - standard/deep/legendary
 
     Yields:
         WorkflowEvent objects
@@ -466,9 +468,11 @@ async def run_workflow_stream(
             logger.info(f"📤 Queued debate event: {stage} - {status}")  # Changed to INFO level
 
         # Initialize state with emit callback
+        logger.info(f"🎚️ Debate depth set to: {debate_depth}")
         initial_state: IntelligenceState = {
             "query": question,
             "complexity": "",
+            "debate_depth": debate_depth,  # User-selected: standard/deep/legendary
             "agent_reports": [],
             "extracted_facts": [],
             "data_sources": [],
@@ -513,8 +517,19 @@ async def run_workflow_stream(
             nonlocal workflow_complete, accumulated_state
             try:
                 async for event in graph.astream(initial_state):
+                    logger.info(f"📨 LangGraph event received: type={type(event)}, value={str(event)[:200]}")
+                    
+                    # Guard against None events from LangGraph
+                    if event is None:
+                        logger.warning("⚠️ Received None event from LangGraph astream, skipping")
+                        continue
+                    if not isinstance(event, dict):
+                        logger.warning(f"⚠️ Received non-dict event from LangGraph: {type(event)}, value={event}")
+                        continue
+                    
                     # Forward node completion events to queue
                     for node_name, node_output in event.items():
+                        logger.info(f"📦 Processing node '{node_name}': output_type={type(node_output)}")
                         # CRITICAL: Merge partial state into accumulated state
                         if isinstance(node_output, dict):
                             accumulated_state.update(node_output)
@@ -522,7 +537,10 @@ async def run_workflow_stream(
                         # Send the FULL accumulated state, not just partial update
                         await event_queue.put(("node_complete", node_name, accumulated_state.copy()))
             except Exception as e:
-                logger.error(f"Workflow execution error: {e}", exc_info=True)
+                import traceback
+                full_tb = traceback.format_exc()
+                logger.error(f"Workflow execution error: {e}")
+                logger.error(f"Full traceback:\n{full_tb}")
                 await event_queue.put(("error", str(e), None))
             finally:
                 workflow_complete = True

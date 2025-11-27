@@ -1,0 +1,580 @@
+"""
+First-Principles Reasoning Protocol
+
+PURPOSE: Force agents to reason like true experts - backward from constraints,
+not forward from assumptions. Prevents catastrophic logical failures like
+recommending targets that are physically/mathematically impossible.
+
+PROBLEM THIS SOLVES:
+- Agents recommended "40-50% Qatarization" when total Qatari population 
+  cannot mathematically fill those jobs
+- Agents debated policy options for an impossible target
+- No agent asked "does the basic arithmetic work?"
+
+ROOT CAUSE:
+LLMs default to pattern-matching policy language, not first-principles reasoning.
+They reason FORWARD (query → policy options) instead of BACKWARD 
+(target → requirements → constraints → feasibility).
+"""
+
+import json
+import logging
+import re
+from typing import Dict, Any, Optional, Tuple
+
+from ..state import IntelligenceState
+from ...llm.client import LLMClient
+
+logger = logging.getLogger(__name__)
+
+
+def get_llm_client() -> LLMClient:
+    """Get the default LLM client."""
+    return LLMClient()
+
+
+# =============================================================================
+# FIRST-PRINCIPLES REASONING TEMPLATE
+# =============================================================================
+
+FIRST_PRINCIPLES_PROTOCOL = """
+═══════════════════════════════════════════════════════════════════════════════
+FIRST-PRINCIPLES REASONING PROTOCOL (MANDATORY)
+═══════════════════════════════════════════════════════════════════════════════
+
+Before ANY analysis, you MUST complete this protocol. Do not skip steps.
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ STEP 1: DEFINITIONAL CLARITY                                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ What EXACTLY is being asked?                                                │
+│ - Define every term precisely                                               │
+│ - What is the unit of measurement?                                          │
+│ - What is the scope (geographic, temporal, sectoral)?                       │
+│                                                                             │
+│ Example:                                                                    │
+│ - "70% Qatarization in private sector" =                                   │
+│   70% of private sector jobs held by Qatari nationals                       │
+│ - Private sector jobs in Qatar = ~2,000,000                                │
+│ - Therefore: 1,400,000 Qataris needed in private sector                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ STEP 2: IDENTIFY HARD CONSTRAINTS (Cannot be changed by policy)            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ What are the IMMOVABLE boundaries?                                          │
+│                                                                             │
+│ DEMOGRAPHIC CONSTRAINTS:                                                    │
+│ - Total population of target group                                          │
+│ - Working-age population                                                    │
+│ - Already employed elsewhere                                                │
+│ - Birth/death/migration rates (for future projections)                     │
+│                                                                             │
+│ PHYSICAL CONSTRAINTS:                                                       │
+│ - Geographic limits (land area, coastline, etc.)                           │
+│ - Natural resources (water, oil reserves, etc.)                            │
+│ - Infrastructure capacity                                                   │
+│                                                                             │
+│ TEMPORAL CONSTRAINTS:                                                       │
+│ - Time required for training/education (minimum years)                     │
+│ - Construction/development timelines                                        │
+│ - Biological limits (pregnancy, aging, etc.)                               │
+│                                                                             │
+│ MATHEMATICAL CONSTRAINTS:                                                   │
+│ - Percentages must sum correctly                                            │
+│ - Stocks vs flows (you can't spend the same dollar twice)                  │
+│ - Compounding effects                                                       │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ STEP 3: ARITHMETIC FEASIBILITY CHECK                                        │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Does the basic math work? This is NON-NEGOTIABLE.                          │
+│                                                                             │
+│ SUPPLY-DEMAND CHECK:                                                        │
+│ - What quantity is REQUIRED to meet the target?                            │
+│ - What quantity is AVAILABLE (maximum possible supply)?                    │
+│ - If REQUIRED > AVAILABLE: Target is IMPOSSIBLE. Stop here.               │
+│                                                                             │
+│ RATE-OF-CHANGE CHECK:                                                       │
+│ - What rate of change is needed to hit target by deadline?                 │
+│ - What is the maximum achievable rate of change?                           │
+│ - If NEEDED RATE > MAX RATE: Timeline is IMPOSSIBLE.                       │
+│                                                                             │
+│ BUDGET CHECK:                                                               │
+│ - What would this cost?                                                     │
+│ - What budget is available?                                                 │
+│ - If COST > BUDGET: Funding is IMPOSSIBLE at this scale.                   │
+│                                                                             │
+│ ⚠️  IF ANY CHECK FAILS: Do not proceed to policy analysis.                 │
+│     State clearly: "TARGET IS INFEASIBLE BECAUSE [arithmetic reason]"      │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ STEP 4: CAUSAL MECHANISM (Only if Step 3 passes)                           │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ What would ACTUALLY have to happen to achieve this target?                 │
+│                                                                             │
+│ Work BACKWARD from the target:                                              │
+│ - Target state: X                                                           │
+│ - Current state: Y                                                          │
+│ - Gap: X - Y = Z                                                            │
+│ - To close gap Z, what specific changes must occur?                        │
+│ - For each change, what causes it? (Keep asking "what causes that?")       │
+│                                                                             │
+│ This creates a causal chain you can evaluate for plausibility.             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ STEP 5: THEN (and only then) POLICY OPTIONS                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Now you can discuss interventions, but they must:                          │
+│ - Operate within identified constraints                                     │
+│ - Pass arithmetic feasibility                                               │
+│ - Have a credible causal mechanism                                          │
+│                                                                             │
+│ If no feasible path exists, your job is to say so clearly and explain:    │
+│ - Why the target is infeasible                                              │
+│ - What a feasible alternative target would be                              │
+│ - What would have to change for the original target to become feasible    │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+"""
+
+
+# =============================================================================
+# FEASIBILITY GATE PROMPT
+# =============================================================================
+
+FEASIBILITY_GATE_PROMPT = """
+You are the FEASIBILITY GATE - the first line of defense against impossible targets.
+
+Your job is to catch fatal arithmetic errors BEFORE the system wastes time 
+analyzing infeasible scenarios.
+
+## CRITICAL QATAR CONTEXT (Use for Qatarization queries):
+- Total Qatari population: ~400,000-500,000 (all ages)
+- Working-age Qataris (18-60): ~200,000-250,000
+- Currently employed Qataris: ~180,000 (mostly public sector)
+- Available for new private sector jobs: ~20,000-70,000 MAXIMUM
+- Total private sector jobs in Qatar: ~2,000,000
+
+FOR EVERY QUERY, complete this checklist:
+
+## 1. EXTRACT THE TARGET
+What specific outcome is being requested?
+- Quantity: [number]
+- Unit: [what is being measured]
+- Timeline: [by when]
+- Scope: [geographic/sectoral]
+
+## 2. IDENTIFY THE BINDING CONSTRAINT
+What is the hardest limit on achieving this target?
+
+For workforce/nationalization targets → Population constraint (CRITICAL)
+For spending targets → Budget constraint  
+For production targets → Capacity constraint
+For timeline targets → Rate-of-change constraint
+
+## 3. DO THE ARITHMETIC
+- Required: [X]
+- Available: [Y]
+- Gap: [X - Y]
+- Feasibility ratio: [Y / X]
+
+## 4. VERDICT
+
+If feasibility ratio >= 1.0:
+  ✅ FEASIBLE - Proceed to analysis
+
+If feasibility ratio >= 0.5:
+  ⚠️ AMBITIOUS - Proceed with caution, flag constraint
+
+If feasibility ratio < 0.5:
+  ⛔ INFEASIBLE - Do not proceed. Explain why and suggest feasible alternative.
+
+---
+
+OUTPUT FORMAT (JSON):
+
+```json
+{
+  "target": {
+    "description": "70% Qatarization in private sector",
+    "required_quantity": 1400000,
+    "unit": "Qatari workers",
+    "timeline": "2028"
+  },
+  "binding_constraint": {
+    "type": "demographic",
+    "description": "Working-age Qatari population available for private sector",
+    "available_quantity": 50000,
+    "source": "Qatar Census / Demographics"
+  },
+  "arithmetic": {
+    "required": 1400000,
+    "available": 50000,
+    "gap": 1350000,
+    "feasibility_ratio": 0.036
+  },
+  "verdict": "INFEASIBLE",
+  "explanation": "Target requires 28x more Qataris than available. Qatar's entire working-age population (~200,000) is smaller than 10% of private sector jobs.",
+  "feasible_alternative": "Sector-specific targets: 70% in banking (~35K jobs) or economy-wide ceiling of 5-8%",
+  "proceed_to_analysis": false
+}
+```
+"""
+
+
+# =============================================================================
+# CONSTRAINT PATTERNS
+# =============================================================================
+
+CONSTRAINT_PATTERNS = """
+COMMON FEASIBILITY FAILURES TO CHECK:
+
+1. DEMOGRAPHIC IMPOSSIBILITY
+   Pattern: Target requires more people than exist in the population
+   Check: Target headcount vs. available population
+   Examples: 
+   - Workforce targets exceeding working-age population
+   - Qatarization targets vs actual Qatari population
+   - University enrollment targets exceeding youth population
+
+2. TEMPORAL IMPOSSIBILITY  
+   Pattern: Target requires changes faster than physically possible
+   Check: Required rate vs. maximum achievable rate
+   Examples:
+   - Training 100,000 engineers in 2 years (takes 4+ years per engineer)
+   - Building 50,000 housing units in 1 year (construction throughput limits)
+
+3. FISCAL IMPOSSIBILITY
+   Pattern: Target requires more money than available
+   Check: Total cost vs. available budget
+   Examples:
+   - Programs costing 50% of GDP
+   - Subsidies exceeding total government revenue
+
+4. PHYSICAL IMPOSSIBILITY
+   Pattern: Target requires more physical resources than exist
+   Check: Resource requirement vs. resource availability
+   Examples:
+   - Water consumption exceeding aquifer recharge
+   - Energy demand exceeding generation capacity
+
+5. LOGICAL IMPOSSIBILITY
+   Pattern: Target is internally contradictory
+   Check: Do the requirements contradict each other?
+   Examples:
+   - "Reduce immigration AND fill labor shortage with foreign workers"
+   - "Increase Qatarization AND maintain cost competitiveness AND no subsidies"
+"""
+
+
+# =============================================================================
+# FEASIBILITY GATE NODE
+# =============================================================================
+
+async def feasibility_gate_node(state: IntelligenceState) -> IntelligenceState:
+    """
+    Check if query target is arithmetically feasible BEFORE wasting compute.
+    
+    This is the first line of defense against impossible targets.
+    """
+    logger.info("🔢 FEASIBILITY GATE: Starting...")
+    
+    query = state.get("query", "")
+    # Handle None case - TypedDict setdefault may return None
+    reasoning_chain = state.get("reasoning_chain") or []
+    state["reasoning_chain"] = reasoning_chain
+    
+    # Initialize feasibility flags - default to feasible
+    state["target_infeasible"] = False
+    state["feasibility_check"] = {"verdict": "PENDING"}
+    
+    logger.info(f"🔢 FEASIBILITY GATE: Checking arithmetic feasibility for: {query[:100]}...")
+    
+    # Emit SSE event
+    emit_fn = state.get("emit_event_fn")
+    if emit_fn:
+        await emit_fn("feasibility_check", "running", {"query": query})
+    
+    try:
+        llm = get_llm_client()
+        
+        prompt = f"""
+{FEASIBILITY_GATE_PROMPT}
+
+{CONSTRAINT_PATTERNS}
+
+QUERY TO ANALYZE:
+"{query}"
+
+Analyze the feasibility of this query. Output ONLY valid JSON.
+"""
+        
+        response = await llm.generate(
+            prompt=prompt,
+            temperature=0.1,  # Low temperature for arithmetic precision
+            max_tokens=2000
+        )
+        
+        # Parse JSON response
+        feasibility = _parse_feasibility_response(response)
+        
+        # Store in state
+        state["feasibility_check"] = feasibility
+        
+        verdict = feasibility.get("verdict", "UNKNOWN")
+        explanation = feasibility.get("explanation", "No explanation provided")
+        
+        if verdict == "INFEASIBLE":
+            logger.warning(f"⛔ INFEASIBLE TARGET: {explanation}")
+            
+            # Set short-circuit flag
+            state["target_infeasible"] = True
+            state["infeasibility_reason"] = explanation
+            state["feasible_alternative"] = feasibility.get("feasible_alternative", "")
+            
+            reasoning_chain.append(
+                f"⛔ FEASIBILITY GATE: Target is INFEASIBLE. {explanation}"
+            )
+            
+            # Emit error event (status must be valid: ready/running/streaming/complete/error/started/update)
+            if emit_fn:
+                await emit_fn("feasibility_check", "error", {
+                    "verdict": verdict,
+                    "explanation": explanation,
+                    "alternative": feasibility.get("feasible_alternative", "")
+                })
+        
+        elif verdict == "AMBITIOUS":
+            logger.warning(f"⚠️ AMBITIOUS TARGET: {explanation}")
+            state["feasibility_warning"] = explanation
+            reasoning_chain.append(f"⚠️ FEASIBILITY GATE: Target is ambitious. {explanation}")
+            
+            # Use "update" status for warnings (valid statuses: ready/running/streaming/complete/error/started/update)
+            if emit_fn:
+                await emit_fn("feasibility_check", "update", {
+                    "verdict": verdict,
+                    "explanation": explanation
+                })
+        
+        else:
+            logger.info(f"✅ FEASIBLE: {explanation}")
+            reasoning_chain.append(f"✅ FEASIBILITY GATE: Target passes arithmetic check.")
+            
+            if emit_fn:
+                await emit_fn("feasibility_check", "complete", {"verdict": verdict})
+        
+    except Exception as e:
+        import traceback
+        full_traceback = traceback.format_exc()
+        logger.error(f"Feasibility gate error: {e}")
+        logger.error(f"Full traceback:\n{full_traceback}")
+        reasoning_chain.append(f"⚠️ Feasibility check failed: {e}")
+        # Don't block on errors - proceed with warning
+        state["feasibility_check"] = {"verdict": "UNKNOWN", "error": str(e)}
+    
+    logger.info(f"✅ Feasibility gate returning state with keys: {list(state.keys())}")
+    return state
+
+
+def _parse_feasibility_response(response: str) -> Dict[str, Any]:
+    """Parse the JSON response from feasibility check."""
+    try:
+        # Extract JSON from response
+        response_clean = response.strip()
+        
+        # Handle markdown code blocks
+        if "```json" in response_clean:
+            start = response_clean.find("```json") + 7
+            end = response_clean.find("```", start)
+            response_clean = response_clean[start:end].strip()
+        elif "```" in response_clean:
+            start = response_clean.find("```") + 3
+            end = response_clean.find("```", start)
+            response_clean = response_clean[start:end].strip()
+        
+        # Find JSON object
+        json_match = re.search(r'\{.*\}', response_clean, re.DOTALL)
+        if json_match:
+            return json.loads(json_match.group())
+        
+        return json.loads(response_clean)
+        
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse feasibility JSON: {e}")
+        logger.error(f"Raw response: {response[:500]}")
+        
+        # Try to extract verdict from text
+        response_lower = response.lower()
+        if "infeasible" in response_lower:
+            return {"verdict": "INFEASIBLE", "explanation": response[:500]}
+        elif "ambitious" in response_lower:
+            return {"verdict": "AMBITIOUS", "explanation": response[:500]}
+        else:
+            return {"verdict": "UNKNOWN", "explanation": "Failed to parse response"}
+
+
+# =============================================================================
+# ENHANCE AGENT PROMPTS
+# =============================================================================
+
+def enhance_agent_prompt_with_first_principles(
+    base_prompt: str,
+    agent_name: str
+) -> str:
+    """
+    Enhance any agent's prompt with first-principles reasoning protocol.
+    
+    Args:
+        base_prompt: The agent's existing system prompt
+        agent_name: Name of the agent (for logging)
+        
+    Returns:
+        Enhanced prompt with first-principles protocol prepended
+    """
+    
+    enhanced = f"""
+{FIRST_PRINCIPLES_PROTOCOL}
+
+{CONSTRAINT_PATTERNS}
+
+═══════════════════════════════════════════════════════════════════════════════
+YOUR SPECIFIC ROLE: {agent_name}
+═══════════════════════════════════════════════════════════════════════════════
+
+IMPORTANT: You MUST complete the First-Principles Protocol BEFORE your 
+domain-specific analysis. If arithmetic feasibility fails, say so clearly 
+instead of proceeding to policy recommendations.
+
+Your credibility depends on catching impossible targets BEFORE debating 
+how to achieve them.
+
+A real 25-year expert's FIRST instinct:
+"Wait. Let me check if this is even possible before I waste time on how."
+
+---
+
+{base_prompt}
+"""
+    
+    return enhanced
+
+
+# =============================================================================
+# ARITHMETIC VALIDATOR (Post-debate check)
+# =============================================================================
+
+ARITHMETIC_VALIDATOR_PROMPT = """
+You are the ARITHMETIC VALIDATOR - the final check before synthesis.
+
+Your job is to verify that the debate conclusions make mathematical sense.
+You have VETO POWER over conclusions that violate basic arithmetic.
+
+Review the debate and answer:
+
+1. What numeric target was discussed?
+2. What quantity is REQUIRED to achieve it?
+3. What quantity is AVAILABLE?
+4. Does REQUIRED <= AVAILABLE?
+
+If the math doesn't work:
+- State clearly: "ARITHMETIC VETO: [conclusion] is impossible because [math]"
+- Do NOT let the synthesis proceed with impossible recommendations
+
+CRITICAL FOR QATAR:
+- Total Qataris: ~400,000-500,000 (all ages)
+- Working-age: ~200,000-250,000
+- Available for new jobs: ~50,000 MAX
+- Private sector jobs: ~2,000,000
+
+Any Qatarization target > 5-8% is DEMOGRAPHICALLY IMPOSSIBLE.
+"""
+
+
+async def arithmetic_validator_node(state: IntelligenceState) -> IntelligenceState:
+    """
+    Post-debate arithmetic validation.
+    Catches any impossible conclusions that slipped through.
+    """
+    # Handle None case - TypedDict setdefault may return None
+    reasoning_chain = state.get("reasoning_chain") or []
+    state["reasoning_chain"] = reasoning_chain
+    debate_results = state.get("debate_results") or {}
+    query = state.get("query", "")
+    
+    logger.info("🧮 ARITHMETIC VALIDATOR: Checking debate conclusions...")
+    
+    try:
+        llm = get_llm_client()
+        
+        # Get key conclusions from debate
+        conversation = debate_results.get("conversation_history", [])
+        conclusions = []
+        for turn in conversation[-10:]:  # Last 10 turns
+            if isinstance(turn, dict):
+                msg = turn.get("message", "")
+                if msg:
+                    conclusions.append(msg[:300])
+        
+        conclusions_text = "\n".join(conclusions) if conclusions else "No conclusions found"
+        
+        prompt = f"""
+{ARITHMETIC_VALIDATOR_PROMPT}
+
+ORIGINAL QUERY:
+{query}
+
+DEBATE CONCLUSIONS (last 10 turns):
+{conclusions_text}
+
+Check if any conclusion violates basic arithmetic. Output JSON:
+{{
+    "conclusions_checked": ["list of key numeric claims"],
+    "arithmetic_valid": true/false,
+    "violations": ["list of arithmetic violations if any"],
+    "veto_message": "message if vetoing, empty string if valid"
+}}
+"""
+        
+        response = await llm.generate(
+            prompt=prompt,
+            temperature=0.1,
+            max_tokens=1500
+        )
+        
+        # Parse response
+        validation = _parse_feasibility_response(response)
+        state["arithmetic_validation"] = validation
+        
+        if not validation.get("arithmetic_valid", True):
+            veto = validation.get("veto_message", "Arithmetic violation detected")
+            logger.warning(f"🧮 ARITHMETIC VETO: {veto}")
+            state["arithmetic_veto"] = veto
+            reasoning_chain.append(f"🧮 ARITHMETIC VALIDATOR VETO: {veto}")
+        else:
+            logger.info("✅ Arithmetic validation passed")
+            reasoning_chain.append("✅ Arithmetic validation: Conclusions pass math check")
+        
+    except Exception as e:
+        logger.error(f"Arithmetic validator error: {e}")
+        reasoning_chain.append(f"⚠️ Arithmetic validation skipped: {e}")
+    
+    return state
+
+
+# =============================================================================
+# EXPORTS
+# =============================================================================
+
+__all__ = [
+    "FIRST_PRINCIPLES_PROTOCOL",
+    "FEASIBILITY_GATE_PROMPT", 
+    "CONSTRAINT_PATTERNS",
+    "feasibility_gate_node",
+    "arithmetic_validator_node",
+    "enhance_agent_prompt_with_first_principles",
+]

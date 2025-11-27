@@ -2724,25 +2724,64 @@ class CompletePrefetchLayer:
             if extracted:
                 _safe_print(f"   Found {len(extracted)} entities in query")
                 
-                # Get related entities for each extracted entity
+                # Get related entities for each extracted entity - WITH FILTERING
+                seen_related = set()
+                
+                # Skip generic/useless entities as sources
+                generic_entities = {"artificial intelligence", "ai", "machine learning", "ml",
+                                   "knowledge", "entity", "graph", "data", "information",
+                                   "technology", "computer science", "algorithm"}
+                
                 for entity_id in extracted[:5]:  # Limit to 5 entities
+                    # Skip if source entity is generic
+                    if str(entity_id).lower() in generic_entities:
+                        continue
+                    
                     related = self._knowledge_graph.get_related_entities(
                         entity_id, max_hops=2
                     )
                     
                     for related_id, edge_data in related[:3]:  # Top 3 related
                         node_data = self._knowledge_graph.graph.nodes.get(related_id, {})
+                        related_name = node_data.get('name', str(related_id))
+                        
+                        # QUALITY FILTERS
+                        # Skip generic/useless related entities
+                        if related_name.lower() in generic_entities:
+                            continue
+                        
+                        # Skip very short names
+                        if len(related_name) < 3:
+                            continue
+                        
+                        # Skip duplicates
+                        related_key = related_name.lower().strip()
+                        if related_key in seen_related:
+                            continue
+                        seen_related.add(related_key)
+                        
+                        entity_type = node_data.get('type', 'unknown')
+                        if entity_type.lower() in ["unknown", "none", ""]:
+                            continue
+                        
                         facts.append({
-                            "metric": f"Related: {node_data.get('name', related_id)}",
-                            "entity_type": node_data.get('type', 'unknown'),
+                            "metric": f"Related: {related_name}",
+                            "entity_type": entity_type,
                             "relationship": edge_data.get('relation_type', 'related_to'),
                             "source_entity": entity_id,
                             "source": "Knowledge Graph",
-                            "source_priority": 88,
-                            "confidence": edge_data.get('confidence', 0.7),
-                            "raw_text": f"Knowledge Graph: {entity_id} → {edge_data.get('relation_type', 'relates to')} → {node_data.get('name', related_id)}",
+                            "source_priority": 70,  # Lower priority than API data
+                            "confidence": min(edge_data.get('confidence', 0.7), 0.75),
+                            "raw_text": f"Knowledge Graph: {entity_id} → {edge_data.get('relation_type', 'relates to')} → {related_name}",
                             "timestamp": datetime.now().isoformat()
                         })
+                        
+                        # Limit total KG relationships
+                        if len(facts) >= 10:
+                            break
+                    
+                    if len(facts) >= 10:
+                        break
                 
                 _safe_print(f"   Retrieved {len(facts)} knowledge graph relationships")
             

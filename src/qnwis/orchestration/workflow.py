@@ -22,6 +22,8 @@ from .nodes import (
     operations_agent_node,
     research_agent_node,
     verification_node,
+    feasibility_gate_node,
+    arithmetic_validator_node,
 )
 # Import legendary debate node instead of simplified debate
 from .nodes.debate_legendary import legendary_debate_node
@@ -435,12 +437,14 @@ def create_intelligence_graph() -> StateGraph:
 
     # === Core nodes ===
     workflow.add_node("classifier", classify_query_node)
+    workflow.add_node("feasibility_gate", feasibility_gate_node)  # FIRST-PRINCIPLES CHECK
     workflow.add_node("extraction", data_extraction_node)
     workflow.add_node("scenario_gen", scenario_generation_node)
     
     # === Parallel path nodes ===
     workflow.add_node("parallel_exec", parallel_execution_node)
     workflow.add_node("aggregate_scenarios", aggregate_scenarios_for_debate_node)
+    workflow.add_node("arithmetic_validator", arithmetic_validator_node)  # POST-DEBATE CHECK
     workflow.add_node("meta_synthesis", meta_synthesis_wrapper)
     
     # === Single path nodes ===
@@ -456,8 +460,18 @@ def create_intelligence_graph() -> StateGraph:
     # === Entry point ===
     workflow.set_entry_point("classifier")
     
-    # === Main flow ===
-    workflow.add_edge("classifier", "extraction")
+    # === Main flow with FEASIBILITY GATE ===
+    workflow.add_edge("classifier", "feasibility_gate")  # Check arithmetic FIRST
+    
+    # Route based on feasibility: infeasible targets go straight to synthesis with explanation
+    workflow.add_conditional_edges(
+        "feasibility_gate",
+        lambda state: "infeasible" if state.get("target_infeasible") else "feasible",
+        {
+            "infeasible": "synthesis",  # Short-circuit: explain why impossible
+            "feasible": "extraction"     # Continue normal flow
+        }
+    )
     
     # === MINISTER-GRADE: ALL QUERIES GET FULL ANALYSIS ===
     # NO SHORTCUTS - Every query goes through scenario generation and agents
@@ -480,11 +494,13 @@ def create_intelligence_graph() -> StateGraph:
     # After parallel scenarios complete:
     # 1. Aggregate scenario results for main debate
     # 2. Run main debate across all scenarios
-    # 3. Run critique, verification
-    # 4. Final meta-synthesis combines everything
+    # 3. ARITHMETIC VALIDATION - catch impossible conclusions
+    # 4. Run critique, verification
+    # 5. Final meta-synthesis combines everything
     workflow.add_edge("parallel_exec", "aggregate_scenarios")
     workflow.add_edge("aggregate_scenarios", "debate")  # Main debate on scenario results
-    workflow.add_edge("debate", "critique")
+    workflow.add_edge("debate", "arithmetic_validator")  # VALIDATE MATH AFTER DEBATE
+    workflow.add_edge("arithmetic_validator", "critique")
     workflow.add_edge("critique", "verification")
     workflow.add_edge("verification", "meta_synthesis")  # Meta-synthesis combines everything
     workflow.add_edge("meta_synthesis", END)

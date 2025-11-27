@@ -257,33 +257,75 @@ class LegendaryDebateOrchestrator:
     
     def _detect_question_complexity(self, question: str) -> str:
         """
-        Detect question complexity to determine debate depth.
+        Detect question complexity based on question TYPE, not keywords.
+        
+        SIMPLE: Factual lookup (what is X?)
+        STANDARD: Analysis with clear scope
+        COMPLEX: Strategic decisions requiring multi-perspective debate
         
         Returns:
             "simple", "standard", or "complex"
         """
-        question_lower = question.lower()
+        question_lower = question.lower().strip()
+        word_count = len(question.split())
         
-        # SIMPLE: Factual queries, single metrics, status checks
-        simple_indicators = [
-            "what is", "what are", "how many", "when did", "who is",
-            "unemployment rate", "latest data", "current status"
+        # =================================================================
+        # SIMPLE: Pure factual queries - single data point lookups
+        # =================================================================
+        # Pattern: "What is X?" or "How many X?" with short length
+        simple_patterns = [
+            question_lower.startswith("what is the ") and word_count < 10,
+            question_lower.startswith("what are the ") and word_count < 10,
+            question_lower.startswith("how many ") and word_count < 8,
+            question_lower.startswith("when did ") and word_count < 10,
+            question_lower.startswith("who is ") and word_count < 8,
         ]
-        if any(indicator in question_lower for indicator in simple_indicators):
-            if len(question.split()) < 15:  # Short factual questions
-                return "simple"
+        if any(simple_patterns):
+            logger.info("Query classified as SIMPLE (factual lookup pattern)")
+            return "simple"
         
-        # COMPLEX: Strategic decisions, large investments, multi-year planning
-        complex_indicators = [
-            "$", "billion", "investment", "should qatar", "strategic",
-            "policy", "food security", "self-sufficiency", "by 20",
-            "long-term", "national", "economic development"
-        ]
-        complex_count = sum(1 for indicator in complex_indicators if indicator in question_lower)
-        if complex_count >= 3:  # Multiple complex indicators
+        # =================================================================
+        # COMPLEX: Strategic questions requiring deep multi-agent debate
+        # =================================================================
+        # These are questions where reasonable experts could disagree
+        
+        complex_signals = 0
+        
+        # Signal 1: Decision-oriented language (should, recommend, advise)
+        if any(w in question_lower for w in ["should", "recommend", "advise", "propose", "suggest"]):
+            complex_signals += 2
+        
+        # Signal 2: Comparative/competitive framing
+        if any(w in question_lower for w in ["vs", "versus", "compared", "match", "compete", "against", "relative to"]):
+            complex_signals += 2
+        
+        # Signal 3: Resource allocation (budget, invest, allocate, spend)
+        if any(w in question_lower for w in ["billion", "million", "budget", "invest", "allocat", "spend", "fund"]):
+            complex_signals += 1
+        
+        # Signal 4: Strategic/policy language
+        if any(w in question_lower for w in ["strategic", "policy", "strategy", "long-term", "plan"]):
+            complex_signals += 1
+        
+        # Signal 5: Question length (complex questions tend to be longer)
+        if word_count >= 15:
+            complex_signals += 1
+        if word_count >= 25:
+            complex_signals += 1
+        
+        # Signal 6: Contains "?" and is a real question (not a command)
+        if "?" in question and word_count >= 8:
+            complex_signals += 1
+        
+        # Threshold: 2+ signals = complex
+        if complex_signals >= 2:
+            logger.info(f"Query classified as COMPLEX ({complex_signals} strategic signals)")
             return "complex"
         
-        # STANDARD: Everything else
+        # =================================================================
+        # STANDARD: Everything else - moderate depth
+        # =================================================================
+        logger.info("Query classified as STANDARD")
         return "standard"
     
     def _apply_debate_config(self, complexity: str):
@@ -304,7 +346,8 @@ class LegendaryDebateOrchestrator:
         agents_map: Dict[str, Any],
         agent_reports_map: Dict[str, Any],
         llm_client: LLMClient,
-        extracted_facts: Optional[List[Dict[str, Any]]] = None
+        extracted_facts: Optional[List[Dict[str, Any]]] = None,
+        debate_depth: Optional[str] = None  # User-selected: standard/deep/legendary
     ) -> Dict:
         """
         Execute complete 6-phase legendary debate.
@@ -315,6 +358,7 @@ class LegendaryDebateOrchestrator:
             agents_map: Map of agent names to agent instances
             agent_reports_map: Map of agent names to their reports
             llm_client: LLM client for debate operations
+            debate_depth: User-selected depth override (standard/deep/legendary)
             
         Returns:
             Dictionary with debate results and conversation history
@@ -327,8 +371,21 @@ class LegendaryDebateOrchestrator:
         self.agent_reports_map = agent_reports_map
         self.extracted_facts = extracted_facts or []
         
-        # Detect question complexity and apply appropriate debate configuration
-        complexity = self._detect_question_complexity(question)
+        # Use user-selected debate depth if provided, otherwise auto-detect
+        if debate_depth:
+            # Map user selection to internal complexity levels
+            depth_to_complexity = {
+                "standard": "simple",    # 25-40 turns
+                "deep": "standard",      # 50-100 turns  
+                "legendary": "complex"   # 100-150 turns
+            }
+            complexity = depth_to_complexity.get(debate_depth, "complex")
+            logger.info(f"🎚️ Using USER-SELECTED debate depth: {debate_depth} → {complexity}")
+        else:
+            # Fallback to auto-detection
+            complexity = self._detect_question_complexity(question)
+            logger.info(f"🔍 Auto-detected complexity: {complexity}")
+        
         self._apply_debate_config(complexity)
         
         # Phase 1: Opening Statements

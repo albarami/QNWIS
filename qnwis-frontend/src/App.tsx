@@ -66,9 +66,18 @@ function ConnectionStatus({ status, isStreaming }: { status: string; isStreaming
   )
 }
 
+// Debate depth options
+type DebateDepth = 'standard' | 'deep' | 'legendary'
+const DEBATE_DEPTHS: Record<DebateDepth, { label: string; turns: string; description: string }> = {
+  standard: { label: 'Standard', turns: '25-40', description: 'Quick analysis (3-5 min)' },
+  deep: { label: 'Deep', turns: '50-100', description: 'Thorough analysis (10-15 min)' },
+  legendary: { label: 'Legendary', turns: '100-150', description: 'Maximum depth (20-30 min)' },
+}
+
 function App() {
   const { state, connect, cancel } = useWorkflowStream()
   const [question, setQuestion] = useState('What are the implications of raising minimum wage?')
+  const [debateDepth, setDebateDepth] = useState<DebateDepth>('legendary')  // DEFAULT: Maximum depth
   const provider = 'azure' as const  // Azure GPT-4o is the default and only provider
   
   // Safety check: ensure state exists
@@ -79,7 +88,7 @@ function App() {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
     try {
-      await connect({ question, provider })
+      await connect({ question, provider, debate_depth: debateDepth })
     } catch (error) {
       console.error('Submit error:', error)
     }
@@ -134,6 +143,32 @@ function App() {
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-4">
+              {/* Debate Depth Selector */}
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-slate-500 uppercase tracking-wider">Debate Depth:</span>
+                <div className="flex gap-1">
+                  {(Object.keys(DEBATE_DEPTHS) as DebateDepth[]).map((depth) => (
+                    <button
+                      key={depth}
+                      type="button"
+                      onClick={() => setDebateDepth(depth)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                        debateDepth === depth
+                          ? depth === 'legendary' 
+                            ? 'bg-amber-500/30 text-amber-300 border border-amber-500/50'
+                            : depth === 'deep'
+                            ? 'bg-cyan-500/30 text-cyan-300 border border-cyan-500/50'
+                            : 'bg-slate-600/30 text-slate-300 border border-slate-500/50'
+                          : 'bg-slate-800/50 text-slate-400 border border-slate-700 hover:bg-slate-700/50'
+                      }`}
+                    >
+                      {DEBATE_DEPTHS[depth].label}
+                      <span className="ml-1 text-[10px] opacity-70">({DEBATE_DEPTHS[depth].turns})</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div className="flex items-center gap-3">
                 <span className="text-xs text-slate-500">Powered by:</span>
                 <span className="rounded-lg px-3 py-1.5 text-xs font-medium bg-cyan-500/20 text-cyan-300 border border-cyan-500/50">
@@ -257,15 +292,21 @@ function App() {
               stats={state.synthesisStats || {
                 n_facts: state.prefetchFacts?.length || 0,
                 n_sources: 4,
-                n_scenarios: state.scenarioResults?.length || state.totalScenarios || 6,
-                n_turns: state.debateResults?.total_turns || state.debateTurns?.length || 0,
-                n_experts: state.selectedAgents?.length || 6,
-                // Map backend field names to frontend expectations
-                n_challenges: state.debateResults?.contradictions_found || 
-                              (state.debateTurns?.filter((t: any) => t.type === 'challenge')?.length) || 0,
-                n_consensus: state.debateResults?.resolved || 
-                             state.debateResults?.resolutions?.length ||
-                             (state.debateTurns?.filter((t: any) => t.type === 'consensus' || t.type === 'consensus_synthesis')?.length) || 0,
+                // Count scenarios from scenarioProgress Map or scenarioResults array
+                n_scenarios: state.scenarioProgress?.size || state.scenarioResults?.length || state.totalScenarios || 6,
+                // Count turns from debateTurns array (most reliable source)
+                n_turns: state.debateTurns?.length || state.debateResults?.total_turns || 0,
+                // Count unique experts from debateTurns
+                n_experts: state.selectedAgents?.length || 
+                           new Set(state.debateTurns?.map((t: any) => t.agent) || []).size || 6,
+                // Count challenges: turns with type 'challenge' or high-severity in debate
+                n_challenges: state.debateTurns?.filter((t: any) => 
+                  t.type === 'challenge' || t.type === 'risk_identification' || t.type === 'risk_assessment'
+                )?.length || state.debateResults?.contradictions_found || 0,
+                // Count consensus: turns with consensus-related types
+                n_consensus: state.debateTurns?.filter((t: any) => 
+                  t.type === 'consensus' || t.type === 'consensus_synthesis' || t.type === 'resolution'
+                )?.length || state.debateResults?.resolved || 0,
                 n_critiques: state.critiqueResults?.critiques?.length || 0,
                 n_red_flags: state.critiqueResults?.red_flags?.length || 0,
                 avg_confidence: 75,

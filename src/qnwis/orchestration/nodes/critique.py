@@ -359,31 +359,16 @@ async def critique_node_async(state: IntelligenceState) -> IntelligenceState:
     return state
 
 
-def critique_node(state: IntelligenceState) -> IntelligenceState:
+async def critique_node(state: IntelligenceState) -> IntelligenceState:
     """
-    Synchronous wrapper for async critique node.
+    Async critique node that uses LLM for devil's advocate analysis.
     
-    Uses asyncio to run the async LLM critique.
+    This is now fully async to work properly with LangGraph's async execution.
     """
-    import asyncio
-    
-    # Check if we're already in an event loop
     try:
-        loop = asyncio.get_running_loop()
-        # We're in an async context - create a task
-        # This shouldn't happen in normal LangGraph execution
-        logger.warning("critique_node called from async context - this may cause issues")
-        # Fall back to simple critique
-        return _simple_critique(state)
-    except RuntimeError:
-        # No event loop - we can run asyncio
-        pass
-    
-    # Run the async critique
-    try:
-        return asyncio.run(critique_node_async(state))
+        return await critique_node_async(state)
     except Exception as e:
-        logger.error(f"Async critique failed, falling back: {e}")
+        logger.error(f"Async critique failed, falling back to simple: {e}", exc_info=True)
         return _simple_critique(state)
 
 

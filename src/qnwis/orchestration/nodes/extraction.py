@@ -13,6 +13,7 @@ from typing import List, Dict, Any
 from ..state import IntelligenceState
 from ..prefetch_apis import get_complete_prefetch
 from ..DATA_SOURCE_REGISTRY import DATA_SOURCES, QUERY_ROUTING, get_sources_for_query
+from .scenario_baseline_requirements import enhance_facts_with_scenario_baselines
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +55,10 @@ async def data_extraction_node(state: IntelligenceState) -> IntelligenceState:
     try:
         logger.info("📊 Phase 1: Prefetch layer extraction...")
         prefetch_facts = await prefetch.fetch_all_sources(query)
+        # Guard against None return
+        if prefetch_facts is None:
+            logger.warning("⚠️ Prefetch returned None, using empty list")
+            prefetch_facts = []
         all_facts.extend(prefetch_facts)
         
         # Track sources
@@ -73,6 +78,9 @@ async def data_extraction_node(state: IntelligenceState) -> IntelligenceState:
     try:
         logger.info("📊 Phase 2: Targeted extraction for missing sources...")
         additional_facts = await _extract_missing_sources(query, sources_queried, relevant_sources)
+        # Guard against None return
+        if additional_facts is None:
+            additional_facts = []
         all_facts.extend(additional_facts)
         
         for fact in additional_facts:
@@ -102,8 +110,19 @@ async def data_extraction_node(state: IntelligenceState) -> IntelligenceState:
         
         data_quality_score = (quantity_score * 0.4 + diversity_score * 0.4 + cache_ratio * 0.2)
     
+    # Enhance facts with scenario baselines for stake-prompting
+    # This ensures scenario generator has real numbers to modify
+    try:
+        logger.info("📊 Phase 3: Enhancing facts with scenario baselines...")
+        enhanced_facts = enhance_facts_with_scenario_baselines(query, all_facts)
+        logger.info(f"   Added {len(enhanced_facts.get('_scenario_baselines', {}))} baseline metrics")
+    except Exception as exc:
+        logger.warning(f"⚠️ Scenario baseline enhancement failed: {exc}")
+        # Fallback to original facts as dict
+        enhanced_facts = {"_original_facts": all_facts}
+    
     # Update state
-    state["extracted_facts"] = all_facts
+    state["extracted_facts"] = enhanced_facts
     state["data_sources"] = sources_queried
     state["data_quality_score"] = data_quality_score
     state["extraction_report"] = {
@@ -279,8 +298,17 @@ async def _extract_rag_additional(query: str) -> List[Dict[str, Any]]:
 
 
 async def _extract_knowledge_graph_additional(query: str) -> List[Dict[str, Any]]:
-    """Additional Knowledge Graph extraction."""
+    """
+    Extract MEANINGFUL entities from Knowledge Graph.
+    
+    Filters out:
+    - Generic/placeholder nodes
+    - Nodes without substantive content
+    - Duplicate entities
+    """
     facts = []
+    seen_entities = set()  # Deduplication
+    
     try:
         from pathlib import Path
         from ...knowledge.graph_builder import QNWISKnowledgeGraph
@@ -294,29 +322,74 @@ async def _extract_knowledge_graph_additional(query: str) -> List[Dict[str, Any]
         
         # Extract key terms from query
         query_lower = query.lower()
-        key_terms = ["labor", "employment", "skills", "qatar", "economy", "sector", "gdp"]
+        key_terms = ["labor", "employment", "skills", "qatar", "economy", "sector", "gdp", 
+                     "workforce", "nationalization", "qatarization", "tourism", "energy"]
         
-        for term in key_terms:
-            if term in query_lower:
-                for node in list(kg.graph.nodes())[:50]:
-                    if term in str(node).lower():
-                        node_data = kg.graph.nodes[node]
-                        facts.append({
-                            "metric": "knowledge_entity",
-                            "entity": str(node),
-                            "type": node_data.get("type", "unknown"),
-                            "properties": dict(node_data),
-                            "source": "Knowledge Graph",
-                            "confidence": 0.85,
-                            "source_priority": 88
-                        })
+        matched_terms = [t for t in key_terms if t in query_lower]
         
-        logger.info(f"   Knowledge Graph additional: {len(facts)} entities")
+        for term in matched_terms:
+            for node in list(kg.graph.nodes())[:100]:
+                node_str = str(node).lower()
+                
+                # Skip if term not in node
+                if term not in node_str:
+                    continue
+                    
+                node_data = kg.graph.nodes[node]
+                entity_name = str(node)
+                
+                # =================================================
+                # QUALITY FILTERS - Skip useless entities
+                # =================================================
+                
+                # Skip generic/placeholder entities
+                if entity_name.lower() in ["knowledge_entity", "entity", "unknown", "none", ""]:
+                    continue
+                
+                # Skip very short names (likely not meaningful)
+                if len(entity_name) < 3:
+                    continue
+                
+                # Skip if already seen (deduplication)
+                entity_key = entity_name.lower().strip()
+                if entity_key in seen_entities:
+                    continue
+                seen_entities.add(entity_key)
+                
+                # Skip nodes without useful properties
+                if not node_data or len(node_data) == 0:
+                    continue
+                
+                # Get entity type - must be meaningful
+                entity_type = node_data.get("type", "unknown")
+                if entity_type.lower() in ["unknown", "none", ""]:
+                    # Try to infer type from properties
+                    if "value" in node_data:
+                        entity_type = "metric"
+                    elif "description" in node_data:
+                        entity_type = "concept"
+                    else:
+                        continue  # Skip if we can't determine type
+                
+                # Build meaningful metric name from entity type
+                metric_name = f"kg_{entity_type.lower().replace(' ', '_')}"
+                
+                facts.append({
+                    "metric": metric_name,
+                    "entity": entity_name,
+                    "type": entity_type,
+                    "properties": dict(node_data),
+                    "source": "Knowledge Graph",
+                    "confidence": 0.80,
+                    "source_priority": 75  # Lower priority than API data
+                })
+        
+        logger.info(f"   Knowledge Graph: {len(facts)} quality entities (filtered)")
         
     except Exception as e:
-        logger.error(f"Knowledge Graph additional extraction error: {e}")
+        logger.error(f"Knowledge Graph extraction error: {e}")
     
-    return facts
+    return facts[:25]  # Cap at 25 to avoid flooding with KG data
 
 
 async def _extract_semantic_scholar_additional(query: str) -> List[Dict[str, Any]]:

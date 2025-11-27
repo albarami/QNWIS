@@ -526,6 +526,38 @@ Use the data provided above. Every claim MUST be traced to evidence.
 7. **Red Flags MUST Be Addressed** - Every red flag requires a response in recommendations showing how it's mitigated.
 8. **Edge Cases Surface** - Edge case findings must appear in Risk Intelligence section.
 
+## LEGENDARY WRITING VOICE (CRITICAL):
+Your opening paragraph MUST:
+1. **Open with stakes, not facts** - "X faces a strategic inflection point..." NOT "X should not directly..."
+2. **Challenge assumptions** - Question the premise of the original question
+3. **Preview the decisive insight** - The one breakthrough from {stats["n_turns"]} turns of debate
+4. **Use active, confident voice** - NO passive constructions ("should be considered", "it is recommended")
+5. **Include specific numbers with context** - Not just "QR 15B vs QR 40B" but "2.6x gap obscures the reality: per-unit efficiency is 2x higher"
+
+BAD OPENING (bureaucratic memo):
+"Qatar should not directly increase its QR 15 billion tourism allocation to match Saudi Arabia's QR 40 billion investment."
+
+LEGENDARY OPENING (PhD scholar + consultant):
+"Qatar faces a strategic inflection point that will define its tourism sector for a generation. Saudi Arabia's QR 40 billion NEOM bet is not a budget competition Qatar can win—nor should it try. The 2.6x funding gap obscures the strategic reality: [specific insight from Consensus Turn X]. Our {stats["n_turns"]}-turn expert deliberation surfaced a decisive conclusion: [the core recommendation]."
+
+## METRIC PRESENTATION (CRITICAL):
+NEVER show raw database codes. Transform ALL metrics:
+❌ BAD: "NY.GDP.PCAP.CD | 76,275.91 | World Bank"
+✅ GOOD: "GDP per capita: $76,276 — 2x regional average, validates premium market positioning [Fact #3]"
+
+Every metric must include:
+- Human-readable name (not database code)
+- Value with appropriate formatting
+- Strategic meaning ("so what" for the minister)
+- Source citation
+
+## RED FLAG INTEGRATION (MANDATORY):
+Before finalizing, explicitly address EACH red flag:
+"Addressing Red Flags:
+- Red Flag #1 [issue] → Addressed by [specific recommendation element]
+- Red Flag #2 [issue] → Addressed by [specific recommendation element]
+If a flag cannot be fully addressed, acknowledge it as a limitation."
+
 ## SPECIFICITY REQUIREMENTS (DOMAIN AGNOSTIC):
 When making recommendations, you MUST be SPECIFIC using data from the analysis:
 - **Name actual entities** - Use specific institutions, programs, locations, assets mentioned in the facts
@@ -749,10 +781,53 @@ async def legendary_synthesis_node(state: IntelligenceState) -> IntelligenceStat
     """
     
     start_time = datetime.now()
-    reasoning_chain = state.setdefault("reasoning_chain", [])
-    nodes_executed = state.setdefault("nodes_executed", [])
+    reasoning_chain = state.get("reasoning_chain") or []
+    state["reasoning_chain"] = reasoning_chain
+    nodes_executed = state.get("nodes_executed") or []
+    state["nodes_executed"] = nodes_executed
     
     query = state.get("query", "")
+    
+    # SHORT-CIRCUIT: Handle infeasible targets
+    if state.get("target_infeasible"):
+        logger.info("🛑 INFEASIBLE TARGET - Generating explanation briefing...")
+        reason = state.get("infeasibility_reason", "Target is arithmetically impossible")
+        alternative = state.get("feasible_alternative", "Consider more realistic targets")
+        feasibility_check = state.get("feasibility_check", {})
+        
+        briefing = f"""## ⛔ FEASIBILITY ANALYSIS: TARGET NOT ACHIEVABLE
+
+**Query:** {query}
+
+### First-Principles Assessment
+
+**Verdict: INFEASIBLE**
+
+{reason}
+
+### Arithmetic Analysis
+{feasibility_check.get('explanation', reason)}
+
+### Recommended Alternative
+{alternative}
+
+### Why This Matters
+Before investing analytical resources in HOW to achieve a target, we must first verify IF the target is achievable. This query failed the basic arithmetic check - the required numbers exceed what is physically possible given Qatar's demographic constraints.
+
+### Recommendation
+Do NOT proceed with policy analysis for this target. Instead:
+1. Revise the target to be demographically feasible (5-8% economy-wide OR sector-specific targets)
+2. Conduct analysis on the revised, achievable target
+3. Present minister with realistic options based on actual population constraints
+
+**Confidence: 99%** (arithmetic certainty)
+"""
+        state["final_synthesis"] = briefing
+        state["meta_synthesis"] = briefing
+        state["confidence_score"] = 0.99
+        reasoning_chain.append("⛔ Synthesis: Generated infeasibility explanation (target failed arithmetic check)")
+        nodes_executed.append("synthesis")
+        return state
     
     # Extract all statistics and data
     stats = _extract_stats(state)

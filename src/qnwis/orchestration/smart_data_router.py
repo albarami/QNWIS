@@ -878,40 +878,72 @@ class IntelligentExtractionOrchestrator:
                 entities.extend(ent_list)
             entities.extend(plan["understanding"]["concepts"])
             
-            # Search for relevant nodes
+            # Search for relevant nodes - WITH QUALITY FILTERING
+            seen_entities = set()
             for entity in entities[:10]:
                 entity_lower = entity.lower()
-                for node in kg.graph.nodes():
+                
+                # Skip generic/meta entities
+                if entity_lower in ["knowledge", "entity", "graph", "data", "information", 
+                                    "artificial intelligence", "ai", "machine learning", "ml"]:
+                    continue
+                
+                for node in list(kg.graph.nodes())[:100]:
                     node_str = str(node).lower()
-                    if entity_lower in node_str or node_str in entity_lower:
-                        node_data = kg.graph.nodes[node]
-                        facts.append({
-                            "metric": "knowledge_entity",
-                            "entity": str(node),
-                            "entity_type": node_data.get("type", "unknown"),
-                            "properties": dict(node_data),
-                            "source": "Knowledge Graph",
-                            "source_type": "research",
-                            "confidence": 0.85,
-                        })
+                    node_name = str(node)
+                    
+                    # Skip if no match
+                    if not (entity_lower in node_str or node_str in entity_lower):
+                        continue
+                    
+                    # =================================================
+                    # QUALITY FILTERS
+                    # =================================================
+                    
+                    # Skip generic/placeholder names
+                    if node_name.lower() in ["knowledge_entity", "entity", "unknown", "none", ""]:
+                        continue
+                    
+                    # Skip very short names
+                    if len(node_name) < 3:
+                        continue
+                    
+                    # Skip duplicates
+                    node_key = node_name.lower().strip()
+                    if node_key in seen_entities:
+                        continue
+                    seen_entities.add(node_key)
+                    
+                    node_data = kg.graph.nodes[node]
+                    
+                    # Skip nodes without useful data
+                    if not node_data or len(node_data) == 0:
+                        continue
+                    
+                    entity_type = node_data.get("type", "unknown")
+                    if entity_type.lower() in ["unknown", "none", ""]:
+                        continue
+                    
+                    metric_name = f"kg_{entity_type.lower().replace(' ', '_')}"
+                    
+                    facts.append({
+                        "metric": metric_name,
+                        "entity": node_name,
+                        "entity_type": entity_type,
+                        "properties": dict(node_data),
+                        "source": "Knowledge Graph",
+                        "source_type": "research",
+                        "confidence": 0.80,
+                    })
+                    
+                    # Limit KG entities to avoid flooding
+                    if len(facts) >= 20:
+                        break
                         
-                        # Get relationships (1-hop)
-                        try:
-                            for neighbor in kg.graph.neighbors(node):
-                                edge_data = kg.graph.edges.get((node, neighbor), {})
-                                facts.append({
-                                    "metric": "knowledge_relationship",
-                                    "from": str(node),
-                                    "to": str(neighbor),
-                                    "relationship": edge_data.get("type", "related_to"),
-                                    "source": "Knowledge Graph",
-                                    "source_type": "research",
-                                    "confidence": 0.85,
-                                })
-                        except:
-                            pass
+                if len(facts) >= 20:
+                    break
             
-            logger.info(f"Knowledge Graph: Extracted {len(facts)} facts")
+            logger.info(f"Knowledge Graph: Extracted {len(facts)} quality facts (filtered)")
             
         except Exception as e:
             logger.error(f"Knowledge Graph extraction error: {e}")
