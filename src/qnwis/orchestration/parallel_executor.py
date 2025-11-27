@@ -108,20 +108,9 @@ class ParallelDebateExecutor:
             )
             tasks.append(task)
         
-        # Execute scenarios with limited concurrency to prevent rate limit hammering
-        # 3 concurrent scenarios × 4 agents = 12 concurrent LLM calls (manageable)
-        max_concurrent = 3
-        semaphore = asyncio.Semaphore(max_concurrent)
-        
-        async def rate_limited_task(task_coro, idx):
-            async with semaphore:
-                logger.info(f"   Scenario {idx+1}/{len(scenarios)} acquired semaphore slot")
-                return await task_coro
-        
-        rate_limited_tasks = [rate_limited_task(task, i) for i, task in enumerate(tasks)]
-        
-        logger.info(f"Launching {len(rate_limited_tasks)} scenarios ({max_concurrent} concurrent max)...")
-        results = await asyncio.gather(*rate_limited_tasks, return_exceptions=True)
+        # Execute all scenarios concurrently
+        logger.info(f"Launching {len(tasks)} concurrent scenario executions...")
+        results = await asyncio.gather(*tasks, return_exceptions=True)
         
         # Separate successful and failed results
         successful_results = []
@@ -342,10 +331,8 @@ class ParallelDebateExecutor:
         scenario_state['scenario_name'] = scenario['name']
         scenario_state['scenario_gpu'] = gpu_id
         
-        # CRITICAL: Force STANDARD debate depth for parallel scenarios
-        # Each scenario runs its own debate - 150 turns × 6 scenarios = 900 LLM calls!
-        # Standard = 25-40 turns per scenario = 150-240 total, much more reasonable
-        scenario_state['debate_depth'] = 'standard'  # Override to prevent rate limit death
+        # Preserve user's debate_depth selection for full legendary execution
+        # User chose legendary = legendary everywhere
         
         # Add scenario context to reasoning chain
         if 'reasoning_chain' not in scenario_state:
