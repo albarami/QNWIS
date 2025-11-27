@@ -55,25 +55,14 @@ async def meta_synthesis_node(scenario_results: List[Dict[str, Any]]) -> str:
         logger.warning(f"🔍 Meta-synthesis prompt size: {len(prompt)} chars")
         
         # Call LLM (uses configured provider - Azure or Anthropic)
-        # Use longer timeout for meta-synthesis (complex analysis across scenarios)
         logger.info(f"Synthesizing insights with {config.provider}...")
         logger.warning(f"🚀 Starting LLM call for meta-synthesis...")
         
-        # Create LLM client with extended timeout for meta-synthesis
-        synthesis_client = LLMClient(timeout_s=180)  # 3 min timeout
-        
-        try:
-            synthesis = await asyncio.wait_for(
-                synthesis_client.generate(
-                    prompt=prompt,
-                    system="You are a strategic synthesis expert for ministerial leadership.",
-                    max_tokens=8000
-                ),
-                timeout=180  # 3 min hard timeout
-            )
-        except asyncio.TimeoutError:
-            logger.error("⚠️ Meta-synthesis LLM call timed out after 180s")
-            return _emergency_synthesis(scenario_results, "LLM timeout after 3 minutes")
+        synthesis = await llm_client.generate(
+            prompt=prompt,
+            system="You are a strategic synthesis expert for ministerial leadership.",
+            max_tokens=8000
+        )
         
         # Validate synthesis
         _validate_synthesis(synthesis)

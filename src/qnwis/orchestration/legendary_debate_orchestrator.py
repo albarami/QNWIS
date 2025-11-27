@@ -372,6 +372,9 @@ class LegendaryDebateOrchestrator:
         self.extracted_facts = extracted_facts or []
         
         # Use user-selected debate depth if provided, otherwise auto-detect
+        # CRITICAL DEBUG: Log exactly what we receive
+        logger.warning(f"🔍 DEBATE_DEPTH INPUT: '{debate_depth}' (type={type(debate_depth).__name__})")
+        
         if debate_depth:
             # Map user selection to internal complexity levels
             depth_to_complexity = {
@@ -380,8 +383,8 @@ class LegendaryDebateOrchestrator:
                 "legendary": "complex"   # 100-150 turns
             }
             complexity = depth_to_complexity.get(debate_depth, "complex")
-            logger.warning(f"🎚️ DEBATE DEPTH: {debate_depth} → complexity={complexity}")
-            logger.warning(f"🎚️ EXPECTED TURNS: {self.DEBATE_CONFIGS.get(complexity, {}).get('max_turns', 'UNKNOWN')}")
+            logger.warning(f"🎚️ DEBATE DEPTH: '{debate_depth}' → complexity='{complexity}'")
+            logger.warning(f"🎚️ EXPECTED CONFIG: {self.DEBATE_CONFIGS.get(complexity, {})}")
         else:
             # Fallback to auto-detection
             complexity = self._detect_question_complexity(question)
@@ -650,7 +653,8 @@ Provide your expert analysis based on this specific query."""
         phase_turns = self.MAX_TURNS_PER_PHASE.get("challenge_defense", 35)
         num_agents = len(active_llm_agents) or 4
         max_debate_rounds = max(12, phase_turns // num_agents)  # At least 12 rounds
-        logger.info(f"🎯 Debate configured for {max_debate_rounds} rounds × {num_agents} agents = {max_debate_rounds * num_agents} potential turns")
+        logger.warning(f"🔥 PHASE 2 CONFIG: phase_turns={phase_turns}, num_agents={num_agents}")
+        logger.warning(f"🔥 PHASE 2 ROUNDS: {max_debate_rounds} rounds × {num_agents} agents = {max_debate_rounds * num_agents} potential turns")
         meta_debate_count = 0
         
         for round_num in range(1, max_debate_rounds + 1):
@@ -1580,15 +1584,37 @@ Include:
     def _check_convergence(self) -> bool:
         """
         Check if all agents have converged on a consensus position.
-        Uses enhanced detection with semantic similarity.
-        """
-        result = detect_debate_convergence(self.conversation_history)
         
-        if result.get("converged"):
-            reason = result.get("reason", "unknown")
-            msg = result.get("message", "")
-            logger.info(f"Convergence detected: {reason} - {msg}")
+        CRITICAL: For legendary debates (100-150 turns), we ONLY check for
+        very high semantic repetition. We DO NOT use the aggressive early
+        convergence heuristics that would terminate debate at 15-40 turns.
+        """
+        # For legendary debates, only check convergence after reaching 70% of max turns
+        # This ensures we don't prematurely terminate deep analysis
+        min_turns_before_convergence = int(self.MAX_TURNS_TOTAL * 0.7)
+        
+        if len(self.conversation_history) < min_turns_before_convergence:
+            # Not enough turns yet for this debate depth - continue
+            return False
+        
+        # Only check for VERY high repetition (agents literally repeating themselves)
+        recent_turns = self.conversation_history[-5:]
+        texts = [turn.get("message", "")[:500] for turn in recent_turns]
+        
+        # Simple repetition check: if 4+ of last 5 turns are near-identical
+        unique_texts = set(texts)
+        if len(unique_texts) <= 2 and len(texts) >= 5:
+            logger.warning(f"🛑 High repetition detected at turn {len(self.conversation_history)} - agents are repeating themselves")
             return True
+        
+        # For legendary depth, we want the full debate to run
+        # Only converge if we're past 90% AND agents are explicitly agreeing
+        if len(self.conversation_history) >= self.MAX_TURNS_TOTAL * 0.9:
+            result = detect_debate_convergence(self.conversation_history)
+            if result.get("converged"):
+                reason = result.get("reason", "unknown")
+                logger.info(f"✅ Convergence at {len(self.conversation_history)} turns: {reason}")
+                return True
             
         return False
 
