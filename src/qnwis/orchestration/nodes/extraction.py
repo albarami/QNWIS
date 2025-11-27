@@ -112,17 +112,18 @@ async def data_extraction_node(state: IntelligenceState) -> IntelligenceState:
     
     # Enhance facts with scenario baselines for stake-prompting
     # This ensures scenario generator has real numbers to modify
+    scenario_baselines = {}
     try:
         logger.info("📊 Phase 3: Enhancing facts with scenario baselines...")
-        enhanced_facts = enhance_facts_with_scenario_baselines(query, all_facts)
-        logger.info(f"   Added {len(enhanced_facts.get('_scenario_baselines', {}))} baseline metrics")
+        enhanced_data = enhance_facts_with_scenario_baselines(query, all_facts)
+        scenario_baselines = enhanced_data.get("_scenario_baselines", {})
+        logger.info(f"   Added {len(scenario_baselines)} baseline metrics")
     except Exception as exc:
         logger.warning(f"⚠️ Scenario baseline enhancement failed: {exc}")
-        # Fallback to original facts as dict
-        enhanced_facts = {"_original_facts": all_facts}
     
-    # Update state
-    state["extracted_facts"] = enhanced_facts
+    # Update state - CRITICAL: extracted_facts must be a LIST for frontend!
+    state["extracted_facts"] = all_facts  # List of facts (frontend expects this)
+    state["scenario_baselines"] = scenario_baselines  # Dict for scenario generator
     state["data_sources"] = sources_queried
     state["data_quality_score"] = data_quality_score
     state["extraction_report"] = {
