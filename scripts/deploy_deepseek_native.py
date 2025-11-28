@@ -10,6 +10,12 @@ This is an alternative to vLLM Docker for Windows systems.
 
 import sys
 import os
+
+# CRITICAL: Use D: drive for HuggingFace cache (C: has limited space)
+os.environ["HF_HOME"] = "D:\\huggingface_cache"
+os.environ["HUGGINGFACE_HUB_CACHE"] = "D:\\huggingface_cache\\hub"
+os.environ["TRANSFORMERS_CACHE"] = "D:\\huggingface_cache\\transformers"
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import asyncio
@@ -122,21 +128,36 @@ class DeepSeekServer:
             self.model_name = self.MODEL_NAME
             logger.info("Using DeepSeek-70B (production mode)")
         
-        # GPU allocation
+        # GPU allocation - use 4 GPUs for 70B to maintain full FP16 quality
+        # GPUs 4-5 reserved for Knowledge Graph and Deep Verification
         if instance_id == 1:
-            self.gpus = [2, 3]
+            self.gpus = [2, 3, 6, 7]  # 320GB total - combines both DeepSeek slots
         else:
-            self.gpus = [6, 7]
+            self.gpus = [2, 3]  # Fallback to smaller allocation if needed
+        
+        # Final GPU map:
+        # GPU 0-1: Premium Embeddings (instructor-xl)
+        # GPU 2-3, 6-7: DeepSeek 70B (full FP16, 320GB)
+        # GPU 4: Knowledge Graph (hybrid CPU-GPU)
+        # GPU 5: Deep Verification (cross-encoder, NLI)
         
         logger.info(f"DeepSeek Instance {instance_id} will use GPUs: {self.gpus}")
     
     def load_model(self):
-        """Load the DeepSeek model with tensor parallelism."""
+        """Load the DeepSeek model with tensor parallelism - FULL FP16 for maximum quality."""
         import torch
         from transformers import AutoModelForCausalLM, AutoTokenizer
+        import gc
         
         logger.info(f"Loading model: {self.model_name}")
         logger.info(f"Target GPUs: {self.gpus}")
+        
+        # Clear GPU memory first
+        gc.collect()
+        torch.cuda.empty_cache()
+        for gpu_id in self.gpus:
+            with torch.cuda.device(gpu_id):
+                torch.cuda.empty_cache()
         
         start_time = time.time()
         
@@ -146,30 +167,41 @@ class DeepSeekServer:
             trust_remote_code=True,
         )
         
-        # Configure device map for multi-GPU
-        device_map = {}
+        is_70b = "70B" in self.model_name
         
-        # For 8B model, use single GPU
-        if "8B" in self.model_name:
-            device_map = {"": f"cuda:{self.gpus[0]}"}
+        if is_70b:
+            # FULL FP16 for maximum quality - distributed across 4 GPUs (320GB)
+            logger.info("Loading 70B in FULL FP16 precision across 4 GPUs for maximum quality")
+            
+            # Set visible GPUs for this model
+            os.environ["CUDA_VISIBLE_DEVICES"] = ",".join(str(g) for g in self.gpus)
+            
+            # Max memory per GPU (after CUDA_VISIBLE_DEVICES remapping)
+            max_memory = {i: "75GB" for i in range(len(self.gpus))}
+            
+            self.model = AutoModelForCausalLM.from_pretrained(
+                self.model_name,
+                torch_dtype=torch.float16,  # Full FP16 - NO quantization
+                device_map="auto",
+                trust_remote_code=True,
+                max_memory=max_memory,
+            )
         else:
-            # For 70B, distribute across 2 GPUs
-            device_map = "auto"
-        
-        # Load model
-        self.model = AutoModelForCausalLM.from_pretrained(
-            self.model_name,
-            torch_dtype=torch.float16,
-            device_map=device_map,
-            trust_remote_code=True,
-            max_memory={
-                self.gpus[0]: "70GB",
-                self.gpus[1]: "70GB",
-            } if "70B" in self.model_name else None,
-        )
+            # For 8B model, use single GPU in FP16
+            self.model = AutoModelForCausalLM.from_pretrained(
+                self.model_name,
+                torch_dtype=torch.float16,
+                device_map={"": f"cuda:{self.gpus[0]}"},
+                trust_remote_code=True,
+            )
         
         load_time = time.time() - start_time
-        logger.info(f"Model loaded in {load_time:.1f}s")
+        logger.info(f"Model loaded in {load_time:.1f}s - FULL PRECISION (no quantization)")
+        
+        # Log memory usage
+        for i in range(len(self.gpus)):
+            mem = torch.cuda.memory_allocated(i) / 1e9
+            logger.info(f"GPU {self.gpus[i]} (device {i}): {mem:.1f}GB allocated")
         
         return self
     
