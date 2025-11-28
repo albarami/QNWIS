@@ -1,0 +1,152 @@
+# NSIC GPU Configuration - Maximum Quality Architecture v2.0
+# 8x A100 80GB GPUs + Azure GPT-5
+
+system:
+  name: "NSIC"
+  version: "2.0"
+  description: "National Strategic Intelligence Center - Dual-Engine Ensemble"
+
+# GPU Allocation (8x A100 80GB)
+gpu_allocation:
+  # GPU 0-1: Premium Embeddings
+  embeddings:
+    gpu_ids: [0, 1]
+    model: "hkunlp/instructor-xl"
+    dimensions: 768
+    cache_enabled: true
+    cache_dir: ".cache/embeddings"
+    model_version: "instructor-xl-v1"
+    
+  # GPU 2-3: DeepSeek Instance 1 (Scenarios 1-12)
+  deepseek_instance_1:
+    gpu_ids: [2, 3]
+    model: "deepseek-ai/DeepSeek-R1-Distill-Llama-70B"
+    port: 8001
+    host: "0.0.0.0"
+    tensor_parallel_size: 2
+    gpu_memory_utilization: 0.85  # Per friend's recommendation #1
+    swap_space: 16  # GB, safe fallback
+    max_model_len: 32768
+    scenarios: "1-12"  # Economic + Competitive
+    
+  # GPU 4: Knowledge Graph (Hybrid CPU-GPU)
+  knowledge_graph:
+    gpu_id: 4
+    mode: "hybrid"  # CPU for graph, GPU for embeddings (per recommendation #3)
+    embedding_model: "all-MiniLM-L6-v2"
+    max_entities: 100000
+    
+  # GPU 5: Deep Verification Engine
+  verification:
+    gpu_id: 5
+    models:
+      cross_encoder: "cross-encoder/ms-marco-MiniLM-L-12-v2"
+      nli_model: "microsoft/deberta-v3-large-mnli"
+    batch_size: 8  # Per friend's recommendation #2
+    batch_window_ms: 15  # 3-6x speedup
+    
+  # GPU 6-7: DeepSeek Instance 2 (Scenarios 13-24)
+  deepseek_instance_2:
+    gpu_ids: [6, 7]
+    model: "deepseek-ai/DeepSeek-R1-Distill-Llama-70B"
+    port: 8002
+    host: "0.0.0.0"
+    tensor_parallel_size: 2
+    gpu_memory_utilization: 0.85
+    swap_space: 16
+    max_model_len: 32768
+    scenarios: "13-24"  # Policy + Timing
+
+# Azure GPT-5 Configuration (Engine A)
+azure:
+  model: "gpt-5"
+  endpoint: "${AZURE_OPENAI_ENDPOINT}"
+  api_key: "${AZURE_OPENAI_KEY}"
+  api_version: "2024-02-15-preview"
+  max_tokens: 4096
+  temperature: 0.7
+
+# Dual-Engine Ensemble Configuration
+ensemble:
+  engine_a:
+    name: "Azure GPT-5"
+    provider: "azure"
+    scenarios: 6
+    turns_per_scenario: 100
+    total_turns: 600
+    quality: "highest"
+    
+  engine_b:
+    name: "DeepSeek-R1-Distill-70B"
+    provider: "local_vllm"
+    instances: 2
+    scenarios_per_instance: 12
+    total_scenarios: 24
+    turns_per_scenario: 25
+    total_turns: 600
+    quality: "excellent"
+    advantage: "chain-of-thought (<think>)"
+
+# Arbitration Configuration (Per recommendation #5)
+arbitration:
+  consensus_threshold: 0.8
+  strong_preference_threshold: 0.7
+  audit_trail_enabled: true
+  rules:
+    - name: "consensus_boost"
+      condition: "agreement_rate > 0.8"
+      action: "boost_confidence"
+      amount: 0.1
+    - name: "divergence_handling"
+      condition: "contradiction_detected"
+      action: "resolve_with_rules"
+    - name: "present_both"
+      condition: "no_clear_winner"
+      action: "present_both_perspectives"
+
+# Scenario Configuration (Per recommendation #6)
+scenarios:
+  total: 30
+  categories:
+    economic:
+      count: 6
+      path: "scenarios/economic"
+    competitive:
+      count: 6
+      path: "scenarios/competitive"
+    policy:
+      count: 6
+      path: "scenarios/policy"
+    timing:
+      count: 6
+      path: "scenarios/timing"
+
+# Performance Targets
+performance:
+  target_time_minutes: 30
+  max_time_minutes: 40
+  timing_logged: true  # Per recommendation #7
+  stages:
+    - embeddings
+    - knowledge_graph
+    - engine_a
+    - engine_b
+    - verification
+    - arbitration
+    - synthesis
+
+# Quality Targets
+quality:
+  retrieval_accuracy: 0.89  # 89%
+  error_catch_rate: 0.92  # 92%
+  scenarios_analyzed: 30
+  ministerial_brief_required: true
+
+# Logging
+logging:
+  level: "INFO"
+  format: "[%(asctime)s] %(levelname)s %(name)s: %(message)s"
+  log_dir: "logs"
+  timing_log: "logs/timing.jsonl"
+  audit_log: "logs/audit.jsonl"
+
