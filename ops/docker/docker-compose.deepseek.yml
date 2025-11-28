@@ -1,0 +1,80 @@
+version: '3.8'
+
+# NSIC DeepSeek Deployment
+# Runs 2 vLLM instances with DeepSeek-R1-Distill-Llama-70B
+# Instance 1: GPUs 2-3 (port 8001)
+# Instance 2: GPUs 6-7 (port 8002)
+
+services:
+  deepseek-instance-1:
+    image: vllm/vllm-openai:latest
+    container_name: nsic-deepseek-1
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=2,3
+      - HF_TOKEN=${HF_TOKEN:-}
+    ports:
+      - "8001:8000"
+    volumes:
+      - deepseek-cache:/root/.cache/huggingface
+    command: >
+      --model deepseek-ai/DeepSeek-R1-Distill-Llama-70B
+      --tensor-parallel-size 2
+      --gpu-memory-utilization 0.85
+      --swap-space 16
+      --max-model-len 32768
+      --trust-remote-code
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['2', '3']
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 300s
+    restart: unless-stopped
+
+  deepseek-instance-2:
+    image: vllm/vllm-openai:latest
+    container_name: nsic-deepseek-2
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=6,7
+      - HF_TOKEN=${HF_TOKEN:-}
+    ports:
+      - "8002:8000"
+    volumes:
+      - deepseek-cache:/root/.cache/huggingface
+    command: >
+      --model deepseek-ai/DeepSeek-R1-Distill-Llama-70B
+      --tensor-parallel-size 2
+      --gpu-memory-utilization 0.85
+      --swap-space 16
+      --max-model-len 32768
+      --trust-remote-code
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['6', '7']
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 300s
+    restart: unless-stopped
+    depends_on:
+      - deepseek-instance-1
+
+volumes:
+  deepseek-cache:
+    driver: local
+

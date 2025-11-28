@@ -85,10 +85,12 @@ class DeepSeekResponse:
 @dataclass
 class DeepSeekConfig:
     """Configuration for DeepSeek client."""
-    # vLLM endpoints (two instances for parallel processing)
+    # DeepSeek endpoints (two instances for parallel processing)
+    # Instance 1: GPUs 2-3 on port 8001 (DEPLOYED)
+    # Instance 2: GPUs 6-7 on port 8002 (optional)
     vllm_base_urls: List[str] = field(default_factory=lambda: [
-        "http://localhost:8001",  # GPUs 2-3
-        "http://localhost:8002",  # GPUs 6-7
+        "http://localhost:8001",  # GPUs 2-3 - DEPLOYED
+        "http://localhost:8002",  # GPUs 6-7 - optional second instance
     ])
     
     # Model settings
