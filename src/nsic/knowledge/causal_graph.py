@@ -163,6 +163,33 @@ class GPUEmbeddingProcessor:
         
         return similarities.cpu().numpy()
     
+    def compute_similarity(
+        self,
+        embedding1: np.ndarray,
+        embedding2: np.ndarray,
+    ) -> float:
+        """
+        Compute cosine similarity between two embeddings.
+        
+        Args:
+            embedding1: First embedding
+            embedding2: Second embedding
+            
+        Returns:
+            Cosine similarity score
+        """
+        # Normalize
+        norm1 = np.linalg.norm(embedding1)
+        norm2 = np.linalg.norm(embedding2)
+        
+        if norm1 < 1e-8 or norm2 < 1e-8:
+            return 0.0
+        
+        emb1_norm = embedding1 / norm1
+        emb2_norm = embedding2 / norm2
+        
+        return float(np.dot(emb1_norm, emb2_norm))
+    
     def project_embeddings(
         self,
         embeddings: List[np.ndarray],
