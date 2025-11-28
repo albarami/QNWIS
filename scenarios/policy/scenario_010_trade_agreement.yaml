@@ -1,0 +1,55 @@
+# NSIC Scenario Definition
+# Domain: Policy
+# ID: policy_010_trade_agreement
+
+id: policy_010_trade_agreement
+name: "New GCC Trade Agreement Impact"
+domain: policy
+description: |
+  Analyze the potential economic and strategic impacts of a new comprehensive
+  trade agreement between GCC countries and Asian markets (China, Japan, South Korea).
+version: "1.0"
+author: NSIC
+tags:
+  - trade
+  - gcc
+  - asia
+  - diplomacy
+priority: 2
+assigned_engine: engine_b  # Broad exploration with DeepSeek
+target_turns: 25
+
+inputs:
+  - variable: tariff_reduction
+    base_value: 15
+    shock_value: 5
+    shock_type: absolute
+    unit: percentage
+  - variable: market_access_improvement
+    base_value: 0
+    shock_value: 40
+    shock_type: percentage
+    unit: percentage
+
+expected_structure:
+  executive_summary: str
+  trade_impacts:
+    export_growth: float
+    import_changes: float
+    sector_analysis: list
+  strategic_implications: str
+  confidence_score: float
+
+validation_rules:
+  - field: executive_summary
+    rule_type: required
+  - field: trade_impacts.export_growth
+    rule_type: range
+    params:
+      min: -50
+      max: 100
+
+retry_config:
+  max_retries: 3
+  retry_delay_seconds: 1.0
+

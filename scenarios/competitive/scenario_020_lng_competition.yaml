@@ -1,0 +1,54 @@
+# NSIC Scenario Definition
+# Domain: Competitive
+# ID: comp_020_lng_competition
+
+id: comp_020_lng_competition
+name: "LNG Market Competition - US Export Surge"
+domain: competitive
+description: |
+  Analyze competitive positioning as US LNG exports increase by 40%,
+  affecting global LNG prices and Qatar's market share.
+version: "1.0"
+author: NSIC
+tags:
+  - lng
+  - competition
+  - energy
+  - usa
+priority: 1
+assigned_engine: engine_b
+target_turns: 25
+
+inputs:
+  - variable: us_lng_export_increase
+    base_value: 0
+    shock_value: 40
+    shock_type: percentage
+    unit: percentage
+  - variable: lng_price_impact
+    base_value: 12
+    shock_value: 9
+    shock_type: absolute
+    unit: USD/MMBtu
+
+expected_structure:
+  executive_summary: str
+  market_analysis:
+    market_share_impact: float
+    price_competition: str
+    competitive_response: list
+  strategic_options: list
+  confidence_score: float
+
+validation_rules:
+  - field: executive_summary
+    rule_type: required
+  - field: market_analysis.market_share_impact
+    rule_type: range
+    params:
+      min: -100
+      max: 100
+
+retry_config:
+  max_retries: 3
+

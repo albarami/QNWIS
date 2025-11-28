@@ -1,0 +1,55 @@
+# NSIC Scenario Definition
+# Domain: Timing
+# ID: timing_030_world_cup_legacy
+
+id: timing_030_world_cup_legacy
+name: "World Cup Infrastructure Legacy Utilization"
+domain: timing
+description: |
+  Analyze optimal utilization strategies for World Cup 2022 infrastructure
+  in the 5-year period post-event. Focus on stadiums, hotels, and transport.
+version: "1.0"
+author: NSIC
+tags:
+  - world-cup
+  - infrastructure
+  - legacy
+  - tourism
+priority: 2
+assigned_engine: engine_b
+target_turns: 25
+
+inputs:
+  - variable: stadium_utilization_target
+    base_value: 30
+    shock_value: 70
+    shock_type: absolute
+    unit: percentage
+  - variable: tourism_growth_target
+    base_value: 5
+    shock_value: 15
+    shock_type: absolute
+    unit: percentage
+
+expected_structure:
+  executive_summary: str
+  utilization_plan:
+    stadiums: str
+    hotels: str
+    transport: str
+  timeline: list
+  investment_requirements: float
+  confidence_score: float
+
+validation_rules:
+  - field: executive_summary
+    rule_type: required
+  - field: investment_requirements
+    rule_type: range
+    params:
+      min: 0
+      max: 100000
+
+retry_config:
+  max_retries: 2
+

@@ -1,0 +1,55 @@
+# NSIC Scenario Definition
+# Domain: Economic
+# ID: econ_002_inflation_surge
+
+id: econ_002_inflation_surge
+name: "Inflation Surge - Global Supply Chain Disruption"
+domain: economic
+description: |
+  Analyze the impact of a sustained 8% global inflation rate caused by supply chain disruptions.
+  Focus on import costs, consumer purchasing power, and central bank response options.
+version: "1.0"
+author: NSIC
+tags:
+  - inflation
+  - supply-chain
+  - monetary-policy
+priority: 1
+assigned_engine: engine_a
+target_turns: 100
+
+inputs:
+  - variable: inflation_rate
+    base_value: 3.0
+    shock_value: 8.0
+    shock_type: absolute
+    unit: percentage
+  - variable: supply_chain_disruption
+    base_value: 0
+    shock_value: 30
+    shock_type: percentage
+    unit: percentage
+
+expected_structure:
+  executive_summary: str
+  impact_analysis:
+    consumer_impact: str
+    import_cost_increase: float
+    policy_recommendations: list
+  central_bank_options: list
+  confidence_score: float
+
+validation_rules:
+  - field: executive_summary
+    rule_type: required
+  - field: impact_analysis.import_cost_increase
+    rule_type: range
+    params:
+      min: 0
+      max: 200
+
+retry_config:
+  max_retries: 3
+  retry_delay_seconds: 1.0
+  exponential_backoff: true
+

@@ -1,0 +1,72 @@
+# NSIC Scenario Definition
+# Domain: Economic
+# ID: econ_001_oil_shock_50
+
+id: econ_001_oil_shock_50
+name: "Oil Price Shock - 50% Increase"
+domain: economic
+description: |
+  Analyze the impact of a sudden 50% increase in global oil prices on Qatar's economy.
+  Consider effects on GDP, inflation, trade balance, and fiscal position.
+version: "1.0"
+author: NSIC
+tags:
+  - oil
+  - commodities
+  - inflation
+  - energy
+priority: 1
+assigned_engine: engine_a  # Deep analysis with GPT-5
+target_turns: 100
+
+inputs:
+  - variable: oil_price
+    base_value: 80.0
+    shock_value: 120.0
+    shock_type: absolute
+    unit: USD/barrel
+  - variable: shock_duration
+    base_value: 0
+    shock_value: 12
+    shock_type: absolute
+    unit: months
+
+expected_structure:
+  executive_summary: str
+  impact_analysis:
+    gdp_impact: float
+    inflation_impact: float
+    trade_balance: float
+    fiscal_revenue: float
+  recommendations: list
+  confidence_score: float
+
+validation_rules:
+  - field: executive_summary
+    rule_type: required
+    message: Executive summary is required
+  - field: impact_analysis.gdp_impact
+    rule_type: required
+    message: GDP impact assessment is required
+  - field: impact_analysis.gdp_impact
+    rule_type: range
+    params:
+      min: -100
+      max: 100
+    message: GDP impact must be a reasonable percentage
+  - field: confidence_score
+    rule_type: range
+    params:
+      min: 0
+      max: 1
+    message: Confidence score must be between 0 and 1
+
+retry_config:
+  max_retries: 3
+  retry_delay_seconds: 2.0
+  exponential_backoff: true
+  retry_on_errors:
+    - timeout
+    - rate_limit
+    - server_error
+
