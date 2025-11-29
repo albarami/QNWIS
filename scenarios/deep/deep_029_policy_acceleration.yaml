@@ -1,0 +1,25 @@
+id: deep_029_policy_acceleration
+name: Policy Acceleration Analysis
+domain: deep
+version: '1.0'
+description: Deep analysis of accelerated policy implementation
+inputs:
+- variable: policy_speed
+  base_value: 1
+  shock_value: 2
+  shock_type: absolute
+  unit: multiplier
+assigned_engine: engine_a
+expected_structure:
+  must_include:
+  - analysis
+  - recommendation
+  - risks
+  min_length: 500
+validation_rules:
+- field: recommendation
+  rule_type: required
+  message: Must provide recommendation
+retry_config:
+  max_retries: 2
+  retry_delay_seconds: 5

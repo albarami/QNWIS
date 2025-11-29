@@ -130,7 +130,7 @@ class ScenarioLoader:
         ...
     """
     
-    VALID_DOMAINS = {"economic", "policy", "competitive", "timing", "social"}
+    VALID_DOMAINS = {"economic", "policy", "competitive", "timing", "social", "deep"}
     
     def __init__(self, scenarios_dir: str = "scenarios"):
         """

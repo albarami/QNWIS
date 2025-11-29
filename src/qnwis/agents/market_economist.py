@@ -1,5 +1,5 @@
 """
-Market Economist agent with Dr. Layla Al-Said persona.
+Market Economist agent with Dr. Layla persona.
 """
 
 from __future__ import annotations

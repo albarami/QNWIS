@@ -313,9 +313,12 @@ Your expert analysis:"""
         self, 
         opponent_name: str,
         opponent_claim: str,
-        conversation_history: list
+        conversation_history: list,
+        turn_number: int = 0,
+        total_turns: int = 10,
+        phase: str = "debate"
     ) -> str:
-        """Challenge another agent's position with data-backed evidence."""
+        """Challenge another agent's position with data-backed evidence and structured debate rules."""
         history_text = self._format_history(conversation_history[-5:])
         
         # Extract original query AND facts context from conversation history
@@ -368,6 +371,21 @@ Available extracted facts for reference:
         
         prompt = f"""You are {self.agent_name}.
 
+═══════════════════════════════════════════════════════════════════════════════
+DEBATE CONTEXT
+═══════════════════════════════════════════════════════════════════════════════
+- Turn: {turn_number} of {total_turns}
+- Phase: {phase}
+- Your role: Challenge {opponent_name}'s position
+
+DEBATE RULES (FOLLOW STRICTLY):
+1. You MUST engage with SPECIFIC points from {opponent_name}'s statement
+2. If you agree on some points, say so - then add NEW evidence
+3. If you disagree, cite SPECIFIC data that contradicts their claim
+4. Do NOT repeat points already made in the conversation
+5. Build toward synthesis - identify what would resolve the disagreement
+═══════════════════════════════════════════════════════════════════════════════
+
 The question being debated:
 {original_query}
 
@@ -380,31 +398,31 @@ Recent conversation:
 Available data sources:
 {data_mastery[:1500]}
 
-Please keep your challenge focused on the specific question above,
-rather than general global trends.
+Your challenge must:
+1. Quote the SPECIFIC claim you're challenging
+2. Present counter-evidence with citations [Per extraction: 'value' from source]
+3. Explain WHY your evidence contradicts their position
+4. Suggest what additional data would resolve this disagreement
 
-Consider challenging this position by:
-- Pointing out weaknesses in their claims about the specific question
-- Presenting alternative data relevant to this decision
-- Questioning assumptions with counter-evidence from the extracted facts
-- Citing conflicting evidence or perspectives with exact source names
-
-Your challenge (please cite specific data sources):"""
+Your challenge:"""
         
         return await self.llm.generate(
             prompt=prompt,
-            system=f"You are {self.agent_name}, critically examining claims with deep knowledge of all data sources.",
+            system=f"You are {self.agent_name}, engaging in structured debate with evidence-based challenges.",
             temperature=0.4,
-            max_tokens=400
+            max_tokens=500
         )
 
     async def respond_to_challenge(
         self,
         challenger_name: str, 
         challenge: str,
-        conversation_history: list
+        conversation_history: list,
+        turn_number: int = 0,
+        total_turns: int = 10,
+        phase: str = "debate"
     ) -> str:
-        """Respond to a challenge with data-backed evidence."""
+        """Respond to a challenge with data-backed evidence and structured debate rules."""
         history_text = self._format_history(conversation_history[-5:])
         
         # Extract original query AND facts context from conversation history
@@ -446,6 +464,21 @@ Available extracted facts for reference:
         
         prompt = f"""You are {self.agent_name}.
 
+═══════════════════════════════════════════════════════════════════════════════
+DEBATE CONTEXT
+═══════════════════════════════════════════════════════════════════════════════
+- Turn: {turn_number} of {total_turns}
+- Phase: {phase}
+- Your role: Respond to {challenger_name}'s challenge
+
+DEBATE RULES (FOLLOW STRICTLY):
+1. You MUST address the SPECIFIC points {challenger_name} raised
+2. Acknowledge valid criticisms honestly - "I concede that..."
+3. Defend your position with NEW evidence not yet presented
+4. Do NOT repeat your original argument - add to it or modify it
+5. Build toward synthesis - where can you find common ground?
+═══════════════════════════════════════════════════════════════════════════════
+
 The question being debated:
 {original_query}
 
@@ -458,23 +491,23 @@ Recent conversation:
 Available data sources to support your position:
 {data_mastery[:1500]}
 
-Please keep your response focused on the specific question above,
-rather than general global trends.
+Your response must:
+1. Quote the SPECIFIC criticism you're addressing
+2. Either CONCEDE (if valid) or DEFEND with new evidence
+3. Cite all data: [Per extraction: 'value' from source]
+4. Identify areas of agreement to build synthesis
 
-Consider responding by:
-- Defending your position with specific data relevant to this decision
-- Acknowledging valid points about this question
-- Clarifying with facts from the extracted data
-- Finding common ground on the specific options being compared
+Structure your response:
+- "On [specific point], I [concede/maintain]..."
+- "The evidence shows [Per extraction: data]..."
+- "Where we agree is..."
+- "The remaining disagreement is about..."
 
-Use phrases like "I acknowledge...", "However, [Per extraction: data]...", "We agree that..."
-Please cite data points as: "[Per extraction: value from SOURCE]"
-
-Your response (focused on the specific question):"""
+Your response:"""
         
         return await self.llm.generate(
             prompt=prompt,
-            system=f"You are {self.agent_name}, responding with focus on the specific question being debated.",
+            system=f"You are {self.agent_name}, engaging constructively in debate to reach synthesis.",
             temperature=0.3,
             max_tokens=500
         )

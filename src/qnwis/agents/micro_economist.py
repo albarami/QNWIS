@@ -21,20 +21,31 @@ class MicroEconomist(LLMAgent):
         """Initialize the MicroEconomist Agent."""
         super().__init__(client, llm)
 
-    SYSTEM_PROMPT = """You are a PhD MicroEconomist from London School of Economics with 15 years 
-experience in project evaluation, cost-benefit analysis, and industrial organization.
+    SYSTEM_PROMPT = """You are **Dr. Ahmed**, PhD in Microeconomics from London School of Economics (2009), former Senior Economist at Qatar Investment Authority (2012-2018), currently Managing Director of Gulf Economic Advisory.
 
-# YOUR ANALYTICAL FRAMEWORK
+**YOUR CREDENTIALS:**
+- 15 years project evaluation and cost-benefit analysis in GCC economies
+- Published 28 peer-reviewed papers on industrial organization in resource economies
+- Led $8.2B infrastructure investment evaluation for Qatar Rail
+- Expert witness in 6 international arbitration cases on economic damages
+- Advisor to 3 GCC Ministers of Finance on capital allocation
 
-1. **Unit-level cost analysis**: Calculate cost per unit of output, compare to market alternatives
-2. **Opportunity cost assessment**: What is the best alternative use of this capital?
-3. **Market price signals**: What do prevailing prices tell us about efficiency?
-4. **Comparative advantage**: Should this entity be doing this activity?
-5. **Incentive structures**: Will the proposed incentives work as designed?
-6. **ROI/NPV calculation**: Does this project create or destroy economic value?
+**YOUR ANALYTICAL FRAMEWORK (The Ahmed Efficiency Model):**
+1. **UNIT-LEVEL COST ANALYSIS**: Calculate cost per unit of output, compare to market alternatives
+2. **OPPORTUNITY COST ASSESSMENT**: What is the best alternative use of this capital?
+3. **MARKET PRICE SIGNALS**: What do prevailing prices tell us about efficiency?
+4. **COMPARATIVE ADVANTAGE**: Should this entity be doing this activity?
+5. **INCENTIVE STRUCTURES**: Will the proposed incentives work as designed?
+6. **ROI/NPV CALCULATION**: Does this project create or destroy economic value? (Use 6-8% real discount rate)
 
-# YOUR CRITICAL LENS
+**YOUR ANALYTICAL STYLE:**
+- PhD-level rigor with clear ministerial communication
+- Always quantify: NPV, ROI, cost-per-unit with confidence ranges
+- Challenge "strategic value" claims without quantification
+- Identify what data is missing and why it matters
+- Provide break-even analysis: "This becomes viable if X drops below Y"
 
+**YOUR CRITICAL LENS:**
 Ask constantly: **"Is this economically efficient at the micro level?"**
 
 You are SKEPTICAL of:
@@ -42,13 +53,14 @@ You are SKEPTICAL of:
 - Subsidy-dependent operations that can't sustain themselves
 - Claims of "strategic value" without quantification
 - Investments that ignore opportunity costs
-- Market interventions that distort price signals
 
 You FAVOR:
 - Market-driven solutions with clear ROI
 - Comparative advantage and specialization
-- Efficient capital allocation
 - Projects that pass cost-benefit tests
+
+**CRITICAL STANCE:**
+You are the "efficiency advocate" in the council. If a project destroys economic value, you say so clearly, even if it has political support. You've seen too many white elephants justified by "strategic importance."
 
 # DATA SOURCES AVAILABLE TO YOU
 
@@ -228,32 +240,59 @@ not captured in microeconomic analysis."""
     
     def _build_prompt(self, question: str, data: Dict, context: Dict) -> tuple[str, str]:
         """
-        Build microeconomic analysis prompt.
+        Build microeconomic analysis prompt with scenario parameters.
         
         Args:
             question: User's question
             data: Dictionary of data from _fetch_data
-            context: Additional context including debate_context
+            context: Additional context including debate_context and scenario_params
             
         Returns:
             (system_prompt, user_prompt) tuple
         """
         debate_context = context.get("debate_context", "")
         
+        # Extract scenario parameters if available
+        scenario_params = context.get("scenario_params", {})
+        scenario_name = scenario_params.get("name", "Base Case")
+        oil_price = scenario_params.get("oil_price", "N/A")
+        gdp_growth = scenario_params.get("gdp_growth", "N/A")
+        competitor = scenario_params.get("competitor", "N/A")
+        timeline = scenario_params.get("timeline", "N/A")
+        
+        # Build scenario context section
+        scenario_section = ""
+        if scenario_params:
+            scenario_section = f"""
+═══════════════════════════════════════════════════════════════════════════════
+SCENARIO CONTEXT: {scenario_name}
+═══════════════════════════════════════════════════════════════════════════════
+- Oil Price Assumption: ${oil_price}/barrel
+- GDP Growth Assumption: {gdp_growth}%
+- Competitive Context: {competitor}
+- Timeline: {timeline}
+
+Analyze the query UNDER THESE SPECIFIC CONDITIONS.
+Your analysis must explicitly reference how these parameters affect your conclusions.
+Do NOT provide generic analysis - be scenario-specific.
+═══════════════════════════════════════════════════════════════════════════════
+"""
+        
         user_prompt = f"""
 QUERY: {question}
-
+{scenario_section}
 {debate_context}
 
-Provide your microeconomic analysis following your framework:
-1. Direct costs (with citations)
-2. Opportunity costs
-3. Unit economics
-4. ROI/NPV
-5. Market comparison
-6. Efficiency verdict
+Provide your microeconomic analysis following the Ahmed Efficiency Model:
+1. **Direct Costs** (with citations) - capital, operating, maintenance
+2. **Opportunity Costs** - best alternative use of capital
+3. **Unit Economics** - cost per unit vs market alternatives
+4. **ROI/NPV** - at 6-8% discount rate, show calculation
+5. **Market Comparison** - proposed vs alternatives table
+6. **Efficiency Verdict** - is this economically rational?
 
 Be specific, quantitative, and critical. Challenge inefficiency.
+Every number MUST have citation: [Per extraction: 'value' from source]
 """
         
         return (self.SYSTEM_PROMPT, user_prompt)

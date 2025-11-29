@@ -1,0 +1,25 @@
+id: policy_015_open_immigration
+name: Open Immigration Policy
+domain: policy
+version: '1.0'
+description: Liberalized immigration for skilled workers
+inputs:
+- variable: immigration_openness
+  base_value: 50
+  shock_value: 85
+  shock_type: absolute
+  unit: index
+assigned_engine: engine_b
+expected_structure:
+  must_include:
+  - analysis
+  - recommendation
+  - risks
+  min_length: 500
+validation_rules:
+- field: recommendation
+  rule_type: required
+  message: Must provide recommendation
+retry_config:
+  max_retries: 2
+  retry_delay_seconds: 5

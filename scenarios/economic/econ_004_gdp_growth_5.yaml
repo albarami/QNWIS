@@ -1,0 +1,25 @@
+id: econ_004_gdp_growth_5
+name: GDP Growth Acceleration - 5% Annual
+domain: economic
+version: '1.0'
+description: Analyze opportunities with 5% GDP growth rate
+inputs:
+- variable: gdp_growth
+  base_value: 2.5
+  shock_value: 5.0
+  shock_type: absolute
+  unit: percent
+assigned_engine: engine_b
+expected_structure:
+  must_include:
+  - analysis
+  - recommendation
+  - risks
+  min_length: 500
+validation_rules:
+- field: recommendation
+  rule_type: required
+  message: Must provide recommendation
+retry_config:
+  max_retries: 2
+  retry_delay_seconds: 5

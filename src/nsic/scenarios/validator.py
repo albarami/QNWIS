@@ -73,7 +73,7 @@ class ScenarioValidator:
         "id", "name", "domain", "description", "inputs"
     ]
     
-    VALID_DOMAINS = {"economic", "policy", "competitive", "timing", "social"}
+    VALID_DOMAINS = {"economic", "policy", "competitive", "timing", "social", "deep"}
     VALID_ENGINES = {"engine_a", "engine_b", "auto"}
     VALID_PRIORITIES = {1, 2, 3}
     

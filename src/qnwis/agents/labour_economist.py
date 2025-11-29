@@ -1,5 +1,5 @@
 """
-Labour Economist agent with Dr. Fatima Al-Mansoori persona.
+Labour Economist agent with Dr. Fatima persona.
 """
 
 from __future__ import annotations

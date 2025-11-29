@@ -1,0 +1,25 @@
+id: deep_025_base_case
+name: Base Case Comprehensive Analysis
+domain: deep
+version: '1.0'
+description: Comprehensive baseline analysis of Qatar economic strategy
+inputs:
+- variable: analysis_depth
+  base_value: 1
+  shock_value: 1
+  shock_type: absolute
+  unit: level
+assigned_engine: engine_a
+expected_structure:
+  must_include:
+  - analysis
+  - recommendation
+  - risks
+  min_length: 500
+validation_rules:
+- field: recommendation
+  rule_type: required
+  message: Must provide recommendation
+retry_config:
+  max_retries: 2
+  retry_delay_seconds: 5

@@ -1,5 +1,5 @@
 """
-Financial Economist agent with Dr. Mohammed Al-Khater persona.
+Financial Economist agent with Dr. Mohammed persona.
 """
 
 from __future__ import annotations

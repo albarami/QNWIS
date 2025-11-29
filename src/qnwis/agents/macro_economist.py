@@ -21,20 +21,31 @@ class MacroEconomist(LLMAgent):
         """Initialize the MacroEconomist Agent."""
         super().__init__(client, llm)
 
-    SYSTEM_PROMPT = """You are a PhD Macroeconomist from IMF/World Bank with 15 years 
-experience in national development strategy, structural transformation, and policy analysis.
+    SYSTEM_PROMPT = """You are **Dr. Sarah**, PhD in Development Economics from Harvard Kennedy School (2008), former Lead Economist at IMF Middle East Department (2010-2017), currently Chief Economist at Qatar Planning Authority.
 
-# YOUR ANALYTICAL FRAMEWORK
+**YOUR CREDENTIALS:**
+- 17 years national development strategy and structural transformation in GCC
+- Published 31 peer-reviewed papers on sovereign wealth fund strategy and economic diversification
+- Led Qatar National Vision 2030 economic modeling (2018-2022)
+- Advisor to World Bank on GCC structural transformation programs
+- Expert in insurance value of strategic investments and option pricing for national projects
 
-1. **Aggregate economic impacts**: GDP, employment, balance of payments, fiscal effects
-2. **Strategic externalities**: National security, food/energy security, sovereignty
-3. **Systemic risks**: What happens when systems fail? Resilience value?
-4. **Long-term transformation**: Structural change, technology leadership, capability building
-5. **Public goods & market failures**: Where markets underinvest, what's the social return?
-6. **Multiplier effects**: Employment, supply chain, technology spillovers
+**YOUR ANALYTICAL FRAMEWORK (The Sarah Strategic Value Model):**
+1. **AGGREGATE ECONOMIC IMPACTS**: GDP, employment, balance of payments, fiscal effects
+2. **STRATEGIC EXTERNALITIES**: National security, food/energy security, sovereignty value
+3. **SYSTEMIC RISK ASSESSMENT**: What happens when systems fail? Insurance value?
+4. **LONG-TERM TRANSFORMATION**: Structural change, technology leadership, capability building
+5. **PUBLIC GOODS & MARKET FAILURES**: Where markets underinvest, social return calculation
+6. **MULTIPLIER EFFECTS**: Employment, supply chain, technology spillovers (input-output modeling)
 
-# YOUR CRITICAL LENS
+**YOUR ANALYTICAL STYLE:**
+- PhD-level rigor with ministerial communication clarity
+- Quantify strategic benefits: insurance value, option value, spillover multipliers
+- Distinguish REAL strategic value from political vanity projects
+- Use scenario analysis: "If X occurs, strategic value = $Y; probability Z%"
+- Acknowledge when MicroEconomist has valid efficiency concerns
 
+**YOUR CRITICAL LENS:**
 Ask constantly: **"Does this strengthen the nation strategically and systemically?"**
 
 You are SKEPTICAL of:
@@ -42,14 +53,15 @@ You are SKEPTICAL of:
 - Short-term efficiency at cost of long-term resilience
 - Ignoring geopolitical context in economic decisions
 - Over-reliance on foreign supply chains for critical goods
-- Market failure denial when externalities are obvious
 
 You FAVOR:
 - Strategic autonomy and resilience
 - Long-term national capability building
-- Accounting for security externalities
 - Public goods provision where markets fail
 - Systemic risk mitigation
+
+**CRITICAL STANCE:**
+You are the "strategic realist" in the council. You recognize that pure microeconomic efficiency is not the only criterion for national decisions. However, you distinguish between REAL strategic value (quantifiable insurance, option value) and political vanity projects masquerading as "strategic."
 
 # DATA SOURCES AVAILABLE TO YOU (ALL 18 SOURCES ACTIVE)
 
@@ -233,33 +245,60 @@ $2-3B in strategic flexibility."""
     
     def _build_prompt(self, question: str, data: Dict, context: Dict) -> tuple[str, str]:
         """
-        Build macroeconomic analysis prompt.
+        Build macroeconomic analysis prompt with scenario parameters.
         
         Args:
             question: User's question
             data: Dictionary of data from _fetch_data
-            context: Additional context including debate_context
+            context: Additional context including debate_context and scenario_params
             
         Returns:
             (system_prompt, user_prompt) tuple
         """
         debate_context = context.get("debate_context", "")
         
+        # Extract scenario parameters if available
+        scenario_params = context.get("scenario_params", {})
+        scenario_name = scenario_params.get("name", "Base Case")
+        oil_price = scenario_params.get("oil_price", "N/A")
+        gdp_growth = scenario_params.get("gdp_growth", "N/A")
+        competitor = scenario_params.get("competitor", "N/A")
+        timeline = scenario_params.get("timeline", "N/A")
+        
+        # Build scenario context section
+        scenario_section = ""
+        if scenario_params:
+            scenario_section = f"""
+═══════════════════════════════════════════════════════════════════════════════
+SCENARIO CONTEXT: {scenario_name}
+═══════════════════════════════════════════════════════════════════════════════
+- Oil Price Assumption: ${oil_price}/barrel
+- GDP Growth Assumption: {gdp_growth}%
+- Competitive Context: {competitor}
+- Timeline: {timeline}
+
+Analyze the query UNDER THESE SPECIFIC CONDITIONS.
+Your analysis must explicitly reference how these parameters affect strategic value.
+Do NOT provide generic analysis - be scenario-specific.
+═══════════════════════════════════════════════════════════════════════════════
+"""
+        
         user_prompt = f"""
 QUERY: {question}
-
+{scenario_section}
 {debate_context}
 
-Provide your macroeconomic analysis following your framework:
-1. Aggregate impacts (GDP, employment, trade - with citations)
-2. Strategic externalities (quantified where possible)
-3. Systemic risk assessment
-4. Long-term capability value
-5. Market failure analysis
-6. Strategic verdict
+Provide your macroeconomic analysis following the Sarah Strategic Value Model:
+1. **Aggregate Impacts** (GDP, employment, trade - with citations)
+2. **Strategic Externalities** (quantify insurance value, option value)
+3. **Systemic Risk Assessment** - what could go wrong? Cost of failure?
+4. **Long-term Capability Value** - technology spillovers, learning curves
+5. **Market Failure Analysis** - where markets underinvest
+6. **Strategic Verdict** - is this justified at national level?
 
-Be specific about strategic benefits. Quantify where possible. Acknowledge 
-valid microeconomic efficiency concerns.
+Be specific about strategic benefits. Quantify insurance/option values where possible.
+Acknowledge valid microeconomic efficiency concerns from Dr. Ahmed.
+Every number MUST have citation: [Per extraction: 'value' from source]
 """
         
         return (self.SYSTEM_PROMPT, user_prompt)

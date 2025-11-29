@@ -1,0 +1,25 @@
+id: timing_021_2032_launch
+name: Financial Hub Launch 2032
+domain: timing
+version: '1.0'
+description: Conservative 2032 target for financial hub launch
+inputs:
+- variable: launch_year
+  base_value: 2030
+  shock_value: 2032
+  shock_type: absolute
+  unit: year
+assigned_engine: engine_b
+expected_structure:
+  must_include:
+  - analysis
+  - recommendation
+  - risks
+  min_length: 500
+validation_rules:
+- field: recommendation
+  rule_type: required
+  message: Must provide recommendation
+retry_config:
+  max_retries: 2
+  retry_delay_seconds: 5

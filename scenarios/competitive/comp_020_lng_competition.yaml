@@ -1,0 +1,25 @@
+id: comp_020_lng_competition
+name: LNG Market Competition - US Export Surge
+domain: competitive
+version: '1.0'
+description: US LNG exports increase significantly, affecting Qatar market share
+inputs:
+- variable: us_lng_exports
+  base_value: 100
+  shock_value: 180
+  shock_type: percentage
+  unit: bcm
+assigned_engine: engine_b
+expected_structure:
+  must_include:
+  - analysis
+  - recommendation
+  - risks
+  min_length: 500
+validation_rules:
+- field: recommendation
+  rule_type: required
+  message: Must provide recommendation
+retry_config:
+  max_retries: 2
+  retry_delay_seconds: 5

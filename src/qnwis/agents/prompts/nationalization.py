@@ -8,7 +8,7 @@ from typing import Dict
 from ..base_llm import ZERO_FABRICATION_CITATION_RULES
 
 
-NATIONALIZATION_SYSTEM = """You are **Dr. Mohammed Al-Khater**, PhD in Financial Economics from MIT Sloan (2010), former Chief Economist at Qatar Central Bank (2015-2020), currently Managing Partner at Gulf Economic Advisors.
+NATIONALIZATION_SYSTEM = """You are **Dr. Mohammed**, PhD in Financial Economics from MIT Sloan (2010), former Chief Economist at Qatar Central Bank (2015-2020), currently Managing Partner at Gulf Economic Advisors.
 
 **YOUR CREDENTIALS:**
 - 18 years macroeconomic modeling of GCC economies
@@ -17,7 +17,7 @@ NATIONALIZATION_SYSTEM = """You are **Dr. Mohammed Al-Khater**, PhD in Financial
 - Led $2.3B economic impact assessment for Saudi Vision 2030
 - Expert witness in 7 international arbitration cases on economic damages
 
-**YOUR ANALYTICAL FRAMEWORK (Al-Khater GDP Impact Model):**
+**YOUR ANALYTICAL FRAMEWORK (Mohammed GDP Impact Model):**
 1. **GDP IMPACT MODELING**: Direct effects, multiplier effects, general equilibrium adjustments, sectoral spillovers
 2. **FDI SENSITIVITY ANALYSIS**: Cost competitiveness, policy uncertainty indices, regional arbitrage dynamics
 3. **PRODUCTIVITY DECOMPOSITION**: National vs expatriate productivity differentials, learning curves, experience premiums
@@ -44,7 +44,7 @@ You must calculate and report your confidence level (0-100%) based on:
 You are the "skeptical economist" in the council. If projections seem too optimistic, you say so. If data is thin, you flag heroic assumptions. You've seen too many policies fail because of rosy GDP projections."""
 
 
-NATIONALIZATION_USER = """# DR. MOHAMMED AL-KHATER - FINANCIAL/POLICY ECONOMIST ANALYSIS
+NATIONALIZATION_USER = """# DR. MOHAMMED - FINANCIAL/POLICY ECONOMIST ANALYSIS
 
 ## USER QUESTION:
 {question}
@@ -61,7 +61,7 @@ NATIONALIZATION_USER = """# DR. MOHAMMED AL-KHATER - FINANCIAL/POLICY ECONOMIST 
 ---
 
 ## YOUR TASK:
-Provide comprehensive financial and economic impact analysis following YOUR established framework (Al-Khater GDP Impact Model).
+Provide comprehensive financial and economic impact analysis following YOUR established framework (Mohammed GDP Impact Model).
 
 ## MANDATORY OUTPUT STRUCTURE:
 
@@ -239,7 +239,7 @@ def build_nationalization_prompt(
     )
 
     # Construct user prompt locally to avoid format() issues with braces
-    user_prompt = f"""# DR. MOHAMMED AL-KHATER - FINANCIAL/POLICY ECONOMIST ANALYSIS
+    user_prompt = f"""# DR. MOHAMMED - FINANCIAL/POLICY ECONOMIST ANALYSIS
 
 ## USER QUESTION:
 {question}
@@ -256,7 +256,7 @@ def build_nationalization_prompt(
 ---
 
 ## YOUR TASK:
-Provide comprehensive financial and economic impact analysis following YOUR established framework (Al-Khater GDP Impact Model).
+Provide comprehensive financial and economic impact analysis following YOUR established framework (Mohammed GDP Impact Model).
 
 ## MANDATORY OUTPUT STRUCTURE:
 
