@@ -143,10 +143,19 @@ class EngineBDeepSeek:
     
     @property
     def graph(self):
-        """Lazy load causal graph."""
+        """Lazy load causal graph from pre-built data."""
         if self._graph is None:
-            from src.nsic.knowledge.causal_graph import CausalGraph
-            self._graph = CausalGraph(gpu_device="cuda:4")  # GPU 4 for KG
+            import os
+            kg_path = os.path.join(os.path.dirname(__file__), "..", "..", "..", "data", "knowledge_graph.pkl")
+            
+            if os.path.exists(kg_path):
+                from src.nsic.knowledge import load_causal_graph
+                self._graph = load_causal_graph(kg_path, gpu_device="cuda:4")
+                logger.info(f"Loaded pre-built KG: {len(self._graph.nodes)} nodes")
+            else:
+                from src.nsic.knowledge.causal_graph import CausalGraph
+                self._graph = CausalGraph(gpu_device="cuda:4")  # Empty fallback
+                logger.warning("No pre-built KG found, using empty graph")
         return self._graph
     
     @property
@@ -157,8 +166,30 @@ class EngineBDeepSeek:
             self._verifier = DeepVerifier(enable_cross_encoder=True, enable_nli=True)
         return self._verifier
     
-    def _get_system_prompt(self, scenario_domain: str) -> str:
-        """Get domain-specific system prompt with DeepSeek Chain-of-Thought."""
+    def _get_system_prompt(self, scenario_domain: str, agent_id: str = "dr_rashid") -> str:
+        """
+        Get domain-specific system prompt for the specified Engine B agent.
+
+        Engine B has 3 agents that rotate through scenarios:
+        - Dr. Rashid (Lead Economist): Economic assessment, scenario analysis
+        - Dr. Noor (Risk Analyst): Risk identification, probability assessment
+        - Dr. Hassan (Competitive Analyst): Competitive dynamics, game theory
+
+        Args:
+            scenario_domain: Domain of the scenario (economic, policy, competitive, timing)
+            agent_id: Which agent to use (dr_rashid, dr_noor, dr_hassan)
+
+        Returns:
+            Complete system prompt with domain-specific additions
+        """
+        try:
+            from src.nsic.agents.engine_b import get_engine_b_agent_prompt
+            return get_engine_b_agent_prompt(agent_id, scenario_domain)
+        except ImportError:
+            # Fallback to Dr. Rashid's prompt if agents module not available
+            logger.warning("Engine B agents module not available, using fallback prompt")
+
+        # Fallback Dr. Rashid prompt (kept for backward compatibility)
         base = """You are **Dr. Rashid**, a senior strategic analyst for Qatar's NSIC with 14 years advising Gulf sovereign wealth funds.
 
 YOUR CREDENTIALS:
@@ -212,7 +243,7 @@ CITATION RULES:
 - Every fact MUST be cited: [Per extraction: 'value' from source]
 - If data missing: "NOT IN DATA - cannot verify"
 - Never fabricate Qatar-specific numbers"""
-        
+
         domain_specifics = {
             "economic": "\n\nFocus areas: GDP impact, trade flows, oil/gas revenues, investment, employment.",
             "policy": "\n\nFocus areas: Policy implications, regulatory changes, international relations, governance.",
@@ -220,8 +251,26 @@ CITATION RULES:
             "timing": "\n\nFocus areas: Timing considerations, phasing, dependencies, sequencing.",
             "social": "\n\nFocus areas: Social impacts, demographics, education, healthcare, quality of life.",
         }
-        
+
         return base + domain_specifics.get(scenario_domain, "")
+
+    def _get_agent_for_scenario(self, scenario_index: int) -> str:
+        """
+        Get the agent ID for a given scenario index.
+
+        Rotates through all 3 agents evenly across 24 scenarios:
+        - Scenarios 0, 3, 6, 9, 12, 15, 18, 21 -> Dr. Rashid
+        - Scenarios 1, 4, 7, 10, 13, 16, 19, 22 -> Dr. Noor
+        - Scenarios 2, 5, 8, 11, 14, 17, 20, 23 -> Dr. Hassan
+
+        Args:
+            scenario_index: 0-based index of the scenario
+
+        Returns:
+            Agent ID (dr_rashid, dr_noor, or dr_hassan)
+        """
+        agents = ["dr_rashid", "dr_noor", "dr_hassan"]
+        return agents[scenario_index % len(agents)]
     
     async def _get_context(self, scenario_description: str) -> Dict[str, Any]:
         """Get RAG context and database data for scenario."""
@@ -342,22 +391,34 @@ Provide concrete insights, not repetition of previous points."""
         self,
         scenario,  # ScenarioDefinition
         turns: int = None,
+        scenario_index: int = 0,
     ) -> ScenarioResult:
         """
-        Analyze a single scenario with multiple turns.
-        
+        Analyze a single scenario with multiple turns using rotating agents.
+
+        Engine B uses 3 agents that rotate through scenarios:
+        - Dr. Rashid (Lead Economist): Economic assessment
+        - Dr. Noor (Risk Analyst): Risk identification
+        - Dr. Hassan (Competitive Analyst): Competitive dynamics
+
         Args:
             scenario: ScenarioDefinition from Phase 5
             turns: Number of turns (default: TURNS_PER_SCENARIO)
-            
+            scenario_index: Index for agent rotation (0-23)
+
         Returns:
             ScenarioResult with all turns and synthesis
         """
         turns = turns or self.TURNS_PER_SCENARIO
-        
-        logger.info(f"Engine B: Analyzing scenario '{scenario.id}' with {turns} turns")
+
+        # Get agent for this scenario (rotates through Dr. Rashid, Dr. Noor, Dr. Hassan)
+        agent_id = self._get_agent_for_scenario(scenario_index)
+        agent_names = {"dr_rashid": "Dr. Rashid", "dr_noor": "Dr. Noor", "dr_hassan": "Dr. Hassan"}
+        agent_name = agent_names.get(agent_id, "Dr. Rashid")
+
+        logger.info(f"Engine B: Analyzing scenario '{scenario.id}' with {turns} turns (Agent: {agent_name})")
         start_time = time.time()
-        
+
         # Build scenario description
         scenario_description = f"""Scenario: {scenario.name}
 Domain: {scenario.domain}
@@ -367,11 +428,12 @@ Inputs:
 """
         for inp in scenario.inputs:
             scenario_description += f"- {inp.variable}: {inp.base_value} → {inp.shock_value} ({inp.shock_type})\n"
-        
+
         # Get context
         context = await self._get_context(scenario_description)
         context_prompt = self._format_context_prompt(context)
-        system_prompt = self._get_system_prompt(scenario.domain)
+        # Use agent-specific system prompt
+        system_prompt = self._get_system_prompt(scenario.domain, agent_id)
         
         # Run turns
         turn_results = []
@@ -514,15 +576,16 @@ Provide:
             loader.load_all()
             scenarios = [s for s in loader.get_all() if s.assigned_engine in ["engine_b", "auto"]]
         
-        logger.info(f"Engine B: Running {len(scenarios)} scenarios")
-        
+        logger.info(f"Engine B: Running {len(scenarios)} scenarios with 3 rotating agents")
+
         semaphore = asyncio.Semaphore(max_concurrent)
-        
-        async def process_scenario(scenario):
+
+        async def process_scenario(scenario, index):
             async with semaphore:
-                return await self.analyze_scenario(scenario)
-        
-        tasks = [process_scenario(s) for s in scenarios]
+                # Pass scenario_index for agent rotation
+                return await self.analyze_scenario(scenario, scenario_index=index)
+
+        tasks = [process_scenario(s, i) for i, s in enumerate(scenarios)]
         results = await asyncio.gather(*tasks, return_exceptions=True)
         
         # Filter out exceptions
