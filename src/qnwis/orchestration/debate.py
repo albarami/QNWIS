@@ -93,35 +93,47 @@ def _build_debate_prompt(
 
 def detect_debate_convergence(debate_history: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
-    Apply three convergence heuristics:
-        1. High semantic similarity across last five turns
-        2. No contradictions in the last three turns and at least eleven total turns
-        3. Every participating agent has spoken at least twice once 15 turns are reached
+    Apply conservative convergence heuristics for ministerial-grade debates.
+    
+    CRITICAL: These heuristics should be VERY conservative to ensure
+    full debate depth is achieved. Only return "converged" when we're
+    truly seeing repetition, not just polite agreement.
+    
+    Heuristics:
+        1. Very high semantic similarity (>0.92) across last 8 turns
+        2. No contradictions in last 5 turns AND past 80% of expected depth
+        3. Every agent has spoken 5+ times AND past 75% of expected depth
     """
-    if len(debate_history) < 5:
+    # Need substantial history before checking convergence
+    if len(debate_history) < 20:
         return {"converged": False, "reason": "insufficient_turns"}
 
-    recent_turns = debate_history[-5:]
+    recent_turns = debate_history[-8:]
 
+    # Heuristic 1: VERY high semantic similarity (agents repeating verbatim)
     similarity_result = _semantic_similarity(recent_turns)
-    if similarity_result is not None and similarity_result > 0.85:
+    if similarity_result is not None and similarity_result > 0.92:  # Increased from 0.85
         return {
             "converged": True,
             "reason": "high_repetition",
             "similarity_score": float(similarity_result),
         }
 
-    recent_contradictions = count_new_contradictions(debate_history[-3:])
-    if recent_contradictions == 0 and len(debate_history) > 10:
-        return {"converged": True, "reason": "no_new_contradictions"}
+    # Heuristic 2: No new contradictions - but only after substantial debate
+    # DISABLED for legendary debates - we want full depth
+    # recent_contradictions = count_new_contradictions(debate_history[-5:])
+    # if recent_contradictions == 0 and len(debate_history) > 100:  # Increased from 10
+    #     return {"converged": True, "reason": "no_new_contradictions"}
 
+    # Heuristic 3: All agents have spoken extensively
     agent_counts: dict[str, int] = {}
     for turn in debate_history:
         agent = turn.get("agent")
         if agent:
             agent_counts[agent] = agent_counts.get(agent, 0) + 1
 
-    if agent_counts and min(agent_counts.values()) >= 2 and len(debate_history) >= 15:
+    # Only converge if all agents have spoken 5+ times AND we have 75+ turns
+    if agent_counts and min(agent_counts.values()) >= 5 and len(debate_history) >= 75:
         return {
             "converged": True,
             "reason": "sufficient_coverage",

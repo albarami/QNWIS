@@ -747,11 +747,76 @@ def ministerial_synthesis_node(state: IntelligenceState) -> IntelligenceState:
     """
     Generate ministerial-grade synthesis with inverted pyramid structure.
     GUARANTEED to complete even under time pressure.
+    
+    NOW INTEGRATES with McKinsey-grade calculation pipeline:
+    - If calculated_results available, uses MinisterialBriefingTemplate
+    - All numbers come from deterministic calculations, NOT LLM
+    - Debate insights provide strategic interpretation
     """
     
     start_time = datetime.now()
     reasoning_chain = state.setdefault("reasoning_chain", [])
     nodes_executed = state.setdefault("nodes_executed", [])
+    
+    # ==========================================================================
+    # NEW: Check for McKinsey-grade calculated results
+    # ==========================================================================
+    calculated_results = state.get("calculated_results")
+    if calculated_results and calculated_results.get("options"):
+        logger.info("📊 Using McKinsey-grade template with calculated results")
+        try:
+            from ...templates.ministerial_briefing import MinisterialBriefingTemplate
+            
+            # Extract debate insights for strategic interpretation
+            debate_results = state.get("debate_results") or {}
+            debate_insights = debate_results.get("final_report", "")
+            if not debate_insights:
+                # Summarize from conversation history
+                conversation_history = debate_results.get("conversation_history", [])
+                if conversation_history:
+                    final_positions = [
+                        t.get("message", "")[:300]
+                        for t in conversation_history[-5:]
+                        if t.get("type") in ["final_position", "consensus_synthesis"]
+                    ]
+                    debate_insights = "\n".join(final_positions)
+            
+            # Build data sources list
+            data_sources = [
+                src.get("name", str(src)) if isinstance(src, dict) else str(src)
+                for src in state.get("data_sources", [])
+            ]
+            
+            # Create and render template
+            template = MinisterialBriefingTemplate(
+                query=state.get("query", "Strategic Analysis"),
+                calculated_results=calculated_results,
+                debate_insights=debate_insights if debate_insights else None,
+                calculation_warning=state.get("calculation_warning"),
+                data_sources=data_sources,
+            )
+            
+            final_synthesis = template.render()
+            
+            state["final_synthesis"] = final_synthesis
+            state["confidence_score"] = calculated_results.get("data_confidence", 0.7)
+            
+            elapsed = (datetime.now() - start_time).total_seconds()
+            reasoning_chain.append(
+                f"McKinsey-grade synthesis generated in {elapsed:.1f}s "
+                f"with calculated NPV/IRR/sensitivity"
+            )
+            nodes_executed.append("synthesis_mckinsey")
+            
+            logger.info(
+                f"✅ McKinsey synthesis completed: {len(final_synthesis)} chars, "
+                f"{elapsed:.1f}s, {len(calculated_results.get('options', []))} options analyzed"
+            )
+            return state
+            
+        except Exception as e:
+            logger.warning(f"McKinsey template failed ({e}), falling back to standard synthesis")
+            # Fall through to standard synthesis
     
     try:
         # PART 1: Executive Summary (ALWAYS GENERATE - 5 seconds max)

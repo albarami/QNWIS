@@ -1,0 +1,63 @@
+MODEL: GPT-4o
+======================================================================
+
+[Economic Diversification]
+Status: success, Words: 1106, Time: 20.41s
+Quality: {'structure': 1.0, 'depth': 0.875, 'actionability': 0.333, 'overall': 0.744}
+--------------------------------------------------
+No response
+
+[Energy/Oil&Gas]
+Status: success, Words: 898, Time: 14.89s
+Quality: {'structure': 0.833, 'depth': 0.75, 'actionability': 0.833, 'overall': 0.796}
+--------------------------------------------------
+No response
+
+[Tourism]
+Status: success, Words: 1027, Time: 20.32s
+Quality: {'structure': 1.0, 'depth': 0.875, 'actionability': 0.333, 'overall': 0.744}
+--------------------------------------------------
+No response
+
+[Food Security]
+Status: success, Words: 964, Time: 12.9s
+Quality: {'structure': 1.0, 'depth': 0.5, 'actionability': 0.5, 'overall': 0.625}
+--------------------------------------------------
+No response
+
+[Healthcare]
+Status: success, Words: 1038, Time: 20.67s
+Quality: {'structure': 1.0, 'depth': 0.75, 'actionability': 0.333, 'overall': 0.688}
+--------------------------------------------------
+No response
+
+[Digital/AI]
+Status: success, Words: 1059, Time: 20.8s
+Quality: {'structure': 1.0, 'depth': 0.875, 'actionability': 0.667, 'overall': 0.844}
+--------------------------------------------------
+No response
+
+[Manufacturing]
+Status: success, Words: 1106, Time: 19.61s
+Quality: {'structure': 1.0, 'depth': 0.875, 'actionability': 0.667, 'overall': 0.844}
+--------------------------------------------------
+No response
+
+[Workforce/Labor]
+Status: success, Words: 1079, Time: 18.1s
+Quality: {'structure': 1.0, 'depth': 0.5, 'actionability': 0.667, 'overall': 0.675}
+--------------------------------------------------
+No response
+
+[Infrastructure]
+Status: success, Words: 1010, Time: 17.76s
+Quality: {'structure': 1.0, 'depth': 0.875, 'actionability': 0.5, 'overall': 0.794}
+--------------------------------------------------
+No response
+
+[Cross-Domain Strategic]
+Status: success, Words: 1228, Time: 22.35s
+Quality: {'structure': 1.0, 'depth': 0.875, 'actionability': 0.5, 'overall': 0.794}
+--------------------------------------------------
+No response
+

@@ -1,0 +1,18 @@
+{
+  "timestamp": "2025-11-27T19:48:25.403163",
+  "query": "Qatar must choose its primary economic diversification focus for the next decade. \nThe Ministry of Finance has budget for ONE major initiative (QAR 50 billion over 10 years).\n\nOption A: Financial Services Hub\n- Target: Become the leading Islamic finance and wealth management center in the GCC\n- Compete directly with Dubai International Financial Centre (DIFC)\n- Leverage QIA's $450B sovereign wealth for anchor investments\n\nOption B: Advanced Logistics & Trade Hub  \n- Target: Become the GCC's premier air cargo and re-export hub\n- Expand Hamad International Airport cargo capacity 3x\n- Leverage geographic position between Europe, Asia, and Africa\n\nCurrent Context:\n- Qatar Financial Centre currently employs 1,200 Qataris (5% of target 25,000)\n- Hamad Airport handles 2.5M tons cargo/year (Dubai: 2.7M tons)\n- Dubai has 40+ year head start in financial services\n- Saudi Arabia investing $100B in NEOM logistics zone\n- Qatari STEM/business graduates: 4,500 per year combined\n- Both options are arithmetically feasible with current workforce pipeline\n\nWhich option should Qatar prioritize and why? Consider:\n1. Competitive dynamics with UAE and Saudi Arabia\n2. Qatarization potential in each sector  \n3. Revenue diversification from hydrocarbons\n4. Risk factors and mitigation strategies\n5. 10-year projected outcomes under different scenarios",
+  "total_execution_time": 31.065497398376465,
+  "overall_score": 0,
+  "stage_results": [],
+  "agent_results": [],
+  "data_source_results": [],
+  "debate_analysis": {},
+  "scenario_analysis": {},
+  "synthesis_analysis": {},
+  "model_routing_analysis": {},
+  "gaps_identified": [],
+  "critical_issues": [
+    "Workflow execution failed: unsupported format string passed to NoneType.__format__"
+  ],
+  "recommendations": []
+}

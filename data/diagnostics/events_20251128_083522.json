@@ -1,0 +1,132 @@
+[
+  {
+    "stage": "classify",
+    "status": "running",
+    "payload": {
+      "message": "Analyzing query complexity..."
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "classify",
+    "status": "complete",
+    "payload": {
+      "complexity": "critical",
+      "reasoning": [
+        "Query classified as: critical"
+      ]
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "prefetch",
+    "status": "running",
+    "payload": {
+      "message": "Processing prefetch..."
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "feasibility_check",
+    "status": "running",
+    "payload": {
+      "query": "\nAfter the 2017 blockade exposed vulnerabilities, Qatar must secure its food supply.\nInvestment: QAR 10 billion over 5 years.\n\nOption A: High-Tech Domestic Production\n- Build 100 vertical farms and 50 solar-powered greenhouses\n- Develop aquaculture capacity for 50,000 tons fish/year\n- Target: 70% self-sufficiency in vegetables, 40% in protein\n- Partner with Netherlands, Israel for agtech\n\nOption B: Strategic Reserve & Diversified Imports\n- Build strategic food reserves for 2 years of consumption\n- Acquire farmland in friendly nations (Sudan, Pakistan, Morocco)\n- Develop dedicated shipping routes avoiding chokepoints\n- Create bilateral food security agreements with 10+ nations\n\nCurrent Context:\n- Qatar imports 90% of food\n- 2017 blockade disrupted 40% of food imports temporarily\n- Arable land: <1% of territory\n- Water: Entirely desalinated, expensive\n- Baladna dairy: Success story (100% dairy self-sufficiency)\n- UAE and Saudi also investing in domestic production\n\nWhich strategy should Qatar pursue? Analyze:\n1. Cost per calorie comparison\n2. Resilience under crisis scenarios\n3. Water and energy requirements\n4. Speed of implementation\n5. Long-term sustainability\n"
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "feasibility_check",
+    "status": "complete",
+    "payload": {
+      "verdict": "PARTIALLY FEASIBLE"
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "feasibility_gate",
+    "status": "complete",
+    "payload": {},
+    "latency_ms": null
+  },
+  {
+    "stage": "error",
+    "status": "error",
+    "payload": {
+      "error": "DATABASE_URL environment variable must be set"
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "meta_synthesis",
+    "status": "complete",
+    "payload": {
+      "meta_synthesis": "",
+      "final_synthesis": "",
+      "stats": {
+        "n_facts": 0,
+        "n_sources": 0,
+        "n_scenarios": 6,
+        "n_turns": 0,
+        "n_experts": 6,
+        "n_challenges": 0,
+        "n_consensus": 0,
+        "n_critiques": 0,
+        "n_red_flags": 0,
+        "avg_confidence": 75
+      },
+      "confidence": 0.0
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "synthesize",
+    "status": "complete",
+    "payload": {
+      "text": "",
+      "final_synthesis": "",
+      "stats": {
+        "n_facts": 0,
+        "n_sources": 0,
+        "n_scenarios": 6,
+        "n_turns": 0,
+        "n_experts": 6,
+        "n_challenges": 0,
+        "n_consensus": 0,
+        "n_critiques": 0,
+        "n_red_flags": 0,
+        "avg_confidence": 75
+      },
+      "confidence": 0.0,
+      "word_count": 0
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "done",
+    "status": "complete",
+    "payload": {
+      "confidence": 0.0,
+      "warnings": [],
+      "errors": [],
+      "final_synthesis": "",
+      "meta_synthesis": "",
+      "summary": "",
+      "text": "",
+      "stats": {
+        "n_facts": 0,
+        "n_sources": 0,
+        "n_scenarios": 6,
+        "n_turns": 0,
+        "n_experts": 6,
+        "n_challenges": 0,
+        "n_consensus": 0,
+        "n_critiques": 0,
+        "n_red_flags": 0,
+        "avg_confidence": 75
+      },
+      "extracted_facts": [],
+      "word_count": 0
+    },
+    "latency_ms": null
+  }
+]

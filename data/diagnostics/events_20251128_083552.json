@@ -1,0 +1,132 @@
+[
+  {
+    "stage": "classify",
+    "status": "running",
+    "payload": {
+      "message": "Analyzing query complexity..."
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "classify",
+    "status": "complete",
+    "payload": {
+      "complexity": "complex",
+      "reasoning": [
+        "Query classified as: complex"
+      ]
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "prefetch",
+    "status": "running",
+    "payload": {
+      "message": "Processing prefetch..."
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "feasibility_check",
+    "status": "running",
+    "payload": {
+      "query": "\nWhat was Qatar's total LNG export revenue in 2023, and how does this compare \nto 2022? What are the projections for 2024?\n"
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "feasibility_check",
+    "status": "complete",
+    "payload": {
+      "verdict": "FEASIBLE"
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "feasibility_gate",
+    "status": "complete",
+    "payload": {},
+    "latency_ms": null
+  },
+  {
+    "stage": "error",
+    "status": "error",
+    "payload": {
+      "error": "DATABASE_URL environment variable must be set"
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "meta_synthesis",
+    "status": "complete",
+    "payload": {
+      "meta_synthesis": "",
+      "final_synthesis": "",
+      "stats": {
+        "n_facts": 0,
+        "n_sources": 0,
+        "n_scenarios": 6,
+        "n_turns": 0,
+        "n_experts": 6,
+        "n_challenges": 0,
+        "n_consensus": 0,
+        "n_critiques": 0,
+        "n_red_flags": 0,
+        "avg_confidence": 75
+      },
+      "confidence": 0.0
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "synthesize",
+    "status": "complete",
+    "payload": {
+      "text": "",
+      "final_synthesis": "",
+      "stats": {
+        "n_facts": 0,
+        "n_sources": 0,
+        "n_scenarios": 6,
+        "n_turns": 0,
+        "n_experts": 6,
+        "n_challenges": 0,
+        "n_consensus": 0,
+        "n_critiques": 0,
+        "n_red_flags": 0,
+        "avg_confidence": 75
+      },
+      "confidence": 0.0,
+      "word_count": 0
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "done",
+    "status": "complete",
+    "payload": {
+      "confidence": 0.0,
+      "warnings": [],
+      "errors": [],
+      "final_synthesis": "",
+      "meta_synthesis": "",
+      "summary": "",
+      "text": "",
+      "stats": {
+        "n_facts": 0,
+        "n_sources": 0,
+        "n_scenarios": 6,
+        "n_turns": 0,
+        "n_experts": 6,
+        "n_challenges": 0,
+        "n_consensus": 0,
+        "n_critiques": 0,
+        "n_red_flags": 0,
+        "avg_confidence": 75
+      },
+      "extracted_facts": [],
+      "word_count": 0
+    },
+    "latency_ms": null
+  }
+]

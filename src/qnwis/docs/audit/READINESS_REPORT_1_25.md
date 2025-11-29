@@ -1,8 +1,8 @@
 # Readiness Report: Steps 1-33
 
-**Generated:** 2025-11-26T06:46:10.922647
+**Generated:** 2025-11-28T20:40:49.277605
 **Overall Status:** FAIL
-**Execution Time:** 2576 ms
+**Execution Time:** 535 ms
 
 ## Summary
 
@@ -17,7 +17,7 @@
 ## Gate Results
 
 ### step_completeness [PASS]
-- **Duration:** 16 ms
+- **Duration:** 17 ms
 - **Severity:** ERROR
 ```json
 {
@@ -360,7 +360,7 @@
 - `docs/IMPLEMENTATION_ROADMAP.md`
 
 ### no_placeholders [FAIL]
-- **Duration:** 2560 ms
+- **Duration:** 510 ms
 - **Severity:** ERROR
 ```json
 {
@@ -477,6 +477,12 @@
       "snippet": "pass"
     },
     {
+      "file": "src/qnwis/llm/client.py",
+      "line": 253,
+      "pattern": "^\\s*pass\\s*$",
+      "snippet": "pass"
+    },
+    {
       "file": "src/qnwis/llm/exceptions.py",
       "line": 8,
       "pattern": "^\\s*pass\\s*$",
@@ -520,7 +526,7 @@
     },
     {
       "file": "src/qnwis/orchestration/graph_llm.py",
-      "line": 1156,
+      "line": 1330,
       "pattern": "^\\s*pass\\s*$",
       "snippet": "pass"
     },
@@ -561,6 +567,48 @@
       "snippet": "pass"
     },
     {
+      "file": "src/qnwis/orchestration/nodes/_helpers.py",
+      "line": 190,
+      "pattern": "^\\s*pass\\s*$",
+      "snippet": "pass"
+    },
+    {
+      "file": "src/qnwis/orchestration/nodes/_helpers.py",
+      "line": 203,
+      "pattern": "^\\s*pass\\s*$",
+      "snippet": "pass"
+    },
+    {
+      "file": "src/qnwis/orchestration/nodes/scenario_generator.py",
+      "line": 425,
+      "pattern": "^\\s*pass\\s*$",
+      "snippet": "pass"
+    },
+    {
+      "file": "src/qnwis/orchestration/nodes/scenario_generator.py",
+      "line": 439,
+      "pattern": "^\\s*pass\\s*$",
+      "snippet": "pass"
+    },
+    {
+      "file": "src/qnwis/orchestration/nodes/scenario_generator.py",
+      "line": 451,
+      "pattern": "^\\s*pass\\s*$",
+      "snippet": "pass"
+    },
+    {
+      "file": "src/qnwis/orchestration/nodes/structure_data.py",
+      "line": 279,
+      "pattern": "^\\s*pass\\s*$",
+      "snippet": "pass"
+    },
+    {
+      "file": "src/qnwis/orchestration/nodes/synthesis_legendary.py",
+      "line": 946,
+      "pattern": "^\\s*pass\\s*$",
+      "snippet": "pass"
+    },
+    {
       "file": "src/qnwis/orchestration/prefetch_apis.py",
       "line": 192,
       "pattern": "^\\s*pass\\s*$",
@@ -569,12 +617,6 @@
     {
       "file": "src/qnwis/orchestration/smart_data_router.py",
       "line": 579,
-      "pattern": "^\\s*pass\\s*$",
-      "snippet": "pass"
-    },
-    {
-      "file": "src/qnwis/orchestration/smart_data_router.py",
-      "line": 912,
       "pattern": "^\\s*pass\\s*$",
       "snippet": "pass"
     }

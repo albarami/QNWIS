@@ -1,0 +1,141 @@
+[
+  {
+    "stage": "classify",
+    "status": "running",
+    "payload": {
+      "message": "Analyzing query complexity..."
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "classify",
+    "status": "complete",
+    "payload": {
+      "complexity": "complex",
+      "reasoning": [
+        "Query classified as: complex"
+      ]
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "prefetch",
+    "status": "running",
+    "payload": {
+      "message": "Processing prefetch..."
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "feasibility_check",
+    "status": "running",
+    "payload": {
+      "query": "\nQatar's Ministry of Public Health must decide on the next phase of healthcare development.\nBudget allocation: QAR 30 billion over 8 years.\n\nOption A: Specialized Medical Tourism Hub\n- Build 3 world-class specialty hospitals (cardiac, oncology, orthopedics)\n- Target: Attract 500,000 medical tourists annually by 2032\n- Partner with Mayo Clinic, Cleveland Clinic for expertise\n- Revenue potential: QAR 8-12 billion annually\n\nOption B: Universal Primary Care Expansion\n- Build 50 new primary care centers across Qatar\n- Implement AI-driven preventive care system\n- Train 5,000 Qatari nurses and 1,000 Qatari physicians\n- Reduce chronic disease burden by 30%\n\nCurrent Context:\n- Hamad Medical Corporation handles 2.1M patient visits/year\n- 78% of healthcare workers are expatriates\n- Qatar spends 2.5% of GDP on healthcare (GCC average: 3.8%)\n- Chronic diseases account for 70% of deaths\n- Medical tourism currently brings 50,000 patients/year\n- Nearest competitors: UAE (Cleveland Clinic Abu Dhabi), Saudi (King Faisal)\n\nWhich strategy should Qatar pursue? Analyze:\n1. Qatarization potential in healthcare workforce\n2. ROI comparison over 10 years\n3. Impact on population health outcomes\n4. Regional competitive positioning\n5. Implementation risks and timelines\n"
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "feasibility_check",
+    "status": "complete",
+    "payload": {
+      "verdict": {
+        "option_a": {
+          "feasibility": "INFEASIBLE",
+          "explanation": "Target of 500,000 medical tourists annually is 10x the current number and would require significant infrastructure, partnerships, and regional competitiveness improvements. Budget feasibility is unclear without detailed cost breakdown."
+        },
+        "option_b": {
+          "feasibility": "AMBITIOUS",
+          "explanation": "Training 6,000 Qatari healthcare workers is challenging but potentially achievable with focused investment and incentives. Budget feasibility is unclear without detailed cost breakdown. This option aligns better with Qatarization goals and population health needs."
+        }
+      }
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "feasibility_gate",
+    "status": "complete",
+    "payload": {},
+    "latency_ms": null
+  },
+  {
+    "stage": "error",
+    "status": "error",
+    "payload": {
+      "error": "DATABASE_URL environment variable must be set"
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "meta_synthesis",
+    "status": "complete",
+    "payload": {
+      "meta_synthesis": "",
+      "final_synthesis": "",
+      "stats": {
+        "n_facts": 0,
+        "n_sources": 0,
+        "n_scenarios": 6,
+        "n_turns": 0,
+        "n_experts": 6,
+        "n_challenges": 0,
+        "n_consensus": 0,
+        "n_critiques": 0,
+        "n_red_flags": 0,
+        "avg_confidence": 75
+      },
+      "confidence": 0.0
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "synthesize",
+    "status": "complete",
+    "payload": {
+      "text": "",
+      "final_synthesis": "",
+      "stats": {
+        "n_facts": 0,
+        "n_sources": 0,
+        "n_scenarios": 6,
+        "n_turns": 0,
+        "n_experts": 6,
+        "n_challenges": 0,
+        "n_consensus": 0,
+        "n_critiques": 0,
+        "n_red_flags": 0,
+        "avg_confidence": 75
+      },
+      "confidence": 0.0,
+      "word_count": 0
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "done",
+    "status": "complete",
+    "payload": {
+      "confidence": 0.0,
+      "warnings": [],
+      "errors": [],
+      "final_synthesis": "",
+      "meta_synthesis": "",
+      "summary": "",
+      "text": "",
+      "stats": {
+        "n_facts": 0,
+        "n_sources": 0,
+        "n_scenarios": 6,
+        "n_turns": 0,
+        "n_experts": 6,
+        "n_challenges": 0,
+        "n_consensus": 0,
+        "n_critiques": 0,
+        "n_red_flags": 0,
+        "avg_confidence": 75
+      },
+      "extracted_facts": [],
+      "word_count": 0
+    },
+    "latency_ms": null
+  }
+]

@@ -1,0 +1,135 @@
+[
+  {
+    "stage": "classify",
+    "status": "running",
+    "payload": {
+      "message": "Analyzing query complexity..."
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "classify",
+    "status": "complete",
+    "payload": {
+      "complexity": "complex",
+      "reasoning": [
+        "Query classified as: complex"
+      ]
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "prefetch",
+    "status": "running",
+    "payload": {
+      "message": "Processing prefetch..."
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "feasibility_check",
+    "status": "running",
+    "payload": {
+      "query": "\nQatar's Ministry of Energy must plan for the post-hydrocarbon era.\nInvestment envelope: QAR 100 billion over 15 years.\n\nOption A: Green Hydrogen Superpower\n- Build 10 GW green hydrogen production capacity\n- Target: Capture 10% of global hydrogen export market by 2040\n- Leverage existing LNG infrastructure and customer relationships\n- Partner with Japan, South Korea, Germany as anchor buyers\n\nOption B: Solar Manufacturing & Export Hub\n- Build 5 GW solar panel manufacturing capacity\n- Develop 20 GW domestic solar farms\n- Target: Energy independence + regional export\n- Leverage sovereign wealth for technology acquisition\n\nCurrent Context:\n- Qatar produces 77M tons LNG/year (20% of global trade)\n- LNG revenues: $50-80 billion annually (depends on prices)\n- Current renewable energy: <2% of generation\n- Solar irradiance: 2,000 kWh/m\u00b2/year (excellent)\n- Green hydrogen cost trajectory: $2-3/kg by 2030\n- UAE and Saudi both investing heavily in renewables\n\nWhich path should Qatar take? Analyze:\n1. Revenue replacement potential vs LNG decline\n2. Technology risk comparison\n3. Job creation for Qataris\n4. Infrastructure requirements\n5. Geopolitical implications\n"
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "feasibility_check",
+    "status": "complete",
+    "payload": {
+      "verdict": {
+        "option_a": "\u26a0\ufe0f AMBITIOUS - Green hydrogen has high revenue replacement potential but requires significant investment, infrastructure, and technological breakthroughs. Feasibility depends on global hydrogen market growth and Qatar's ability to compete with larger players like Saudi Arabia and UAE.",
+        "option_b": "\u2705 FEASIBLE - Solar manufacturing and export hub is more aligned with Qatar's current capabilities and investment envelope. It offers energy independence, regional export potential, and lower technology risk compared to green hydrogen."
+      }
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "feasibility_gate",
+    "status": "complete",
+    "payload": {},
+    "latency_ms": null
+  },
+  {
+    "stage": "error",
+    "status": "error",
+    "payload": {
+      "error": "DATABASE_URL environment variable must be set"
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "meta_synthesis",
+    "status": "complete",
+    "payload": {
+      "meta_synthesis": "",
+      "final_synthesis": "",
+      "stats": {
+        "n_facts": 0,
+        "n_sources": 0,
+        "n_scenarios": 6,
+        "n_turns": 0,
+        "n_experts": 6,
+        "n_challenges": 0,
+        "n_consensus": 0,
+        "n_critiques": 0,
+        "n_red_flags": 0,
+        "avg_confidence": 75
+      },
+      "confidence": 0.0
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "synthesize",
+    "status": "complete",
+    "payload": {
+      "text": "",
+      "final_synthesis": "",
+      "stats": {
+        "n_facts": 0,
+        "n_sources": 0,
+        "n_scenarios": 6,
+        "n_turns": 0,
+        "n_experts": 6,
+        "n_challenges": 0,
+        "n_consensus": 0,
+        "n_critiques": 0,
+        "n_red_flags": 0,
+        "avg_confidence": 75
+      },
+      "confidence": 0.0,
+      "word_count": 0
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "done",
+    "status": "complete",
+    "payload": {
+      "confidence": 0.0,
+      "warnings": [],
+      "errors": [],
+      "final_synthesis": "",
+      "meta_synthesis": "",
+      "summary": "",
+      "text": "",
+      "stats": {
+        "n_facts": 0,
+        "n_sources": 0,
+        "n_scenarios": 6,
+        "n_turns": 0,
+        "n_experts": 6,
+        "n_challenges": 0,
+        "n_consensus": 0,
+        "n_critiques": 0,
+        "n_red_flags": 0,
+        "avg_confidence": 75
+      },
+      "extracted_facts": [],
+      "word_count": 0
+    },
+    "latency_ms": null
+  }
+]

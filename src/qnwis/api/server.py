@@ -11,8 +11,11 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 # Load environment variables from .env file
+from pathlib import Path
 from dotenv import load_dotenv
-load_dotenv()
+# Find .env in project root (3 levels up from this file)
+_env_path = Path(__file__).resolve().parents[3] / ".env"
+load_dotenv(_env_path)
 
 import jwt
 from brotli_asgi import BrotliMiddleware

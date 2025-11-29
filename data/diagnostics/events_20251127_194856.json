@@ -1,0 +1,23 @@
+[
+  {
+    "stage": "classify",
+    "status": "running",
+    "payload": {
+      "message": "Analyzing query complexity..."
+    },
+    "latency_ms": null,
+    "timestamp": "2025-11-27T19:48:56.462877+00:00"
+  },
+  {
+    "stage": "classify",
+    "status": "complete",
+    "payload": {
+      "complexity": "complex",
+      "reasoning": [
+        "Query classified as: complex"
+      ]
+    },
+    "latency_ms": null,
+    "timestamp": "2025-11-27T19:48:56.469632+00:00"
+  }
+]

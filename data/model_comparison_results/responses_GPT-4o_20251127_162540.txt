@@ -1,0 +1,63 @@
+MODEL: GPT-4o
+======================================================================
+
+[Economic Diversification]
+Status: success, Words: 1067, Time: 19.37s
+Quality: {'structure': 0.833, 'depth': 0.75, 'actionability': 0.333, 'overall': 0.646}
+--------------------------------------------------
+No response
+
+[Energy/Oil&Gas]
+Status: success, Words: 1112, Time: 15.46s
+Quality: {'structure': 0.833, 'depth': 0.625, 'actionability': 0.833, 'overall': 0.74}
+--------------------------------------------------
+No response
+
+[Tourism]
+Status: success, Words: 1106, Time: 23.5s
+Quality: {'structure': 1.0, 'depth': 1.0, 'actionability': 0.667, 'overall': 0.9}
+--------------------------------------------------
+No response
+
+[Food Security]
+Status: success, Words: 1028, Time: 22.69s
+Quality: {'structure': 1.0, 'depth': 0.5, 'actionability': 0.667, 'overall': 0.675}
+--------------------------------------------------
+No response
+
+[Healthcare]
+Status: success, Words: 1169, Time: 16.81s
+Quality: {'structure': 1.0, 'depth': 0.75, 'actionability': 0.5, 'overall': 0.738}
+--------------------------------------------------
+No response
+
+[Digital/AI]
+Status: success, Words: 1183, Time: 23.84s
+Quality: {'structure': 1.0, 'depth': 0.875, 'actionability': 0.5, 'overall': 0.794}
+--------------------------------------------------
+No response
+
+[Manufacturing]
+Status: success, Words: 991, Time: 16.79s
+Quality: {'structure': 1.0, 'depth': 0.875, 'actionability': 0.5, 'overall': 0.794}
+--------------------------------------------------
+No response
+
+[Workforce/Labor]
+Status: success, Words: 1003, Time: 20.36s
+Quality: {'structure': 1.0, 'depth': 0.5, 'actionability': 0.5, 'overall': 0.625}
+--------------------------------------------------
+No response
+
+[Infrastructure]
+Status: success, Words: 955, Time: 17.45s
+Quality: {'structure': 1.0, 'depth': 0.75, 'actionability': 0.5, 'overall': 0.738}
+--------------------------------------------------
+No response
+
+[Cross-Domain Strategic]
+Status: success, Words: 1062, Time: 16.11s
+Quality: {'structure': 0.833, 'depth': 0.875, 'actionability': 0.5, 'overall': 0.752}
+--------------------------------------------------
+No response
+

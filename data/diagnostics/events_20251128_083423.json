@@ -1,0 +1,132 @@
+[
+  {
+    "stage": "classify",
+    "status": "running",
+    "payload": {
+      "message": "Analyzing query complexity..."
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "classify",
+    "status": "complete",
+    "payload": {
+      "complexity": "complex",
+      "reasoning": [
+        "Query classified as: complex"
+      ]
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "prefetch",
+    "status": "running",
+    "payload": {
+      "message": "Processing prefetch..."
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "feasibility_check",
+    "status": "running",
+    "payload": {
+      "query": "\nQatar must choose its primary economic diversification focus for the next decade. \nThe Ministry of Finance has budget for ONE major initiative (QAR 50 billion over 10 years).\n\nOption A: Financial Services Hub\n- Target: Become the leading Islamic finance and wealth management center in the GCC\n- Compete directly with Dubai International Financial Centre (DIFC)\n- Leverage QIA's $450B sovereign wealth for anchor investments\n\nOption B: Advanced Logistics & Trade Hub  \n- Target: Become the GCC's premier air cargo and re-export hub\n- Expand Hamad International Airport cargo capacity 3x\n- Leverage geographic position between Europe, Asia, and Africa\n\nCurrent Context:\n- Qatar Financial Centre currently employs 1,200 Qataris (5% of target 25,000)\n- Hamad Airport handles 2.5M tons cargo/year (Dubai: 2.7M tons)\n- Dubai has 40+ year head start in financial services\n- Saudi Arabia investing $100B in NEOM logistics zone\n- Qatari STEM/business graduates: 4,500 per year combined\n\nWhich option should Qatar prioritize and why? Consider:\n1. Competitive dynamics with UAE and Saudi Arabia\n2. Qatarization potential in each sector  \n3. Revenue diversification from hydrocarbons\n4. Risk factors and mitigation strategies\n5. 10-year projected outcomes under different scenarios\n"
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "feasibility_check",
+    "status": "complete",
+    "payload": {
+      "verdict": "FEASIBLE"
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "feasibility_gate",
+    "status": "complete",
+    "payload": {},
+    "latency_ms": null
+  },
+  {
+    "stage": "error",
+    "status": "error",
+    "payload": {
+      "error": "DATABASE_URL environment variable must be set"
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "meta_synthesis",
+    "status": "complete",
+    "payload": {
+      "meta_synthesis": "",
+      "final_synthesis": "",
+      "stats": {
+        "n_facts": 0,
+        "n_sources": 0,
+        "n_scenarios": 6,
+        "n_turns": 0,
+        "n_experts": 6,
+        "n_challenges": 0,
+        "n_consensus": 0,
+        "n_critiques": 0,
+        "n_red_flags": 0,
+        "avg_confidence": 75
+      },
+      "confidence": 0.0
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "synthesize",
+    "status": "complete",
+    "payload": {
+      "text": "",
+      "final_synthesis": "",
+      "stats": {
+        "n_facts": 0,
+        "n_sources": 0,
+        "n_scenarios": 6,
+        "n_turns": 0,
+        "n_experts": 6,
+        "n_challenges": 0,
+        "n_consensus": 0,
+        "n_critiques": 0,
+        "n_red_flags": 0,
+        "avg_confidence": 75
+      },
+      "confidence": 0.0,
+      "word_count": 0
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "done",
+    "status": "complete",
+    "payload": {
+      "confidence": 0.0,
+      "warnings": [],
+      "errors": [],
+      "final_synthesis": "",
+      "meta_synthesis": "",
+      "summary": "",
+      "text": "",
+      "stats": {
+        "n_facts": 0,
+        "n_sources": 0,
+        "n_scenarios": 6,
+        "n_turns": 0,
+        "n_experts": 6,
+        "n_challenges": 0,
+        "n_consensus": 0,
+        "n_critiques": 0,
+        "n_red_flags": 0,
+        "avg_confidence": 75
+      },
+      "extracted_facts": [],
+      "word_count": 0
+    },
+    "latency_ms": null
+  }
+]

@@ -1,0 +1,311 @@
+FULL RESPONSES: GPT-5
+================================================================================
+
+TEST: FPR-001
+Score: 100.0%
+Passed: ['identifies_impossibility', 'shows_arithmetic', 'suggests_feasible_alternative', 'does_not_discuss_impossible_policies']
+Failed: []
+----------------------------------------
+Let's check the **basic arithmetic feasibility first** — before discussing policy levers.  
+
+---
+
+### Step 1. Define the target numerically
+- Private sector total workforce = **2,000,000 workers**
+- Target = **70% Qatari** by 2028  
+  → Required number of Qatari workers in private sector = 0.70 × 2,000,000 = **1,400,000 Qataris**
+
+---
+
+### Step 2. Compare to available Qatari labor supply
+- Total working-age Qataris (18–60) = **200,000**
+- Currently employed Qataris (mostly public sector) = **150... [truncated]
+
+================================================================================
+
+TEST: FPR-002
+Score: 65.0%
+Passed: ['calculates_true_cost', 'flags_both_issues']
+Failed: ['identifies_population_constraint']
+----------------------------------------
+Let's analyze this carefully, step by step.  
+
+---
+
+### 1. **Program Design Summary**
+
+- **Subsidy:** QAR 5,000 per month per Qatari private-sector worker  
+- **Target group:** 500,000 Qatari private-sector workers (by 2026)  
+- **Duration:** Permanent  
+- **Government budget:** ~QAR 200 billion per year  
+
+---
+
+### 2. **Basic Fiscal Arithmetic**
+
+**Annual cost per worker:**
+
+\[
+5{,}000 \text{ QAR/month} \times 12 = 60{,}000 \text{ QAR/year per worker}
+\]
+
+**Total annual cost (for 500,000 worker... [truncated]
+
+================================================================================
+
+TEST: FPR-003
+Score: 100.0%
+Passed: ['identifies_timeline_impossibility', 'identifies_pipeline_constraint', 'provides_realistic_projection']
+Failed: []
+----------------------------------------
+Let’s analyze this carefully from a **workforce development and training capacity** perspective.
+
+---
+
+### 1. Target and Timeline
+**Goal:** 50,000 new Qatari doctors  
+**Deadline:** By **2027** (i.e., in **2 years**)  
+**Current year:** 2025  
+
+---
+
+### 2. Current Training Pipeline
+- **Medical graduates per year:** ~500 Qatari students  
+- **Duration of medical training:** 6 years minimum (undergraduate medical degree)  
+- **Total university enrollment (all fields):** ~25,000 students  
+
+---
+
+##... [truncated]
+
+================================================================================
+
+TEST: CIT-001
+Score: 68.0%
+Passed: ['uses_citation_format', 'no_fabricated_numbers']
+Failed: ['acknowledges_missing_data']
+----------------------------------------
+Qatar’s economy in 2024 demonstrates robust diversification and sustained growth. The nation’s total economic output reached [Per extraction: "QAR 715.5 billion"], reflecting a strong performance across both hydrocarbon and non-hydrocarbon sectors. The non-oil segment accounted for [Per extraction: "52.3%"] of GDP, indicating that more than half of Qatar’s economic activity now arises from industries beyond oil and gas—such as finance, construction, and tourism.
+
+Tourism continues to play an inc... [truncated]
+
+================================================================================
+
+TEST: CIT-002
+Score: 70.0%
+Passed: ['refuses_to_fabricate', 'does_not_invent_numbers']
+Failed: ['uses_available_data']
+----------------------------------------
+Based on the extracted facts, here is the analysis:
+
+**1. Unemployment rate**  
+- Qatar’s unemployment rate is **0.1%**.
+
+**2. Average wages by sector**  
+- No data on average wages by sector is available in the extracted facts.
+
+**3. Job creation trends (2020–2024)**  
+- No data on job creation trends between 2020 and 2024 is available in the extracted facts.
+
+**4. Skills gap assessment**  
+- No data on skills gaps is available in the extracted facts.
+
+**Summary:**  
+The only available labor ma... [truncated]
+
+================================================================================
+
+TEST: STK-001
+Score: 93.3%
+Passed: ['has_specific_numbers', 'has_specific_timelines', 'has_causal_mechanisms', 'has_stakeholder_impact']
+Failed: []
+----------------------------------------
+Excellent — let’s construct **three brutally specific risk scenarios** for Qatar’s economy between **Q3 2024 and Q4 2027**, with full magnitude, timeline, mechanism, and stakeholder impact.  
+
+---
+
+## **Scenario 1: LNG Price Collapse and Contract Renegotiations (Q4 2024–Q2 2026)**
+
+**Magnitude:**
+- Global LNG spot price falls from **$12/MMBtu (Q3 2024)** to **$6/MMBtu (Q1 2025)** and remains below **$7/MMBtu for 18 months**.  
+- Japan and South Korea jointly renegotiate **20-year supply contract... [truncated]
+
+================================================================================
+
+TEST: STK-002
+Score: 100.0%
+Passed: ['has_budget_breakdown', 'has_timeline_phases', 'has_specific_targets', 'assigns_responsibility']
+Failed: []
+----------------------------------------
+**Policy Recommendation: “Qatar Financial Talent Acceleration Program (QFTAP)”**
+
+**Objective:**  
+Increase Qatari nationals’ share of employment in the financial services sector from **10% (4,500 workers)** to **25% (11,250 workers)** by **Q4 2029**.
+
+---
+
+### 1. **Program Components**
+
+#### A. Financial Skills Scholarship & Training Fund  
+- **Budget:** QAR **800 million** (2025–2029)  
+- **Responsible Party:** **Ministry of Education and Higher Education (MOEHE)** in partnership with **Qatar ... [truncated]
+
+================================================================================
+
+TEST: DBT-001
+Score: 86.7%
+Passed: ['has_strong_for_arguments', 'has_strong_against_arguments', 'identifies_arithmetic_issue']
+Failed: ['provides_nuanced_conclusion']
+----------------------------------------
+Sure — let’s structure this carefully and analytically.
+
+---
+
+## 1. STRONGEST CASE **FOR** the proposal
+
+### A. National identity and sovereignty
+- **Economic sovereignty:** Qatar’s private sector is overwhelmingly dependent on expatriate labor (≈96%). A 50% quota would ensure that nationals have a meaningful stake in the economy, reducing vulnerability to external labor shocks and geopolitical risks.
+- **Cultural continuity:** A higher presence of Qataris in private firms helps preserve nationa... [truncated]
+
+================================================================================
+
+TEST: DBT-002
+Score: 100.0%
+Passed: ['challenges_talent_assumption', 'challenges_competition_assumption', 'challenges_jobs_number', 'identifies_risks']
+Failed: []
+----------------------------------------
+Alright — let’s tear this apart from a Devil’s Advocate perspective.  
+
+---
+
+### 1. Weakest Assumptions
+
+**Assumption 1: “Talent will relocate to Qatar for AI jobs.”**
+- **Why weak:** Qatar has a small population, restrictive residency policies, and limited lifestyle appeal compared to Dubai or Riyadh. Global AI talent tends to cluster in ecosystems with academic depth, venture capital, and cultural openness — none of which Qatar currently dominates.
+- **What could go wrong:** Even with high sal... [truncated]
+
+================================================================================
+
+TEST: XDR-001
+Score: 100.0%
+Passed: ['identifies_revenue_impact', 'shows_education_connection', 'shows_workforce_connection', 'shows_qatarization_connection', 'uses_causal_notation']
+Failed: []
+----------------------------------------
+Here’s a structured causal-chain analysis of a **sustained oil price drop to $40/barrel for 24 months**, focusing on Qatar (or a similar hydrocarbon-dependent economy).  
+
+---
+
+### **Primary Shock**
+**Energy Market Domain:**  
+Global oil price sustained at $40/barrel → **Sharp decline in hydrocarbon export revenues** for the state.
+
+---
+
+## **Causal Chain 1: Government Revenue & Budget → Education Spending → Workforce Development → Private Sector Growth → Qatarization Targets**
+
+---
+
+### **Step ... [truncated]
+
+================================================================================
+
+TEST: XDR-002
+Score: 83.3%
+Passed: ['compares_labor_requirements', 'provides_integrated_recommendation', 'considers_competition']
+Failed: ['identifies_tradeoffs']
+----------------------------------------
+Qatar’s strategic choice between becoming a **Financial Hub** or a **Logistics Hub** cannot be made in isolation—each trajectory reshapes the same underlying systems: labor, education, infrastructure, and national identity. The optimal path should therefore be judged by how well it aligns with Qatar’s demographic realities, its Qatarization policy, and the need for sustainable revenue diversification beyond hydrocarbons.
+
+---
+
+### Integrated Assessment and Recommendation
+
+**Recommendation:**  
+Q... [truncated]
+
+================================================================================
+
+TEST: SYN-001
+Score: 100.0%
+Passed: ['has_executive_summary', 'has_quantified_findings', 'has_ranked_risks', 'has_clear_recommendation', 'has_confidence_level']
+Failed: []
+----------------------------------------
+**Ministerial Briefing: Qatarization in the Banking Sector**  
+*(Prepared for the Minister of Labour – 5-minute read)*  
+
+---
+
+### **1. Executive Summary**
+Qatarization in the banking sector stands at 20%, below the 30% target set for 2025. Despite steady graduate output, high attrition and salary disparities are constraining progress. Without coordinated retention and development measures, the sector risks missing its target and widening the skills gap. Immediate action is needed to align recru... [truncated]
+
+================================================================================
+
+TEST: SYN-002
+Score: 100.0%
+Passed: ['distinguishes_evidence_quality', 'uses_calibrated_confidence', 'does_not_overclaim', 'acknowledges_data_gaps']
+Failed: []
+----------------------------------------
+Here’s a structured assessment of Qatar’s existing Qatarization policies based on the evidence provided:
+
+---
+
+### 1. **Overall Progress Toward Qatarization Goals**
+
+**Evidence:**  
+- Qatarization rate increased from **3.2% to 4.1% (2020–2024)**  
+- **Government sector:** 85% Qatari (target met)
+
+**Assessment:**  
+This indicates **moderate progress** in achieving nationalization objectives, particularly in the public sector. The increase in overall Qatarization rate, while modest, suggests incre... [truncated]
+
+================================================================================
+
+TEST: DEP-001
+Score: 100.0%
+Passed: ['identifies_first_order', 'identifies_second_order', 'identifies_third_order', 'identifies_unintended_consequences']
+Failed: []
+----------------------------------------
+Let’s analyze the cascading effects of Qatar implementing a **mandatory 40% Qatarization quota in the hospitality sector by 2026**, given the current workforce composition and labor market realities.
+
+---
+
+### **First-Order Effects (Direct, Immediate)**
+
+1. **Labor Shortage and Compliance Pressure**
+   - Hotels and restaurants will face an acute shortage of qualified Qatari nationals to meet the quota (need 34,000, but only 3,000–5,000 are interested).
+   - Employers may struggle to fill positio... [truncated]
+
+================================================================================
+
+TEST: DEP-002
+Score: 100.0%
+Passed: ['covers_uae', 'covers_saudi', 'covers_singapore', 'provides_specific_metrics', 'draws_lessons']
+Failed: []
+----------------------------------------
+Let’s benchmark **Qatar’s Qatarization policy** against its regional peers and a global best-practice case (Singapore), focusing on **design, implementation, outcomes, and lessons learned**.
+
+---
+
+### 1. **Qatarization: Overview**
+- **Objective:** Increase the proportion of Qatari nationals in the workforce, especially in strategic sectors (energy, finance, public administration).
+- **Target:** Often cited as 50% Qataris in the energy sector, though actual figures remain below this.
+- **Mechanis... [truncated]
+
+================================================================================
+
+TEST: ACC-001
+Score: 88.0%
+Passed: ['export_correct', 'world_cup_correct', 'swf_correct', 'currency_correct', 'emir_correct', 'nds_correct', 'citizen_percentage_correct']
+Failed: ['population_correct']
+----------------------------------------
+Here are factual answers about Qatar:  
+
+1. **Total population (citizens + residents):** Approximately **2.7 million** people (as of 2024).  
+2. **Main export commodity:** **Liquefied natural gas (LNG)** — along with crude oil and petroleum products.  
+3. **Year Qatar hosted the FIFA World Cup:** **2022**.  
+4. **Name of Qatar's sovereign wealth fund:** **Qatar Investment Authority (QIA)**.  
+5. **Currency:** **Qatari riyal (QAR)**.  
+6. **Current Emir of Qatar (as of 2024):** **Sheikh Tamim bin... [truncated]
+
+================================================================================
+

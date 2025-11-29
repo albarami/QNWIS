@@ -1,0 +1,11 @@
+{
+  "timestamp": "2025-11-28T12:39:09.819991",
+  "duration_seconds": 43.875696,
+  "overall_score": 0.0,
+  "mckinsey_compliant": false,
+  "mckinsey_checklist": {},
+  "stages": {},
+  "recommendations": [
+    "CRITICAL: Diagnostic failed with error: 'NoneType' object has no attribute 'get'"
+  ]
+}

@@ -16,6 +16,21 @@ from .engine_b_deepseek import (
     create_engine_b,
 )
 
+from .timing_logger import (
+    TimingLogger,
+    Stage,
+    TimingEntry,
+    ScenarioTimingReport,
+    get_timing_logger,
+    reset_timing_logger,
+)
+
+from .dual_engine_orchestrator import (
+    DualEngineOrchestrator,
+    DualEngineResult,
+    create_dual_engine_orchestrator,
+)
+
 __all__ = [
     # DeepSeek Client
     "DeepSeekClient",
@@ -29,4 +44,15 @@ __all__ = [
     "ScenarioResult",
     "TurnResult",
     "create_engine_b",
+    # Timing Logger
+    "TimingLogger",
+    "Stage",
+    "TimingEntry",
+    "ScenarioTimingReport",
+    "get_timing_logger",
+    "reset_timing_logger",
+    # Dual-Engine Orchestrator
+    "DualEngineOrchestrator",
+    "DualEngineResult",
+    "create_dual_engine_orchestrator",
 ]

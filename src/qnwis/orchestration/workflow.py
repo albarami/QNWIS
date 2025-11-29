@@ -360,11 +360,30 @@ async def meta_synthesis_wrapper(state: IntelligenceState) -> IntelligenceState:
     
     Creates ministerial-grade strategic intelligence by identifying
     robust recommendations, scenario-dependent strategies, and early warning indicators.
+    
+    FIXED: Also handles cases where debate_synthesis exists but scenario_results doesn't.
     """
     scenario_results = state.get('scenario_results')
+    debate_synthesis = state.get('debate_synthesis', '')
+    conversation_history = state.get('conversation_history', [])
+    
+    # Check if we already have synthesis from debate or another node
     if not scenario_results:
-        logger.info("No scenario results to synthesize")
-        return state
+        # Check if we have debate content we can use
+        if debate_synthesis or conversation_history:
+            logger.info(f"No scenario results, but found debate content: {len(debate_synthesis)} chars, {len(conversation_history)} turns")
+            
+            # Use debate synthesis as final synthesis if available
+            if debate_synthesis and not state.get('final_synthesis'):
+                state['final_synthesis'] = debate_synthesis
+                state['meta_synthesis'] = debate_synthesis
+                state['reasoning_chain'].append("✅ Using debate synthesis as final output")
+                logger.info(f"✅ Using debate_synthesis ({len(debate_synthesis)} chars) as final_synthesis")
+            
+            return state
+        else:
+            logger.info("No scenario results or debate content to synthesize")
+            return state
     
     try:
         logger.info(f"Synthesizing insights across {len(scenario_results)} scenarios...")
@@ -373,6 +392,7 @@ async def meta_synthesis_wrapper(state: IntelligenceState) -> IntelligenceState:
         meta_synthesis = await meta_synthesis_node(scenario_results)
         
         state['final_synthesis'] = meta_synthesis
+        state['meta_synthesis'] = meta_synthesis
         state['reasoning_chain'].append("✅ Meta-synthesis complete")
         
         logger.info("✅ Meta-synthesis complete")
@@ -381,8 +401,15 @@ async def meta_synthesis_wrapper(state: IntelligenceState) -> IntelligenceState:
     except Exception as e:
         logger.error(f"Meta-synthesis failed: {e}", exc_info=True)
         state['errors'].append(f"Meta-synthesis failed: {e}")
-        # Use emergency fallback
-        state['final_synthesis'] = f"Meta-synthesis error: {e}"
+        
+        # Emergency fallback: use debate synthesis if available
+        if debate_synthesis:
+            state['final_synthesis'] = debate_synthesis
+            state['meta_synthesis'] = debate_synthesis
+            logger.info(f"Using debate_synthesis as fallback ({len(debate_synthesis)} chars)")
+        else:
+            state['final_synthesis'] = f"Meta-synthesis error: {e}"
+        
         return state
 
 

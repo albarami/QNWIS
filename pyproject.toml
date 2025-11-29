@@ -47,6 +47,7 @@ dependencies = [
 
   # Data Science
   "numpy>=1.24.0",
+  "numpy_financial>=1.0.0",
   "pandas>=2.0.0",
   "scipy>=1.11.0",
 

@@ -1,0 +1,10 @@
+{
+  "complexity": "complex",
+  "reasoning": [
+    "Query classified as: complex"
+  ],
+  "verdict": {
+    "financial_services_hub": "FEASIBLE",
+    "advanced_logistics_trade_hub": "FEASIBLE"
+  }
+}

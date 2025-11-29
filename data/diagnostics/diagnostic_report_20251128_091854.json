@@ -1,0 +1,237 @@
+{
+  "timestamp": "2025-11-28T08:40:28.588711",
+  "duration_seconds": 2305.996682,
+  "overall_score": 34.24999999999999,
+  "mckinsey_compliant": false,
+  "mckinsey_checklist": {
+    "npv_in_output": false,
+    "irr_in_output": false,
+    "sensitivity_in_output": false,
+    "confidence_stated": true,
+    "tables_present": true,
+    "no_vague_estimates": true
+  },
+  "stages": {
+    "classification": {
+      "score": 25.0,
+      "level": "FAIL",
+      "checks": [
+        {
+          "name": "complexity_detected",
+          "passed": false,
+          "score": 0,
+          "level": "FAIL",
+          "details": "No complexity classification found"
+        },
+        {
+          "name": "correct_classification",
+          "passed": false,
+          "score": 50,
+          "level": "WARN",
+          "details": "Expected 'complex', got ''"
+        }
+      ]
+    },
+    "data_extraction": {
+      "score": 70.0,
+      "level": "WARN",
+      "checks": [
+        {
+          "name": "fact_count",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Extracted 690 facts (minimum: 100)"
+        },
+        {
+          "name": "source_diversity",
+          "passed": false,
+          "score": 40.0,
+          "level": "FAIL",
+          "details": "Used 2 distinct sources"
+        }
+      ]
+    },
+    "agents": {
+      "score": 0.0,
+      "level": "FAIL",
+      "checks": [
+        {
+          "name": "agent_participation",
+          "passed": false,
+          "score": 0.0,
+          "level": "FAIL",
+          "details": "Found 0/5 expected agents"
+        }
+      ]
+    },
+    "debate": {
+      "score": 0.0,
+      "level": "FAIL",
+      "checks": [
+        {
+          "name": "debate_turns",
+          "passed": false,
+          "score": 0.0,
+          "level": "FAIL",
+          "details": "0 turns (target: 50 for standard)"
+        },
+        {
+          "name": "debate_phases",
+          "passed": false,
+          "score": 0.0,
+          "level": "WARN",
+          "details": "Phases found: set()"
+        },
+        {
+          "name": "debate_relevance",
+          "passed": false,
+          "score": 0.0,
+          "level": "WARN",
+          "details": "0/20 sampled turns discuss the options"
+        }
+      ]
+    },
+    "critique": {
+      "score": 0.0,
+      "level": "FAIL",
+      "checks": [
+        {
+          "name": "critique_count",
+          "passed": false,
+          "score": 0,
+          "level": "FAIL",
+          "details": "0 critiques generated"
+        },
+        {
+          "name": "red_flags",
+          "passed": false,
+          "score": 0,
+          "level": "FAIL",
+          "details": "0 red flags identified"
+        }
+      ]
+    },
+    "verification": {
+      "score": 100.0,
+      "level": "PASS",
+      "checks": [
+        {
+          "name": "no_fabrication",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "No fabrication detected"
+        }
+      ]
+    },
+    "synthesis": {
+      "score": 100.0,
+      "level": "PASS",
+      "checks": [
+        {
+          "name": "synthesis_length",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "10995 characters (minimum: 3000)"
+        },
+        {
+          "name": "has_recommendation",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Contains clear recommendation"
+        },
+        {
+          "name": "quantitative_content",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Found 56 numeric values in synthesis"
+        }
+      ]
+    },
+    "data_structuring": {
+      "score": 0.0,
+      "level": "FAIL",
+      "checks": [
+        {
+          "name": "structured_inputs_exist",
+          "passed": false,
+          "score": 0,
+          "level": "FAIL",
+          "details": "No structured inputs found - data structuring node not implemented yet"
+        }
+      ]
+    },
+    "calculations": {
+      "score": 0.0,
+      "level": "FAIL",
+      "checks": [
+        {
+          "name": "calculations_exist",
+          "passed": false,
+          "score": 0,
+          "level": "FAIL",
+          "details": "No calculated results found - calculation engine not implemented yet"
+        }
+      ]
+    },
+    "mckinsey_compliance": {
+      "score": 50.0,
+      "level": "WARN",
+      "checks": [
+        {
+          "name": "npv_in_output",
+          "passed": false,
+          "score": 0,
+          "level": "FAIL",
+          "details": "NPV not found in output"
+        },
+        {
+          "name": "irr_in_output",
+          "passed": false,
+          "score": 0,
+          "level": "FAIL",
+          "details": "IRR not found in output"
+        },
+        {
+          "name": "sensitivity_in_output",
+          "passed": false,
+          "score": 0,
+          "level": "FAIL",
+          "details": "No sensitivity analysis in output"
+        },
+        {
+          "name": "confidence_stated",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Confidence level stated"
+        },
+        {
+          "name": "tables_present",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Formatted tables in output"
+        },
+        {
+          "name": "no_vague_estimates",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "No vague estimates found"
+        }
+      ]
+    }
+  },
+  "recommendations": [
+    "CRITICAL: Implement calculation engine (financial_engine.py) for NPV/IRR/sensitivity analysis",
+    "CRITICAL: Add structure_data_node to convert extracted facts to calculation inputs",
+    "CRITICAL: Add calculate_node to run deterministic financial calculations",
+    "MEDIUM: Increase debate depth or ensure all phases complete",
+    "LOW: Expand data sources for richer fact extraction"
+  ]
+}

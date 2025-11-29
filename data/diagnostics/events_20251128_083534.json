@@ -1,0 +1,141 @@
+[
+  {
+    "stage": "classify",
+    "status": "running",
+    "payload": {
+      "message": "Analyzing query complexity..."
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "classify",
+    "status": "complete",
+    "payload": {
+      "complexity": "complex",
+      "reasoning": [
+        "Query classified as: complex"
+      ]
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "prefetch",
+    "status": "running",
+    "payload": {
+      "message": "Processing prefetch..."
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "feasibility_check",
+    "status": "running",
+    "payload": {
+      "query": "\nAfter FIFA World Cup 2022, Qatar must sustain tourism momentum.\nBudget: QAR 20 billion over 5 years.\n\nOption A: Luxury & Business Tourism Focus\n- Position as ultra-premium destination\n- Target: 2 million high-spending visitors/year\n- Develop exclusive experiences (desert luxury, cultural immersion)\n- Average spend target: $5,000/visitor\n\nOption B: Mass Market & Family Tourism\n- Develop theme parks, beaches, entertainment\n- Target: 8 million visitors/year\n- Compete with Dubai on volume\n- Average spend target: $1,200/visitor\n\nCurrent Context:\n- World Cup hosted 1.4 million visitors in 4 weeks\n- Current annual visitors: 3 million\n- Hotel capacity: 45,000 rooms (30,000 added for World Cup)\n- Dubai attracts 16 million visitors/year\n- Qatar has 1 major theme park (planned)\n- Cruise terminal operational in Doha Port\n\nWhich tourism model should Qatar pursue? Consider:\n1. Revenue comparison (volume vs value)\n2. Job creation for Qataris\n3. Infrastructure utilization (World Cup legacy)\n4. Cultural and social impact\n5. Competitive positioning vs Dubai, Saudi Vision 2030\n"
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "feasibility_check",
+    "status": "complete",
+    "payload": {
+      "verdict": {
+        "luxury_tourism": {
+          "feasibility": "AMBITIOUS",
+          "explanation": "Luxury tourism requires a 1.5x increase in visitors, which is achievable with targeted marketing and infrastructure upgrades. However, hotel capacity is slightly below the required level, necessitating additional investment in high-end accommodations."
+        },
+        "mass_market_tourism": {
+          "feasibility": "INFEASIBLE",
+          "explanation": "Mass market tourism requires a 2.67x increase in visitors and a 4.44x increase in hotel capacity, which is beyond Qatar's current infrastructure and competitive positioning. Competing with Dubai on volume is unrealistic given Qatar's smaller scale and cultural preferences."
+        }
+      }
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "feasibility_gate",
+    "status": "complete",
+    "payload": {},
+    "latency_ms": null
+  },
+  {
+    "stage": "error",
+    "status": "error",
+    "payload": {
+      "error": "DATABASE_URL environment variable must be set"
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "meta_synthesis",
+    "status": "complete",
+    "payload": {
+      "meta_synthesis": "",
+      "final_synthesis": "",
+      "stats": {
+        "n_facts": 0,
+        "n_sources": 0,
+        "n_scenarios": 6,
+        "n_turns": 0,
+        "n_experts": 6,
+        "n_challenges": 0,
+        "n_consensus": 0,
+        "n_critiques": 0,
+        "n_red_flags": 0,
+        "avg_confidence": 75
+      },
+      "confidence": 0.0
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "synthesize",
+    "status": "complete",
+    "payload": {
+      "text": "",
+      "final_synthesis": "",
+      "stats": {
+        "n_facts": 0,
+        "n_sources": 0,
+        "n_scenarios": 6,
+        "n_turns": 0,
+        "n_experts": 6,
+        "n_challenges": 0,
+        "n_consensus": 0,
+        "n_critiques": 0,
+        "n_red_flags": 0,
+        "avg_confidence": 75
+      },
+      "confidence": 0.0,
+      "word_count": 0
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "done",
+    "status": "complete",
+    "payload": {
+      "confidence": 0.0,
+      "warnings": [],
+      "errors": [],
+      "final_synthesis": "",
+      "meta_synthesis": "",
+      "summary": "",
+      "text": "",
+      "stats": {
+        "n_facts": 0,
+        "n_sources": 0,
+        "n_scenarios": 6,
+        "n_turns": 0,
+        "n_experts": 6,
+        "n_challenges": 0,
+        "n_consensus": 0,
+        "n_critiques": 0,
+        "n_red_flags": 0,
+        "avg_confidence": 75
+      },
+      "extracted_facts": [],
+      "word_count": 0
+    },
+    "latency_ms": null
+  }
+]

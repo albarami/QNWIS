@@ -1,0 +1,107 @@
+{
+  "timestamp": "2025-11-28T08:27:20.458083",
+  "queries_run": 10,
+  "successful": 10,
+  "results": {
+    "economic_diversification": {
+      "status": "SUCCESS",
+      "overall_score": 0.0,
+      "mckinsey_compliant": false,
+      "duration_seconds": 35.920981,
+      "mckinsey_checklist": {},
+      "recommendations": [
+        "CRITICAL: Diagnostic failed with error: cannot import name 'QNWISStreamingOrchestrator' from 'src.qnwis.orchestration.streaming' (D:\\lmis_int\\src\\qnwis\\orchestration\\streaming.py)"
+      ]
+    },
+    "healthcare": {
+      "status": "SUCCESS",
+      "overall_score": 0.0,
+      "mckinsey_compliant": false,
+      "duration_seconds": 0.002724,
+      "mckinsey_checklist": {},
+      "recommendations": [
+        "CRITICAL: Diagnostic failed with error: cannot import name 'QNWISStreamingOrchestrator' from 'src.qnwis.orchestration.streaming' (D:\\lmis_int\\src\\qnwis\\orchestration\\streaming.py)"
+      ]
+    },
+    "education": {
+      "status": "SUCCESS",
+      "overall_score": 0.0,
+      "mckinsey_compliant": false,
+      "duration_seconds": 0.002747,
+      "mckinsey_checklist": {},
+      "recommendations": [
+        "CRITICAL: Diagnostic failed with error: cannot import name 'QNWISStreamingOrchestrator' from 'src.qnwis.orchestration.streaming' (D:\\lmis_int\\src\\qnwis\\orchestration\\streaming.py)"
+      ]
+    },
+    "energy": {
+      "status": "SUCCESS",
+      "overall_score": 0.0,
+      "mckinsey_compliant": false,
+      "duration_seconds": 0.00194,
+      "mckinsey_checklist": {},
+      "recommendations": [
+        "CRITICAL: Diagnostic failed with error: cannot import name 'QNWISStreamingOrchestrator' from 'src.qnwis.orchestration.streaming' (D:\\lmis_int\\src\\qnwis\\orchestration\\streaming.py)"
+      ]
+    },
+    "housing": {
+      "status": "SUCCESS",
+      "overall_score": 0.0,
+      "mckinsey_compliant": false,
+      "duration_seconds": 0.002224,
+      "mckinsey_checklist": {},
+      "recommendations": [
+        "CRITICAL: Diagnostic failed with error: cannot import name 'QNWISStreamingOrchestrator' from 'src.qnwis.orchestration.streaming' (D:\\lmis_int\\src\\qnwis\\orchestration\\streaming.py)"
+      ]
+    },
+    "food_security": {
+      "status": "SUCCESS",
+      "overall_score": 0.0,
+      "mckinsey_compliant": false,
+      "duration_seconds": 0.001997,
+      "mckinsey_checklist": {},
+      "recommendations": [
+        "CRITICAL: Diagnostic failed with error: cannot import name 'QNWISStreamingOrchestrator' from 'src.qnwis.orchestration.streaming' (D:\\lmis_int\\src\\qnwis\\orchestration\\streaming.py)"
+      ]
+    },
+    "tourism": {
+      "status": "SUCCESS",
+      "overall_score": 0.0,
+      "mckinsey_compliant": false,
+      "duration_seconds": 0.00197,
+      "mckinsey_checklist": {},
+      "recommendations": [
+        "CRITICAL: Diagnostic failed with error: cannot import name 'QNWISStreamingOrchestrator' from 'src.qnwis.orchestration.streaming' (D:\\lmis_int\\src\\qnwis\\orchestration\\streaming.py)"
+      ]
+    },
+    "labor": {
+      "status": "SUCCESS",
+      "overall_score": 0.0,
+      "mckinsey_compliant": false,
+      "duration_seconds": 0.002181,
+      "mckinsey_checklist": {},
+      "recommendations": [
+        "CRITICAL: Diagnostic failed with error: cannot import name 'QNWISStreamingOrchestrator' from 'src.qnwis.orchestration.streaming' (D:\\lmis_int\\src\\qnwis\\orchestration\\streaming.py)"
+      ]
+    },
+    "simple_revenue": {
+      "status": "SUCCESS",
+      "overall_score": 0.0,
+      "mckinsey_compliant": false,
+      "duration_seconds": 0.002035,
+      "mckinsey_checklist": {},
+      "recommendations": [
+        "CRITICAL: Diagnostic failed with error: cannot import name 'QNWISStreamingOrchestrator' from 'src.qnwis.orchestration.streaming' (D:\\lmis_int\\src\\qnwis\\orchestration\\streaming.py)"
+      ]
+    },
+    "medium_analysis": {
+      "status": "SUCCESS",
+      "overall_score": 0.0,
+      "mckinsey_compliant": false,
+      "duration_seconds": 0.002001,
+      "mckinsey_checklist": {},
+      "recommendations": [
+        "CRITICAL: Diagnostic failed with error: cannot import name 'QNWISStreamingOrchestrator' from 'src.qnwis.orchestration.streaming' (D:\\lmis_int\\src\\qnwis\\orchestration\\streaming.py)"
+      ]
+    }
+  }
+}

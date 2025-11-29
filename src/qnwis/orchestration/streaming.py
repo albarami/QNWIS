@@ -311,11 +311,11 @@ def _payload_for_stage(stage: str, state: Dict[str, Any]) -> Dict[str, Any]:
                 sanitized_results.append(r)
         
         # Build comprehensive stats for LegendaryBriefing
-        facts = state.get("extracted_facts", [])
-        aggregate_stats = state.get("aggregate_debate_stats", {})
+        facts = state.get("extracted_facts", []) or []
+        aggregate_stats = state.get("aggregate_debate_stats", {}) or {}
         debate_results = state.get("debate_results", {}) or {}
         critique_results = state.get("critique_results", {}) or {}
-        conversation = state.get("conversation_history", []) or debate_results.get("conversation_history", [])
+        conversation = state.get("conversation_history", []) or debate_results.get("conversation_history", []) or []
         
         experts = set()
         for turn in conversation:
@@ -329,12 +329,12 @@ def _payload_for_stage(stage: str, state: Dict[str, Any]) -> Dict[str, Any]:
             "n_sources": len(set(f.get("source", "") for f in facts if isinstance(f, dict) and f.get("source"))) or 4,
             "n_scenarios": len(sanitized_results),
             "n_experts": len(experts) if experts else 6,
-            "n_turns": aggregate_stats.get("total_turns", 0) or debate_results.get("total_turns", len(conversation)),
-            "n_challenges": aggregate_stats.get("total_challenges", 0) or len(debate_results.get("challenges", [])),
-            "n_consensus": aggregate_stats.get("total_consensus", 0) or len([r for r in debate_results.get("resolutions", []) if r.get("consensus_reached")]),
-            "n_critiques": len(critique_results.get("critiques", [])),
-            "n_red_flags": len(critique_results.get("red_flags", [])),
-            "avg_confidence": int(state.get("confidence_score", 0.7) * 100),
+            "n_turns": (aggregate_stats.get("total_turns", 0) if aggregate_stats else 0) or debate_results.get("total_turns", len(conversation)),
+            "n_challenges": (aggregate_stats.get("total_challenges", 0) if aggregate_stats else 0) or len(debate_results.get("challenges", []) or []),
+            "n_consensus": (aggregate_stats.get("total_consensus", 0) if aggregate_stats else 0) or len([r for r in (debate_results.get("resolutions", []) or []) if isinstance(r, dict) and r.get("consensus_reached")]),
+            "n_critiques": len(critique_results.get("critiques", []) or []),
+            "n_red_flags": len(critique_results.get("red_flags", []) or []),
+            "avg_confidence": int((state.get("confidence_score") or 0.7) * 100),
         }
         
         final_synth = state.get("final_synthesis") or state.get("meta_synthesis") or ""
@@ -373,11 +373,12 @@ def _payload_for_stage(stage: str, state: Dict[str, Any]) -> Dict[str, Any]:
             "n_scenarios": len(scenarios) if scenarios else 0,
             "n_experts": len(experts) if experts else 6,
             # Use aggregate stats from parallel scenarios if available
-            "n_turns": aggregate_stats.get("total_turns", 0) or debate_results.get("total_turns", len(conversation)),
-            "n_challenges": aggregate_stats.get("total_challenges", 0) or len(debate_results.get("challenges", [])),
-            "n_consensus": aggregate_stats.get("total_consensus", 0) or len([r for r in debate_results.get("resolutions", []) if r.get("consensus_reached")]),
-            "n_critiques": len(critique_results.get("critiques", [])),
-            "n_red_flags": len(critique_results.get("red_flags", [])),
+            # CRITICAL: All these need null safety for when debate is skipped (e.g., infeasibility gate)
+            "n_turns": (aggregate_stats.get("total_turns", 0) if aggregate_stats else 0) or (debate_results.get("total_turns", len(conversation)) if debate_results else 0),
+            "n_challenges": (aggregate_stats.get("total_challenges", 0) if aggregate_stats else 0) or (len(debate_results.get("challenges", [])) if debate_results else 0),
+            "n_consensus": (aggregate_stats.get("total_consensus", 0) if aggregate_stats else 0) or (len([r for r in debate_results.get("resolutions", []) if r.get("consensus_reached")]) if debate_results else 0),
+            "n_critiques": len(critique_results.get("critiques", [])) if critique_results else 0,
+            "n_red_flags": len(critique_results.get("red_flags", [])) if critique_results else 0,
             "avg_confidence": int(state.get("confidence_score", 0.7) * 100),
         }
         
@@ -755,10 +756,90 @@ async def run_workflow_stream(
         # Ensure workflow task completes
         await workflow_task
 
-        # Emit final done event with FULL accumulated state including synthesis
-        final_synthesis = accumulated_state.get("final_synthesis") or accumulated_state.get("meta_synthesis") or ""
+        # DEBUG: Log available state keys for synthesis
+        logger.info("=" * 60)
+        logger.info("STATE BEFORE FINAL SYNTHESIS EVENTS:")
+        for key in ["final_synthesis", "meta_synthesis", "synthesis", "debate_synthesis", 
+                    "conversation_history", "debate_results", "critique_results"]:
+            value = accumulated_state.get(key)
+            if value:
+                if isinstance(value, str):
+                    logger.info(f"  ✓ {key}: {len(value)} chars")
+                elif isinstance(value, list):
+                    logger.info(f"  ✓ {key}: {len(value)} items")
+                elif isinstance(value, dict):
+                    logger.info(f"  ✓ {key}: {list(value.keys())[:5]}...")
+            else:
+                logger.warning(f"  ✗ {key}: MISSING or EMPTY")
+        logger.info("=" * 60)
+
+        # Emit final synthesis events with FULL accumulated state
+        # CRITICAL: Check multiple possible keys where synthesis might be stored
+        final_synthesis = (
+            accumulated_state.get("final_synthesis") or 
+            accumulated_state.get("meta_synthesis") or 
+            accumulated_state.get("synthesis") or  # graph_llm stores here
+            accumulated_state.get("debate_synthesis") or  # debate stores here
+            ""
+        )
         logger.info(f"✅ Final synthesis length: {len(final_synthesis)} chars")
         
+        # Build synthesis stats for LegendaryBriefing component
+        debate_results = accumulated_state.get("debate_results", {}) or {}
+        conversation_history = accumulated_state.get("conversation_history", []) or debate_results.get("conversation_history", [])
+        critique_results = accumulated_state.get("critique_results", {}) or {}
+        extracted_facts = accumulated_state.get("extracted_facts", []) or []
+        
+        # Safely get scenarios (handle None case)
+        scenarios = accumulated_state.get("scenarios") or []
+        
+        synthesis_stats = {
+            "n_facts": len(extracted_facts),
+            "n_sources": len(set(f.get("source", "") for f in extracted_facts if isinstance(f, dict))),
+            "n_scenarios": len(scenarios) if scenarios else accumulated_state.get("totalScenarios", 6),
+            "n_turns": len(conversation_history) or debate_results.get("total_turns", 0),
+            "n_experts": len(set(t.get("agent", "") for t in conversation_history if isinstance(t, dict))) or 6,
+            "n_challenges": len([t for t in conversation_history if isinstance(t, dict) and t.get("type") == "challenge"]),
+            "n_consensus": len([t for t in conversation_history if isinstance(t, dict) and t.get("type") in ["consensus", "consensus_synthesis", "resolution"]]),
+            "n_critiques": len(critique_results.get("critiques") or []),
+            "n_red_flags": len(critique_results.get("red_flags") or []),
+            "avg_confidence": int((accumulated_state.get("confidence_score") or 0.75) * 100),
+        }
+        
+        # CRITICAL: Emit meta_synthesis complete event BEFORE done
+        # This ensures the progress bar updates properly
+        if "meta_synthesis" not in stages_started or final_synthesis:
+            logger.info("📤 Emitting meta_synthesis complete event")
+            yield WorkflowEvent(
+                stage="meta_synthesis",
+                status="complete",
+                payload={
+                    "meta_synthesis": final_synthesis,
+                    "final_synthesis": final_synthesis,
+                    "stats": synthesis_stats,
+                    "confidence": accumulated_state.get("confidence_score", 0.75),
+                },
+            )
+            stages_started.add("meta_synthesis")
+        
+        # CRITICAL: Emit synthesize complete event with the FULL briefing
+        # This is what the LegendaryBriefing component displays
+        logger.info("📤 Emitting synthesize complete event")
+        yield WorkflowEvent(
+            stage="synthesize",
+            status="complete",
+            payload={
+                "text": final_synthesis,
+                "final_synthesis": final_synthesis,
+                "stats": synthesis_stats,
+                "confidence": accumulated_state.get("confidence_score", 0.75),
+                "word_count": len(final_synthesis.split()) if final_synthesis else 0,
+            },
+        )
+        stages_started.add("synthesize")
+        
+        # Finally emit done event
+        logger.info("📤 Emitting done complete event")
         yield WorkflowEvent(
             stage="done",
             status="complete",
@@ -767,9 +848,11 @@ async def run_workflow_stream(
                 "warnings": accumulated_state.get("warnings", []),
                 "errors": accumulated_state.get("errors", []),
                 "final_synthesis": final_synthesis,
+                "meta_synthesis": final_synthesis,
                 "summary": final_synthesis,
                 "text": final_synthesis,
-                "extracted_facts": accumulated_state.get("extracted_facts", []),
+                "stats": synthesis_stats,
+                "extracted_facts": extracted_facts,
                 "word_count": len(final_synthesis.split()) if final_synthesis else 0,
             },
         )

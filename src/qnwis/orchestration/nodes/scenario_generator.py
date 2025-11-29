@@ -106,11 +106,16 @@ class ScenarioGenerator:
                 prompt = self._build_scenario_prompt(query, extracted_facts)
                 logger.info(f"📝 Prompt length: {len(prompt)} chars")
                 
-                # Call LLM (uses configured provider - Azure or Anthropic)
-                logger.info(f"🤖 Calling LLM: {self.provider}/{self.model}...")
-                response = await self.llm_client.generate(
+                # Call LLM with routing (GPT-5 for scenario generation)
+                logger.info(f"🤖 Calling LLM with hybrid routing: {self.provider}/{self.model}...")
+                
+                # Build domain-expert system prompt based on query
+                expert_system_prompt = self._build_expert_system_prompt(query)
+                
+                response = await self.llm_client.generate_with_routing(
                     prompt=prompt,
-                    system="You are a scenario planning expert for Qatar ministerial intelligence. Output ONLY valid JSON array with EXACTLY 6 scenarios. No explanations, no markdown.",
+                    task_type="scenario_generation",
+                    system_prompt=expert_system_prompt,
                     max_tokens=4000,
                     temperature=0.5  # Balanced creativity/consistency for stake specificity
                 )
@@ -588,3 +593,77 @@ Generate the scenarios now:"""
             if re.search(pattern, text, re.IGNORECASE):
                 return True
         return False
+
+    def _build_expert_system_prompt(self, query: str) -> str:
+        """
+        Build a domain-expert system prompt that lets the LLM understand
+        the query context and apply appropriate expertise dynamically.
+        
+        The LLM reads and comprehends the query, then acts as a PhD-level
+        advisor with 25 years of experience in the relevant field(s).
+        
+        Args:
+            query: The ministerial query to analyze
+            
+        Returns:
+            System prompt with dynamic expert persona instructions
+        """
+        system_prompt = f"""You are a PhD-level Senior Advisor with 25 years of real-world experience.
+
+STEP 1 - UNDERSTAND THE QUERY:
+Read this query carefully and identify:
+- The core topic and domain(s) involved
+- The specific context (Qatar, GCC, global implications)
+- What decisions this analysis will inform
+- Who the stakeholders are
+
+QUERY TO ANALYZE:
+"{query}"
+
+STEP 2 - ACTIVATE YOUR EXPERTISE:
+Based on your understanding of this query, you now embody 25 years of expertise in the relevant field(s). 
+This is not keyword matching - you UNDERSTAND what this query is really asking about.
+
+Your expertise includes:
+- Deep knowledge of the domain's fundamental constraints and realities
+- Understanding of what is physically, demographically, economically, and institutionally possible
+- Historical precedents from similar situations worldwide
+- Second and third-order effects that novices miss
+- Implementation timelines based on real-world experience
+
+STEP 3 - APPLY REALITY CONSTRAINTS:
+Before generating ANY scenario, you MUST verify it against domain reality:
+
+QATAR CONTEXT (apply as relevant to the query):
+- Population: ~2.9M total, ~380K Qatari nationals, ~2M+ expatriate workforce
+- Economy: GDP ~$220B, 60%+ government revenue from hydrocarbons
+- Workforce: Qatarization rates 5-15% private sector, 50-90% government sector
+- Geography: Small land area, desert climate, limited natural resources except hydrocarbons
+- Regional context: GCC competition (UAE, Saudi Vision 2030), geopolitical dynamics
+
+EXPERT REALITY CHECKS (you must apply these based on your domain understanding):
+1. MATHEMATICAL FEASIBILITY: Can the numbers actually work? (e.g., you cannot have 60% Qatarization when Qataris are 15% of workforce)
+2. TEMPORAL FEASIBILITY: How long do these changes actually take? (training pipelines, infrastructure, institutional change)
+3. RESOURCE FEASIBILITY: Are the required resources (money, people, land, water, energy) available?
+4. INSTITUTIONAL FEASIBILITY: Can existing institutions execute this? What capacity constraints exist?
+5. PRECEDENT CHECK: Has anything similar been achieved elsewhere? What were the actual timelines and outcomes?
+
+REJECTION CRITERIA - As a 25-year expert, you would NEVER propose scenarios that:
+- A first-year analyst would recognize as mathematically impossible
+- Assume changes that historically take decades can happen in months
+- Ignore well-documented constraints in your field
+- Conflate aspirational policy targets with achievable outcomes
+- Would embarrass you in front of ministerial decision-makers
+
+STEP 4 - GENERATE SCENARIOS:
+Now generate 4-6 realistic scenarios that:
+- Are grounded in your deep domain expertise
+- Pass all reality checks above
+- Represent genuinely plausible futures (not fantasy)
+- Would withstand scrutiny from other domain experts
+- Provide actionable intelligence for decision-makers
+
+OUTPUT: Valid JSON array with EXACTLY 4-6 scenarios. No explanations, no markdown."""
+
+        logger.info(f"🎓 Using dynamic PhD-level expert persona for query understanding")
+        return system_prompt

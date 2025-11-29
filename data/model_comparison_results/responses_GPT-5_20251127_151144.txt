@@ -1,0 +1,83 @@
+MODEL: GPT-5
+======================================================================
+
+QUERY [Economic Diversification]: Analyze Qatar's non-oil GDP growth and sector contribution (2015-2024)...
+Status: success, Time: 18.05s, Words: 1103
+Quality: {'structure': 1.0, 'depth': 0.75, 'actionability': 0.667, 'overall': 0.787}
+--------------------------------------------------
+No response
+
+======================================================================
+
+QUERY [Energy/Oil&Gas]: What is Qatar's current oil production capacity and LNG export strategy?...
+Status: success, Time: 36.06s, Words: 1089
+Quality: {'structure': 1.0, 'depth': 0.75, 'actionability': 0.333, 'overall': 0.688}
+--------------------------------------------------
+No response
+
+======================================================================
+
+QUERY [Tourism]: Analyze Qatar's tourism sector growth post-2022 World Cup...
+Status: success, Time: 16.97s, Words: 1056
+Quality: {'structure': 1.0, 'depth': 0.875, 'actionability': 0.667, 'overall': 0.844}
+--------------------------------------------------
+No response
+
+======================================================================
+
+QUERY [Food Security]: What is Qatar's food self-sufficiency rate and import dependency?...
+Status: success, Time: 16.32s, Words: 931
+Quality: {'structure': 1.0, 'depth': 0.875, 'actionability': 0.5, 'overall': 0.794}
+--------------------------------------------------
+No response
+
+======================================================================
+
+QUERY [Healthcare]: Analyze Qatar's healthcare infrastructure and medical workforce capacity...
+Status: success, Time: 34.84s, Words: 1169
+Quality: {'structure': 1.0, 'depth': 0.75, 'actionability': 0.667, 'overall': 0.787}
+--------------------------------------------------
+No response
+
+======================================================================
+
+QUERY [Digital/AI]: What is Qatar's digital transformation progress and AI adoption rate?...
+Status: success, Time: 37.22s, Words: 1132
+Quality: {'structure': 1.0, 'depth': 0.875, 'actionability': 0.833, 'overall': 0.894}
+--------------------------------------------------
+No response
+
+======================================================================
+
+QUERY [Manufacturing]: Analyze Qatar's manufacturing sector growth and industrial diversification...
+Status: success, Time: 19.15s, Words: 1035
+Quality: {'structure': 1.0, 'depth': 0.875, 'actionability': 0.333, 'overall': 0.744}
+--------------------------------------------------
+No response
+
+======================================================================
+
+QUERY [Workforce/Labor]: What is the current Qatarization rate and workforce nationalization progress?...
+Status: success, Time: 17.82s, Words: 890
+Quality: {'structure': 1.0, 'depth': 0.5, 'actionability': 0.5, 'overall': 0.625}
+--------------------------------------------------
+No response
+
+======================================================================
+
+QUERY [Infrastructure]: Analyze Qatar's infrastructure development for Vision 2030...
+Status: success, Time: 17.45s, Words: 1136
+Quality: {'structure': 1.0, 'depth': 0.75, 'actionability': 0.5, 'overall': 0.738}
+--------------------------------------------------
+No response
+
+======================================================================
+
+QUERY [Cross-Domain Strategic]: How do Qatar's labor, energy, and economic policies align with Vision 2030?...
+Status: success, Time: 28.49s, Words: 1138
+Quality: {'structure': 1.0, 'depth': 0.875, 'actionability': 0.5, 'overall': 0.794}
+--------------------------------------------------
+No response
+
+======================================================================
+

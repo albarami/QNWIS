@@ -1,0 +1,63 @@
+MODEL: GPT-5.1
+======================================================================
+
+[Economic Diversification]
+Status: error, Words: 0, Time: 44.08s
+Quality: {}
+--------------------------------------------------
+Empty response
+
+[Energy/Oil&Gas]
+Status: error, Words: 0, Time: 41.86s
+Quality: {}
+--------------------------------------------------
+Empty response
+
+[Tourism]
+Status: error, Words: 0, Time: 42.09s
+Quality: {}
+--------------------------------------------------
+Empty response
+
+[Food Security]
+Status: success, Words: 2020, Time: 39.63s
+Quality: {'structure': 1.0, 'depth': 0.75, 'actionability': 0.667, 'overall': 0.787}
+--------------------------------------------------
+No response
+
+[Healthcare]
+Status: error, Words: 0, Time: 47.49s
+Quality: {}
+--------------------------------------------------
+Empty response
+
+[Digital/AI]
+Status: error, Words: 0, Time: 44.89s
+Quality: {}
+--------------------------------------------------
+Empty response
+
+[Manufacturing]
+Status: error, Words: 0, Time: 44.33s
+Quality: {}
+--------------------------------------------------
+Empty response
+
+[Workforce/Labor]
+Status: success, Words: 2282, Time: 41.08s
+Quality: {'structure': 1.0, 'depth': 0.625, 'actionability': 0.667, 'overall': 0.731}
+--------------------------------------------------
+No response
+
+[Infrastructure]
+Status: error, Words: 0, Time: 43.28s
+Quality: {}
+--------------------------------------------------
+Empty response
+
+[Cross-Domain Strategic]
+Status: error, Words: 0, Time: 42.06s
+Quality: {}
+--------------------------------------------------
+Empty response
+

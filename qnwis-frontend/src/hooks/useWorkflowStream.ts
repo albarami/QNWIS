@@ -500,17 +500,30 @@ function reduceEvent(state: AppState, event: WorkflowEvent): AppState {
 
   if (event.stage === 'meta_synthesis') {
     const payload = event.payload as any
-    next.metaSynthesis = payload?.meta_synthesis ?? null
-    // Meta-synthesis often includes final synthesis
+    console.log('📋 META_SYNTHESIS event received:', event.status, payload)
+    
+    // Capture meta_synthesis content (could be nested or direct)
+    next.metaSynthesis = payload?.meta_synthesis ?? payload
+    
+    // Meta-synthesis often includes final synthesis - use it!
     if (payload?.final_synthesis) {
       next.synthesis = payload.final_synthesis
+      console.log('📋 Set synthesis from meta_synthesis:', next.synthesis?.substring(0, 100))
+    } else if (payload?.meta_synthesis && typeof payload.meta_synthesis === 'string') {
+      // If meta_synthesis is the actual synthesis text, use it
+      next.synthesis = payload.meta_synthesis
+      console.log('📋 Set synthesis from meta_synthesis content:', next.synthesis?.substring(0, 100))
     }
+    
     // Capture stats for LegendaryBriefing
     if (payload?.stats) {
       next.synthesisStats = payload.stats
+      console.log('📋 Set synthesisStats:', payload.stats)
     }
+    
     if (event.status === 'complete') {
       next.completedStages.add('meta_synthesis')
+      console.log('📋 Marked meta_synthesis as complete. Completed stages:', Array.from(next.completedStages))
       if (event.latency_ms) {
         next.stageTiming.set('meta_synthesis', event.latency_ms)
       }
@@ -559,10 +572,24 @@ function reduceEvent(state: AppState, event: WorkflowEvent): AppState {
       next.metaSynthesis = payload.meta_synthesis
     }
     
+    // Capture stats for LegendaryBriefing (fallback if synthesize event didn't have them)
+    if (payload?.stats && !next.synthesisStats) {
+      next.synthesisStats = payload.stats
+    }
+    
     // Mark done stage as complete
     next.completedStages.add('done')
     if (event.latency_ms) {
       next.stageTiming.set('done', event.latency_ms)
+    }
+    
+    // Also ensure meta_synthesis and synthesize are marked complete
+    // since they should have completed before done
+    if (!next.completedStages.has('meta_synthesis')) {
+      next.completedStages.add('meta_synthesis')
+    }
+    if (!next.completedStages.has('synthesize')) {
+      next.completedStages.add('synthesize')
     }
     
     // REAL DATA POLICY: Agent/scenario status should come from actual events

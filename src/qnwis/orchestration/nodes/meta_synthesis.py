@@ -54,13 +54,14 @@ async def meta_synthesis_node(scenario_results: List[Dict[str, Any]]) -> str:
         # DEBUG: Log prompt size to diagnose timeout
         logger.warning(f"🔍 Meta-synthesis prompt size: {len(prompt)} chars")
         
-        # Call LLM (uses configured provider - Azure or Anthropic)
-        logger.info(f"Synthesizing insights with {config.provider}...")
+        # Call LLM with hybrid routing (GPT-5 for meta-synthesis)
+        logger.info(f"Synthesizing insights with hybrid routing...")
         logger.warning(f"🚀 Starting LLM call for meta-synthesis...")
         
-        synthesis = await llm_client.generate(
+        synthesis = await llm_client.generate_with_routing(
             prompt=prompt,
-            system="You are a strategic synthesis expert for ministerial leadership.",
+            task_type="meta_synthesis",
+            system_prompt="You are a strategic synthesis expert for ministerial leadership.",
             max_tokens=8000
         )
         

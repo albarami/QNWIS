@@ -42,6 +42,13 @@ class WorkflowState(TypedDict):
     classification: Optional[Dict[str, Any]]
     prefetch: Optional[Dict[str, Any]]
     rag_context: Optional[Dict[str, Any]]
+    # McKinsey-Grade Calculation Pipeline
+    structured_inputs: Optional[Dict[str, Any]]  # From structure_data_node
+    data_quality: Optional[str]  # HIGH/MEDIUM/LOW/FAILED
+    data_gaps: Optional[List[str]]  # Missing data points
+    calculated_results: Optional[Dict[str, Any]]  # From calculate_node
+    calculation_warning: Optional[str]  # Low confidence warning
+    # Agent Selection
     selected_agents: Optional[list]
     agent_reports: list  # List of AgentReport objects
     debate_results: Optional[Dict[str, Any]]  # Multi-agent debate outcomes
@@ -173,6 +180,8 @@ class LLMWorkflow:
         workflow.add_node("route_deterministic", self._route_deterministic_node)
         workflow.add_node("prefetch", self._prefetch_node)
         workflow.add_node("rag", self._rag_node)
+        workflow.add_node("structure", self._structure_data_node)    # NEW: McKinsey pipeline
+        workflow.add_node("calculate", self._calculate_node)          # NEW: McKinsey pipeline
         workflow.add_node("select_agents", self._select_agents_node)
         workflow.add_node("agents", self._agents_node)
         workflow.add_node("debate", self._debate_node)
@@ -215,9 +224,11 @@ class LLMWorkflow:
         # Deterministic path: route_deterministic ΓåÆ synthesize ΓåÆ END
         workflow.add_edge("route_deterministic", "synthesize")
 
-        # LLM agents path: prefetch ΓåÆ rag ΓåÆ select_agents ΓåÆ agents ΓåÆ debate ΓåÆ critique ΓåÆ verify ΓåÆ synthesize ΓåÆ END
+        # LLM agents path: prefetch → rag → structure → calculate → select_agents → agents → debate → critique → verify → synthesize → END
         workflow.add_edge("prefetch", "rag")
-        workflow.add_edge("rag", "select_agents")
+        workflow.add_edge("rag", "structure")        # NEW: Structure extracted data
+        workflow.add_edge("structure", "calculate")  # NEW: Deterministic calculations
+        workflow.add_edge("calculate", "select_agents")
         workflow.add_edge("select_agents", "agents")
         workflow.add_edge("agents", "debate")
         workflow.add_edge("debate", "critique")
@@ -544,7 +555,170 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
                 **state,
                 "rag_context": {"snippets": [], "sources": []}
             }
-    
+
+    async def _structure_data_node(self, state: WorkflowState) -> WorkflowState:
+        """
+        Structure extracted facts into calculation-ready inputs.
+
+        Uses LLM to identify and organize numbers from extracted facts.
+        LLM does NOT generate numbers - only structures them.
+        """
+        if state.get("event_callback"):
+            await state["event_callback"]("structure", "running")
+
+        start_time = datetime.now(timezone.utc)
+
+        try:
+            from .nodes.structure_data import structure_data_node
+
+            # Convert WorkflowState to IntelligenceState format
+            extracted_facts = state.get("prefetch", {}).get("facts", [])
+            if not extracted_facts:
+                extracted_facts = state.get("extracted_facts", [])
+
+            mini_state = {
+                "query": state.get("question", ""),
+                "extracted_facts": extracted_facts,
+            }
+
+            result = await structure_data_node(mini_state)
+
+            latency_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
+
+            logger.info(
+                f"Data structuring complete: quality={result.get('data_quality', 'UNKNOWN')}, "
+                f"latency={latency_ms:.0f}ms"
+            )
+
+            # Update reasoning chain
+            reasoning_chain = list(state.get("reasoning_chain", []))
+            reasoning_chain.append(
+                f"✓ Structure: organized data, quality={result.get('data_quality', 'UNKNOWN')}"
+            )
+
+            if state.get("event_callback"):
+                await state["event_callback"](
+                    "structure",
+                    "complete",
+                    {
+                        "data_quality": result.get("data_quality"),
+                        "data_gaps": result.get("data_gaps", []),
+                        "reasoning_chain": reasoning_chain,
+                    },
+                    latency_ms,
+                )
+
+            return {
+                **state,
+                "structured_inputs": result.get("structured_inputs"),
+                "data_quality": result.get("data_quality", "UNKNOWN"),
+                "data_gaps": result.get("data_gaps", []),
+                "reasoning_chain": reasoning_chain,
+            }
+
+        except Exception as e:
+            logger.error(f"Data structuring failed: {e}", exc_info=True)
+            if state.get("event_callback"):
+                await state["event_callback"]("structure", "error", {"error": str(e)})
+
+            reasoning_chain = list(state.get("reasoning_chain", []))
+            reasoning_chain.append(f"✗ Structure: failed ({e})")
+
+            return {
+                **state,
+                "structured_inputs": None,
+                "data_quality": "FAILED",
+                "data_gaps": ["Data structuring failed"],
+                "reasoning_chain": reasoning_chain,
+            }
+
+    async def _calculate_node(self, state: WorkflowState) -> WorkflowState:
+        """
+        Run deterministic financial calculations.
+
+        ALL MATH IS PYTHON - NO LLM INVOLVED.
+        Uses FinancialEngine for NPV, IRR, sensitivity analysis.
+        """
+        if state.get("event_callback"):
+            await state["event_callback"]("calculate", "running")
+
+        start_time = datetime.now(timezone.utc)
+
+        try:
+            from .nodes.calculate import calculate_node, get_calculated_summary
+
+            # Build state for calculation node
+            calc_state = {
+                "structured_inputs": state.get("structured_inputs"),
+                "nodes_executed": state.get("reasoning_chain", []),
+            }
+
+            result = await calculate_node(calc_state)
+
+            latency_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
+
+            calculated_results = result.get("calculated_results")
+            calculation_warning = result.get("calculation_warning")
+
+            if calculated_results:
+                confidence = calculated_results.get("data_confidence", 0)
+                num_options = len(calculated_results.get("options", []))
+                logger.info(
+                    f"Calculations complete: {num_options} option(s), "
+                    f"confidence={confidence:.0%}, latency={latency_ms:.0f}ms"
+                )
+            else:
+                logger.warning("No calculated results produced")
+
+            # Update reasoning chain
+            reasoning_chain = list(state.get("reasoning_chain", []))
+            if calculated_results:
+                opts = calculated_results.get("options", [])
+                if opts:
+                    first_npv = opts[0].get("metrics", {}).get("npv_formatted", "N/A")
+                    reasoning_chain.append(
+                        f"✓ Calculate: deterministic NPV={first_npv}, "
+                        f"{len(opts)} option(s)"
+                    )
+                else:
+                    reasoning_chain.append("✓ Calculate: no options to analyze")
+            else:
+                reasoning_chain.append("✓ Calculate: skipped (no structured inputs)")
+
+            if state.get("event_callback"):
+                await state["event_callback"](
+                    "calculate",
+                    "complete",
+                    {
+                        "calculated_results": calculated_results,
+                        "calculation_warning": calculation_warning,
+                        "reasoning_chain": reasoning_chain,
+                    },
+                    latency_ms,
+                )
+
+            return {
+                **state,
+                "calculated_results": calculated_results,
+                "calculation_warning": calculation_warning,
+                "reasoning_chain": reasoning_chain,
+            }
+
+        except Exception as e:
+            logger.error(f"Calculation failed: {e}", exc_info=True)
+            if state.get("event_callback"):
+                await state["event_callback"]("calculate", "error", {"error": str(e)})
+
+            reasoning_chain = list(state.get("reasoning_chain", []))
+            reasoning_chain.append(f"✗ Calculate: failed ({e})")
+
+            return {
+                **state,
+                "calculated_results": None,
+                "calculation_warning": f"Calculation failed: {e}",
+                "reasoning_chain": reasoning_chain,
+            }
+
     async def _select_agents_node(self, state: WorkflowState) -> WorkflowState:
         """Intelligent agent selection node with LEGENDARY override."""
         try:
@@ -1352,7 +1526,12 @@ OUTPUT FORMAT (JSON):
 """
 
         try:
-            response = await self.llm_client.generate(prompt=debate_prompt, temperature=0.2)
+            # Use hybrid routing (GPT-5 for debate)
+            response = await self.llm_client.generate_with_routing(
+                prompt=debate_prompt, 
+                task_type="debate",
+                temperature=0.2
+            )
 
             # Parse JSON response - handle markdown code fences if present
             import json
@@ -1508,14 +1687,16 @@ OUTPUT FORMAT (JSON):
             if agent_name:
                 agent_reports_map[agent_name] = report
         
-        # Conduct legendary debate
+        # Conduct legendary debate - pass calculated results for McKinsey-grade analysis
         try:
             debate_results = await orchestrator.conduct_legendary_debate(
                 question=state["question"],
                 contradictions=contradictions,
                 agents_map=agents_map,
                 agent_reports_map=agent_reports_map,
-                llm_client=self.llm_client
+                llm_client=self.llm_client,
+                calculated_results=state.get("calculated_results"),  # NEW: McKinsey pipeline
+                calculation_warning=state.get("calculation_warning")  # NEW: Data confidence warning
             )
         except Exception as exc:
             logger.exception("Legendary debate failed")
@@ -1691,7 +1872,12 @@ OUTPUT FORMAT (JSON):
 """
 
         try:
-            response = await self.llm_client.generate(prompt=critique_prompt, temperature=0.2)
+            # Use hybrid routing (GPT-5 for critique/analysis)
+            response = await self.llm_client.generate_with_routing(
+                prompt=critique_prompt, 
+                task_type="agent_analysis",
+                temperature=0.2
+            )
 
             # Parse JSON response - handle markdown code fences if present
             import json
@@ -1806,11 +1992,13 @@ OUTPUT FORMAT (JSON):
 
                 # Update reasoning chain
                 reasoning_chain = list(state.get("reasoning_chain", []))
-                reasoning_chain.append("Γ£ô Synthesis: returned deterministic analytical narrative")
+                reasoning_chain.append("✓ Synthesis: returned deterministic analytical narrative")
 
                 return {
                     **state,
                     "synthesis": deterministic_result,
+                    "final_synthesis": deterministic_result,  # CRITICAL: streaming.py looks for this
+                    "meta_synthesis": deterministic_result,   # CRITICAL: backup key
                     "metadata": {
                         **state.get("metadata", {}),
                         "synthesis_latency_ms": latency_ms,
@@ -1828,17 +2016,56 @@ OUTPUT FORMAT (JSON):
                 for report in reports
                 if report
             ])
+            
+            # Include debate synthesis if available (from legendary debate)
+            debate_synthesis = state.get("debate_synthesis", "")
+            debate_results = state.get("debate_results", {})
+            debate_section = ""
+            if debate_synthesis:
+                debate_turns = debate_results.get("total_turns", 0) if isinstance(debate_results, dict) else 0
+                debate_section = f"""
 
-            synthesis_prompt = f"""Synthesize the following agent findings into a comprehensive executive summary for the question: \"{question}\"
+## Multi-Agent Debate Summary ({debate_turns} turns)
+{debate_synthesis[:8000]}
+"""
+            
+            # Include critique results if available
+            critique_results = state.get("critique_results", {})
+            critique_section = ""
+            if critique_results:
+                red_flags = critique_results.get("red_flags", [])
+                if red_flags:
+                    flags_text = "\n".join([f"- {flag}" for flag in red_flags[:10]])
+                    critique_section = f"""
+
+## Risk Analysis (Red Flags Identified)
+{flags_text}
+"""
+            
+            # Include extracted facts count
+            extracted_facts = state.get("extracted_facts", [])
+            n_facts = len(extracted_facts) if isinstance(extracted_facts, list) else 0
+            n_sources = len(set(f.get("source", "") for f in extracted_facts if isinstance(f, dict))) if extracted_facts else 0
+
+            synthesis_prompt = f"""Synthesize the following analysis into a comprehensive executive summary for the question: \"{question}\"
+
+## Data Foundation
+- {n_facts} verified facts from {n_sources} data sources
 
 Agent Findings:
 {findings_text}
+{debate_section}
+{critique_section}
 
 Provide a ministerial-grade synthesis that:
-1. Summarizes key insights
-2. Identifies consensus across agents
-3. Highlights critical recommendations
-4. Notes any data quality concerns
+1. EXECUTIVE SUMMARY (3 sentences max)
+2. THE RECOMMENDATION: What should be done?
+3. CONFIDENCE LEVEL: X% (based on evidence quality)
+4. KEY DECISIVE FACTORS (3-5 bullet points)
+5. CRITICAL RISKS (if any red flags were identified)
+6. RECOMMENDED NEXT STEPS (with priority)
+
+Be decisive. Use specific numbers from the analysis.
 
 Synthesis:"""
 
@@ -1875,6 +2102,8 @@ Synthesis:"""
             return {
                 **state,
                 "synthesis": synthesis_text,
+                "final_synthesis": synthesis_text,  # CRITICAL: streaming.py looks for this key
+                "meta_synthesis": synthesis_text,   # CRITICAL: backup key for compatibility
                 "metadata": {
                     **state.get("metadata", {}),
                     "synthesis_latency_ms": latency_ms,
@@ -1887,17 +2116,28 @@ Synthesis:"""
             if state.get("event_callback"):
                 await state["event_callback"]("synthesize", "error", {"error": str(e)})
             
-            # Fallback to simple concatenation
+            # Fallback to simple concatenation with debate content
             reports = state.get("agent_reports", [])
-            fallback = "\n\n".join([
-                f"**{report.agent}**: {report.narrative}"
-                for report in reports
-                if hasattr(report, 'narrative') and report.narrative
-            ])
+            debate_synthesis = state.get("debate_synthesis", "")
+            
+            fallback_parts = []
+            
+            # Include debate synthesis if available
+            if debate_synthesis:
+                fallback_parts.append(f"## Debate Summary\n\n{debate_synthesis[:5000]}")
+            
+            # Include agent reports
+            for report in reports:
+                if hasattr(report, 'narrative') and report.narrative:
+                    fallback_parts.append(f"**{report.agent}**: {report.narrative}")
+            
+            fallback = "\n\n".join(fallback_parts) or "Unable to synthesize findings."
             
             return {
                 **state,
-                "synthesis": fallback or "Unable to synthesize findings.",
+                "synthesis": fallback,
+                "final_synthesis": fallback,  # CRITICAL: streaming.py looks for this
+                "meta_synthesis": fallback,   # CRITICAL: backup key
                 "error": f"Synthesis error: {e}"
             }
     

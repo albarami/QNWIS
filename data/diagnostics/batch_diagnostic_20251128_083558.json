@@ -1,0 +1,177 @@
+{
+  "timestamp": "2025-11-28T08:35:58.628744",
+  "queries_run": 10,
+  "successful": 10,
+  "results": {
+    "economic_diversification": {
+      "status": "SUCCESS",
+      "overall_score": 8.157894736842104,
+      "mckinsey_compliant": false,
+      "duration_seconds": 23.90851,
+      "mckinsey_checklist": {
+        "npv_in_output": false,
+        "irr_in_output": false,
+        "sensitivity_in_output": false,
+        "confidence_stated": null,
+        "tables_present": false,
+        "no_vague_estimates": true
+      },
+      "recommendations": [
+        "CRITICAL: Diagnostic failed with error: unsupported operand type(s) for +: 'int' and 'NoneType'"
+      ]
+    },
+    "healthcare": {
+      "status": "SUCCESS",
+      "overall_score": 8.157894736842104,
+      "mckinsey_compliant": false,
+      "duration_seconds": 11.495829,
+      "mckinsey_checklist": {
+        "npv_in_output": false,
+        "irr_in_output": false,
+        "sensitivity_in_output": false,
+        "confidence_stated": null,
+        "tables_present": false,
+        "no_vague_estimates": true
+      },
+      "recommendations": [
+        "CRITICAL: Diagnostic failed with error: unsupported operand type(s) for +: 'int' and 'NoneType'"
+      ]
+    },
+    "education": {
+      "status": "SUCCESS",
+      "overall_score": 8.157894736842104,
+      "mckinsey_compliant": false,
+      "duration_seconds": 13.961685,
+      "mckinsey_checklist": {
+        "npv_in_output": false,
+        "irr_in_output": false,
+        "sensitivity_in_output": false,
+        "confidence_stated": null,
+        "tables_present": false,
+        "no_vague_estimates": true
+      },
+      "recommendations": [
+        "CRITICAL: Diagnostic failed with error: unsupported operand type(s) for +: 'int' and 'NoneType'"
+      ]
+    },
+    "energy": {
+      "status": "SUCCESS",
+      "overall_score": 8.157894736842104,
+      "mckinsey_compliant": false,
+      "duration_seconds": 11.936247,
+      "mckinsey_checklist": {
+        "npv_in_output": false,
+        "irr_in_output": false,
+        "sensitivity_in_output": false,
+        "confidence_stated": null,
+        "tables_present": false,
+        "no_vague_estimates": true
+      },
+      "recommendations": [
+        "CRITICAL: Diagnostic failed with error: unsupported operand type(s) for +: 'int' and 'NoneType'"
+      ]
+    },
+    "housing": {
+      "status": "SUCCESS",
+      "overall_score": 8.157894736842104,
+      "mckinsey_compliant": false,
+      "duration_seconds": 8.871031,
+      "mckinsey_checklist": {
+        "npv_in_output": false,
+        "irr_in_output": false,
+        "sensitivity_in_output": false,
+        "confidence_stated": null,
+        "tables_present": false,
+        "no_vague_estimates": true
+      },
+      "recommendations": [
+        "CRITICAL: Diagnostic failed with error: unsupported operand type(s) for +: 'int' and 'NoneType'"
+      ]
+    },
+    "food_security": {
+      "status": "SUCCESS",
+      "overall_score": 8.157894736842104,
+      "mckinsey_compliant": false,
+      "duration_seconds": 12.398123,
+      "mckinsey_checklist": {
+        "npv_in_output": false,
+        "irr_in_output": false,
+        "sensitivity_in_output": false,
+        "confidence_stated": null,
+        "tables_present": false,
+        "no_vague_estimates": true
+      },
+      "recommendations": [
+        "CRITICAL: Diagnostic failed with error: unsupported operand type(s) for +: 'int' and 'NoneType'"
+      ]
+    },
+    "tourism": {
+      "status": "SUCCESS",
+      "overall_score": 8.157894736842104,
+      "mckinsey_compliant": false,
+      "duration_seconds": 12.224671,
+      "mckinsey_checklist": {
+        "npv_in_output": false,
+        "irr_in_output": false,
+        "sensitivity_in_output": false,
+        "confidence_stated": null,
+        "tables_present": false,
+        "no_vague_estimates": true
+      },
+      "recommendations": [
+        "CRITICAL: Diagnostic failed with error: unsupported operand type(s) for +: 'int' and 'NoneType'"
+      ]
+    },
+    "labor": {
+      "status": "SUCCESS",
+      "overall_score": 8.157894736842104,
+      "mckinsey_compliant": false,
+      "duration_seconds": 11.220585,
+      "mckinsey_checklist": {
+        "npv_in_output": false,
+        "irr_in_output": false,
+        "sensitivity_in_output": false,
+        "confidence_stated": null,
+        "tables_present": false,
+        "no_vague_estimates": true
+      },
+      "recommendations": [
+        "CRITICAL: Diagnostic failed with error: unsupported operand type(s) for +: 'int' and 'NoneType'"
+      ]
+    },
+    "simple_revenue": {
+      "status": "SUCCESS",
+      "overall_score": 8.157894736842104,
+      "mckinsey_compliant": false,
+      "duration_seconds": 6.322506,
+      "mckinsey_checklist": {
+        "npv_in_output": false,
+        "irr_in_output": false,
+        "sensitivity_in_output": false,
+        "confidence_stated": null,
+        "tables_present": false,
+        "no_vague_estimates": true
+      },
+      "recommendations": [
+        "CRITICAL: Diagnostic failed with error: unsupported operand type(s) for +: 'int' and 'NoneType'"
+      ]
+    },
+    "medium_analysis": {
+      "status": "SUCCESS",
+      "overall_score": 8.157894736842104,
+      "mckinsey_compliant": false,
+      "duration_seconds": 6.263014,
+      "mckinsey_checklist": {
+        "npv_in_output": false,
+        "irr_in_output": false,
+        "sensitivity_in_output": false,
+        "confidence_stated": null,
+        "tables_present": false,
+        "no_vague_estimates": true
+      },
+      "recommendations": [
+        "CRITICAL: Diagnostic failed with error: unsupported operand type(s) for +: 'int' and 'NoneType'"
+      ]
+    }
+  }
+}

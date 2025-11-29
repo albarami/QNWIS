@@ -73,6 +73,13 @@ class IntelligenceState(TypedDict, total=False):
     data_sources: Annotated[List[str], merge_lists]
     data_quality_score: Annotated[float, take_last]  # 0.0 to 1.0
 
+    # McKinsey-Grade Calculation Pipeline
+    structured_inputs: Annotated[Optional[Dict[str, Any]], take_last]  # From structure_data_node
+    data_quality: Annotated[str, take_last]  # HIGH/MEDIUM/LOW/FAILED
+    data_gaps: Annotated[List[str], merge_lists]  # Missing data points
+    calculated_results: Annotated[Optional[Dict[str, Any]], take_last]  # From calculate_node
+    calculation_warning: Annotated[Optional[str], take_last]  # Low confidence warning
+
     # Agent Outputs - merge reports from multiple agents
     agent_reports: Annotated[List[Dict[str, Any]], merge_lists]
     financial_analysis: Annotated[Optional[str], take_last]

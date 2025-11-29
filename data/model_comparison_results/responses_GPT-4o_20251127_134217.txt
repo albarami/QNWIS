@@ -1,0 +1,7 @@
+MODEL: GPT-4o
+======================================================================
+
+QUERY [Economic Diversification]: Analyze Qatar's non-oil GDP growth and sector contribution (2015-2024)...
+Status: success, Time: 23.08s, Words: 1026
+Quality: {'structure': 1.0, 'depth': 0.875, 'actionability': 0.5, 'overall': 0.794}
+--------------------------------------------------

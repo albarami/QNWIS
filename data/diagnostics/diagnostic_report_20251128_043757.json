@@ -1,0 +1,521 @@
+{
+  "timestamp": "2025-11-28T04:09:32.020398",
+  "query": "Qatar must choose its primary economic diversification focus for the next decade. \nThe Ministry of Finance has budget for ONE major initiative (QAR 50 billion over 10 years).\n\nOption A: Financial Services Hub\n- Target: Become the leading Islamic finance and wealth management center in the GCC\n- Compete directly with Dubai International Financial Centre (DIFC)\n- Leverage QIA's $450B sovereign wealth for anchor investments\n\nOption B: Advanced Logistics & Trade Hub  \n- Target: Become the GCC's premier air cargo and re-export hub\n- Expand Hamad International Airport cargo capacity 3x\n- Leverage geographic position between Europe, Asia, and Africa\n\nCurrent Context:\n- Qatar Financial Centre currently employs 1,200 Qataris (5% of target 25,000)\n- Hamad Airport handles 2.5M tons cargo/year (Dubai: 2.7M tons)\n- Dubai has 40+ year head start in financial services\n- Saudi Arabia investing $100B in NEOM logistics zone\n- Qatari STEM/business graduates: 4,500 per year combined\n- Both options are arithmetically feasible with current workforce pipeline\n\nWhich option should Qatar prioritize and why? Consider:\n1. Competitive dynamics with UAE and Saudi Arabia\n2. Qatarization potential in each sector  \n3. Revenue diversification from hydrocarbons\n4. Risk factors and mitigation strategies\n5. 10-year projected outcomes under different scenarios",
+  "total_execution_time": 1705.3559401035309,
+  "overall_score": 70.3,
+  "stage_results": [
+    {
+      "stage_name": "classification",
+      "status": "PASS",
+      "score": 100,
+      "execution_time": 0,
+      "details": {
+        "complexity": "complex",
+        "event_payload": {
+          "complexity": "complex",
+          "reasoning": [
+            "Query classified as: complex"
+          ]
+        }
+      },
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "stage_name": "data_extraction",
+      "status": "PASS",
+      "score": 100,
+      "execution_time": 0,
+      "details": {
+        "fact_count": 646,
+        "sources_used": [
+          "IMF Data Mapper API",
+          "World Bank (PostgreSQL cache)",
+          "ILO (PostgreSQL cache)",
+          "LMIS (Ministry of Labour Qatar)",
+          "World Bank Energy Indicators",
+          "Perplexity AI (energy analysis with citations)",
+          "Perplexity AI (verified citation)",
+          "GCC-STAT (live API)",
+          "Semantic Scholar (2025)",
+          "Brave Search (real-time)",
+          "Perplexity AI (real-time analysis)",
+          "Semantic Scholar (None)",
+          "Perplexity AI (policy analysis)",
+          "UN ESCWA Trade Data",
+          "Knowledge Graph",
+          "Semantic Scholar (214M papers)",
+          "Perplexity Search API"
+        ],
+        "sources_found": 7
+      },
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "stage_name": "scenario_generation",
+      "status": "PASS",
+      "score": 100,
+      "execution_time": 0,
+      "details": {
+        "count": 6,
+        "has_base_case": true,
+        "has_best_case": true,
+        "has_worst_case": true,
+        "has_specific_numbers": 6,
+        "scenarios": []
+      },
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "stage_name": "agents",
+      "status": "FAIL",
+      "score": 4,
+      "execution_time": 0,
+      "details": {
+        "agents_executed": [],
+        "agents_missing": [
+          "MicroEconomist",
+          "MacroEconomist",
+          "Nationalization",
+          "SkillsAgent",
+          "PatternDetective",
+          "TimeMachine",
+          "Predictor",
+          "Scenario",
+          "PatternDetectiveAgent",
+          "PatternMiner",
+          "NationalStrategy",
+          "AlertCenter"
+        ],
+        "execution_rate": "0/12"
+      },
+      "issues": [
+        "Missing agents: MicroEconomist, MacroEconomist, Nationalization, SkillsAgent, PatternDetective, TimeMachine, Predictor, Scenario, PatternDetectiveAgent, PatternMiner, NationalStrategy, AlertCenter"
+      ],
+      "recommendations": []
+    },
+    {
+      "stage_name": "debate",
+      "status": "PASS",
+      "score": 80,
+      "execution_time": 0,
+      "details": {
+        "turn_count": 99,
+        "expected_min": 100,
+        "expected_max": 150,
+        "has_challenges": false,
+        "has_consensus": false,
+        "has_edge_cases": false,
+        "has_risk_analysis": false,
+        "phases_found": [],
+        "phases_completed": 0
+      },
+      "issues": [
+        "Below target: 99 (expected 100-150 for Legendary)"
+      ],
+      "recommendations": []
+    },
+    {
+      "stage_name": "critique",
+      "status": "WARN",
+      "score": 50,
+      "execution_time": 0,
+      "details": {
+        "critique_length": 2,
+        "red_flag_count": 0,
+        "has_severity_ratings": false,
+        "has_robustness_scores": false,
+        "challenges_main_recommendation": false
+      },
+      "issues": [
+        "Critique too short: 2 chars",
+        "Too few red flags: 0 (expected 3+)"
+      ],
+      "recommendations": []
+    },
+    {
+      "stage_name": "verification",
+      "status": "PASS",
+      "score": 100,
+      "execution_time": 0,
+      "details": {
+        "fact_check_ran": true,
+        "fabrication_detected": false
+      },
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "stage_name": "synthesis",
+      "status": "PASS",
+      "score": 100,
+      "execution_time": 0,
+      "details": {
+        "length": 9017,
+        "has_executive_summary": true,
+        "has_recommendation": true,
+        "has_confidence": true,
+        "has_decisive_factors": false,
+        "has_expert_disagreements": false,
+        "has_red_flags": true,
+        "has_scenario_table": false,
+        "has_actions": false,
+        "has_minister_card": false,
+        "specific_number_count": 55,
+        "quality_rating": "EXCELLENT"
+      },
+      "issues": [],
+      "recommendations": []
+    },
+    {
+      "stage_name": "model_routing",
+      "status": "WARN",
+      "score": 70,
+      "execution_time": 0,
+      "details": {
+        "correct_routes": [],
+        "incorrect_routes": [],
+        "unknown_routes": [
+          "classification",
+          "extraction",
+          "verification",
+          "fact_check",
+          "feasibility_gate",
+          "scenario_generation",
+          "agent_analysis",
+          "debate",
+          "synthesis"
+        ],
+        "note": "Model routing verification requires additional instrumentation"
+      },
+      "issues": [
+        "Model routing not fully instrumented for verification"
+      ],
+      "recommendations": []
+    }
+  ],
+  "agent_results": [
+    {
+      "agent_name": "MicroEconomist",
+      "executed": false,
+      "model_used": "unknown",
+      "expected_model": "gpt-5",
+      "correct_model": true,
+      "output_length": 0,
+      "has_citations": false,
+      "has_specific_numbers": false,
+      "execution_time": 0,
+      "quality_score": 0,
+      "issues": [
+        "Agent did not execute or produced no output"
+      ]
+    },
+    {
+      "agent_name": "MacroEconomist",
+      "executed": false,
+      "model_used": "unknown",
+      "expected_model": "gpt-5",
+      "correct_model": true,
+      "output_length": 0,
+      "has_citations": false,
+      "has_specific_numbers": false,
+      "execution_time": 0,
+      "quality_score": 0,
+      "issues": [
+        "Agent did not execute or produced no output"
+      ]
+    },
+    {
+      "agent_name": "Nationalization",
+      "executed": false,
+      "model_used": "unknown",
+      "expected_model": "gpt-5",
+      "correct_model": true,
+      "output_length": 0,
+      "has_citations": false,
+      "has_specific_numbers": false,
+      "execution_time": 0,
+      "quality_score": 0,
+      "issues": [
+        "Agent did not execute or produced no output"
+      ]
+    },
+    {
+      "agent_name": "SkillsAgent",
+      "executed": false,
+      "model_used": "unknown",
+      "expected_model": "gpt-5",
+      "correct_model": true,
+      "output_length": 0,
+      "has_citations": false,
+      "has_specific_numbers": false,
+      "execution_time": 0,
+      "quality_score": 0,
+      "issues": [
+        "Agent did not execute or produced no output"
+      ]
+    },
+    {
+      "agent_name": "PatternDetective",
+      "executed": false,
+      "model_used": "unknown",
+      "expected_model": "gpt-5",
+      "correct_model": true,
+      "output_length": 0,
+      "has_citations": false,
+      "has_specific_numbers": false,
+      "execution_time": 0,
+      "quality_score": 0,
+      "issues": [
+        "Agent did not execute or produced no output"
+      ]
+    },
+    {
+      "agent_name": "TimeMachine",
+      "executed": false,
+      "model_used": "unknown",
+      "expected_model": "none",
+      "correct_model": true,
+      "output_length": 0,
+      "has_citations": false,
+      "has_specific_numbers": false,
+      "execution_time": 0,
+      "quality_score": 0,
+      "issues": [
+        "Agent did not execute or produced no output"
+      ]
+    },
+    {
+      "agent_name": "Predictor",
+      "executed": false,
+      "model_used": "unknown",
+      "expected_model": "none",
+      "correct_model": true,
+      "output_length": 0,
+      "has_citations": false,
+      "has_specific_numbers": false,
+      "execution_time": 0,
+      "quality_score": 0,
+      "issues": [
+        "Agent did not execute or produced no output"
+      ]
+    },
+    {
+      "agent_name": "Scenario",
+      "executed": false,
+      "model_used": "unknown",
+      "expected_model": "none",
+      "correct_model": true,
+      "output_length": 0,
+      "has_citations": false,
+      "has_specific_numbers": false,
+      "execution_time": 0,
+      "quality_score": 0,
+      "issues": [
+        "Agent did not execute or produced no output"
+      ]
+    },
+    {
+      "agent_name": "PatternDetectiveAgent",
+      "executed": false,
+      "model_used": "unknown",
+      "expected_model": "none",
+      "correct_model": true,
+      "output_length": 0,
+      "has_citations": false,
+      "has_specific_numbers": false,
+      "execution_time": 0,
+      "quality_score": 0,
+      "issues": [
+        "Agent did not execute or produced no output"
+      ]
+    },
+    {
+      "agent_name": "PatternMiner",
+      "executed": false,
+      "model_used": "unknown",
+      "expected_model": "none",
+      "correct_model": true,
+      "output_length": 0,
+      "has_citations": false,
+      "has_specific_numbers": false,
+      "execution_time": 0,
+      "quality_score": 0,
+      "issues": [
+        "Agent did not execute or produced no output"
+      ]
+    },
+    {
+      "agent_name": "NationalStrategy",
+      "executed": false,
+      "model_used": "unknown",
+      "expected_model": "none",
+      "correct_model": true,
+      "output_length": 0,
+      "has_citations": false,
+      "has_specific_numbers": false,
+      "execution_time": 0,
+      "quality_score": 0,
+      "issues": [
+        "Agent did not execute or produced no output"
+      ]
+    },
+    {
+      "agent_name": "AlertCenter",
+      "executed": false,
+      "model_used": "unknown",
+      "expected_model": "none",
+      "correct_model": true,
+      "output_length": 0,
+      "has_citations": false,
+      "has_specific_numbers": false,
+      "execution_time": 0,
+      "quality_score": 0,
+      "issues": [
+        "Agent did not execute or produced no output"
+      ]
+    }
+  ],
+  "data_source_results": [
+    {
+      "source_name": "MoL LMIS",
+      "called": false,
+      "facts_returned": 0,
+      "response_time": 0,
+      "data_quality": "UNKNOWN",
+      "issues": [
+        "Source not called: MoL LMIS"
+      ]
+    },
+    {
+      "source_name": "GCC-STAT",
+      "called": true,
+      "facts_returned": 0,
+      "response_time": 0,
+      "data_quality": "UNKNOWN",
+      "issues": []
+    },
+    {
+      "source_name": "World Bank",
+      "called": true,
+      "facts_returned": 0,
+      "response_time": 0,
+      "data_quality": "UNKNOWN",
+      "issues": []
+    },
+    {
+      "source_name": "Semantic Scholar",
+      "called": true,
+      "facts_returned": 0,
+      "response_time": 0,
+      "data_quality": "UNKNOWN",
+      "issues": []
+    },
+    {
+      "source_name": "Brave Search",
+      "called": true,
+      "facts_returned": 0,
+      "response_time": 0,
+      "data_quality": "UNKNOWN",
+      "issues": []
+    },
+    {
+      "source_name": "Perplexity",
+      "called": true,
+      "facts_returned": 0,
+      "response_time": 0,
+      "data_quality": "UNKNOWN",
+      "issues": []
+    },
+    {
+      "source_name": "Qatar Open Data",
+      "called": false,
+      "facts_returned": 0,
+      "response_time": 0,
+      "data_quality": "UNKNOWN",
+      "issues": [
+        "Source not called: Qatar Open Data"
+      ]
+    },
+    {
+      "source_name": "IMF Data Mapper",
+      "called": true,
+      "facts_returned": 0,
+      "response_time": 0,
+      "data_quality": "UNKNOWN",
+      "issues": []
+    },
+    {
+      "source_name": "ILO",
+      "called": true,
+      "facts_returned": 0,
+      "response_time": 0,
+      "data_quality": "UNKNOWN",
+      "issues": []
+    }
+  ],
+  "debate_analysis": {
+    "turn_count": 99,
+    "expected_min": 100,
+    "expected_max": 150,
+    "has_challenges": false,
+    "has_consensus": false,
+    "has_edge_cases": false,
+    "has_risk_analysis": false,
+    "phases_found": [],
+    "phases_completed": 0
+  },
+  "scenario_analysis": {
+    "count": 6,
+    "has_base_case": true,
+    "has_best_case": true,
+    "has_worst_case": true,
+    "has_specific_numbers": 6,
+    "scenarios": []
+  },
+  "synthesis_analysis": {
+    "length": 9017,
+    "has_executive_summary": true,
+    "has_recommendation": true,
+    "has_confidence": true,
+    "has_decisive_factors": false,
+    "has_expert_disagreements": false,
+    "has_red_flags": true,
+    "has_scenario_table": false,
+    "has_actions": false,
+    "has_minister_card": false,
+    "specific_number_count": 55,
+    "quality_rating": "EXCELLENT"
+  },
+  "model_routing_analysis": {
+    "correct_routes": [],
+    "incorrect_routes": [],
+    "unknown_routes": [
+      "classification",
+      "extraction",
+      "verification",
+      "fact_check",
+      "feasibility_gate",
+      "scenario_generation",
+      "agent_analysis",
+      "debate",
+      "synthesis"
+    ],
+    "note": "Model routing verification requires additional instrumentation"
+  },
+  "gaps_identified": [
+    "Missing agents: MicroEconomist, MacroEconomist, Nationalization, SkillsAgent, PatternDetective, TimeMachine, Predictor, Scenario, PatternDetectiveAgent, PatternMiner, NationalStrategy, AlertCenter",
+    "Below target: 99 (expected 100-150 for Legendary)",
+    "Critique too short: 2 chars",
+    "Too few red flags: 0 (expected 3+)",
+    "Model routing not fully instrumented for verification"
+  ],
+  "critical_issues": [
+    "agents: Missing agents: MicroEconomist, MacroEconomist, Nationalization, SkillsAgent, PatternDetective, TimeMachine, Predictor, Scenario, PatternDetectiveAgent, PatternMiner, NationalStrategy, AlertCenter"
+  ],
+  "recommendations": [
+    "AGENTS: 12 agents did not execute: MicroEconomist, MacroEconomist, Nationalization, SkillsAgent, PatternDetective, TimeMachine, Predictor, Scenario, PatternDetectiveAgent, PatternMiner, NationalStrategy, AlertCenter. Verify agent initialization and selection logic in graph_llm.py."
+  ]
+}

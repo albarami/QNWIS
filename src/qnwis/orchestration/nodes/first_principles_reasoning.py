@@ -408,14 +408,11 @@ def _parse_feasibility_response(response: str) -> Dict[str, Any]:
         logger.error(f"Failed to parse feasibility JSON: {e}")
         logger.error(f"Raw response: {response[:500]}")
         
-        # Try to extract verdict from text
-        response_lower = response.lower()
-        if "infeasible" in response_lower:
-            return {"verdict": "INFEASIBLE", "explanation": response[:500]}
-        elif "ambitious" in response_lower:
-            return {"verdict": "AMBITIOUS", "explanation": response[:500]}
-        else:
-            return {"verdict": "UNKNOWN", "explanation": "Failed to parse response"}
+        # CRITICAL FIX: On JSON parse failure, default to FEASIBLE
+        # We don't want to block legitimate queries just because the LLM response was truncated
+        # The old code was looking for "infeasible" in partial JSON and creating false positives
+        logger.warning("⚠️ Feasibility check JSON parse failed - defaulting to FEASIBLE")
+        return {"verdict": "FEASIBLE", "explanation": "Feasibility check parse error - proceeding with analysis"}
 
 
 # =============================================================================

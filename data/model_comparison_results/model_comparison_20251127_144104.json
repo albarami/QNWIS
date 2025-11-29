@@ -1,0 +1,706 @@
+{
+  "timestamp": "2025-11-27T14:24:57.652034",
+  "queries_tested": 10,
+  "models_tested": [
+    "GPT-4o",
+    "GPT-5",
+    "GPT-5.1"
+  ],
+  "model_results": {
+    "GPT-4o": [
+      {
+        "model": "GPT-4o",
+        "deployment": "gpt-4o",
+        "query": "Analyze Qatar's non-oil GDP growth and sector contribution (2015-2024)...",
+        "status": "success",
+        "response_length": 7543,
+        "word_count": 1033,
+        "execution_time": 20.69,
+        "quality_score": {
+          "structure": 1.0,
+          "depth": 0.75,
+          "actionability": 0.5,
+          "overall": 0.738
+        },
+        "error": null,
+        "response_preview": "# Analysis of Qatar's Non-Oil GDP Growth and Sector Contributions (2015\u20132024)\n\n## Executive Summary\nQatar's economy has undergone significant diversification efforts to reduce its reliance on hydrocarbons, in line with the Qatar National Vision 2030. Non-oil GDP has grown steadily over the past decade, driven by investments in infrastructure, services, and manufacturing. This report provides a detailed analysis of non-oil GDP growth trends, sectoral contributions, and risks, and offers actionabl...",
+        "usage": {
+          "prompt_tokens": 94,
+          "completion_tokens": 1677,
+          "total_tokens": 1771
+        },
+        "domain": "Economic Diversification"
+      },
+      {
+        "model": "GPT-4o",
+        "deployment": "gpt-4o",
+        "query": "What is Qatar's current oil production capacity and LNG export strategy?...",
+        "status": "success",
+        "response_length": 7018,
+        "word_count": 995,
+        "execution_time": 20.14,
+        "quality_score": {
+          "structure": 0.833,
+          "depth": 0.625,
+          "actionability": 0.667,
+          "overall": 0.69
+        },
+        "error": null,
+        "response_preview": "### Analysis of Qatar's Oil Production Capacity and LNG Export Strategy\n\n---\n\n#### 1. **Overview of Qatar's Hydrocarbon Sector**\nQatar is a global energy powerhouse, primarily due to its vast reserves of natural gas and significant oil production capabilities. As of 2023, Qatar holds the third-largest proven natural gas reserves in the world (24.7 trillion cubic meters) and is the second-largest exporter of liquefied natural gas (LNG), following the United States. While natural gas dominates its...",
+        "usage": {
+          "prompt_tokens": 89,
+          "completion_tokens": 1444,
+          "total_tokens": 1533
+        },
+        "domain": "Energy/Oil&Gas"
+      },
+      {
+        "model": "GPT-4o",
+        "deployment": "gpt-4o",
+        "query": "Analyze Qatar's tourism sector growth post-2022 World Cup...",
+        "status": "success",
+        "response_length": 7391,
+        "word_count": 1028,
+        "execution_time": 24.16,
+        "quality_score": {
+          "structure": 1.0,
+          "depth": 0.75,
+          "actionability": 0.333,
+          "overall": 0.688
+        },
+        "error": null,
+        "response_preview": "# Analysis of Qatar's Tourism Sector Growth Post-2022 FIFA World Cup\n\n## Executive Summary\nThe 2022 FIFA World Cup in Qatar served as a pivotal moment for the country's tourism sector, positioning it as a global destination for leisure, sports, and cultural tourism. The event catalyzed significant infrastructure development, global marketing campaigns, and policy reforms aimed at attracting international visitors. This report evaluates the growth trajectory of Qatar's tourism sector post-World C...",
+        "usage": {
+          "prompt_tokens": 88,
+          "completion_tokens": 1591,
+          "total_tokens": 1679
+        },
+        "domain": "Tourism"
+      },
+      {
+        "model": "GPT-4o",
+        "deployment": "gpt-4o",
+        "query": "What is Qatar's food self-sufficiency rate and import dependency?...",
+        "status": "success",
+        "response_length": 7302,
+        "word_count": 1005,
+        "execution_time": 22.96,
+        "quality_score": {
+          "structure": 1.0,
+          "depth": 0.5,
+          "actionability": 0.5,
+          "overall": 0.625
+        },
+        "error": null,
+        "response_preview": "# Analysis of Qatar's Food Self-Sufficiency Rate and Import Dependency\n\n## Executive Summary\nQatar has made significant strides in improving its food self-sufficiency in recent years, particularly following the 2017 Gulf Cooperation Council (GCC) blockade, which exposed vulnerabilities in its food supply chain. Despite these advancements, Qatar remains heavily reliant on imports for several key food categories. This analysis provides an overview of Qatar's current food self-sufficiency rates, im...",
+        "usage": {
+          "prompt_tokens": 90,
+          "completion_tokens": 1437,
+          "total_tokens": 1527
+        },
+        "domain": "Food Security"
+      },
+      {
+        "model": "GPT-4o",
+        "deployment": "gpt-4o",
+        "query": "Analyze Qatar's healthcare infrastructure and medical workforce capacity...",
+        "status": "success",
+        "response_length": 7004,
+        "word_count": 944,
+        "execution_time": 19.18,
+        "quality_score": {
+          "structure": 1.0,
+          "depth": 0.875,
+          "actionability": 0.5,
+          "overall": 0.794
+        },
+        "error": null,
+        "response_preview": "# Analysis of Qatar's Healthcare Infrastructure and Medical Workforce Capacity\n\n## Executive Summary\nQatar has made significant strides in developing a robust healthcare system, underpinned by substantial investments in infrastructure, technology, and human capital. The nation ranks highly in global healthcare indices, driven by its National Health Strategy (NHS) 2018\u20132022, which aligns with Qatar National Vision 2030. However, challenges remain in workforce capacity, skill gaps, and dependency ...",
+        "usage": {
+          "prompt_tokens": 85,
+          "completion_tokens": 1380,
+          "total_tokens": 1465
+        },
+        "domain": "Healthcare"
+      },
+      {
+        "model": "GPT-4o",
+        "deployment": "gpt-4o",
+        "query": "What is Qatar's digital transformation progress and AI adoption rate?...",
+        "status": "success",
+        "response_length": 8035,
+        "word_count": 1090,
+        "execution_time": 21.28,
+        "quality_score": {
+          "structure": 1.0,
+          "depth": 0.625,
+          "actionability": 0.5,
+          "overall": 0.681
+        },
+        "error": null,
+        "response_preview": "# Analysis of Qatar's Digital Transformation Progress and AI Adoption Rate\n\n## Executive Summary\nQatar has made significant strides in digital transformation and artificial intelligence (AI) adoption, driven by its National Vision 2030, which emphasizes economic diversification, innovation, and technological advancement. The country has invested heavily in digital infrastructure, AI research, and capacity-building initiatives to position itself as a regional leader in technology. However, challe...",
+        "usage": {
+          "prompt_tokens": 88,
+          "completion_tokens": 1680,
+          "total_tokens": 1768
+        },
+        "domain": "Digital/AI"
+      },
+      {
+        "model": "GPT-4o",
+        "deployment": "gpt-4o",
+        "query": "Analyze Qatar's manufacturing sector growth and industrial diversification...",
+        "status": "success",
+        "response_length": 7285,
+        "word_count": 972,
+        "execution_time": 26.09,
+        "quality_score": {
+          "structure": 1.0,
+          "depth": 0.75,
+          "actionability": 0.5,
+          "overall": 0.738
+        },
+        "error": null,
+        "response_preview": "# Analysis of Qatar's Manufacturing Sector Growth and Industrial Diversification\n\n## Executive Summary\nQatar's manufacturing sector has experienced significant growth over the past decade, driven by the country's strategic focus on economic diversification under the Qatar National Vision 2030 (QNV 2030). While the hydrocarbon sector remains dominant, the government has made substantial investments in non-oil industries, including petrochemicals, metals, food processing, and construction material...",
+        "usage": {
+          "prompt_tokens": 85,
+          "completion_tokens": 1404,
+          "total_tokens": 1489
+        },
+        "domain": "Manufacturing"
+      },
+      {
+        "model": "GPT-4o",
+        "deployment": "gpt-4o",
+        "query": "What is the current Qatarization rate and workforce nationalization progress?...",
+        "status": "success",
+        "response_length": 8235,
+        "word_count": 1116,
+        "execution_time": 20.95,
+        "quality_score": {
+          "structure": 1.0,
+          "depth": 0.5,
+          "actionability": 0.5,
+          "overall": 0.625
+        },
+        "error": null,
+        "response_preview": "### Analysis of Qatarization and Workforce Nationalization Progress\n\n#### Executive Summary\nQatarization, the national workforce localization strategy, aims to increase the participation of Qatari nationals in the labor market, particularly in the private and semi-government sectors. As of 2023, Qatar has made significant strides in implementing its Qatarization policy, but challenges persist in achieving its ambitious targets. This report provides an in-depth analysis of the current Qatarizatio...",
+        "usage": {
+          "prompt_tokens": 89,
+          "completion_tokens": 1584,
+          "total_tokens": 1673
+        },
+        "domain": "Workforce/Labor"
+      },
+      {
+        "model": "GPT-4o",
+        "deployment": "gpt-4o",
+        "query": "Analyze Qatar's infrastructure development for Vision 2030...",
+        "status": "success",
+        "response_length": 7566,
+        "word_count": 1037,
+        "execution_time": 22.88,
+        "quality_score": {
+          "structure": 1.0,
+          "depth": 0.75,
+          "actionability": 0.667,
+          "overall": 0.787
+        },
+        "error": null,
+        "response_preview": "# Ministerial Analysis: Qatar's Infrastructure Development for Vision 2030\n\n## Executive Summary\nQatar's National Vision 2030 (QNV 2030) outlines a comprehensive framework for transforming the country into an advanced society capable of sustainable development. Infrastructure development is a cornerstone of this vision, with significant investments in transportation, energy, urban planning, and digital infrastructure. This report evaluates Qatar's progress, identifies risks, and provides actiona...",
+        "usage": {
+          "prompt_tokens": 86,
+          "completion_tokens": 1529,
+          "total_tokens": 1615
+        },
+        "domain": "Infrastructure"
+      },
+      {
+        "model": "GPT-4o",
+        "deployment": "gpt-4o",
+        "query": "How do Qatar's labor, energy, and economic policies align with Vision 2030?...",
+        "status": "success",
+        "response_length": 7683,
+        "word_count": 1077,
+        "execution_time": 32.3,
+        "quality_score": {
+          "structure": 1.0,
+          "depth": 0.875,
+          "actionability": 0.5,
+          "overall": 0.794
+        },
+        "error": null,
+        "response_preview": "### Analysis of Qatar's Labor, Energy, and Economic Policies in Alignment with Vision 2030\n\n#### Executive Summary\nQatar National Vision 2030 (QNV 2030) serves as the strategic framework guiding the nation\u2019s development across four pillars: economic, social, human, and environmental. The alignment of labor, energy, and economic policies with QNV 2030 is critical to achieving sustainable growth and diversification. This report examines the current state of these policies, identifies key risks, an...",
+        "usage": {
+          "prompt_tokens": 94,
+          "completion_tokens": 1531,
+          "total_tokens": 1625
+        },
+        "domain": "Cross-Domain Strategic"
+      }
+    ],
+    "GPT-5": [
+      {
+        "model": "GPT-5",
+        "deployment": "gpt-5-chat",
+        "query": "Analyze Qatar's non-oil GDP growth and sector contribution (2015-2024)...",
+        "status": "success",
+        "response_length": 7566,
+        "word_count": 1055,
+        "execution_time": 19.1,
+        "quality_score": {
+          "structure": 1.0,
+          "depth": 0.875,
+          "actionability": 0.5,
+          "overall": 0.794
+        },
+        "error": null,
+        "response_preview": "Below is a **ministerial-grade, PhD-level economic analysis** of **Qatar\u2019s non-oil GDP growth and sectoral contributions (2015\u20132024)**, structured for executive briefing purposes.  \n\n---\n\n## 1. Executive Summary\n\nBetween **2015 and 2024**, Qatar\u2019s **non-oil GDP** has grown from approximately **QAR 330 billion** to an estimated **QAR 470\u2013490 billion**, representing a **compound annual growth rate (CAGR) of 4.2\u20134.5%**.  \nThis growth trajectory reflects the country\u2019s **strategic diversification** u...",
+        "usage": {
+          "prompt_tokens": 94,
+          "completion_tokens": 1946,
+          "total_tokens": 2040
+        },
+        "domain": "Economic Diversification"
+      },
+      {
+        "model": "GPT-5",
+        "deployment": "gpt-5-chat",
+        "query": "What is Qatar's current oil production capacity and LNG export strategy?...",
+        "status": "success",
+        "response_length": 6729,
+        "word_count": 943,
+        "execution_time": 30.3,
+        "quality_score": {
+          "structure": 1.0,
+          "depth": 0.75,
+          "actionability": 0.5,
+          "overall": 0.738
+        },
+        "error": null,
+        "response_preview": "Below is a **ministerial-grade, PhD-level economic and energy policy analysis** of Qatar\u2019s current **oil production capacity** and **liquefied natural gas (LNG) export strategy**, structured for executive decision-making at the Ministry of Labour.  \n\n---\n\n## 1. Executive Summary\n\nQatar remains a global energy powerhouse, with **oil production capacity of approximately 1.3\u20131.5 million barrels per day (bpd)** and **LNG export capacity exceeding 77 million tonnes per annum (MTPA)** as of 2024. The ...",
+        "usage": {
+          "prompt_tokens": 89,
+          "completion_tokens": 1573,
+          "total_tokens": 1662
+        },
+        "domain": "Energy/Oil&Gas"
+      },
+      {
+        "model": "GPT-5",
+        "deployment": "gpt-5-chat",
+        "query": "Analyze Qatar's tourism sector growth post-2022 World Cup...",
+        "status": "success",
+        "response_length": 7538,
+        "word_count": 1021,
+        "execution_time": 30.84,
+        "quality_score": {
+          "structure": 1.0,
+          "depth": 0.75,
+          "actionability": 0.667,
+          "overall": 0.787
+        },
+        "error": null,
+        "response_preview": "# **Post-2022 World Cup Tourism Sector Growth in Qatar: An Economic and Policy Analysis**\n\n**Prepared for:** Ministry of Labour, State of Qatar  \n**Prepared by:** Senior Economic Advisor  \n**Date:** 2024  \n\n---\n\n## **1. Executive Summary**\n\nQatar\u2019s tourism sector has entered a structural transformation following the 2022 FIFA World Cup. The event catalyzed unprecedented infrastructure investment, global visibility, and diversification momentum aligned with *Qatar National Vision 2030 (QNV 2030)*...",
+        "usage": {
+          "prompt_tokens": 88,
+          "completion_tokens": 1713,
+          "total_tokens": 1801
+        },
+        "domain": "Tourism"
+      },
+      {
+        "model": "GPT-5",
+        "deployment": "gpt-5-chat",
+        "query": "What is Qatar's food self-sufficiency rate and import dependency?...",
+        "status": "success",
+        "response_length": 7025,
+        "word_count": 944,
+        "execution_time": 16.99,
+        "quality_score": {
+          "structure": 1.0,
+          "depth": 0.75,
+          "actionability": 0.5,
+          "overall": 0.738
+        },
+        "error": null,
+        "response_preview": "Below is a **ministerial-grade analytical briefing** on **Qatar\u2019s food self-sufficiency and import dependency**, prepared for strategic policy planning within the Ministry of Labour.  \n\n---\n\n## 1. Executive Summary\n\nQatar\u2019s food system remains **highly import-dependent**, though **self-sufficiency has improved significantly** since the 2017 Gulf diplomatic crisis. As of 2023, **overall food self-sufficiency is estimated at 30\u201335%**, with substantial variation across product categories. The count...",
+        "usage": {
+          "prompt_tokens": 90,
+          "completion_tokens": 1615,
+          "total_tokens": 1705
+        },
+        "domain": "Food Security"
+      },
+      {
+        "model": "GPT-5",
+        "deployment": "gpt-5-chat",
+        "query": "Analyze Qatar's healthcare infrastructure and medical workforce capacity...",
+        "status": "success",
+        "response_length": 7930,
+        "word_count": 1065,
+        "execution_time": 18.72,
+        "quality_score": {
+          "structure": 1.0,
+          "depth": 0.75,
+          "actionability": 0.5,
+          "overall": 0.738
+        },
+        "error": null,
+        "response_preview": "# **Ministerial Briefing: Analysis of Qatar\u2019s Healthcare Infrastructure and Medical Workforce Capacity**\n\n**Prepared for:** Ministry of Labour, State of Qatar  \n**Date:** 2024  \n**Author:** Senior Economic Advisor  \n\n---\n\n## **1. Executive Summary**\n\nQatar\u2019s healthcare system has undergone rapid modernization and expansion over the past two decades, positioning the country among the top healthcare performers in the GCC. The government\u2019s sustained investment\u2014averaging **9\u201310% of total expenditure...",
+        "usage": {
+          "prompt_tokens": 85,
+          "completion_tokens": 1780,
+          "total_tokens": 1865
+        },
+        "domain": "Healthcare"
+      },
+      {
+        "model": "GPT-5",
+        "deployment": "gpt-5-chat",
+        "query": "What is Qatar's digital transformation progress and AI adoption rate?...",
+        "status": "success",
+        "response_length": 7779,
+        "word_count": 1072,
+        "execution_time": 17.49,
+        "quality_score": {
+          "structure": 1.0,
+          "depth": 0.875,
+          "actionability": 0.667,
+          "overall": 0.844
+        },
+        "error": null,
+        "response_preview": "# **Qatar\u2019s Digital Transformation and AI Adoption: Ministerial-Grade Economic Analysis (2024)**  \n**Prepared for:** Ministry of Labour, State of Qatar  \n**Analyst:** Senior Economic Advisor  \n**Date:** July 2024  \n\n---\n\n## **1. Executive Summary**\n\nQatar has made substantial progress in digital transformation, positioning itself as one of the Gulf Cooperation Council (GCC) leaders in digital infrastructure and artificial intelligence (AI) readiness. The country\u2019s **National Vision 2030** and **...",
+        "usage": {
+          "prompt_tokens": 88,
+          "completion_tokens": 1758,
+          "total_tokens": 1846
+        },
+        "domain": "Digital/AI"
+      },
+      {
+        "model": "GPT-5",
+        "deployment": "gpt-5-chat",
+        "query": "Analyze Qatar's manufacturing sector growth and industrial diversification...",
+        "status": "success",
+        "response_length": 9237,
+        "word_count": 1227,
+        "execution_time": 29.81,
+        "quality_score": {
+          "structure": 1.0,
+          "depth": 0.875,
+          "actionability": 0.5,
+          "overall": 0.794
+        },
+        "error": null,
+        "response_preview": "# **Ministerial Briefing: Qatar\u2019s Manufacturing Sector Growth and Industrial Diversification**\n\n**Prepared for:** Ministry of Labour, State of Qatar  \n**Prepared by:** Senior Economic Advisor  \n**Date:** 2024  \n\n---\n\n## **1. Executive Summary**\n\nQatar\u2019s manufacturing sector has emerged as a key pillar of economic diversification under *Qatar National Vision 2030 (QNV 2030)* and the *Second National Development Strategy (NDS2, 2018\u20132022)*. While hydrocarbons continue to dominate GDP, manufacturin...",
+        "usage": {
+          "prompt_tokens": 85,
+          "completion_tokens": 2055,
+          "total_tokens": 2140
+        },
+        "domain": "Manufacturing"
+      },
+      {
+        "model": "GPT-5",
+        "deployment": "gpt-5-chat",
+        "query": "What is the current Qatarization rate and workforce nationalization progress?...",
+        "status": "success",
+        "response_length": 7478,
+        "word_count": 1022,
+        "execution_time": 35.19,
+        "quality_score": {
+          "structure": 1.0,
+          "depth": 0.625,
+          "actionability": 0.5,
+          "overall": 0.681
+        },
+        "error": null,
+        "response_preview": "Below is a **ministerial-grade, PhD-level analysis** of Qatar\u2019s current **Qatarization rate and workforce nationalization progress**, incorporating the latest available data (as of 2024), policy context, and forward-looking recommendations.  \n\n---\n\n## 1. Executive Summary\n\nQatarization \u2014 the national policy to increase Qatari participation in the workforce \u2014 remains a **strategic pillar** of the country\u2019s human capital development agenda under **Qatar National Vision 2030 (QNV 2030)**.  \n\nAs of ...",
+        "usage": {
+          "prompt_tokens": 89,
+          "completion_tokens": 1723,
+          "total_tokens": 1812
+        },
+        "domain": "Workforce/Labor"
+      },
+      {
+        "model": "GPT-5",
+        "deployment": "gpt-5-chat",
+        "query": "Analyze Qatar's infrastructure development for Vision 2030...",
+        "status": "success",
+        "response_length": 8783,
+        "word_count": 1118,
+        "execution_time": 36.13,
+        "quality_score": {
+          "structure": 1.0,
+          "depth": 0.875,
+          "actionability": 0.667,
+          "overall": 0.844
+        },
+        "error": null,
+        "response_preview": "# **Comprehensive Analysis of Qatar\u2019s Infrastructure Development for Vision 2030**  \n**Prepared for:** Ministry of Labour, State of Qatar  \n**Prepared by:** Senior Economic Advisor  \n**Date:** 2024  \n\n---\n\n## **1. Executive Summary**\n\nQatar\u2019s National Vision 2030 (QNV 2030) seeks to transform the country into an advanced, sustainable economy by balancing economic growth, social development, environmental management, and human capital advancement. Infrastructure development\u2014spanning transport, en...",
+        "usage": {
+          "prompt_tokens": 86,
+          "completion_tokens": 1857,
+          "total_tokens": 1943
+        },
+        "domain": "Infrastructure"
+      },
+      {
+        "model": "GPT-5",
+        "deployment": "gpt-5-chat",
+        "query": "How do Qatar's labor, energy, and economic policies align with Vision 2030?...",
+        "status": "success",
+        "response_length": 8767,
+        "word_count": 1165,
+        "execution_time": 35.1,
+        "quality_score": {
+          "structure": 1.0,
+          "depth": 0.875,
+          "actionability": 0.5,
+          "overall": 0.794
+        },
+        "error": null,
+        "response_preview": "Below is a **ministerial-grade, PhD-level policy analysis** of how **Qatar\u2019s labor, energy, and economic policies** align with the **Qatar National Vision 2030 (QNV 2030)**. The analysis integrates quantitative data, risk assessments, and actionable recommendations for the Ministry of Labour and related agencies.\n\n---\n\n## 1. Executive Summary\n\nQatar\u2019s Vision 2030 seeks to transform the nation into an advanced, diversified economy capable of sustaining high living standards for its people. The Vi...",
+        "usage": {
+          "prompt_tokens": 94,
+          "completion_tokens": 1941,
+          "total_tokens": 2035
+        },
+        "domain": "Cross-Domain Strategic"
+      }
+    ],
+    "GPT-5.1": [
+      {
+        "model": "GPT-5.1",
+        "deployment": "gpt-5.1",
+        "query": "Analyze Qatar's non-oil GDP growth and sector contribution (2015-2024)...",
+        "status": "success",
+        "response_length": 0,
+        "word_count": 0,
+        "execution_time": 40.7,
+        "quality_score": {
+          "structure": 0,
+          "depth": 0,
+          "actionability": 0,
+          "overall": 0
+        },
+        "error": null,
+        "response_preview": "",
+        "usage": {},
+        "domain": "Economic Diversification"
+      },
+      {
+        "model": "GPT-5.1",
+        "deployment": "gpt-5.1",
+        "query": "What is Qatar's current oil production capacity and LNG export strategy?...",
+        "status": "success",
+        "response_length": 0,
+        "word_count": 0,
+        "execution_time": 50.46,
+        "quality_score": {
+          "structure": 0,
+          "depth": 0,
+          "actionability": 0,
+          "overall": 0
+        },
+        "error": null,
+        "response_preview": "",
+        "usage": {},
+        "domain": "Energy/Oil&Gas"
+      },
+      {
+        "model": "GPT-5.1",
+        "deployment": "gpt-5.1",
+        "query": "Analyze Qatar's tourism sector growth post-2022 World Cup...",
+        "status": "success",
+        "response_length": 0,
+        "word_count": 0,
+        "execution_time": 41.59,
+        "quality_score": {
+          "structure": 0,
+          "depth": 0,
+          "actionability": 0,
+          "overall": 0
+        },
+        "error": null,
+        "response_preview": "",
+        "usage": {},
+        "domain": "Tourism"
+      },
+      {
+        "model": "GPT-5.1",
+        "deployment": "gpt-5.1",
+        "query": "What is Qatar's food self-sufficiency rate and import dependency?...",
+        "status": "success",
+        "response_length": 0,
+        "word_count": 0,
+        "execution_time": 39.02,
+        "quality_score": {
+          "structure": 0,
+          "depth": 0,
+          "actionability": 0,
+          "overall": 0
+        },
+        "error": null,
+        "response_preview": "",
+        "usage": {},
+        "domain": "Food Security"
+      },
+      {
+        "model": "GPT-5.1",
+        "deployment": "gpt-5.1",
+        "query": "Analyze Qatar's healthcare infrastructure and medical workforce capacity...",
+        "status": "success",
+        "response_length": 0,
+        "word_count": 0,
+        "execution_time": 48.89,
+        "quality_score": {
+          "structure": 0,
+          "depth": 0,
+          "actionability": 0,
+          "overall": 0
+        },
+        "error": null,
+        "response_preview": "",
+        "usage": {},
+        "domain": "Healthcare"
+      },
+      {
+        "model": "GPT-5.1",
+        "deployment": "gpt-5.1",
+        "query": "What is Qatar's digital transformation progress and AI adoption rate?...",
+        "status": "success",
+        "response_length": 0,
+        "word_count": 0,
+        "execution_time": 43.3,
+        "quality_score": {
+          "structure": 0,
+          "depth": 0,
+          "actionability": 0,
+          "overall": 0
+        },
+        "error": null,
+        "response_preview": "",
+        "usage": {},
+        "domain": "Digital/AI"
+      },
+      {
+        "model": "GPT-5.1",
+        "deployment": "gpt-5.1",
+        "query": "Analyze Qatar's manufacturing sector growth and industrial diversification...",
+        "status": "success",
+        "response_length": 0,
+        "word_count": 0,
+        "execution_time": 45.27,
+        "quality_score": {
+          "structure": 0,
+          "depth": 0,
+          "actionability": 0,
+          "overall": 0
+        },
+        "error": null,
+        "response_preview": "",
+        "usage": {},
+        "domain": "Manufacturing"
+      },
+      {
+        "model": "GPT-5.1",
+        "deployment": "gpt-5.1",
+        "query": "What is the current Qatarization rate and workforce nationalization progress?...",
+        "status": "success",
+        "response_length": 0,
+        "word_count": 0,
+        "execution_time": 38.39,
+        "quality_score": {
+          "structure": 0,
+          "depth": 0,
+          "actionability": 0,
+          "overall": 0
+        },
+        "error": null,
+        "response_preview": "",
+        "usage": {},
+        "domain": "Workforce/Labor"
+      },
+      {
+        "model": "GPT-5.1",
+        "deployment": "gpt-5.1",
+        "query": "Analyze Qatar's infrastructure development for Vision 2030...",
+        "status": "success",
+        "response_length": 0,
+        "word_count": 0,
+        "execution_time": 39.66,
+        "quality_score": {
+          "structure": 0,
+          "depth": 0,
+          "actionability": 0,
+          "overall": 0
+        },
+        "error": null,
+        "response_preview": "",
+        "usage": {},
+        "domain": "Infrastructure"
+      },
+      {
+        "model": "GPT-5.1",
+        "deployment": "gpt-5.1",
+        "query": "How do Qatar's labor, energy, and economic policies align with Vision 2030?...",
+        "status": "success",
+        "response_length": 0,
+        "word_count": 0,
+        "execution_time": 43.91,
+        "quality_score": {
+          "structure": 0,
+          "depth": 0,
+          "actionability": 0,
+          "overall": 0
+        },
+        "error": null,
+        "response_preview": "",
+        "usage": {},
+        "domain": "Cross-Domain Strategic"
+      }
+    ]
+  },
+  "comparison": {
+    "GPT-4o": {
+      "total": 69.69,
+      "success_rate": 1.0,
+      "avg_words": 1029.7,
+      "avg_time": 23.1,
+      "avg_quality": 0.716,
+      "avg_structure": 0.983,
+      "avg_depth": 0.7,
+      "avg_actionability": 0.517,
+      "queries_passed": 10,
+      "queries_total": 10
+    },
+    "GPT-5": {
+      "total": 74.44,
+      "success_rate": 1.0,
+      "avg_words": 1063.2,
+      "avg_time": 27.0,
+      "avg_quality": 0.775,
+      "avg_structure": 1.0,
+      "avg_depth": 0.8,
+      "avg_actionability": 0.55,
+      "queries_passed": 10,
+      "queries_total": 10
+    },
+    "GPT-5.1": {
+      "total": 2.81,
+      "success_rate": 1.0,
+      "avg_words": 0.0,
+      "avg_time": 43.1,
+      "avg_quality": 0.0,
+      "avg_structure": 0.0,
+      "avg_depth": 0.0,
+      "avg_actionability": 0.0,
+      "queries_passed": 10,
+      "queries_total": 10
+    }
+  },
+  "winner": "GPT-5"
+}

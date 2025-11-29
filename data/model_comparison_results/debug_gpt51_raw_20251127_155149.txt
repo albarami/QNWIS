@@ -1,0 +1,4 @@
+HTTP Status: 200
+Headers: {'date': 'Thu, 27 Nov 2025 15:51:49 GMT', 'content-length': '0', 'connection': 'keep-alive', 'x-ms-rai-invoked': 'true', 'apim-request-id': 'ff848913-10cc-4aa4-b0f0-6c3c8b5a310d', 'strict-transport-security': 'max-age=31536000; includeSubDomains; preload', 'x-ms-deployment-name': 'gpt-5.1', 'x-content-type-options': 'nosniff', 'x-ms-region': 'Sweden Central', 'x-ratelimit-remaining-requests': '2499', 'x-ratelimit-limit-requests': '2500', 'x-ratelimit-remaining-tokens': '249894', 'x-ratelimit-limit-tokens': '250000'}
+
+BODY:

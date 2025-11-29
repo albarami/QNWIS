@@ -1,7 +1,8 @@
 """
 Parallel Debate Executor for Multi-Scenario Analysis.
 
-Executes multiple debate workflows simultaneously across GPUs 0-5.
+Executes multiple debate workflows simultaneously.
+Uses GPUs 0-5 if available, otherwise runs on CPU.
 Rate limiting happens at individual LLM call level (not here).
 """
 
@@ -16,10 +17,11 @@ logger = logging.getLogger(__name__)
 
 class ParallelDebateExecutor:
     """
-    Execute multiple debates in parallel across available GPUs.
+    Execute multiple debates in parallel.
     
-    Distributes scenarios across GPUs 0-5, with rate limiting handled
-    at the individual LLM call level by the rate_limiter module.
+    If GPUs are available, distributes scenarios across GPUs 0-5.
+    Otherwise, runs all scenarios on CPU using asyncio concurrency.
+    Rate limiting is handled at the individual LLM call level.
     """
     
     def __init__(self, num_parallel: int = 6, event_callback=None):
@@ -79,7 +81,8 @@ class ParallelDebateExecutor:
             status="started",
             payload={
                 "total_scenarios": len(scenarios),
-                "gpu_allocation": list(range(min(6, len(scenarios)))),
+                "execution_mode": "GPU" if self.gpu_available else "CPU",
+                "device_count": self.gpu_count if self.gpu_available else 1,
                 "scenarios": [{"name": s.get("name", f"Scenario {i}"), "description": s.get("description", "")} for i, s in enumerate(scenarios)]
             }
         )
@@ -216,9 +219,10 @@ class ParallelDebateExecutor:
         scenario_name = scenario['name']
         scenario_id = scenario.get('id', f'scenario_{scenario_index}')
         
+        device_label = f"GPU {gpu_id}" if gpu_id is not None else "CPU"
         logger.info(
             f"▶️ Starting scenario: {scenario_name} "
-            f"(GPU {gpu_id if gpu_id is not None else 'CPU'}, index {scenario_index})"
+            f"({device_label}, index {scenario_index})"
         )
         
         start_time = datetime.now()
@@ -271,7 +275,7 @@ class ParallelDebateExecutor:
             elapsed = result['scenario_execution_time']
             logger.info(
                 f"✅ Completed scenario: {scenario_name} "
-                f"(GPU {gpu_id if gpu_id is not None else 'CPU'}, {elapsed:.1f}s)"
+                f"({device_label}, {elapsed:.1f}s)"
             )
             
             # Emit scenario complete event
@@ -349,8 +353,9 @@ class ParallelDebateExecutor:
         scenario_state['reasoning_chain'].append(
             f"   Modified assumptions: {scenario.get('modified_assumptions', {})}"
         )
+        device_info = f"GPU {gpu_id}" if gpu_id is not None else "CPU"
         scenario_state['reasoning_chain'].append(
-            f"   Assigned to GPU {gpu_id if gpu_id is not None else 'CPU'}"
+            f"   Assigned to {device_info}"
         )
         
         # Inject scenario assumptions into state for agents to use

@@ -1,0 +1,141 @@
+[
+  {
+    "stage": "classify",
+    "status": "running",
+    "payload": {
+      "message": "Analyzing query complexity..."
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "classify",
+    "status": "complete",
+    "payload": {
+      "complexity": "complex",
+      "reasoning": [
+        "Query classified as: complex"
+      ]
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "prefetch",
+    "status": "running",
+    "payload": {
+      "message": "Processing prefetch..."
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "feasibility_check",
+    "status": "running",
+    "payload": {
+      "query": "\nQatar's Ministry of Education is planning a major reform initiative.\nBudget: QAR 15 billion over 6 years.\n\nOption A: Elite STEM University Cluster\n- Expand Education City with 3 new world-class STEM universities\n- Target: Produce 2,000 Qatari engineers and scientists annually\n- Attract top global faculty with competitive packages\n- Build research parks linked to Qatar Foundation\n\nOption B: Vocational Training Revolution\n- Build 25 technical colleges across Qatar\n- Partner with German/Swiss vocational systems\n- Target: 10,000 skilled Qatari technicians per year\n- Focus: Construction, maintenance, IT, healthcare technicians\n\nCurrent Context:\n- Qatar University graduates 3,500 Qataris annually\n- Only 12% of graduates are in STEM fields\n- Private sector complains of skills mismatch\n- Youth unemployment among Qataris: 8%\n- 85% of private sector jobs held by expatriates\n- Education City universities combined enrollment: 4,000\n\nWhich approach should Qatar prioritize? Consider:\n1. Labor market needs analysis\n2. Qatarization acceleration potential\n3. Cost per graduate comparison\n4. Time to impact on workforce\n5. Social and cultural factors\n"
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "feasibility_check",
+    "status": "complete",
+    "payload": {
+      "verdict": {
+        "option_a": {
+          "feasibility": "INFEASIBLE",
+          "explanation": "Producing 2,000 Qatari engineers and scientists annually would require a 5x increase in STEM graduates, which is unrealistic given the current graduate pool and STEM enrollment rates. Additionally, the cost per graduate for elite universities is likely to exceed the available budget."
+        },
+        "option_b": {
+          "feasibility": "AMBITIOUS",
+          "explanation": "Producing 10,000 skilled Qatari technicians annually is challenging but more feasible than Option A. Vocational training aligns better with Qatar's labor market needs and Qatarization goals, though it still requires significant expansion of the graduate pool and infrastructure."
+        }
+      }
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "feasibility_gate",
+    "status": "complete",
+    "payload": {},
+    "latency_ms": null
+  },
+  {
+    "stage": "error",
+    "status": "error",
+    "payload": {
+      "error": "DATABASE_URL environment variable must be set"
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "meta_synthesis",
+    "status": "complete",
+    "payload": {
+      "meta_synthesis": "",
+      "final_synthesis": "",
+      "stats": {
+        "n_facts": 0,
+        "n_sources": 0,
+        "n_scenarios": 6,
+        "n_turns": 0,
+        "n_experts": 6,
+        "n_challenges": 0,
+        "n_consensus": 0,
+        "n_critiques": 0,
+        "n_red_flags": 0,
+        "avg_confidence": 75
+      },
+      "confidence": 0.0
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "synthesize",
+    "status": "complete",
+    "payload": {
+      "text": "",
+      "final_synthesis": "",
+      "stats": {
+        "n_facts": 0,
+        "n_sources": 0,
+        "n_scenarios": 6,
+        "n_turns": 0,
+        "n_experts": 6,
+        "n_challenges": 0,
+        "n_consensus": 0,
+        "n_critiques": 0,
+        "n_red_flags": 0,
+        "avg_confidence": 75
+      },
+      "confidence": 0.0,
+      "word_count": 0
+    },
+    "latency_ms": null
+  },
+  {
+    "stage": "done",
+    "status": "complete",
+    "payload": {
+      "confidence": 0.0,
+      "warnings": [],
+      "errors": [],
+      "final_synthesis": "",
+      "meta_synthesis": "",
+      "summary": "",
+      "text": "",
+      "stats": {
+        "n_facts": 0,
+        "n_sources": 0,
+        "n_scenarios": 6,
+        "n_turns": 0,
+        "n_experts": 6,
+        "n_challenges": 0,
+        "n_consensus": 0,
+        "n_critiques": 0,
+        "n_red_flags": 0,
+        "avg_confidence": 75
+      },
+      "extracted_facts": [],
+      "word_count": 0
+    },
+    "latency_ms": null
+  }
+]

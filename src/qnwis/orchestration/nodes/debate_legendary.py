@@ -78,11 +78,11 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
         llm_client=llm_client
     )
 
-    # Build agents map (for now, we'll use the LLM client to generate debate turns)
-    # In the future, this can be populated with actual agent instances
+    # Build agents map - CRITICAL for legendary depth debates
+    # Each agent must be properly initialized for 100-150 turn debates
     agents_map: Dict[str, Any] = {}
 
-    # Import LLM agents if available
+    # Import LLM agents - THESE ARE REQUIRED for legendary debates
     try:
         from ...agents.micro_economist import MicroEconomist
         from ...agents.macro_economist import MacroEconomist
@@ -92,6 +92,7 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
         from ...agents.base import DataClient
 
         data_client = DataClient()
+        logger.info("✅ DataClient initialized for debate agents")
 
         # Create a simple DataValidator for data quality checks
         class SimpleDataValidator:
@@ -101,18 +102,111 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
             async def analyze_edge_case(self, edge_case, history):
                 return "Data quality check completed."
         
-        agents_map = {
-            "DataValidator": SimpleDataValidator(),
-            "MicroEconomist": MicroEconomist(data_client, llm_client),
-            "MacroEconomist": MacroEconomist(data_client, llm_client),
-            "Nationalization": NationalizationAgent(data_client, llm_client),
-            "SkillsAgent": SkillsAgent(data_client, llm_client),
-            "PatternDetective": PatternDetectiveLLMAgent(data_client, llm_client),
-        }
-        logger.info(f"Loaded {len(agents_map)} LLM agents for debate")
+        # Initialize each agent with explicit error handling
+        agents_map["DataValidator"] = SimpleDataValidator()
+        logger.info("✅ DataValidator initialized")
+        
+        try:
+            agents_map["MicroEconomist"] = MicroEconomist(data_client, llm_client)
+            logger.info("✅ MicroEconomist initialized")
+        except Exception as e:
+            logger.error(f"❌ MicroEconomist failed: {e}")
+        
+        try:
+            agents_map["MacroEconomist"] = MacroEconomist(data_client, llm_client)
+            logger.info("✅ MacroEconomist initialized")
+        except Exception as e:
+            logger.error(f"❌ MacroEconomist failed: {e}")
+        
+        try:
+            agents_map["Nationalization"] = NationalizationAgent(data_client, llm_client)
+            logger.info("✅ Nationalization initialized")
+        except Exception as e:
+            logger.error(f"❌ Nationalization failed: {e}")
+        
+        try:
+            agents_map["SkillsAgent"] = SkillsAgent(data_client, llm_client)
+            logger.info("✅ SkillsAgent initialized")
+        except Exception as e:
+            logger.error(f"❌ SkillsAgent failed: {e}")
+        
+        try:
+            agents_map["PatternDetective"] = PatternDetectiveLLMAgent(data_client, llm_client)
+            logger.info("✅ PatternDetective initialized")
+        except Exception as e:
+            logger.error(f"❌ PatternDetective failed: {e}")
+        
+        # === DETERMINISTIC AGENTS ===
+        # These provide data-backed analysis without LLM calls
+        try:
+            from ...agents.time_machine import TimeMachine
+            from ...agents.predictor import Predictor
+            from ...agents.scenario_agent import ScenarioAgent
+            from ...agents.pattern_miner import PatternMiner
+            from ...agents.national_strategy import NationalStrategy
+            from ...agents.alert_center import AlertCenter
+            from ...agents.pattern_detective import PatternDetectiveAgent
+            
+            # Initialize deterministic agents
+            try:
+                agents_map["TimeMachine"] = TimeMachine(data_client)
+                logger.info("✅ TimeMachine (deterministic) initialized")
+            except Exception as e:
+                logger.warning(f"⚠️ TimeMachine failed: {e}")
+            
+            try:
+                agents_map["PatternDetectiveAgent"] = PatternDetectiveAgent(data_client)
+                logger.info("✅ PatternDetectiveAgent (deterministic) initialized")
+            except Exception as e:
+                logger.warning(f"⚠️ PatternDetectiveAgent failed: {e}")
+            
+            try:
+                agents_map["Predictor"] = Predictor(data_client)
+                logger.info("✅ Predictor (deterministic) initialized")
+            except Exception as e:
+                logger.warning(f"⚠️ Predictor failed: {e}")
+            
+            try:
+                agents_map["Scenario"] = ScenarioAgent(data_client)
+                logger.info("✅ Scenario (deterministic) initialized")
+            except Exception as e:
+                logger.warning(f"⚠️ Scenario failed: {e}")
+            
+            try:
+                agents_map["PatternMiner"] = PatternMiner(data_client)
+                logger.info("✅ PatternMiner (deterministic) initialized")
+            except Exception as e:
+                logger.warning(f"⚠️ PatternMiner failed: {e}")
+            
+            try:
+                agents_map["NationalStrategy"] = NationalStrategy(data_client)
+                logger.info("✅ NationalStrategy (deterministic) initialized")
+            except Exception as e:
+                logger.warning(f"⚠️ NationalStrategy failed: {e}")
+            
+            try:
+                agents_map["AlertCenter"] = AlertCenter(data_client)
+                logger.info("✅ AlertCenter (deterministic) initialized")
+            except Exception as e:
+                logger.warning(f"⚠️ AlertCenter failed: {e}")
+                
+        except ImportError as e:
+            logger.warning(f"⚠️ Could not import deterministic agents: {e}")
+        
+        # Log final agent count - CRITICAL for legendary depth
+        llm_agent_count = len([a for a in agents_map.keys() if a != "DataValidator"])
+        deterministic_count = len([a for a in agents_map.keys() if a in ["TimeMachine", "Predictor", "Scenario", "PatternMiner", "NationalStrategy", "AlertCenter", "PatternDetectiveAgent"]])
+        logger.warning(f"🔥 DEBATE AGENTS LOADED: {llm_agent_count} total ({llm_agent_count - deterministic_count} LLM + {deterministic_count} deterministic)")
+        logger.warning(f"🔥 AGENT LIST: {list(agents_map.keys())}")
+        
+        if llm_agent_count < 5:
+            logger.error(f"⚠️ WARNING: Only {llm_agent_count}/5 LLM agents loaded - debate may be shorter than expected!")
+            
     except Exception as e:
-        logger.warning(f"Could not load LLM agents: {e}")
-        # Debate will work with just the orchestrator's LLM capabilities
+        logger.error(f"❌ CRITICAL: Could not load LLM agents: {e}")
+        import traceback
+        logger.error(f"❌ Traceback: {traceback.format_exc()}")
+        # Debate will be severely limited without agents!
 
     # Conduct legendary debate
     # Get user-selected debate depth from state (default: legendary = 100-150 turns)
@@ -158,28 +252,44 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
 
     except Exception as e:
         logger.error(f"❌ LEGENDARY DEBATE FAILED: {e}", exc_info=True)
-        logger.error(f"❌ PRESERVING {len(orchestrator.conversation_history)} turns that were already streamed")
+        completed_turns = orchestrator.conversation_history if orchestrator else []
+        logger.error(f"❌ PRESERVING {len(completed_turns)} turns that were already streamed")
 
         # Fallback to simplified debate BUT PRESERVE the turns that were already streamed!
         from .debate import _build_synthesis
         synthesis = _build_synthesis(contradictions)
+        
+        # Build summary from completed turns for synthesis to use
+        turn_summary = ""
+        if completed_turns:
+            summary_parts = []
+            for turn in completed_turns[-30:]:  # Last 30 turns
+                speaker = turn.get("agent", "Agent")
+                content = turn.get("message", "")[:400]
+                summary_parts.append(f"**{speaker}**: {content}...")
+            turn_summary = "\n\n".join(summary_parts)
 
+        # CRITICAL: Store in ALL keys that synthesis might look for
         state["debate_synthesis"] = synthesis
+        state["multi_agent_debate"] = turn_summary or synthesis  # FIX: Also set this key
+        state["conversation_history"] = completed_turns  # FIX: Also at state level
+        state["debate_partial"] = True  # FIX: Mark as partial
+        state["debate_turns"] = len(completed_turns)  # FIX: Track turn count
         state["debate_results"] = {
             "contradictions": contradictions,
             "contradictions_found": len(contradictions),
-            "total_turns": len(orchestrator.conversation_history),  # Preserve actual turn count
-            "conversation_history": orchestrator.conversation_history,  # PRESERVE ALL TURNS!
+            "total_turns": len(completed_turns),
+            "conversation_history": completed_turns,
             "resolutions": [],
             "consensus": {"narrative": synthesis},
-            "status": "partial",  # Changed from "failed" to "partial"
+            "status": "partial",
             "error": str(e),
             "consensus_narrative": synthesis,
             "resolved": 0,
             "flagged_for_review": 0,
         }
 
-        reasoning_chain.append(f"⚠️ Legendary debate failed ({e}), used simplified fallback")
+        reasoning_chain.append(f"⚠️ Legendary debate partially completed ({len(completed_turns)} turns), error: {e}")
 
     nodes_executed.append("debate")
     return state

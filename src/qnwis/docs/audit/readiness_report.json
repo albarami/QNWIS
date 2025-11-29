@@ -338,12 +338,12 @@
         },
         "missing": {}
       },
-      "duration_ms": 15.728950500488281,
+      "duration_ms": 16.851425170898438,
       "severity": "ERROR",
       "evidence_paths": [
         "docs/IMPLEMENTATION_ROADMAP.md"
       ],
-      "timestamp": "2025-11-26T06:46:08.362524"
+      "timestamp": "2025-11-28T20:40:48.759906"
     },
     {
       "name": "no_placeholders",
@@ -462,6 +462,12 @@
             "snippet": "pass"
           },
           {
+            "file": "src/qnwis/llm/client.py",
+            "line": 253,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
             "file": "src/qnwis/llm/exceptions.py",
             "line": 8,
             "pattern": "^\\s*pass\\s*$",
@@ -505,7 +511,7 @@
           },
           {
             "file": "src/qnwis/orchestration/graph_llm.py",
-            "line": 1156,
+            "line": 1330,
             "pattern": "^\\s*pass\\s*$",
             "snippet": "pass"
           },
@@ -546,6 +552,48 @@
             "snippet": "pass"
           },
           {
+            "file": "src/qnwis/orchestration/nodes/_helpers.py",
+            "line": 190,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/orchestration/nodes/_helpers.py",
+            "line": 203,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/orchestration/nodes/scenario_generator.py",
+            "line": 425,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/orchestration/nodes/scenario_generator.py",
+            "line": 439,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/orchestration/nodes/scenario_generator.py",
+            "line": 451,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/orchestration/nodes/structure_data.py",
+            "line": 279,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
+            "file": "src/qnwis/orchestration/nodes/synthesis_legendary.py",
+            "line": 946,
+            "pattern": "^\\s*pass\\s*$",
+            "snippet": "pass"
+          },
+          {
             "file": "src/qnwis/orchestration/prefetch_apis.py",
             "line": 192,
             "pattern": "^\\s*pass\\s*$",
@@ -556,26 +604,20 @@
             "line": 579,
             "pattern": "^\\s*pass\\s*$",
             "snippet": "pass"
-          },
-          {
-            "file": "src/qnwis/orchestration/smart_data_router.py",
-            "line": 912,
-            "pattern": "^\\s*pass\\s*$",
-            "snippet": "pass"
           }
         ]
       },
-      "duration_ms": 2559.5462322235107,
+      "duration_ms": 510.30755043029785,
       "severity": "ERROR",
       "evidence_paths": [
         "src/qnwis/scripts/qa/grep_rules.yml"
       ],
-      "timestamp": "2025-11-26T06:46:10.922607"
+      "timestamp": "2025-11-28T20:40:49.270214"
     }
   ],
   "overall_pass": false,
-  "execution_time_ms": 2575.8514404296875,
-  "timestamp": "2025-11-26T06:46:10.922647",
+  "execution_time_ms": 534.5497131347656,
+  "timestamp": "2025-11-28T20:40:49.277605",
   "summary": {
     "total_gates": 2,
     "total": 2,
@@ -585,8 +627,8 @@
   "artifacts": {
     "coverage.xml": "a983cdf5fa5911a848b72fb3c0e1873dc544bc88697bf45abf0d4bbfd5223104",
     "junit.xml": "1936cb6760d2944a3e93d625ce6d9911b24758cee616d5db7eb8eb0f3abf7270",
-    "src/qnwis/docs/audit/READINESS_REPORT_1_25.md": "0487732ff25b766b8ba9f1526273b400860b4a60c5e82f5f98d14e275a088588",
-    "src/qnwis/docs/audit/READINESS_SUMMARY.html": "afcf4d811901cc9caf56f64e4020967160f9f38b66be66b7e4941ff165939aec",
+    "src/qnwis/docs/audit/READINESS_REPORT_1_25.md": "74504892fa09a00e6f56ef3c8f653d1dcf46de9fb1f444d12425aec4c98fd28f",
+    "src/qnwis/docs/audit/READINESS_SUMMARY.html": "7fab37ad8274eed6043862f2f2b384c4cceda6c49fc48f7c1d06e07b9aee92e5",
     "src/qnwis/docs/audit/badges/rg1_pass.svg": "9995f7f48c4cb371d7db73a0cb755b09a43f686d6f82bb85a81eb9d7b1b857d8",
     "ops_notify_report.json": "eeeb7a4be860d00f103c927d235181ddb91dc12b888dfe0f08284ff29cf686ce",
     "OPS_NOTIFY_SUMMARY.md": "292aa2e89f94f28714ca7fed8a86fc45c48d896c936d714c36b877f7c918673f",
@@ -604,9 +646,9 @@
     "docs/audit/rg7/DR_SUMMARY.md": "9ae905e6286676f0d3902004400824e35fadc37d8b4ed7047cb6d65491af0ac2",
     "docs/audit/rg7/sample_manifest.json": "d04382655812b537b43247d53653cc47421b2b4d0c0910ae482ed4c70df9be84",
     "src/qnwis/docs/audit/badges/rg7_pass.svg": "4b179dc9aa67e5dc0a76eac73c7c4c285662ee8fd575b9a6babf5413bd0a14af",
-    "docs/audit/rg8/rg8_report.json": "bac05d8a96ab1a444ae212a7403baca189e738a8beb208b20eb87884ebb1b2e6",
+    "docs/audit/rg8/rg8_report.json": "e01a6ac2ff58586e8abf25fe9a2205d690f36050fe6a4e3ace9f7aa60218c1b5",
     "docs/audit/rg8/CONTINUITY_SUMMARY.md": "7baf3f961363b2dc79c05a02976bdd6fb2ca905e3747fe6de069603d66e942b5",
-    "docs/audit/rg8/sample_plan.yaml": "68b1f17b4d166fca0246cf860c4b8affa65afa201cad5f8aea99e9db9a1fa7c1",
+    "docs/audit/rg8/sample_plan.yaml": "81104dd3c6f9eec15254dac1d29a5a6d2585e740ae8ad2aefde6050c48e3ef23",
     "src/qnwis/docs/audit/badges/rg8_pass.svg": "dd7d6c73ea33703864a5044faa10e6654ead7bedc00a14fe36774d78139926d6",
     "docs/audit/badges/rg8_pass.svg": "dd7d6c73ea33703864a5044faa10e6654ead7bedc00a14fe36774d78139926d6"
   },

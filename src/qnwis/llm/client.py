@@ -17,7 +17,10 @@ import random
 import time
 from typing import AsyncIterator, Optional, Dict, Any
 
+import httpx
+
 from src.qnwis.llm.config import LLMConfig, get_llm_config
+from src.qnwis.llm.model_router import get_router, ModelConfig
 from src.qnwis.llm.exceptions import (
     LLMTimeoutError,
     LLMRateLimitError,
@@ -230,6 +233,24 @@ class LLMClient:
                         safe_message,
                     )
                     raise LLMRateLimitError(safe_message) from exc
+                
+                # Check if this is a content filter error (Azure false positive)
+                error_lower = str(exc).lower()
+                if "content_filter" in error_lower or "400" in str(exc) or "jailbreak" in error_lower:
+                    logger.warning(
+                        "⚠️ Content filter triggered (provider=%s) - may be false positive for policy analysis",
+                        self.provider
+                    )
+                    # Try to extract which filter category was triggered
+                    try:
+                        if hasattr(exc, 'response') and exc.response:
+                            error_body = exc.response.json() if hasattr(exc.response, 'json') else {}
+                            filter_result = error_body.get('error', {}).get('innererror', {}).get('content_filter_result', {})
+                            for category, result in filter_result.items():
+                                if isinstance(result, dict) and result.get('filtered'):
+                                    logger.error(f"Content filter category triggered: {category}")
+                    except Exception:
+                        pass
                 
                 logger.error(
                     "LLM provider error (provider=%s, model=%s): %s",
@@ -479,6 +500,129 @@ class LLMClient:
             )
             raise
     
+    async def generate_with_routing(
+        self,
+        prompt: str,
+        *,
+        task_type: str = "general",
+        system_prompt: Optional[str] = None,
+        max_tokens: Optional[int] = None,
+        temperature: Optional[float] = None,
+        timeout: int = 300,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> str:
+        """
+        Generate response using optimal model for the task type.
+        
+        Uses ModelRouter to select between:
+        - GPT-4o (fast): extraction, verification, classification tasks
+        - GPT-5 (primary): debate, synthesis, scenario, analysis tasks
+        
+        Args:
+            prompt: The user prompt
+            task_type: Type of task (extraction, debate, synthesis, etc.)
+            system_prompt: Optional system prompt
+            max_tokens: Max tokens (default from model config)
+            temperature: Temperature (default from model config based on task)
+            timeout: Request timeout in seconds
+            metadata: Optional metadata for metrics
+            
+        Returns:
+            Generated response string
+        """
+        start_time = time.time()
+        
+        # Get optimal model configuration
+        router = get_router()
+        config = router.get_model_for_task(task_type)
+        model_key = router.get_model_key_for_task(task_type)
+        
+        # Use config defaults if not specified
+        effective_temp = temperature if temperature is not None else config.temperature
+        effective_max_tokens = max_tokens if max_tokens is not None else config.max_tokens
+        
+        # Build request
+        endpoint = config.endpoint.rstrip("/")
+        url = f"{endpoint}/openai/deployments/{config.deployment}/chat/completions?api-version={config.api_version}"
+        
+        messages = []
+        if system_prompt:
+            messages.append({"role": config.system_role, "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
+        
+        payload = {
+            "messages": messages,
+            "max_tokens": effective_max_tokens,
+            "temperature": effective_temp,
+        }
+        
+        headers = {
+            "Content-Type": "application/json",
+            "api-key": config.api_key,
+        }
+        
+        logger.debug(
+            "generate_with_routing: task=%s, model=%s, temp=%.2f",
+            task_type, config.deployment, effective_temp
+        )
+        
+        try:
+            async with httpx.AsyncClient(timeout=timeout) as client:
+                response = await client.post(url, json=payload, headers=headers)
+                
+                if response.status_code == 429:
+                    raise LLMRateLimitError(f"Rate limit exceeded for {config.deployment}")
+                
+                if response.status_code != 200:
+                    raise LLMProviderError(f"HTTP {response.status_code}: {response.text[:500]}")
+                
+                data = response.json()
+                
+                choices = data.get("choices", [])
+                if not choices:
+                    raise LLMProviderError("Empty choices in response")
+                
+                content = choices[0].get("message", {}).get("content", "")
+                
+                if not content or not content.strip():
+                    raise LLMProviderError("Empty content in response")
+                
+                # Track usage
+                latency_ms = (time.time() - start_time) * 1000
+                usage = data.get("usage", {})
+                total_tokens = usage.get("total_tokens", len(content) // 4)
+                router.track_usage(model_key, total_tokens)
+                
+                # Record metrics
+                record_llm_call(
+                    model=config.deployment,
+                    input_tokens=usage.get("prompt_tokens", len(prompt) // 4),
+                    output_tokens=usage.get("completion_tokens", len(content) // 4),
+                    latency_ms=latency_ms,
+                    agent_name=metadata.get("agent") if metadata else task_type,
+                    purpose=metadata.get("purpose") if metadata else task_type,
+                )
+                
+                logger.debug(
+                    "generate_with_routing complete: task=%s, model=%s, tokens=%d, latency=%.0fms",
+                    task_type, config.deployment, total_tokens, latency_ms
+                )
+                
+                return content
+                
+        except httpx.TimeoutException as exc:
+            raise LLMTimeoutError(f"Request timed out after {timeout}s") from exc
+        except LLMRateLimitError:
+            raise
+        except LLMProviderError:
+            raise
+        except Exception as exc:
+            logger.error(
+                "generate_with_routing error: task=%s, model=%s, error=%s",
+                task_type, config.deployment, str(exc)
+            )
+            raise LLMProviderError(f"Request failed: {exc}") from exc
+
     async def list_models(self) -> Dict[str, Any]:
         """
         List available models for the provider.

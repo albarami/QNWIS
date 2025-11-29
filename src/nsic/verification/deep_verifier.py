@@ -164,7 +164,7 @@ class DeepVerifier:
     
     # Model configurations
     CROSS_ENCODER_MODEL = "cross-encoder/ms-marco-MiniLM-L-12-v2"
-    NLI_MODEL = "MoritzLaworski/DeBERTa-v3-base-mnli-fever-anli"  # Public NLI model
+    NLI_MODEL = "cross-encoder/nli-deberta-v3-base"  # Public NLI model (verified working)
     
     # NLI label mapping
     NLI_LABELS = {0: "contradiction", 1: "neutral", 2: "entailment"}

@@ -37,13 +37,13 @@ def _extract_stats(state: IntelligenceState) -> Dict[str, Any]:
     n_sources = len(sources) if sources else 4
     
     # Extract scenarios
-    scenarios = state.get("scenarios", [])
-    scenario_results = state.get("scenario_results", [])
+    scenarios = state.get("scenarios") or []
+    scenario_results = state.get("scenario_results") or []
     n_scenarios = len(scenarios) if scenarios else len(scenario_results) if scenario_results else 6
     
     # Calculate average scenario confidence
     confidences = []
-    for r in scenario_results:
+    for r in (scenario_results or []):
         if isinstance(r, dict):
             conf = r.get("confidence_score", r.get("confidence", 0.7))
             if conf:
@@ -229,8 +229,8 @@ def _extract_debate_highlights(state: IntelligenceState) -> Dict[str, Any]:
 def _extract_scenario_summaries(state: IntelligenceState) -> List[Dict[str, Any]]:
     """Extract scenario analysis summaries."""
     
-    scenarios = state.get("scenarios", [])
-    scenario_results = state.get("scenario_results", [])
+    scenarios = state.get("scenarios") or []
+    scenario_results = state.get("scenario_results") or []
     
     summaries = []
     
@@ -240,12 +240,12 @@ def _extract_scenario_summaries(state: IntelligenceState) -> List[Dict[str, Any]
         
         # Find matching result
         result = None
-        for r in scenario_results:
+        for r in (scenario_results or []):
             if isinstance(r, dict) and r.get("scenario_id") == scenario.get("id"):
                 result = r
                 break
         
-        if not result and i < len(scenario_results):
+        if not result and scenario_results and i < len(scenario_results):
             result = scenario_results[i] if isinstance(scenario_results[i], dict) else {}
         
         confidence = 0.75
@@ -875,9 +875,10 @@ Do NOT proceed with policy analysis for this target. Instead:
     llm_client = LLMClient(provider=provider, model=model)
     
     try:
-        # Generate the legendary briefing
-        briefing = await llm_client.generate(
+        # Generate the legendary briefing using hybrid routing (GPT-5 for synthesis)
+        briefing = await llm_client.generate_with_routing(
             prompt=prompt,
+            task_type="final_synthesis",
             temperature=0.4,  # Balance creativity with consistency
             max_tokens=8000,  # Allow for comprehensive output
         )

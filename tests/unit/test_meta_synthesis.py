@@ -243,25 +243,31 @@ def test_format_scenarios():
 
 def test_validate_synthesis():
     """Test synthesis validation."""
-    # Valid synthesis
-    valid_synthesis = """# META-SYNTHESIS
+    # Valid synthesis - must be at least 500 characters
+    valid_synthesis = """# META-SYNTHESIS: CROSS-SCENARIO STRATEGIC INTELLIGENCE
 
-## ROBUST RECOMMENDATIONS
-- Action 1
+## ROBUST RECOMMENDATIONS (High Confidence - Valid Across All Scenarios)
+- Action 1: Invest in technology infrastructure to support digital transformation initiatives
+- Action 2: Develop human capital through comprehensive training and upskilling programs
+- Action 3: Strengthen institutional governance frameworks for long-term sustainability
 
-## SCENARIO-DEPENDENT STRATEGIES  
-- If X then Y
+## SCENARIO-DEPENDENT STRATEGIES (Conditional Recommendations)
+- IF oil prices remain above $80/barrel THEN accelerate diversification investments
+- IF GCC competition intensifies THEN focus on niche specialization and unique value propositions
 
-## KEY UNCERTAINTIES
-- Uncertainty 1
+## KEY UNCERTAINTIES AND RISK FACTORS
+- Uncertainty 1: Global energy transition timeline remains unpredictable
+- Uncertainty 2: Regional geopolitical dynamics may shift rapidly
 
-## EARLY WARNING INDICATORS
-- Indicator 1
+## EARLY WARNING INDICATORS (Monitor These Metrics)
+- Indicator 1: Track quarterly GDP diversification index changes
+- Indicator 2: Monitor foreign direct investment inflows by sector
 
 ## FINAL STRATEGIC GUIDANCE
-- Guidance 1
+- Guidance 1: Proceed with cautious optimism, maintaining flexibility in execution
+- Guidance 2: Establish quarterly strategic review checkpoints to assess progress
 """
-    
+
     # Should not raise
     _validate_synthesis(valid_synthesis)
     

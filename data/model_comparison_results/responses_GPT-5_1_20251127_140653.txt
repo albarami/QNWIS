@@ -1,0 +1,83 @@
+MODEL: GPT-5.1
+======================================================================
+
+QUERY [Economic Diversification]: Analyze Qatar's non-oil GDP growth and sector contribution (2015-2024)...
+Status: error, Time: 36.21s, Words: 0
+Quality: {}
+--------------------------------------------------
+cannot access local variable 'response' where it is not associated with a value
+
+======================================================================
+
+QUERY [Energy/Oil&Gas]: What is Qatar's current oil production capacity and LNG export strategy?...
+Status: error, Time: 34.58s, Words: 0
+Quality: {}
+--------------------------------------------------
+cannot access local variable 'response' where it is not associated with a value
+
+======================================================================
+
+QUERY [Tourism]: Analyze Qatar's tourism sector growth post-2022 World Cup...
+Status: error, Time: 37.0s, Words: 0
+Quality: {}
+--------------------------------------------------
+cannot access local variable 'response' where it is not associated with a value
+
+======================================================================
+
+QUERY [Food Security]: What is Qatar's food self-sufficiency rate and import dependency?...
+Status: error, Time: 46.67s, Words: 0
+Quality: {}
+--------------------------------------------------
+cannot access local variable 'response' where it is not associated with a value
+
+======================================================================
+
+QUERY [Healthcare]: Analyze Qatar's healthcare infrastructure and medical workforce capacity...
+Status: error, Time: 42.17s, Words: 0
+Quality: {}
+--------------------------------------------------
+cannot access local variable 'response' where it is not associated with a value
+
+======================================================================
+
+QUERY [Digital/AI]: What is Qatar's digital transformation progress and AI adoption rate?...
+Status: error, Time: 39.74s, Words: 0
+Quality: {}
+--------------------------------------------------
+cannot access local variable 'response' where it is not associated with a value
+
+======================================================================
+
+QUERY [Manufacturing]: Analyze Qatar's manufacturing sector growth and industrial diversification...
+Status: error, Time: 44.76s, Words: 0
+Quality: {}
+--------------------------------------------------
+cannot access local variable 'response' where it is not associated with a value
+
+======================================================================
+
+QUERY [Workforce/Labor]: What is the current Qatarization rate and workforce nationalization progress?...
+Status: error, Time: 46.02s, Words: 0
+Quality: {}
+--------------------------------------------------
+cannot access local variable 'response' where it is not associated with a value
+
+======================================================================
+
+QUERY [Infrastructure]: Analyze Qatar's infrastructure development for Vision 2030...
+Status: error, Time: 41.14s, Words: 0
+Quality: {}
+--------------------------------------------------
+cannot access local variable 'response' where it is not associated with a value
+
+======================================================================
+
+QUERY [Cross-Domain Strategic]: How do Qatar's labor, energy, and economic policies align with Vision 2030?...
+Status: error, Time: 44.51s, Words: 0
+Quality: {}
+--------------------------------------------------
+cannot access local variable 'response' where it is not associated with a value
+
+======================================================================
+

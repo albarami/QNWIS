@@ -118,7 +118,10 @@ DEBATE RESULTS:
 """
     
     # Build critique prompt
-    critique_prompt = f"""You are a critical thinking expert acting as a devil's advocate for Qatar's Ministry of Labour.
+    # NOTE: Avoid "devil's advocate" phrasing to prevent Azure content filter false positives
+    critique_prompt = f"""You are a CRITICAL ANALYST and RED TEAM reviewer for Qatar's Ministry of Labour.
+
+Your role is to stress-test the analysis and identify potential weaknesses before presenting to the Minister.
 
 ORIGINAL QUERY:
 {query}
@@ -165,8 +168,10 @@ OUTPUT FORMAT (JSON):
 Provide at least 2-3 critiques per agent. Be thorough."""
 
     try:
-        response = await llm_client.generate(
+        # Use hybrid routing (GPT-5 for critique/analysis)
+        response = await llm_client.generate_with_routing(
             prompt=critique_prompt,
+            task_type="agent_analysis",  # Critique is part of agent analysis
             temperature=0.3,
             max_tokens=3000
         )

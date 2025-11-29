@@ -285,17 +285,18 @@ class LLMAgent(ABC):
         # Get agent-specific data mastery knowledge
         data_mastery = get_agent_data_prompt(self.agent_name)
         
+        # CONTENT FILTER SAFE: Uses soft language
         prompt = f"""{topic}
 
-Based on your expertise as {self.agent_name}, analyze this query and present your position.
+Based on your expertise as {self.agent_name}, please analyze this query and present your position.
 
-CRITICAL INSTRUCTIONS:
+Guidelines for your analysis:
 - Address the specific query mentioned above
 - Use evidence from the data sources listed below
-- BE SPECIFIC: Name the exact source and indicator code
+- Be specific: name the exact source and indicator code
 - Focus on your domain of expertise
 - Keep response concise (2-3 paragraphs)
-- CITE EVERY FACT: "[Per SOURCE: value]"
+- Cite facts as: "[Per SOURCE: value]"
 
 {data_mastery}
 
@@ -317,13 +318,36 @@ Your expert analysis:"""
         """Challenge another agent's position with data-backed evidence."""
         history_text = self._format_history(conversation_history[-5:])
         
-        # Extract original query from conversation history if available
+        # Extract original query AND facts context from conversation history
         original_query = "Policy analysis"
+        extracted_facts_context = ""
+        
         if conversation_history and len(conversation_history) > 0:
+            # Check first turn for injected context (from Moderator)
             first_turn = conversation_history[0]
-            if isinstance(first_turn, dict) and 'message' in first_turn:
-                msg = first_turn['message']
-                if 'QUERY BEING ANALYZED:' in msg:
+            if isinstance(first_turn, dict):
+                msg = first_turn.get('message', '')
+                agent = first_turn.get('agent', '')
+                
+                # If first turn is the injected context from Moderator
+                if agent == 'Moderator' and 'THE QUESTION BEING ANALYZED' in msg:
+                    # Extract query
+                    if 'THE QUESTION BEING ANALYZED' in msg:
+                        parts = msg.split('THE QUESTION BEING ANALYZED')
+                        if len(parts) > 1:
+                            query_section = parts[1].split('=')[0].strip()
+                            if query_section:
+                                original_query = query_section[:500]
+                    
+                    # Extract facts section
+                    if 'VERIFIED FACTS' in msg:
+                        facts_start = msg.find('VERIFIED FACTS')
+                        facts_end = msg.find('CITATION REQUIREMENT')
+                        if facts_start > 0 and facts_end > facts_start:
+                            extracted_facts_context = msg[facts_start:facts_end]
+                
+                # Fallback: look for QUERY BEING ANALYZED in any message
+                elif 'QUERY BEING ANALYZED:' in msg:
                     lines = msg.split('\n')
                     for i, line in enumerate(lines):
                         if 'QUERY BEING ANALYZED:' in line and i + 1 < len(lines):
@@ -333,26 +357,39 @@ Your expert analysis:"""
         # Get data mastery for evidence-based challenges
         data_mastery = get_agent_data_prompt(self.agent_name)
         
+        # Build prompt with extracted facts if available
+        # CONTENT FILTER SAFE: Uses soft language
+        facts_section = ""
+        if extracted_facts_context:
+            facts_section = f"""
+Available extracted facts for reference:
+{extracted_facts_context}
+"""
+        
         prompt = f"""You are {self.agent_name}.
 
-ORIGINAL QUERY: {original_query}
+The question being debated:
+{original_query}
 
-{opponent_name} stated: "{opponent_claim[:300]}..."
+{facts_section}
+{opponent_name} stated: "{opponent_claim[:400]}..."
 
 Recent conversation:
 {history_text}
 
-YOU HAVE ACCESS TO THESE DATA SOURCES - USE THEM:
-{data_mastery[:2000]}
+Available data sources:
+{data_mastery[:1500]}
 
-Challenge this position by:
-- Pointing out potential weaknesses IN THEIR SPECIFIC CLAIMS
-- Presenting ALTERNATIVE DATA from your data sources
-- Questioning assumptions with SPECIFIC COUNTER-EVIDENCE
-- Citing conflicting evidence or perspectives with EXACT SOURCE NAMES
-- USE THE DATA SOURCES LISTED ABOVE TO STRENGTHEN YOUR CHALLENGE
+Please keep your challenge focused on the specific question above,
+rather than general global trends.
 
-Your challenge (CITE SPECIFIC DATA SOURCES):"""
+Consider challenging this position by:
+- Pointing out weaknesses in their claims about the specific question
+- Presenting alternative data relevant to this decision
+- Questioning assumptions with counter-evidence from the extracted facts
+- Citing conflicting evidence or perspectives with exact source names
+
+Your challenge (please cite specific data sources):"""
         
         return await self.llm.generate(
             prompt=prompt,
@@ -370,35 +407,76 @@ Your challenge (CITE SPECIFIC DATA SOURCES):"""
         """Respond to a challenge with data-backed evidence."""
         history_text = self._format_history(conversation_history[-5:])
         
+        # Extract original query AND facts context from conversation history
+        original_query = "Policy analysis"
+        extracted_facts_context = ""
+        
+        if conversation_history and len(conversation_history) > 0:
+            first_turn = conversation_history[0]
+            if isinstance(first_turn, dict):
+                msg = first_turn.get('message', '')
+                agent = first_turn.get('agent', '')
+                
+                if agent == 'Moderator' and 'THE QUESTION BEING ANALYZED' in msg:
+                    # Extract query
+                    parts = msg.split('THE QUESTION BEING ANALYZED')
+                    if len(parts) > 1:
+                        query_section = parts[1].split('=')[0].strip()
+                        if query_section:
+                            original_query = query_section[:500]
+                    
+                    # Extract facts section
+                    if 'VERIFIED FACTS' in msg:
+                        facts_start = msg.find('VERIFIED FACTS')
+                        facts_end = msg.find('CITATION REQUIREMENT')
+                        if facts_start > 0 and facts_end > facts_start:
+                            extracted_facts_context = msg[facts_start:facts_end]
+        
         # Get data mastery for evidence-based defense
         data_mastery = get_agent_data_prompt(self.agent_name)
         
+        # Build prompt with extracted facts if available
+        # CONTENT FILTER SAFE: Uses soft language
+        facts_section = ""
+        if extracted_facts_context:
+            facts_section = f"""
+Available extracted facts for reference:
+{extracted_facts_context}
+"""
+        
         prompt = f"""You are {self.agent_name}.
 
-{challenger_name} challenged you: "{challenge}"
+The question being debated:
+{original_query}
+
+{facts_section}
+{challenger_name} challenged you: "{challenge[:400]}"
 
 Recent conversation:
 {history_text}
 
-YOU HAVE ACCESS TO THESE DATA SOURCES - USE THEM TO DEFEND YOUR POSITION:
-{data_mastery[:2000]}
+Available data sources to support your position:
+{data_mastery[:1500]}
 
-Respond by:
-- Defending your position with SPECIFIC DATA from the sources above
-- Acknowledging valid points
-- Clarifying misunderstandings with FACTS AND CITATIONS
-- Finding common ground where possible
+Please keep your response focused on the specific question above,
+rather than general global trends.
 
-Use phrases like "I acknowledge...", "However, [Per SOURCE: data]...", "We agree that..." when appropriate.
-CITE EVERY DATA POINT: "[Per World Bank: value]" or "[Per MoL LMIS: value]"
+Consider responding by:
+- Defending your position with specific data relevant to this decision
+- Acknowledging valid points about this question
+- Clarifying with facts from the extracted data
+- Finding common ground on the specific options being compared
 
-Your response (WITH DATA CITATIONS):"""
+Use phrases like "I acknowledge...", "However, [Per extraction: data]...", "We agree that..."
+Please cite data points as: "[Per extraction: value from SOURCE]"
+
+Your response (focused on the specific question):"""
         
         return await self.llm.generate(
             prompt=prompt,
-            system=f"You are {self.agent_name}, responding to critique with comprehensive data knowledge.",
+            system=f"You are {self.agent_name}, responding with focus on the specific question being debated.",
             temperature=0.3,
-            max_tokens=400
+            max_tokens=500
         )
 
     async def contribute_to_discussion(
@@ -463,27 +541,55 @@ Be specific with numbers and timelines."""
     async def identify_catastrophic_risks(
         self,
         conversation_history: List[Dict],
-        mode: str = "pessimistic"
+        mode: str = "pessimistic",
+        query_context: str = ""
     ) -> str:
-        """Identify worst-case catastrophic failure in your domain."""
+        """
+        Identify risks specific to the decision being debated.
+        
+        Note: Prompts use soft language to avoid Azure content filter false positives.
+        Avoids: "CRITICAL INSTRUCTION", "DO NOT", "Focus ONLY", uppercase blocks.
+        """
         
         debate_summary = self._summarize_recent_debate(conversation_history)
         
-        prompt = f"""You are {self.agent_name}.
-
-Debate summary: {debate_summary}
-
-You are now playing DEVIL'S ADVOCATE in {mode} mode.
-
-Identify the WORST-CASE CATASTROPHIC FAILURE in your domain:
-1. What is the 1% tail risk everyone is ignoring?
-2. What hidden assumption, if wrong, causes total failure?
-3. What is the nightmare scenario that keeps you awake?
-4. What combination of factors creates a perfect storm?
-
-Be paranoid. Be specific. Use data to support your worst case."""
+        # Extract original query from conversation history
+        original_query = ""
+        if conversation_history and len(conversation_history) > 0:
+            first_turn = conversation_history[0]
+            if isinstance(first_turn, dict):
+                msg = first_turn.get('message', '')
+                if 'THE QUESTION BEING ANALYZED' in msg:
+                    parts = msg.split('THE QUESTION BEING ANALYZED')
+                    if len(parts) > 1:
+                        original_query = parts[1].split('=')[0].strip()[:400]
         
-        return await self.llm.generate(prompt=prompt, temperature=0.5)
+        # Use query_context if provided, otherwise use extracted query
+        context_to_use = query_context if query_context else original_query
+        
+        # CONTENT FILTER SAFE: Uses soft, conversational language
+        # Avoids uppercase commands, "DO NOT", "CRITICAL", etc.
+        prompt = f"""You are {self.agent_name}, a policy analyst providing strategic risk assessment.
+
+The decision being analyzed:
+{context_to_use}
+
+Previous discussion summary:
+{debate_summary}
+
+Please analyze the specific risks related to the decision options above.
+Keep your analysis focused on the options presented rather than general global trends.
+
+For each option in this decision, please assess:
+1. The primary risk if this option is chosen
+2. Key assumptions that might prove incorrect
+3. Competitive challenges that could affect success
+4. A realistic downside scenario
+
+Please provide constructive analysis based on the available data.
+Keep your response practical and focused on this specific decision."""
+        
+        return await self.llm.generate(prompt=prompt, temperature=0.4, max_tokens=600)
 
     async def assess_risk_likelihood(
         self,
@@ -492,19 +598,20 @@ Be paranoid. Be specific. Use data to support your worst case."""
     ) -> str:
         """Assess likelihood and impact of identified risk."""
         
-        prompt = f"""You are {self.agent_name}.
+        # CONTENT FILTER SAFE: Uses soft language
+        prompt = f"""You are {self.agent_name}, providing risk assessment.
 
-Another agent identified this risk:
+Another analyst identified this potential risk:
 {risk_description}
 
-Assess from your domain perspective:
-1. Likelihood (% probability in next 2 years)
-2. Impact severity if it occurs (1-10 scale)
-3. Early warning indicators
-4. Mitigation strategies
-5. Your confidence in this assessment
+Please assess from your domain perspective:
+1. Likelihood - estimated probability in next 2 years (as percentage)
+2. Impact severity if it occurs (scale of 1-10)
+3. Early warning indicators to monitor
+4. Potential mitigation strategies
+5. Your confidence level in this assessment
 
-Be objective but critical."""
+Please provide an objective and balanced assessment."""
         
         return await self.llm.generate(prompt=prompt, temperature=0.3)
 

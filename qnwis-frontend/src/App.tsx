@@ -107,11 +107,11 @@ function App() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-maroon-600 to-maroon-800 flex items-center justify-center text-white font-bold" style={{ background: 'linear-gradient(135deg, #8B1538, #5a0d24)' }}>
-                Q
+                N
               </div>
               <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Qatar Ministry of Labour</p>
-                <h1 className="text-lg font-semibold text-white">QNWIS Enterprise Intelligence</h1>
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">National Strategic Intelligence Council</p>
+                <h1 className="text-lg font-semibold text-white">NSIC Enterprise Intelligence</h1>
               </div>
             </div>
             <ConnectionStatus status={state.connectionStatus} isStreaming={state.isStreaming} />
@@ -169,12 +169,6 @@ function App() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
-                <span className="text-xs text-slate-500">Powered by:</span>
-                <span className="rounded-lg px-3 py-1.5 text-xs font-medium bg-cyan-500/20 text-cyan-300 border border-cyan-500/50">
-                  Azure GPT-4o
-                </span>
-              </div>
 
               <div className="flex gap-3">
                 <button
@@ -406,7 +400,7 @@ function App() {
       <footer className="border-t border-slate-800 mt-12">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <p className="text-xs text-slate-600 text-center">
-            QNWIS Enterprise Intelligence System · Qatar Ministry of Labour · Confidential
+            NSIC Enterprise Intelligence System · National Strategic Intelligence Council · Confidential
           </p>
         </div>
       </footer>

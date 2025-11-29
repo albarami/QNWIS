@@ -1,0 +1,278 @@
+FULL RESPONSES: GPT-5.1
+================================================================================
+
+TEST: FPR-001
+Score: 100.0%
+Passed: ['identifies_impossibility', 'shows_arithmetic', 'suggests_feasible_alternative', 'does_not_discuss_impossible_policies']
+Failed: []
+----------------------------------------
+This target is mathematically impossible under current demographic realities.
+
+Let’s do the basic arithmetic first, then discuss implications and a realistic recommendation.
+
+---
+
+## 1. Basic Quantitative Feasibility Check
+
+**Target:** 70% Qatarization in the private sector by 2028  
+**Private sector workforce:** ~2,000,000 workers  
+**70% of 2,000,000 = 1,400,000 Qatari workers needed in the private sector**
+
+Now compare that with the maximum possible Qatari labor supply.
+
+- Total Qatari popula... [truncated]
+
+================================================================================
+
+TEST: FPR-002
+Score: 65.0%
+Passed: ['calculates_true_cost', 'flags_both_issues']
+Failed: ['identifies_population_constraint']
+----------------------------------------
+First step is to put the basic arithmetic on the table, then we can discuss realism and policy implications.
+
+## 1. Basic cost arithmetic
+
+**Program design (as stated)**  
+- Monthly subsidy per worker: **QAR 5,000**  
+- Target beneficiaries: **500,000 Qatari private sector workers**  
+- Duration: **Permanent**  
+- Government annual budget: **~QAR 200 billion**
+
+### 1.1 Annual fiscal cost at stated scale (500,000 workers)
+
+Monthly cost:  
+5,000 QAR/worker × 500,000 workers = **QAR 2.5 billion/mon... [truncated]
+
+================================================================================
+
+TEST: FPR-003
+Score: 100.0%
+Passed: ['identifies_timeline_impossibility', 'identifies_pipeline_constraint', 'provides_realistic_projection']
+Failed: []
+----------------------------------------
+No, that target is not physically achievable by 2027, and it is also structurally unrealistic even over a longer horizon. Here’s the reasoning step‑by‑step.
+
+---
+
+## 1. Core timeline constraint
+
+- Current year: 2025  
+- Target year: 2027  
+- Time available: ~2 years
+
+- Medical degree minimum duration: 6 years  
+
+Anyone who is not already in a medical program and close to graduation **cannot** be a fully trained doctor by 2027. Even if you somehow doubled or tripled intake in 2025, those students... [truncated]
+
+================================================================================
+
+TEST: CIT-001
+Score: 93.0%
+Passed: ['uses_citation_format', 'no_fabricated_numbers', 'acknowledges_missing_data']
+Failed: []
+----------------------------------------
+Qatar’s current economic situation, based on the provided facts, shows a relatively diversified and growing non‑oil economy, a strong tourism sector, and a labor market heavily reliant on expatriate workers.
+
+1. **Overall economic size and structure**  
+   Qatar’s total economic output in 2024 is reported at [Per extraction: "Qatar GDP 2024: QAR 715.5 billion"]. Within this total, non‑oil activities account for [Per extraction: "Non-oil GDP share: 52.3%"], indicating that more than half of econo... [truncated]
+
+================================================================================
+
+TEST: CIT-002
+Score: 70.0%
+Passed: ['refuses_to_fabricate', 'does_not_invent_numbers']
+Failed: ['uses_available_data']
+----------------------------------------
+Available data from the extraction:
+
+- Unemployment rate: 0.1%  
+- Labor force participation rate: 88.2%
+
+I am required to rely only on the extracted facts you provided and not to estimate or add general knowledge. Based on that constraint:
+
+1. **Unemployment rate**  
+   - Reported unemployment rate is **0.1%**.  
+   - With no other contextual data provided (e.g., historical series, demographic breakdowns, or methodology), I cannot say more about trends, causes, or comparisons.
+
+2. **Average wag... [truncated]
+
+================================================================================
+
+TEST: STK-001
+Score: 0.0%
+Passed: []
+Failed: []
+----------------------------------------
+
+
+================================================================================
+
+TEST: STK-002
+Score: 0.0%
+Passed: []
+Failed: []
+----------------------------------------
+
+
+================================================================================
+
+TEST: DBT-001
+Score: 100.0%
+Passed: ['has_strong_for_arguments', 'has_strong_against_arguments', 'identifies_arithmetic_issue', 'provides_nuanced_conclusion']
+Failed: []
+----------------------------------------
+## 1. Strongest Case FOR the Proposal
+
+### A. National Labor Sovereignty & Social Stability
+
+1. **Reducing extreme dependence on foreign labor**  
+   - Qatar’s private sector is ~96% non-Qatari. That is closer to a “guest worker economy” than a balanced labor market.  
+   - This creates structural vulnerability:
+     - External shocks (e.g., geopolitical tensions, pandemics, policy changes in sending countries) can disrupt labor supply.
+     - Foreign workers have limited long-term attachment to... [truncated]
+
+================================================================================
+
+TEST: DBT-002
+Score: 100.0%
+Passed: ['challenges_talent_assumption', 'challenges_competition_assumption', 'challenges_jobs_number', 'identifies_risks']
+Failed: []
+----------------------------------------
+1. **Talent Will Relocate to Qatar for AI Jobs**
+
+**Weak assumptions:**
+- That *top-tier* AI talent is geographically flexible and will move for money alone.
+- That Qatar’s existing ecosystem (social, cultural, regulatory, lifestyle) is not a major barrier.
+- That immigration and residency policies can be tuned quickly and credibly enough to compete with Dubai, Abu Dhabi, Riyadh, etc.
+- That spouses/families of high-skill workers will be content with education, freedoms, and long-term prospects.... [truncated]
+
+================================================================================
+
+TEST: XDR-001
+Score: 100.0%
+Passed: ['identifies_revenue_impact', 'shows_education_connection', 'shows_workforce_connection', 'shows_qatarization_connection', 'uses_causal_notation']
+Failed: []
+----------------------------------------
+Oil at $40/barrel for 24 months is a large, sustained shock for a hydrocarbon‑dependent state like Qatar. Below are the main cross‑domain causal chains, using the notation you requested:
+
+**Domain A effect → Domain B effect → Domain C effect**
+
+I’ll structure this as:
+
+1. Primary shock in Government Revenue & Budget  
+2. Causal chains into Education Spending  
+3. Causal chains into Workforce Development  
+4. Causal chains into Private Sector Growth  
+5. Causal chains into Qatarization Targets  
+... [truncated]
+
+================================================================================
+
+TEST: XDR-002
+Score: 100.0%
+Passed: ['compares_labor_requirements', 'identifies_tradeoffs', 'provides_integrated_recommendation', 'considers_competition']
+Failed: []
+----------------------------------------
+Qatar should prioritize becoming a **specialized financial hub anchored in its existing energy and logistics strengths**, rather than a pure logistics hub—and deliberately design the financial-hub strategy to:
+
+1. Leverage, not duplicate, UAE/Saudi capabilities.  
+2. Support economic diversification away from hydrocarbons.  
+3. Be compatible with realistic labor, education, and Qatarization constraints.
+
+In other words: **“Capital & Risk Hub for Energy, Infrastructure, and Trade”** rather than “... [truncated]
+
+================================================================================
+
+TEST: SYN-001
+Score: 100.0%
+Passed: ['has_executive_summary', 'has_quantified_findings', 'has_ranked_risks', 'has_clear_recommendation', 'has_confidence_level']
+Failed: []
+----------------------------------------
+1. Executive Summary  
+Qatarization in the banking sector stands at 20% (3,700 Qataris out of 18,500 workers), well below the 30% target set for 2025, with limited time to close a 10‑percentage‑point gap. Current graduate supply and attrition trends indicate that, without targeted interventions, the 2025 target is unlikely to be met. The high salary premium for Qataris (≈45% above expatriates) is adding cost pressure to banks and may constrain further Qatari hiring in the absence of productivity... [truncated]
+
+================================================================================
+
+TEST: SYN-002
+Score: 100.0%
+Passed: ['distinguishes_evidence_quality', 'uses_calibrated_confidence', 'does_not_overclaim', 'acknowledges_data_gaps']
+Failed: []
+----------------------------------------
+Below is an assessment of the effectiveness of Qatar’s existing Qatarization policies, explicitly separating what can be said with relatively strong confidence from areas where the evidence is weak, conflicting, or absent.
+
+---
+
+## 1. Overall effectiveness to date
+
+### 1.1 Aggregate Qatarization outcomes
+
+- Evidence: Qatarization rate increased from 3.2% to 4.1% between 2020 and 2024.
+
+Interpretation:
+
+- This is a measurable increase in the national share of employment.
+- The absolute level (4.1... [truncated]
+
+================================================================================
+
+TEST: DEP-001
+Score: 100.0%
+Passed: ['identifies_first_order', 'identifies_second_order', 'identifies_third_order', 'identifies_unintended_consequences']
+Failed: []
+----------------------------------------
+Below is a structured analysis of what a mandatory 40% Qatarization quota in hospitality by 2026 would likely set in motion, given the current numbers:
+
+- Total hospitality workforce: 85,000  
+- Current Qatari workers: ~1,700 (2%)  
+- Target Qatari workers: 34,000 (40%)  
+- Realistic Qatari interest: 3,000–5,000  
+
+This implies a gap of roughly 29,000–31,000 Qataris that do not currently exist in the pipeline or interest pool. That mismatch is the core driver of many downstream effects.
+
+---
+
+##... [truncated]
+
+================================================================================
+
+TEST: DEP-002
+Score: 100.0%
+Passed: ['covers_uae', 'covers_saudi', 'covers_singapore', 'provides_specific_metrics', 'draws_lessons']
+Failed: []
+----------------------------------------
+Below is a structured comparative benchmark of Qatarization versus Emiratisation, Saudization/Nitaqat, Omanisation, and Singapore’s local employment model, followed by concrete lessons for Qatar.
+
+---
+
+## 1. Qatarization in Context
+
+**Core features**
+
+- Target: Historically ~50% nationals in the workforce in key sectors (especially energy, finance, public sector); no clear, enforceable economy‑wide percentage.
+- Instruments:
+  - Sectoral quotas (energy, banking) negotiated with major employers.
+... [truncated]
+
+================================================================================
+
+TEST: ACC-001
+Score: 100.0%
+Passed: ['population_correct', 'export_correct', 'world_cup_correct', 'swf_correct', 'currency_correct', 'emir_correct', 'nds_correct', 'citizen_percentage_correct']
+Failed: []
+----------------------------------------
+Here are concise, factual answers based on the latest reliable information available up to late 2024:
+
+1. **Total population (citizens + residents)**  
+   - Approximately **2.7–3.0 million** people.  
+   (Estimates often hover around 2.8–2.9 million in recent years.)
+
+2. **Main export commodity**  
+   - **Natural gas**, especially in the form of **liquefied natural gas (LNG)**.  
+   (Crude oil is also important, but LNG is the dominant export.)
+
+3. **Year Qatar hosted the FIFA World Cup**  
+   -... [truncated]
+
+================================================================================
+

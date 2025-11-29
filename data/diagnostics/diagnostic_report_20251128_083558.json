@@ -1,0 +1,185 @@
+{
+  "timestamp": "2025-11-28T08:35:52.355815",
+  "duration_seconds": 6.263014,
+  "overall_score": 8.157894736842104,
+  "mckinsey_compliant": false,
+  "mckinsey_checklist": {
+    "npv_in_output": false,
+    "irr_in_output": false,
+    "sensitivity_in_output": false,
+    "confidence_stated": null,
+    "tables_present": false,
+    "no_vague_estimates": true
+  },
+  "stages": {
+    "classification": {
+      "score": 25.0,
+      "level": "FAIL",
+      "checks": [
+        {
+          "name": "complexity_detected",
+          "passed": false,
+          "score": 0,
+          "level": "FAIL",
+          "details": "No complexity classification found"
+        },
+        {
+          "name": "correct_classification",
+          "passed": false,
+          "score": 50,
+          "level": "WARN",
+          "details": "Expected 'complex', got ''"
+        }
+      ]
+    },
+    "data_extraction": {
+      "score": 0.0,
+      "level": "FAIL",
+      "checks": [
+        {
+          "name": "fact_count",
+          "passed": false,
+          "score": 0,
+          "level": "FAIL",
+          "details": "Extracted 0 facts (minimum: 100)"
+        },
+        {
+          "name": "source_diversity",
+          "passed": false,
+          "score": 0.0,
+          "level": "FAIL",
+          "details": "Used 0 distinct sources"
+        }
+      ]
+    },
+    "agents": {
+      "score": 0.0,
+      "level": "FAIL",
+      "checks": [
+        {
+          "name": "agent_participation",
+          "passed": false,
+          "score": 0.0,
+          "level": "FAIL",
+          "details": "Found 0/5 expected agents"
+        }
+      ]
+    },
+    "debate": {
+      "score": 0.0,
+      "level": "FAIL",
+      "checks": [
+        {
+          "name": "debate_turns",
+          "passed": false,
+          "score": 0.0,
+          "level": "FAIL",
+          "details": "0 turns (target: 50 for standard)"
+        },
+        {
+          "name": "debate_phases",
+          "passed": false,
+          "score": 0.0,
+          "level": "WARN",
+          "details": "Phases found: set()"
+        },
+        {
+          "name": "debate_relevance",
+          "passed": false,
+          "score": 0.0,
+          "level": "WARN",
+          "details": "0/20 sampled turns discuss the options"
+        }
+      ]
+    },
+    "critique": {
+      "score": 0.0,
+      "level": "FAIL",
+      "checks": [
+        {
+          "name": "critique_count",
+          "passed": false,
+          "score": 0,
+          "level": "FAIL",
+          "details": "0 critiques generated"
+        },
+        {
+          "name": "red_flags",
+          "passed": false,
+          "score": 0,
+          "level": "FAIL",
+          "details": "0 red flags identified"
+        }
+      ]
+    },
+    "verification": {
+      "score": 100.0,
+      "level": "PASS",
+      "checks": [
+        {
+          "name": "no_fabrication",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "No fabrication detected"
+        }
+      ]
+    },
+    "synthesis": {
+      "score": 10.0,
+      "level": "FAIL",
+      "checks": [
+        {
+          "name": "synthesis_length",
+          "passed": false,
+          "score": 0.0,
+          "level": "FAIL",
+          "details": "0 characters (minimum: 3000)"
+        },
+        {
+          "name": "has_recommendation",
+          "passed": false,
+          "score": 30,
+          "level": "FAIL",
+          "details": "No clear recommendation found"
+        },
+        {
+          "name": "quantitative_content",
+          "passed": false,
+          "score": 0,
+          "level": "WARN",
+          "details": "Found 0 numeric values in synthesis"
+        }
+      ]
+    },
+    "data_structuring": {
+      "score": 0.0,
+      "level": "FAIL",
+      "checks": [
+        {
+          "name": "structured_inputs_exist",
+          "passed": false,
+          "score": 0,
+          "level": "FAIL",
+          "details": "No structured inputs found - data structuring node not implemented yet"
+        }
+      ]
+    },
+    "calculations": {
+      "score": 0.0,
+      "level": "FAIL",
+      "checks": [
+        {
+          "name": "calculations_exist",
+          "passed": false,
+          "score": 0,
+          "level": "FAIL",
+          "details": "No calculated results found - calculation engine not implemented yet"
+        }
+      ]
+    }
+  },
+  "recommendations": [
+    "CRITICAL: Diagnostic failed with error: unsupported operand type(s) for +: 'int' and 'NoneType'"
+  ]
+}

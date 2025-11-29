@@ -130,26 +130,32 @@ class Settings(BaseSettings):
 
 
 # Debate configuration by query complexity
+# UPDATED: Aligned with legendary_debate_orchestrator.py for ministerial-grade analysis
 DEBATE_CONFIGS = {
     "simple": {
-        "max_turns": 10,
-        "agents": 3,  # Only most relevant agents
-        "convergence_check_interval": 3
+        "max_turns": 40,       # Increased from 10 for thorough analysis
+        "agents": 5,           # 5 LLM agents
+        "convergence_check_interval": 10
     },
     "medium": {
-        "max_turns": 15,
+        "max_turns": 80,       # Increased from 15
         "agents": 5,
-        "convergence_check_interval": 5
+        "convergence_check_interval": 15
+    },
+    "standard": {              # Added to match orchestrator naming
+        "max_turns": 80,
+        "agents": 5,
+        "convergence_check_interval": 15
     },
     "complex": {
-        "max_turns": 25,
+        "max_turns": 150,      # Increased from 25 for LEGENDARY depth
         "agents": 8,
-        "convergence_check_interval": 5
+        "convergence_check_interval": 25
     },
     "critical": {
-        "max_turns": 30,
-        "agents": 10,  # All hands on deck
-        "convergence_check_interval": 7
+        "max_turns": 150,      # Same as complex for maximum depth
+        "agents": 10,          # All hands on deck
+        "convergence_check_interval": 25
     }
 }
 

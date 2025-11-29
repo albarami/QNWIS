@@ -3,7 +3,11 @@
     "allow": [
       "Bash(powershell:*)",
       "Bash(curl:*)",
-      "Bash(timeout 60 python:*)"
+      "Bash(timeout 60 python:*)",
+      "Bash(dir /s d:lmis_intsrcqnwisorchestration *.py)",
+      "Bash(dir /s d:lmis_inttests *.py)",
+      "Bash(python -m pytest:*)",
+      "Bash(timeout 120 python -m pytest:*)"
     ],
     "deny": [],
     "ask": []
