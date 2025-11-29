@@ -10,9 +10,7 @@ CRITICAL: Stub mode is DELETED. System requires real LLM.
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
-import os
 import random
 import time
 from typing import AsyncIterator, Optional, Dict, Any
@@ -70,12 +68,10 @@ class LLMClient:
             self._init_openai()
         elif self.provider == "azure":
             self._init_azure_openai()
-        elif self.provider == "stub":
-            self._init_stub()
         else:
             raise ValueError(
                 f"Unknown provider: {self.provider}. "
-                "Use 'anthropic', 'openai', 'azure', or 'stub'."
+                "Use 'anthropic', 'openai', or 'azure'."
             )
         
         logger.info(
@@ -158,48 +154,6 @@ class LLMClient:
                 "Run: pip install openai"
             )
 
-    def _init_stub(self):
-        """Initialize stub client for testing."""
-        self.client = None  # No real client needed
-        self._stub_delay_ms = int(os.getenv("QNWIS_STUB_TOKEN_DELAY_MS", "0"))
-        logger.info("Stub LLM client initialized (for testing)")
-
-    async def _stream_stub(
-        self,
-        _prompt: str,
-        _system: str,
-        _temperature: float,
-        _max_tokens: int,
-        _stop: Optional[list[str]],
-        _extra: Dict[str, Any]
-    ) -> AsyncIterator[str]:
-        """Stream stub response for testing."""
-        # Return a proper JSON response matching AgentFinding schema
-        stub_response = json.dumps({
-            "title": "Employment Analysis for Qatar",
-            "summary": "The employment rate in Qatar is 95.2% with a Qatarization target of 60% in the private sector. The current Qatarization rate is 5.2%.",
-            "metrics": {
-                "employment_rate": 95.2,
-                "qatarization_rate": 5.2,
-                "qatarization_target": 60.0
-            },
-            "analysis": "Analysis shows strong employment in the energy sector with increasing Qatari participation in banking. Construction remains dependent on expatriate labor.",
-            "recommendations": [
-                "Increase Qatarization incentives in private sector",
-                "Focus on skills training programs"
-            ],
-            "confidence": 0.85,
-            "citations": ["test_query"],
-            "data_quality_notes": "Data from test dataset"
-        })
-
-        # Tokenize into chunks for streaming simulation
-        chunk_size = 50
-        for i in range(0, len(stub_response), chunk_size):
-            if self._stub_delay_ms > 0:
-                await asyncio.sleep(self._stub_delay_ms / 1000)
-            yield stub_response[i:i + chunk_size]
-    
     async def generate_stream(
         self,
         *,
@@ -330,15 +284,10 @@ class LLMClient:
                 prompt, system, temperature, max_tokens, stop, extra
             ):
                 yield token
-        elif self.provider == "stub":
-            async for token in self._stream_stub(
-                prompt, system, temperature, max_tokens, stop, extra
-            ):
-                yield token
         else:
             raise ValueError(
                 f"Unknown provider: {self.provider}. "
-                "Use 'anthropic', 'openai', 'azure', or 'stub'."
+                "Use 'anthropic', 'openai', or 'azure'."
             )
     
     async def _stream_anthropic(
