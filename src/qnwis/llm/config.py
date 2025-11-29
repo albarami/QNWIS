@@ -62,9 +62,12 @@ class LLMConfig:
                     "when using the Azure OpenAI provider"
                 )
             return self.azure_model
+        if p == "stub":
+            # Stub provider for testing - no real model needed
+            return "stub-model"
         raise ValueError(
             f"Unknown provider: {p}. "
-            "Use 'anthropic', 'openai', or 'azure'."
+            "Use 'anthropic', 'openai', 'azure', or 'stub'."
         )
     
     def get_api_key(self, provider: Optional[str] = None) -> Optional[str]:
@@ -76,9 +79,12 @@ class LLMConfig:
             return self.openai_api_key
         if p == "azure":
             return self.azure_api_key
+        if p == "stub":
+            # Stub provider for testing - no API key needed
+            return None
         raise ValueError(
             f"Unknown provider: {p}. "
-            "Use 'anthropic', 'openai', or 'azure'."
+            "Use 'anthropic', 'openai', 'azure', or 'stub'."
         )
     
     def configured_models(self) -> dict[str, list[str]]:

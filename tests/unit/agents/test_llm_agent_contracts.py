@@ -19,20 +19,29 @@ class TestLLMAgentImplementation(LLMAgent):
 
     async def _fetch_data(self, question: str, context: dict):
         """Fetch test data."""
+        from src.qnwis.data.deterministic.models import Freshness
+
         provenance = Provenance(
-            source_id="test",
-            api_version="v1",
-            query_timestamp="2025-01-15T10:00:00Z"
+            source="csv",
+            dataset_id="test_dataset",
+            locator="/data/test.csv",
+            fields=["value", "rate"]
+        )
+
+        freshness = Freshness(
+            asof_date="2025-01-15",
+            updated_at="2025-01-15T10:00:00"
         )
 
         return {
             "test_query": QueryResult(
                 query_id="test_query",
                 rows=[
-                    Row(row_id="r1", data={"value": 42.0, "rate": 5.2})
+                    Row(data={"value": 42.0, "rate": 5.2})
                 ],
-                total_rows=1,
-                provenance=provenance
+                unit="percent",
+                provenance=provenance,
+                freshness=freshness
             )
         }
 

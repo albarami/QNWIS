@@ -70,10 +70,12 @@ class LLMClient:
             self._init_openai()
         elif self.provider == "azure":
             self._init_azure_openai()
+        elif self.provider == "stub":
+            self._init_stub()
         else:
             raise ValueError(
                 f"Unknown provider: {self.provider}. "
-                "Use 'anthropic', 'openai', or 'azure'."
+                "Use 'anthropic', 'openai', 'azure', or 'stub'."
             )
         
         logger.info(
@@ -126,24 +128,24 @@ class LLMClient:
         """Initialize Azure OpenAI client."""
         try:
             from openai import AsyncAzureOpenAI
-            
+
             api_key = self.config.get_api_key("azure")
             if not api_key:
                 raise ValueError("AZURE_OPENAI_API_KEY not set")
-            
+
             endpoint = self.config.azure_endpoint
             if not endpoint:
                 raise ValueError("AZURE_OPENAI_ENDPOINT not set")
-            
+
             api_version = self.config.azure_api_version
-            
+
             self.client = AsyncAzureOpenAI(
                 api_key=api_key,
                 api_version=api_version,
                 azure_endpoint=endpoint,
                 timeout=self.timeout_s
             )
-            
+
             logger.info(
                 "Azure OpenAI client initialized (endpoint=%s, api_version=%s, model=%s)",
                 endpoint[:50] + "..." if len(endpoint) > 50 else endpoint,
@@ -155,6 +157,48 @@ class LLMClient:
                 "openai package not installed. "
                 "Run: pip install openai"
             )
+
+    def _init_stub(self):
+        """Initialize stub client for testing."""
+        self.client = None  # No real client needed
+        self._stub_delay_ms = int(os.getenv("QNWIS_STUB_TOKEN_DELAY_MS", "0"))
+        logger.info("Stub LLM client initialized (for testing)")
+
+    async def _stream_stub(
+        self,
+        _prompt: str,
+        _system: str,
+        _temperature: float,
+        _max_tokens: int,
+        _stop: Optional[list[str]],
+        _extra: Dict[str, Any]
+    ) -> AsyncIterator[str]:
+        """Stream stub response for testing."""
+        # Return a proper JSON response matching AgentFinding schema
+        stub_response = json.dumps({
+            "title": "Employment Analysis for Qatar",
+            "summary": "The employment rate in Qatar is 95.2% with a Qatarization target of 60% in the private sector. The current Qatarization rate is 5.2%.",
+            "metrics": {
+                "employment_rate": 95.2,
+                "qatarization_rate": 5.2,
+                "qatarization_target": 60.0
+            },
+            "analysis": "Analysis shows strong employment in the energy sector with increasing Qatari participation in banking. Construction remains dependent on expatriate labor.",
+            "recommendations": [
+                "Increase Qatarization incentives in private sector",
+                "Focus on skills training programs"
+            ],
+            "confidence": 0.85,
+            "citations": ["test_query"],
+            "data_quality_notes": "Data from test dataset"
+        })
+
+        # Tokenize into chunks for streaming simulation
+        chunk_size = 50
+        for i in range(0, len(stub_response), chunk_size):
+            if self._stub_delay_ms > 0:
+                await asyncio.sleep(self._stub_delay_ms / 1000)
+            yield stub_response[i:i + chunk_size]
     
     async def generate_stream(
         self,
@@ -286,10 +330,15 @@ class LLMClient:
                 prompt, system, temperature, max_tokens, stop, extra
             ):
                 yield token
+        elif self.provider == "stub":
+            async for token in self._stream_stub(
+                prompt, system, temperature, max_tokens, stop, extra
+            ):
+                yield token
         else:
             raise ValueError(
                 f"Unknown provider: {self.provider}. "
-                "Use 'anthropic', 'openai', or 'azure'."
+                "Use 'anthropic', 'openai', 'azure', or 'stub'."
             )
     
     async def _stream_anthropic(
