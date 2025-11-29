@@ -31,6 +31,21 @@ from .dual_engine_orchestrator import (
     create_dual_engine_orchestrator,
 )
 
+from .error_handler import (
+    NSICErrorHandler,
+    AnalysisState,
+    FailureType,
+    DegradationStrategy,
+    create_error_handler,
+)
+
+from .semantic_cache import (
+    SemanticCache,
+    CacheEntry,
+    CacheStats,
+    create_semantic_cache,
+)
+
 __all__ = [
     # DeepSeek Client
     "DeepSeekClient",
@@ -55,4 +70,15 @@ __all__ = [
     "DualEngineOrchestrator",
     "DualEngineResult",
     "create_dual_engine_orchestrator",
+    # Error Handler
+    "NSICErrorHandler",
+    "AnalysisState",
+    "FailureType",
+    "DegradationStrategy",
+    "create_error_handler",
+    # Semantic Cache
+    "SemanticCache",
+    "CacheEntry",
+    "CacheStats",
+    "create_semantic_cache",
 ]
