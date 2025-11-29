@@ -93,7 +93,9 @@ class TestDeepSeekConfig:
         
         config = DeepSeekConfig()
         
-        assert len(config.vllm_base_urls) == 2
+        # Single instance on port 8001 (70B FP16 on GPUs 2,3,6,7)
+        assert len(config.vllm_base_urls) == 1
+        assert config.vllm_base_urls[0] == "http://localhost:8001"
         assert config.max_tokens == 4096
         assert config.temperature == 0.7
         assert config.gpu_memory_utilization == 0.85
@@ -215,8 +217,8 @@ class TestLoadBalancing:
         # Get sequence of instances
         instances = [client._get_next_instance() for _ in range(6)]
         
-        # Should alternate: 0, 1, 0, 1, 0, 1
-        assert instances == [0, 1, 0, 1, 0, 1]
+        # Single instance (port 8001) - all requests go to instance 0
+        assert instances == [0, 0, 0, 0, 0, 0]
     
     def test_stats_tracking(self):
         """Client should track request statistics."""
