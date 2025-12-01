@@ -80,6 +80,61 @@ CONFIRMS    CONFLICTS → Engine A Prime (30-50 turns)
   (Qualitative + Quantitative)
 ```
 
+### Conflict Detection Thresholds
+
+When does a conflict trigger Engine A Prime? Use these thresholds in `conflict_detector.py`:
+
+```python
+# src/nsic/engine_b/integration/conflict_detector.py
+
+CONFLICT_THRESHOLDS = {
+    # Monte Carlo: If success probability is too low
+    "feasibility": 0.30,      # If success_rate < 30%, trigger debate
+    
+    # Forecasting: If trend contradicts Engine A's claim
+    "trend_mismatch": True,   # If forecast trend contradicts claim (e.g., "growth" but trend="decreasing")
+    
+    # Thresholds: If any policy threshold is breached
+    "threshold_breach": True, # If critical_threshold is not None and breached
+    
+    # Benchmarking: If Qatar is statistical outlier vs peers
+    "benchmark_outlier": 2.0, # If Qatar is >2 std deviations from peer mean
+    
+    # Sensitivity: If top driver wasn't mentioned in Engine A analysis
+    "ignored_driver": 0.40,   # If top driver has >40% impact but wasn't discussed
+    
+    # Correlation: If key relationship contradicts assumption
+    "correlation_contradiction": 0.50,  # If r > 0.5 but Engine A assumed independence
+}
+
+def should_trigger_engine_a_prime(engine_a_result: dict, engine_b_result: dict) -> tuple[bool, list]:
+    """
+    Determine if conflicts warrant additional Engine A debate.
+    
+    Returns:
+        (should_trigger: bool, conflicts: list of conflict descriptions)
+    """
+    conflicts = []
+    
+    # Check each threshold...
+    if engine_b_result.get("monte_carlo", {}).get("success_rate", 1.0) < CONFLICT_THRESHOLDS["feasibility"]:
+        conflicts.append({
+            "type": "feasibility",
+            "severity": "high",
+            "finding": f"Only {engine_b_result['monte_carlo']['success_rate']:.1%} success probability"
+        })
+    
+    # ... (implement other checks)
+    
+    # Trigger if ANY high-severity conflict OR 2+ medium-severity conflicts
+    high_severity = [c for c in conflicts if c["severity"] == "high"]
+    medium_severity = [c for c in conflicts if c["severity"] == "medium"]
+    
+    should_trigger = len(high_severity) > 0 or len(medium_severity) >= 2
+    
+    return should_trigger, conflicts
+```
+
 ---
 
 ## Implementation Files
