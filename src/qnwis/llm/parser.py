@@ -94,6 +94,10 @@ class LLMResponseParser:
             raise LLMParseError("No JSON found in LLM response")
         
         try:
+            # Fix: Remove + signs before numbers (JSON doesn't allow +0.2, must be 0.2)
+            import re
+            json_str = re.sub(r':\s*\+(\d)', r': \1', json_str)  # +0.2 -> 0.2
+            
             data = json.loads(json_str)
             return AgentFinding(**data)
         except json.JSONDecodeError as e:

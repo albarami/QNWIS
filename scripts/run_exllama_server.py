@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-NSIC DeepSeek ExLlamaV2 Server
+NSIC Llama 3.3 ExLlamaV2 Server
 
-Runs a single DeepSeek instance using ExLlamaV2 for fast 4-bit inference.
+Runs a single Llama 3.3 70B instance using ExLlamaV2 for fast 4-bit inference.
 Each instance uses one A100 GPU (~37GB VRAM for 70B 4-bit model).
 
 Usage:
@@ -25,9 +25,9 @@ logger = logging.getLogger(__name__)
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Run ExLlamaV2 DeepSeek Server")
-    parser.add_argument("--model", type=str, default="D:/models/deepseek-70b-gptq-4bit",
-                       help="Path to GPTQ model")
+    parser = argparse.ArgumentParser(description="Run ExLlamaV2 Llama 3.3 Server")
+    parser.add_argument("--model", type=str, default="D:/models/Llama-3.3-70B-Instruct-exl2-8.0",
+                       help="Path to EXL2 model")
     parser.add_argument("--gpu_id", type=int, required=True,
                        help="GPU ID to use (0-7)")
     parser.add_argument("--port", type=int, required=True,
@@ -48,6 +48,10 @@ class ExLlamaServer:
         self.cache = None
         self.tokenizer = None
         self.generator = None
+        
+        # CRITICAL: Lock to prevent concurrent generation (causes garbage output)
+        import threading
+        self._generation_lock = threading.Lock()
         
     def load_model(self):
         """Load the ExLlamaV2 model."""
@@ -99,6 +103,68 @@ class ExLlamaServer:
         mem_allocated = torch.cuda.memory_allocated(0) / 1e9
         mem_reserved = torch.cuda.memory_reserved(0) / 1e9
         logger.info(f"GPU (physical {self.gpu_id}): {mem_allocated:.1f}GB allocated, {mem_reserved:.1f}GB reserved")
+    
+    def _check_garbage_patterns(self, text: str) -> bool:
+        """
+        Check if generated text contains garbage patterns.
+        
+        Added per E2E Assessment Report 2025-12-01 to stop generation
+        early when garbage is detected.
+        
+        Args:
+            text: Generated text so far
+            
+        Returns:
+            True if garbage pattern detected, False otherwise
+        """
+        import re
+        
+        # Garbage patterns from E2E test analysis
+        garbage_patterns = [
+            '-##-##-##-##-',           # Hash loop (300+ times in test)
+            '.<     .<     .<',        # Dot-bracket loop (200+ times)
+            'owieowie',                # Nonsense pattern
+            '{{{{{{{{{{',              # Brace spam
+            '}}}}}}}}}}',              # Close brace spam
+            '**********',              # Asterisk spam
+            '##########',              # Hash spam
+            '><><><><><',              # Angle bracket alternation
+            '][][][][][',              # Bracket alternation
+            '##SGN',                   # SGN pattern from test
+        ]
+        
+        for pattern in garbage_patterns:
+            if pattern in text:
+                logger.warning(f"Garbage pattern detected: '{pattern}'")
+                return True
+        
+        # Check for Chinese text (shouldn't appear in English generation)
+        chinese_matches = re.findall(r'[\u4e00-\u9fff\u3400-\u4dbf]{3,}', text)
+        if len(chinese_matches) > 2:
+            logger.warning(f"Chinese text detected: {chinese_matches[:3]}")
+            return True
+        
+        # Check for extreme character repetition (30+)
+        if re.search(r'(.)\1{30,}', text):
+            logger.warning("Excessive character repetition detected")
+            return True
+        
+        # Check for very long "words" (likely nonsense) - DISABLED
+        # This was causing too many false positives with Llama 3.3
+        # The model sometimes generates compound words that are legitimate
+        # words = text.split()[-20:]
+        # Keeping only the direction word check below
+        
+        # Check for repetitive direction/adverb spam (e.g., "onwards upwards sideways backwards")
+        direction_words = ['onwards', 'upwards', 'downwards', 'sideways', 'backwards', 'forwards', 
+                          'everywhere', 'anywhere', 'anytime', 'evermore', 'forever', 'etcetera',
+                          'infinitum', 'peripheries', 'circumferences']
+        direction_count = sum(1 for w in text.lower().split() if w in direction_words)
+        if direction_count > 8:
+            logger.warning(f"Repetitive word loop detected: {direction_count} direction/filler words")
+            return True
+        
+        return False
         
     def generate(
         self,
@@ -111,6 +177,21 @@ class ExLlamaServer:
         """Generate response from messages with streaming support."""
         from exllamav2.generator import ExLlamaV2Sampler
         
+        # CRITICAL: Acquire lock to prevent concurrent generation
+        with self._generation_lock:
+            return self._generate_impl(messages, max_tokens, temperature, top_p, top_k)
+    
+    def _generate_impl(
+        self,
+        messages: List[Dict[str, str]],
+        max_tokens: int,
+        temperature: float,
+        top_p: float,
+        top_k: int,
+    ) -> Dict[str, Any]:
+        """Internal generate implementation (called with lock held)."""
+        from exllamav2.generator import ExLlamaV2Sampler
+        
         # Build prompt from messages
         prompt = self._build_prompt(messages)
         
@@ -118,21 +199,30 @@ class ExLlamaServer:
         input_ids = self.tokenizer.encode(prompt)
         prompt_tokens = input_ids.shape[-1]
         
-        # Set up sampling settings
+        # Set up sampling settings - FIXED per E2E Assessment Report 2025-12-01
         settings = ExLlamaV2Sampler.Settings()
-        settings.temperature = temperature
-        settings.top_p = top_p
-        settings.top_k = top_k
-        settings.token_repetition_penalty = 1.05
+        settings.temperature = temperature if temperature else 0.5  # Lower default for stability
+        settings.top_p = top_p if top_p else 0.9
+        settings.top_k = 40  # Slightly more focused (was 50)
+        settings.token_repetition_penalty = 1.50  # INCREASED to 1.50 to prevent repetitive loops
         
         # Start streaming generation
+        # NOTE: begin_stream_ex handles cache management internally
         start_time = time.time()
         
-        self.generator.set_stop_conditions([self.tokenizer.eos_token_id])
+        # Llama 3.3 stop tokens: EOS, end-of-turn, and "assistant" keyword
+        stop_conditions = [
+            self.tokenizer.eos_token_id,
+            "assistant",  # Stop if model outputs another turn marker
+            "<|eot_id|>",  # Llama 3 end-of-turn
+            "<|end_of_text|>",  # Llama 3 end-of-text
+        ]
+        self.generator.set_stop_conditions(stop_conditions)
         self.generator.begin_stream_ex(input_ids, settings)
         
         generated_text = ""
         completion_tokens = 0
+        garbage_detected = False
         
         while True:
             # stream() returns (text_chunk, eos, token_ids, ...)
@@ -143,6 +233,13 @@ class ExLlamaServer:
             if chunk:
                 generated_text += chunk
             completion_tokens += 1
+            
+            # FIX: Early stop on garbage patterns during streaming
+            if completion_tokens % 50 == 0:  # Check every 50 tokens
+                garbage_detected = self._check_garbage_patterns(generated_text)
+                if garbage_detected:
+                    logger.warning(f"Garbage pattern detected at token {completion_tokens}, stopping early")
+                    break
             
             if eos or completion_tokens >= max_tokens:
                 break
@@ -166,7 +263,7 @@ class ExLlamaServer:
         from transformers import AutoTokenizer
         
         if not hasattr(self, '_hf_tokenizer'):
-            self._hf_tokenizer = AutoTokenizer.from_pretrained(self.model_path)
+            self._hf_tokenizer = AutoTokenizer.from_pretrained(self.model_path, local_files_only=True)
         
         prompt = self._hf_tokenizer.apply_chat_template(
             messages, 
@@ -182,7 +279,7 @@ def create_app(server: ExLlamaServer, gpu_id: int):
     from pydantic import BaseModel
     import torch
     
-    app = FastAPI(title=f"NSIC DeepSeek ExLlamaV2 - GPU {gpu_id}")
+    app = FastAPI(title=f"NSIC Llama 3.3 ExLlamaV2 - GPU {gpu_id}")
     
     class ChatMessage(BaseModel):
         role: str
@@ -224,7 +321,7 @@ def create_app(server: ExLlamaServer, gpu_id: int):
                 "id": f"chatcmpl-{int(time.time())}",
                 "object": "chat.completion",
                 "created": int(time.time()),
-                "model": "deepseek-exllama",
+                "model": "llama-3.3-70b-exl2",
                 "choices": [{
                     "index": 0,
                     "message": {

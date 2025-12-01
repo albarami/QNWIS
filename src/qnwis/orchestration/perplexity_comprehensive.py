@@ -148,10 +148,6 @@ Provide:
             }
         ],
         "stream": False,  # Non-streaming for now to get full response
-        "use_threads": True,  # Enable threading for follow-ups
-        "web_search_options": {
-            "search_type": "pro"  # Enable PRO SEARCH with tools
-        },
         "temperature": 0.1,
         "max_tokens": 4000,
         "return_citations": True

@@ -512,6 +512,53 @@ async def run_combined_analysis(request: CombinedAnalysisRequest):
 
 
 # ============================================================================
+# COMPUTE PREFIX ROUTES (Aliases for /compute/* paths)
+# These match the diagnostic tool expectations
+# ============================================================================
+
+@app.post("/compute/monte_carlo")
+async def compute_monte_carlo(request: MonteCarloRequest):
+    """Alias for /monte_carlo with /compute prefix."""
+    return await run_monte_carlo(request)
+
+
+@app.post("/compute/sensitivity")
+async def compute_sensitivity(request: SensitivityRequest):
+    """Alias for /sensitivity with /compute prefix."""
+    return await run_sensitivity(request)
+
+
+@app.post("/compute/forecast")
+async def compute_forecast(request: ForecastingRequest):
+    """Alias for /forecasting with /compute prefix (note: forecast singular)."""
+    return await run_forecasting(request)
+
+
+@app.post("/compute/thresholds")
+async def compute_thresholds(request: ThresholdRequest):
+    """Alias for /thresholds with /compute prefix."""
+    return await run_thresholds(request)
+
+
+@app.post("/compute/benchmark")
+async def compute_benchmark(request: BenchmarkingRequest):
+    """Alias for /benchmarking with /compute prefix (note: benchmark singular)."""
+    return await run_benchmarking(request)
+
+
+@app.post("/compute/correlation")
+async def compute_correlation(request: CorrelationRequest):
+    """Alias for /correlation with /compute prefix."""
+    return await run_correlation(request)
+
+
+@app.post("/compute/optimization")
+async def compute_optimization(request: OptimizationRequest):
+    """Alias for /optimization with /compute prefix."""
+    return await run_optimization(request)
+
+
+# ============================================================================
 # RUN SERVER
 # ============================================================================
 

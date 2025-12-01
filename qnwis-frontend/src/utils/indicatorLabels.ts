@@ -143,7 +143,7 @@ export const LMIS_INDICATORS: Record<string, { label: string; category: FactCate
   'Total_Debt': { label: 'Qatar Total Debt (% GDP)', category: 'economic', unit: '%' },
   
   // GCC-STAT indicators - these are proper percentages
-  'qatar_unemployment_rate': { label: 'Qatar Unemployment Rate', category: 'labor', unit: '%' },
+  // Note: qatar_unemployment_rate is already defined above with isAlreadyPercent: true
   'bahrain_unemployment_rate': { label: 'Bahrain Unemployment Rate', category: 'regional', unit: '%' },
   'kuwait_unemployment_rate': { label: 'Kuwait Unemployment Rate', category: 'regional', unit: '%' },
   'uae_unemployment_rate': { label: 'UAE Unemployment Rate', category: 'regional', unit: '%' },

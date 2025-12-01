@@ -838,12 +838,19 @@ async def run_workflow_stream(
         )
         stages_started.add("synthesize")
         
-        # Finally emit done event
+        # Finally emit done event with FULL state for diagnostic capture
         logger.info("📤 Emitting done complete event")
+        
+        # Get all scenario and Engine B data for diagnostic
+        scenario_results = accumulated_state.get("scenario_results", []) or []
+        engine_b_aggregate = accumulated_state.get("engine_b_aggregate", {}) or {}
+        agent_reports = accumulated_state.get("agent_reports", []) or []
+        
         yield WorkflowEvent(
             stage="done",
             status="complete",
             payload={
+                # Core fields
                 "confidence": accumulated_state.get("confidence_score", 0.0),
                 "warnings": accumulated_state.get("warnings", []),
                 "errors": accumulated_state.get("errors", []),
@@ -854,6 +861,23 @@ async def run_workflow_stream(
                 "stats": synthesis_stats,
                 "extracted_facts": extracted_facts,
                 "word_count": len(final_synthesis.split()) if final_synthesis else 0,
+                # Scenario data for diagnostic
+                "scenarios": scenarios,
+                "scenario_results": scenario_results,
+                "scenarios_count": len(scenarios) if scenarios else len(scenario_results),
+                # Engine B data
+                "engine_b_aggregate": engine_b_aggregate,
+                "engine_b_scenarios_computed": engine_b_aggregate.get("scenarios_with_compute", 0),
+                # Agent and debate data
+                "agent_reports": agent_reports,
+                "agents_count": len(set(ar.get("agent", "") for ar in agent_reports if isinstance(ar, dict))),
+                "conversation_history": conversation_history,
+                "debate_turns": len(conversation_history),
+                "debate_results": debate_results,
+                # Critique data
+                "critique_results": critique_results,
+                # Classification
+                "complexity": accumulated_state.get("complexity", ""),
             },
         )
         return  # Exit early for langgraph workflow

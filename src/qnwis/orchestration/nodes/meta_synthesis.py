@@ -81,19 +81,25 @@ async def meta_synthesis_node(scenario_results: List[Dict[str, Any]]) -> str:
 
 def _extract_scenario_summaries(scenario_results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
-    Extract key information from each scenario result.
+    Extract key information from each scenario result including Engine B quantitative data.
     
     Args:
         scenario_results: List of completed scenario states
         
     Returns:
-        List of scenario summary dictionaries
+        List of scenario summary dictionaries with Engine B results
     """
     summaries = []
     
     for result in scenario_results:
         try:
             scenario_meta = result.get('scenario_metadata', {})
+            
+            # Extract Engine B quantitative results
+            engine_b = result.get('engine_b_results', {}) or {}
+            monte_carlo = engine_b.get('monte_carlo', {}) or {}
+            sensitivity = engine_b.get('sensitivity', {}) or {}
+            forecasting = engine_b.get('forecasting', {}) or {}
             
             summary = {
                 'id': result.get('scenario_id', 'unknown'),
@@ -104,7 +110,14 @@ def _extract_scenario_summaries(scenario_results: List[Dict[str, Any]]) -> List[
                 'confidence': result.get('confidence_score', 0.0),
                 'execution_time': result.get('scenario_execution_time', 0.0),
                 'warnings': result.get('warnings', []),
-                'reasoning_depth': len(result.get('reasoning_chain', []))
+                'reasoning_depth': len(result.get('reasoning_chain', [])),
+                # Engine B quantitative results
+                'engine_b_status': engine_b.get('status', 'not_run'),
+                'success_probability': monte_carlo.get('success_probability', 0),
+                'monte_carlo_mean': monte_carlo.get('mean', 0),
+                'monte_carlo_std': monte_carlo.get('std', 0),
+                'key_drivers': [s.get('variable', '') for s in sensitivity.get('sensitivities', [])[:3]] if sensitivity else [],
+                'forecast_trend': forecasting.get('trend', 'unknown') if forecasting else 'unknown',
             }
             
             summaries.append(summary)
@@ -116,7 +129,9 @@ def _extract_scenario_summaries(scenario_results: List[Dict[str, Any]]) -> List[
                 'name': 'Unknown Scenario',
                 'description': 'Could not extract scenario information',
                 'recommendation': 'Error in scenario execution',
-                'confidence': 0.0
+                'confidence': 0.0,
+                'engine_b_status': 'failed',
+                'success_probability': 0,
             })
     
     return summaries
@@ -143,14 +158,41 @@ def _build_synthesis_prompt(
     avg_confidence = sum(s['confidence'] for s in scenario_summaries) / len(scenario_summaries)
     total_execution_time = sum(s.get('execution_time', 0) for s in scenario_summaries)
     
+    # Calculate robustness ratio (scenarios passing success threshold)
+    success_threshold = 0.5
+    passing_scenarios = [s for s in scenario_summaries if s.get('success_probability', 0) >= success_threshold]
+    failing_scenarios = [s for s in scenario_summaries if s.get('success_probability', 0) < success_threshold]
+    robustness_ratio = f"{len(passing_scenarios)}/{len(scenario_summaries)}"
+    
+    # Build cross-scenario comparison table
+    comparison_table = "SCENARIO | SUCCESS PROB | CONFIDENCE | KEY DRIVERS | ENGINE B\n"
+    comparison_table += "-" * 80 + "\n"
+    for s in scenario_summaries:
+        name = s.get('name', 'Unknown')[:20]
+        success = f"{s.get('success_probability', 0) * 100:.0f}%"
+        conf = f"{s.get('confidence', 0) * 100:.0f}%"
+        drivers = ", ".join(s.get('key_drivers', [])[:2]) or "N/A"
+        status = s.get('engine_b_status', 'N/A')
+        comparison_table += f"{name:<20} | {success:>10} | {conf:>10} | {drivers[:20]:<20} | {status}\n"
+    
     prompt = f"""You are synthesizing {len(scenario_summaries)} parallel scenario analyses for Qatar's ministerial leadership.
 
 SCENARIO ANALYSES COMPLETED:
 {scenario_details}
 
+═══════════════════════════════════════════════════════════════════════════════
+                    CROSS-SCENARIO COMPARISON (ENGINE B QUANTITATIVE)
+═══════════════════════════════════════════════════════════════════════════════
+{comparison_table}
+
+ROBUSTNESS ANALYSIS: {robustness_ratio} scenarios pass success threshold (≥50%)
+- Passing: {', '.join(s.get('name', 'Unknown') for s in passing_scenarios) or 'None'}
+- Failing: {', '.join(s.get('name', 'Unknown') for s in failing_scenarios) or 'None'}
+
 SYNTHESIS STATISTICS:
 - Total scenarios analyzed: {len(scenario_summaries)}
 - Average confidence: {avg_confidence:.0%}
+- Robustness Ratio: {robustness_ratio} scenarios pass stress tests
 - Total analysis time: {total_execution_time:.1f}s
 - Analysis depth: {sum(s.get('reasoning_depth', 0) for s in scenario_summaries)} reasoning steps
 
@@ -190,6 +232,8 @@ QUALITY REQUIREMENTS:
 - Provide decision criteria for scenario-dependent choices
 - Flag critical dependencies and vulnerabilities
 - Use ministerial-grade language (concise, authoritative, evidence-based)
+- MUST state robustness ratio: "{robustness_ratio} scenarios pass stress tests"
+- MUST include cross-scenario comparison table showing quantitative results
 
 STRUCTURE YOUR SYNTHESIS:
 
@@ -197,9 +241,16 @@ STRUCTURE YOUR SYNTHESIS:
 
 ## EXECUTIVE SUMMARY
 [3-4 sentences: What's the bottom line across all scenarios?]
+**ROBUSTNESS: {robustness_ratio} scenarios pass the success threshold.**
+
+## CROSS-SCENARIO QUANTITATIVE COMPARISON
+[Include the comparison table showing each scenario's success probability, confidence, and key drivers]
+| Scenario | Success Prob | Confidence | Key Drivers |
+|----------|-------------|------------|-------------|
+[Fill in from data above]
 
 ## ROBUST RECOMMENDATIONS (High Confidence)
-[Actions that work in ALL scenarios]
+[Actions that work in ALL {len(scenario_summaries)} scenarios - these are "no regret" moves]
 
 ## SCENARIO-DEPENDENT STRATEGIES (Conditional Logic)
 [If-then strategies based on scenario triggers]
@@ -214,7 +265,9 @@ STRUCTURE YOUR SYNTHESIS:
 [Immediate actions, contingencies, deferred decisions]
 
 ## CONFIDENCE ASSESSMENT
-[Synthesis quality, data gaps, recommended next steps]
+- Robustness Ratio: {robustness_ratio} scenarios pass
+- Synthesis quality based on {len(scenario_summaries)} parallel analyses
+- Data gaps and recommended next steps
 
 ---
 

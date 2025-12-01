@@ -13,11 +13,17 @@ Key features:
 """
 
 import logging
+import os
 import time
 from dataclasses import dataclass, field
 from typing import List, Optional, Dict, Any, Tuple
 from collections import deque
 import threading
+
+# Set HuggingFace token from environment (fixes expired token issue)
+hf_token = os.environ.get("HUGGINGFACE_TOKEN") or os.environ.get("HF_TOKEN")
+if hf_token:
+    os.environ["HF_TOKEN"] = hf_token
 
 try:
     import torch
@@ -207,18 +213,22 @@ class DeepVerifier:
         self.nli_model = None
         self.nli_tokenizer = None
         
+        # Get HuggingFace token for model loading
+        hf_token = os.environ.get("HUGGINGFACE_TOKEN") or os.environ.get("HF_TOKEN")
+        
         if enable_cross_encoder and CROSS_ENCODER_AVAILABLE:
             logger.info(f"Loading cross-encoder: {self.CROSS_ENCODER_MODEL}")
             self.cross_encoder = CrossEncoder(
                 self.CROSS_ENCODER_MODEL,
                 device=device,
+                trust_remote_code=True,
             )
         
         if enable_nli and TRANSFORMERS_AVAILABLE:
             logger.info(f"Loading NLI model: {self.NLI_MODEL}")
-            self.nli_tokenizer = AutoTokenizer.from_pretrained(self.NLI_MODEL)
+            self.nli_tokenizer = AutoTokenizer.from_pretrained(self.NLI_MODEL, token=hf_token)
             self.nli_model = AutoModelForSequenceClassification.from_pretrained(
-                self.NLI_MODEL
+                self.NLI_MODEL, token=hf_token
             )
             if TORCH_AVAILABLE and "cuda" in device:
                 self.nli_model = self.nli_model.to(device)

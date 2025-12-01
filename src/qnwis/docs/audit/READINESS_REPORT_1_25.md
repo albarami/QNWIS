@@ -1,8 +1,8 @@
 # Readiness Report: Steps 1-33
 
-**Generated:** 2025-12-01T01:05:58.689266
+**Generated:** 2025-12-01T14:43:43.957296
 **Overall Status:** FAIL
-**Execution Time:** 514 ms
+**Execution Time:** 4017 ms
 
 ## Summary
 
@@ -360,7 +360,7 @@
 - `docs/IMPLEMENTATION_ROADMAP.md`
 
 ### no_placeholders [FAIL]
-- **Duration:** 491 ms
+- **Duration:** 3995 ms
 - **Severity:** ERROR
 ```json
 {
@@ -478,7 +478,7 @@
     },
     {
       "file": "src/qnwis/llm/client.py",
-      "line": 251,
+      "line": 345,
       "pattern": "^\\s*pass\\s*$",
       "snippet": "pass"
     },
@@ -520,13 +520,13 @@
     },
     {
       "file": "src/qnwis/llm/parser.py",
-      "line": 231,
+      "line": 235,
       "pattern": "^\\s*pass\\s*$",
       "snippet": "pass"
     },
     {
       "file": "src/qnwis/orchestration/graph_llm.py",
-      "line": 1351,
+      "line": 1392,
       "pattern": "^\\s*pass\\s*$",
       "snippet": "pass"
     },

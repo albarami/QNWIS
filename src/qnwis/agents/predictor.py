@@ -136,8 +136,8 @@ class PredictorAgent:
             return {}
         return {qid.lower(): qid for qid in ids}
 
-    def _resolve_query_id(self, metric: str) -> str:
-        """Resolve metric string to deterministic query_id."""
+    def _resolve_query_id(self, metric: str) -> str | None:
+        """Resolve metric string to deterministic query_id. Returns None if not found."""
         key = metric.strip().lower()
         if key in self.series_map:
             return self.series_map[key]
@@ -150,14 +150,19 @@ class PredictorAgent:
             f"{key}_by_sector",
             f"syn_{key}",
             f"ts_{key}_by_sector",
+            f"syn_{key}_by_sector",
+            f"syn_{key}_latest",
+            f"{key}_trends_monthly",
+            f"attrition_rate_monthly",  # Common alias for retention metrics
         ]
         for candidate in candidates:
             canonical = candidate.lower()
             if canonical in registry_ids:
                 return registry_ids[canonical]
 
-        # Fallback pattern for compatibility with synthetic tests
-        return f"ts_{key}_by_sector"
+        # Return None to indicate no query found - caller should handle gracefully
+        logger.warning(f"No query found for metric '{metric}' - tried candidates: {candidates[:5]}...")
+        return None
 
     def _apply_stability_guard(
         self,
@@ -251,6 +256,9 @@ class PredictorAgent:
         )
 
         query_id = self._resolve_query_id(metric)
+        
+        if query_id is None:
+            return f"No data available for metric '{metric}'. Query definition not found in registry."
 
         try:
             res = self.client.run(query_id)
@@ -463,6 +471,10 @@ class PredictorAgent:
         )
 
         query_id = self._resolve_query_id(metric)
+        
+        if query_id is None:
+            return f"No data available for metric '{metric}'. Query definition not found in registry."
+        
         try:
             res = self.client.run(query_id)
         except Exception as exc:
@@ -695,6 +707,10 @@ class PredictorAgent:
         )
 
         query_id = self._resolve_query_id(metric)
+        
+        if query_id is None:
+            return f"No data available for metric '{metric}'. Query definition not found in registry."
+        
         try:
             res = self.client.run(query_id)
         except Exception as exc:

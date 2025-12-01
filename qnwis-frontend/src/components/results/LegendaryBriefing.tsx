@@ -72,7 +72,9 @@ const parseLegendaryBriefing = (text: string) => {
 }
 
 // Format content with rich styling
-const FormatContent: React.FC<{ content: string; sectionId: string }> = ({ content, sectionId }) => {
+const FormatContent: React.FC<{ content: string; sectionId: string }> = ({ content, sectionId: _sectionId }) => {
+  // sectionId reserved for future section-specific formatting
+  void _sectionId
   const lines = content.split('\n')
   const elements: React.ReactNode[] = []
   
@@ -389,7 +391,7 @@ export function LegendaryBriefing({ synthesis, confidence = 0.75, stats }: Legen
               onClick={() => setShowMinisterCard(!showMinisterCard)}
               className="px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
             >
-              📋 Minister's Card
+              📋 Minister&apos;s Card
             </button>
             <button onClick={expandAll} className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg text-sm transition-colors">
               Expand All
@@ -409,7 +411,7 @@ export function LegendaryBriefing({ synthesis, confidence = 0.75, stats }: Legen
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-amber-300">📋 Minister's Briefing Card</h3>
+              <h3 className="text-xl font-bold text-amber-300">📋 Minister&apos;s Briefing Card</h3>
               <button onClick={() => setShowMinisterCard(false)} className="text-slate-400 hover:text-white">✕</button>
             </div>
             <pre className="text-sm text-slate-300 whitespace-pre-wrap font-mono bg-slate-800/50 p-4 rounded-lg">

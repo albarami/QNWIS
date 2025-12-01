@@ -7,6 +7,9 @@ interface ParallelScenariosProps {
 }
 
 export function ParallelScenarios({ scenarios: _scenarios, scenarioResults, metaSynthesis }: ParallelScenariosProps) {
+  // scenarios prop reserved for future scenario details display
+  void _scenarios
+  
   // Only show when we have results to display (meta-synthesis or scenario results)
   if (!metaSynthesis && scenarioResults.length === 0) {
     return null

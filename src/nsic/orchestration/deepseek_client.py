@@ -20,6 +20,7 @@ import logging
 import re
 import time
 import asyncio
+import subprocess
 from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional, Tuple, AsyncIterator
 from enum import Enum
@@ -99,24 +100,29 @@ class DeepSeekConfig:
         "http://localhost:8008",  # Instance 8: GPU 7
     ])
     
-    # Model settings
+    # Model settings - UPDATED per E2E Assessment Report 2025-12-01
     model_name: str = "deepseek-exllama"  # ExLlamaV2 4-bit quantized model
     max_tokens: int = 4096
-    temperature: float = 0.7
-    top_p: float = 0.9
+    temperature: float = 0.5  # LOWERED from 0.7 for stability
+    top_p: float = 0.85       # LOWERED from 0.9 for focus
     
-    # FIX 1 (UPDATED): Stronger repetition penalty to prevent garbage output ({{{, ***, \\\)
-    # Increased from 1.15 to 1.25 after observing continued garbage in logs
-    repetition_penalty: float = 1.25
-    frequency_penalty: float = 0.4   # Penalize repeated tokens in output
-    presence_penalty: float = 0.2    # Encourage vocabulary diversity
+    # Stronger repetition penalty to prevent garbage loops
+    repetition_penalty: float = 1.20  # INCREASED from 1.1
+    frequency_penalty: float = 0.15   # INCREASED from 0.1
+    presence_penalty: float = 0.15    # INCREASED from 0.1
     stop_sequences: List[str] = field(default_factory=lambda: [
-        "###", 
-        "---END---", 
-        "```\n\n\n",
-        "\n\n\n\n\n",   # Stop on 5+ consecutive newlines
-        "****",         # Stop on repeated asterisks  
-        "{{{{",         # Stop on repeated braces
+        # Original
+        "---END---",
+        "\n\n\n\n\n\n\n\n",   # 8+ consecutive newlines
+        # NEW: Pattern-based stops for garbage detection
+        "-##-##-##-##-",              # Hash pattern loop
+        ".<     .<     .<",           # Dot-bracket loop
+        "owieowie",                   # Nonsense pattern
+        # NEW: Symbol concentration stops
+        "{{{{{{{{{{",                 # 10 open braces
+        "}}}}}}}}}}",                 # 10 close braces
+        "**********",                 # 10 asterisks
+        "##########",                 # 10 hashes
     ])
     
     # Timeout and retry
@@ -223,6 +229,137 @@ class DeepSeekClient:
             f"GPU instance {instance_id} failure count: {self._instance_errors[instance_id]}"
         )
     
+    # =========================================================================
+    # FIX 5: GPU Health Monitoring - Added per E2E Assessment Report 2025-12-01
+    # =========================================================================
+    
+    def check_gpu_health(self, gpu_id: int) -> dict:
+        """
+        Check GPU health before routing requests.
+        
+        Args:
+            gpu_id: Physical GPU ID (0-7)
+            
+        Returns:
+            dict with 'healthy' bool and 'details' string
+        """
+        try:
+            # Get GPU memory info via nvidia-smi
+            result = subprocess.run(
+                ['nvidia-smi', '--query-gpu=memory.used,memory.total,temperature.gpu',
+                 '--format=csv,noheader,nounits', f'--id={gpu_id}'],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            
+            if result.returncode != 0:
+                return {'healthy': False, 'details': f'nvidia-smi failed: {result.stderr}'}
+            
+            parts = result.stdout.strip().split(',')
+            if len(parts) >= 3:
+                mem_used = int(parts[0].strip())
+                mem_total = int(parts[1].strip())
+                temp = int(parts[2].strip())
+                
+                mem_percent = mem_used / mem_total * 100
+                
+                # Health checks
+                if mem_percent > 95:
+                    return {
+                        'healthy': False,
+                        'details': f'GPU {gpu_id} VRAM critical: {mem_percent:.1f}%'
+                    }
+                
+                if temp > 85:
+                    return {
+                        'healthy': False,
+                        'details': f'GPU {gpu_id} temperature critical: {temp}°C'
+                    }
+                
+                return {
+                    'healthy': True,
+                    'details': f'GPU {gpu_id}: {mem_percent:.1f}% VRAM, {temp}°C'
+                }
+            
+            return {'healthy': False, 'details': 'Could not parse nvidia-smi output'}
+            
+        except Exception as e:
+            logger.error(f"GPU health check failed for GPU {gpu_id}: {e}")
+            return {'healthy': False, 'details': str(e)}
+    
+    def get_healthiest_instance(self) -> int:
+        """
+        Get the GPU instance with best health metrics.
+        
+        Returns:
+            Instance ID of healthiest GPU
+        """
+        best_instance = 0
+        best_score = -1
+        
+        for instance_id in range(len(self.config.vllm_base_urls)):
+            # Score based on consecutive successes (lower errors = higher score)
+            error_score = 10 - self._instance_errors[instance_id]
+            
+            # Check actual GPU health
+            health = self.check_gpu_health(instance_id)
+            
+            if not health['healthy']:
+                logger.warning(f"GPU {instance_id} unhealthy: {health['details']}")
+                error_score -= 5  # Penalize unhealthy GPUs
+            
+            if error_score > best_score:
+                best_score = error_score
+                best_instance = instance_id
+        
+        logger.debug(f"Selected GPU instance {best_instance} (score: {best_score})")
+        return best_instance
+    
+    # =========================================================================
+    # FIX 6: Content Deduplication - Added per E2E Assessment Report 2025-12-01
+    # =========================================================================
+    
+    def deduplicate_content(self, content: str) -> str:
+        """
+        Remove duplicate paragraphs and sentences from content.
+        
+        Handles the case where model produces same paragraph 18 times.
+        
+        Args:
+            content: Raw content that may have repetition
+            
+        Returns:
+            Deduplicated content
+        """
+        # Split into paragraphs
+        paragraphs = content.split('\n\n')
+        
+        # Keep only unique paragraphs (preserve order)
+        seen = set()
+        unique_paragraphs = []
+        duplicates_removed = 0
+        
+        for p in paragraphs:
+            normalized = ' '.join(p.split())  # Normalize whitespace
+            if normalized and normalized not in seen:
+                seen.add(normalized)
+                unique_paragraphs.append(p)
+            elif normalized in seen:
+                duplicates_removed += 1
+                logger.debug(f"Removed duplicate paragraph: {normalized[:50]}...")
+        
+        result = '\n\n'.join(unique_paragraphs)
+        
+        # Log if significant deduplication occurred
+        if duplicates_removed > 0:
+            logger.warning(
+                f"Content deduplication: removed {duplicates_removed} duplicate paragraphs "
+                f"({len(paragraphs)} -> {len(unique_paragraphs)})"
+            )
+        
+        return result
+    
     def _parse_thinking(self, content: str) -> Tuple[str, Optional[str]]:
         """
         Parse and extract <think>...</think> block from response.
@@ -242,12 +379,16 @@ class DeepSeekClient:
     
     def _validate_output(self, content: str) -> bool:
         """
-        FIX 2: Validate output quality - reject degenerate/garbage output.
+        Validate output quality - reject ALL garbage patterns.
         
-        Detects patterns like:
-        - Repeated characters: {{{{, ****, \\\\\\
-        - Empty or too-short responses
-        - Excessive symbol repetition
+        ENHANCED per E2E Assessment Report 2025-12-01.
+        Catches 6 garbage types identified:
+        1. Chinese/non-ASCII gibberish
+        2. Infinite pattern loops (-##-##-, .<     .<)
+        3. Nonsense words (HEISTENECEENESTENCE)
+        4. Semantic repetition (same paragraph 18x)
+        5. Truncated outputs
+        6. Extreme symbol concentration
         
         Args:
             content: Raw response content
@@ -255,43 +396,151 @@ class DeepSeekClient:
         Returns:
             True if output is valid, False if garbage detected
         """
-        if not content or len(content) < 100:
-            logger.warning("Output too short: %d chars", len(content) if content else 0)
+        if not content:
+            logger.warning("Output validation failed: empty content")
             return False
         
-        # Detect repeated characters (15+)
-        if re.search(r'(.)\1{15,}', content):
-            logger.warning("Repeated character pattern detected")
+        content_length = len(content)
+        
+        # =====================================================================
+        # CHECK 1: Minimum length (truncated outputs)
+        # =====================================================================
+        if content_length < 100:
+            logger.warning(f"Output too short: {content_length} chars")
             return False
         
-        # Detect repeated symbols - garbage patterns from DeepSeek (tightened thresholds)
-        brace_count = content.count('{')
-        asterisk_count = content.count('*')
-        backslash_count = content.count('\\')
+        # =====================================================================
+        # CHECK 2: Non-ASCII / Chinese garbage detection
+        # Evidence: "<提供反馈的最佳方式: <{"
+        # =====================================================================
+        non_ascii_count = sum(1 for c in content if ord(c) > 127)
+        non_ascii_ratio = non_ascii_count / content_length if content_length > 0 else 0
         
-        if brace_count > 20 or asterisk_count > 40 or backslash_count > 20:
-            logger.warning("Excessive symbol repetition: { x%d, * x%d, \\ x%d",
-                          brace_count, asterisk_count, backslash_count)
+        if non_ascii_ratio > 0.15:  # More than 15% non-ASCII is suspicious
+            logger.warning(
+                f"High non-ASCII content: {non_ascii_ratio:.1%} "
+                f"({non_ascii_count} chars) - likely Chinese garbage"
+            )
             return False
         
-        # Additional: Check ratio of symbols to content (garbage has high ratio)
-        total_symbols = brace_count + asterisk_count + backslash_count
-        if len(content) > 0 and total_symbols / len(content) > 0.05:  # >5% symbols is garbage
-            logger.warning("High symbol ratio: %d symbols in %d chars (%.1f%%)",
-                          total_symbols, len(content), 100 * total_symbols / len(content))
+        # Specifically detect Chinese characters
+        chinese_pattern = re.compile(r'[\u4e00-\u9fff\u3400-\u4dbf]+')
+        chinese_matches = chinese_pattern.findall(content)
+        if len(chinese_matches) > 3:  # More than 3 Chinese character sequences
+            logger.warning(f"Chinese text detected: {chinese_matches[:5]}")
             return False
         
-        # Detect repeated short patterns (e.g., "| { | { | {")
-        if re.search(r'(\|\s*\{\s*){5,}', content):
-            logger.warning("Repeated pipe-brace pattern detected")
+        # =====================================================================
+        # CHECK 3: Pattern loop detection
+        # Evidence: "-##-##-##-##-" repeated 300+ times
+        # Evidence: ".<     .<     .<" repeated 200+ times
+        # =====================================================================
+        pattern_loops = [
+            (r'(-##){5,}', 'hash-pattern'),
+            (r'(\.\<\s*){5,}', 'dot-bracket'),
+            (r'(\(\.\.\.\.[^\)]*){5,}', 'parenthesis-dots'),
+            (r'(owie){3,}', 'owie-nonsense'),
+            (r'(\|\s*\{\s*){10,}', 'pipe-brace'),
+            (r'(\s*\<\s*){20,}', 'angle-bracket-spam'),
+            (r'(##SGN){2,}', 'sgn-pattern'),
+        ]
+        
+        for pattern, name in pattern_loops:
+            if re.search(pattern, content):
+                logger.warning(f"Pattern loop detected: {name}")
+                return False
+        
+        # =====================================================================
+        # CHECK 4: Repeated character detection (enhanced)
+        # =====================================================================
+        if re.search(r'(.)\1{30,}', content):  # Lowered from 50 to 30
+            logger.warning("Excessive character repetition (30+)")
             return False
         
-        # Must have reasonable word count
-        words = content.split()
-        if len(words) < 30:
-            logger.warning("Output has too few words: %d", len(words))
+        # =====================================================================
+        # CHECK 5: Extreme symbol concentration
+        # =====================================================================
+        symbol_counts = {
+            '{': content.count('{'),
+            '}': content.count('}'),
+            '*': content.count('*'),
+            '#': content.count('#'),
+            '<': content.count('<'),
+            '>': content.count('>'),
+            '|': content.count('|'),
+            '\\': content.count('\\'),
+        }
+        
+        for symbol, count in symbol_counts.items():
+            ratio = count / content_length if content_length > 0 else 0
+            if ratio > 0.05:  # More than 5% of content is this symbol
+                logger.warning(
+                    f"Excessive symbol concentration: '{symbol}' appears {count} times "
+                    f"({ratio:.1%} of content)"
+                )
+                return False
+        
+        # =====================================================================
+        # CHECK 6: Semantic repetition (same paragraph repeated)
+        # Evidence: Same paragraph repeated 18 times
+        # =====================================================================
+        paragraphs = [p.strip() for p in content.split('\n\n') if p.strip()]
+        
+        if len(paragraphs) > 3:
+            unique_paragraphs = set(paragraphs)
+            repetition_ratio = 1 - (len(unique_paragraphs) / len(paragraphs))
+            
+            if repetition_ratio > 0.5:  # More than 50% are duplicates
+                logger.warning(
+                    f"Semantic repetition: {len(paragraphs)} paragraphs, "
+                    f"only {len(unique_paragraphs)} unique ({repetition_ratio:.0%} duplicates)"
+                )
+                return False
+        
+        # Check for repeated sentences
+        sentences = re.split(r'[.!?]+', content)
+        sentences = [s.strip() for s in sentences if len(s.strip()) > 20]
+        
+        if len(sentences) > 5:
+            sentence_counts = {}
+            for s in sentences:
+                normalized = ' '.join(s.split())
+                sentence_counts[normalized] = sentence_counts.get(normalized, 0) + 1
+            
+            max_repeats = max(sentence_counts.values()) if sentence_counts else 0
+            if max_repeats > 5:  # Same sentence appears 5+ times
+                logger.warning(f"Repeated sentence found {max_repeats} times")
+                return False
+        
+        # =====================================================================
+        # CHECK 7: Nonsense word detection - DISABLED
+        # This was causing too many false positives with Llama 3.3
+        # The model generates compound words that look like nonsense but are valid
+        # Original patterns: "HEISTENECEENESTENCE", "owieowieowieowie"
+        # =====================================================================
+        # DISABLED - keeping only the pattern-based checks above
+        words = content.split()  # Still need words for CHECK 8
+        
+        # =====================================================================
+        # CHECK 8: Minimum word count
+        # =====================================================================
+        word_count = len(words)
+        if word_count < 30:
+            logger.warning(f"Too few words: {word_count}")
             return False
         
+        # =====================================================================
+        # CHECK 9: Zero-width character detection
+        # =====================================================================
+        zero_width_chars = ['\u200b', '\u200c', '\u200d', '\ufeff']
+        zero_width_count = sum(content.count(c) for c in zero_width_chars)
+        if zero_width_count > 10:
+            logger.warning(f"Excessive zero-width characters: {zero_width_count}")
+            return False
+        
+        # =====================================================================
+        # PASSED ALL CHECKS
+        # =====================================================================
         return True
     
     async def _call_vllm_instance(
@@ -446,7 +695,7 @@ class DeepSeekClient:
                 # FIX 6: Record failure with helper method
                 self._record_instance_failure(instance_id)
                 logger.warning(
-                    f"DeepSeek instance {instance_id} failed (attempt {attempt + 1}): {e}"
+                    f"Llama instance {instance_id} failed (attempt {attempt + 1}): {e}"
                 )
                 
                 # FIX 6: Try to get a healthy instance instead of just incrementing
@@ -456,7 +705,7 @@ class DeepSeekClient:
                     await asyncio.sleep(self.config.retry_delay_seconds)
         
         raise RuntimeError(
-            f"All DeepSeek instances failed after {self.config.max_retries} attempts: {last_error}"
+            f"All Llama instances failed after {self.config.max_retries} attempts: {last_error}"
         )
     
     def chat(

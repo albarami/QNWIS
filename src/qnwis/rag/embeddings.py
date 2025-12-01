@@ -45,25 +45,21 @@ class SentenceEmbedder:
         """
         logger.info(f"Loading sentence-transformers model: {model_name}")
         
-        # Try local embeddings API first (port 8100)
-        self._use_local_api = False
-        self._local_api_url = "http://localhost:8100/embed"
-        
-        if self._check_local_api():
-            logger.info("Using local embeddings API (port 8100) - faster and no HuggingFace auth required")
-            self._use_local_api = True
-            self.dimension = 768  # all-mpnet-base-v2 dimension
-            self.model_name = model_name
-            self.model = None
-            return
-        
         try:
             from sentence_transformers import SentenceTransformer
             import torch
+            import os
+            
+            # Set HuggingFace token from environment for authentication
+            hf_token = os.environ.get("HUGGINGFACE_TOKEN") or os.environ.get("HF_TOKEN")
+            if hf_token:
+                # Set for huggingface_hub to use
+                os.environ["HF_TOKEN"] = hf_token
+                logger.info("HuggingFace token configured from environment")
             
             # Force CPU to avoid meta tensor device issues
             device = 'cpu' if not torch.cuda.is_available() else 'cuda'
-            self.model = SentenceTransformer(model_name, device=device)
+            self.model = SentenceTransformer(model_name, device=device, token=hf_token)
             self.dimension = self.model.get_sentence_embedding_dimension()
             self.model_name = model_name
             
@@ -79,37 +75,8 @@ class SentenceEmbedder:
                 "Install with: pip install sentence-transformers"
             ) from e
         except Exception as e:
-            # If HuggingFace fails (e.g., expired token), try local API again
-            logger.warning(f"HuggingFace loading failed: {e}")
-            if self._check_local_api():
-                logger.info("Falling back to local embeddings API (port 8100)")
-                self._use_local_api = True
-                self.dimension = 768
-                self.model_name = model_name
-                self.model = None
-                return
-            logger.error(f"Failed to load model {model_name} and no local API available: {e}")
+            logger.error(f"Failed to load model {model_name}: {e}")
             raise
-    
-    def _check_local_api(self) -> bool:
-        """Check if local embeddings API is available."""
-        try:
-            import requests
-            response = requests.get("http://localhost:8100/health", timeout=2)
-            return response.status_code == 200
-        except Exception:
-            return False
-    
-    def _embed_via_api(self, texts: List[str]) -> np.ndarray:
-        """Get embeddings from local API."""
-        import requests
-        response = requests.post(
-            self._local_api_url,
-            json={"texts": texts},
-            timeout=30
-        )
-        response.raise_for_status()
-        return np.array(response.json()["embeddings"])
     
     def embed(self, text: str) -> np.ndarray:
         """
@@ -121,9 +88,6 @@ class SentenceEmbedder:
         Returns:
             Numpy array of embedding vector
         """
-        if self._use_local_api:
-            embeddings = self._embed_via_api([text])
-            return embeddings[0]
         return self.model.encode(text, convert_to_numpy=True)
     
     def embed_batch(self, texts: List[str], show_progress: bool = False) -> np.ndarray:
@@ -139,9 +103,6 @@ class SentenceEmbedder:
         """
         if not texts:
             return np.array([])
-        
-        if self._use_local_api:
-            return self._embed_via_api(texts)
         
         return self.model.encode(
             texts, 

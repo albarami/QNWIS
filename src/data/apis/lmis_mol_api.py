@@ -81,6 +81,9 @@ class LMISAPIClient:
     all 17 API endpoints.
     """
     
+    # Class-level flag to avoid repeated DNS failure warnings
+    _dns_failure_logged = False
+    
     def __init__(self, api_token: str | None = None, use_cache_fallback: bool = True):
         """
         Initialize LMIS API client.
@@ -170,7 +173,15 @@ class LMISAPIClient:
                 logger.warning(f"LMIS API returned status {response.status_code}")
                 
         except Exception as e:
-            logger.warning(f"LMIS API call failed: {e}")
+            # Check for DNS/network failures and only log once to reduce noise
+            error_str = str(e)
+            if "Failed to resolve" in error_str or "getaddrinfo failed" in error_str:
+                if not LMISAPIClient._dns_failure_logged:
+                    logger.info("LMIS API unreachable (DNS failure) - using cached data")
+                    LMISAPIClient._dns_failure_logged = True
+                # Don't log repeated DNS failures
+            else:
+                logger.warning(f"LMIS API call failed: {e}")
         
         # Try cache fallback
         if cache_key and self.use_cache_fallback:

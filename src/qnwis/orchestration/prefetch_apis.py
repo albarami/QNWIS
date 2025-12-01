@@ -3032,7 +3032,7 @@ class CompletePrefetchLayer:
                 _safe_print(f"   Retrieved {len(facts)} ADP {domain} datasets")
             
         except Exception as e:
-            _safe_print(f"❌ ADP error: {e}")
+            logger.debug(f"ADP error (non-critical): {e}")  # Downgrade to debug - ADP is optional
         
         return facts
     

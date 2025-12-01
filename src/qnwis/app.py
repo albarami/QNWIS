@@ -12,9 +12,10 @@ import os
 
 from fastapi.staticfiles import StaticFiles
 
-# Tests expect to call endpoints without credentials and without /api prefix.
+# Bypass auth for local development, but keep /api/v1 prefix for frontend compatibility
 os.environ.setdefault("QNWIS_BYPASS_AUTH", "true")
-os.environ.setdefault("QNWIS_API_PREFIX", "")
+# NOTE: Keep the /api/v1 prefix - frontend expects it at /api/v1/council/stream
+os.environ.setdefault("QNWIS_API_PREFIX", "/api/v1")
 
 from .api.server import Settings, create_app
 

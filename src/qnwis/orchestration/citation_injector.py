@@ -171,8 +171,8 @@ class CitationInjector:
                         cited_positions.add(start_pos)
                         return f"{number}{citation}"
 
-                # Number not in source data - flag it
-                logger.warning(f"Number '{number}' not found in source data")
+                # Number not in source data - this is expected for LLM-generated numbers
+                logger.debug(f"Number '{number}' not in extracted data (LLM-generated)")
                 cited_positions.add(start_pos)
                 return f"{number} [UNVERIFIED]"
 

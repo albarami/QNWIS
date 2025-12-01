@@ -227,7 +227,7 @@ def _extract_debate_highlights(state: IntelligenceState) -> Dict[str, Any]:
 
 
 def _extract_scenario_summaries(state: IntelligenceState) -> List[Dict[str, Any]]:
-    """Extract scenario analysis summaries."""
+    """Extract scenario analysis summaries with Engine B quantitative results."""
     
     scenarios = state.get("scenarios") or []
     scenario_results = state.get("scenario_results") or []
@@ -254,15 +254,92 @@ def _extract_scenario_summaries(state: IntelligenceState) -> List[Dict[str, Any]
             if confidence <= 1:
                 confidence = confidence
         
+        # Extract Engine B quantitative results
+        engine_b = result.get("engine_b_results", {}) if result else {}
+        monte_carlo = engine_b.get("monte_carlo", {})
+        sensitivity = engine_b.get("sensitivity", {})
+        forecasting = engine_b.get("forecasting", {})
+        
         summaries.append({
             "name": scenario.get("name", f"Scenario {i+1}"),
             "description": scenario.get("description", ""),
             "probability": scenario.get("probability", 0.5),
             "confidence": confidence,
             "key_finding": result.get("final_synthesis", "")[:300] if result else "",
+            # Engine B quantitative backing
+            "success_probability": monte_carlo.get("success_probability", 0) if monte_carlo else 0,
+            "monte_carlo_mean": monte_carlo.get("mean", 0) if monte_carlo else 0,
+            "monte_carlo_std": monte_carlo.get("std", 0) if monte_carlo else 0,
+            "key_drivers": [d.get("variable", "") for d in sensitivity.get("sensitivities", [])[:3]] if sensitivity else [],
+            "forecast_trend": forecasting.get("trend", "stable") if forecasting else "unknown",
+            "engine_b_status": engine_b.get("status", "not_run"),
         })
     
     return summaries[:6]
+
+
+def _build_cross_scenario_comparison(scenario_summaries: List[Dict[str, Any]]) -> str:
+    """Build a cross-scenario comparison table with Engine B results.
+    
+    This is CRITICAL for McKinsey-grade output - showing how options
+    perform across different future scenarios.
+    """
+    if not scenario_summaries:
+        return "No scenarios available for comparison."
+    
+    lines = []
+    lines.append("┌─────────────────────────────┬────────────┬────────────┬────────────────┬─────────────────┐")
+    lines.append("│ Scenario                    │ Probability│ Success %  │ Monte Carlo    │ Key Drivers     │")
+    lines.append("├─────────────────────────────┼────────────┼────────────┼────────────────┼─────────────────┤")
+    
+    for s in scenario_summaries:
+        name = s.get("name", "Unknown")[:27]
+        prob = f"{s.get('probability', 0.5) * 100:.0f}%"
+        success = f"{s.get('success_probability', 0) * 100:.1f}%"
+        mc_mean = s.get("monte_carlo_mean", 0)
+        mc_str = f"{mc_mean:,.0f}" if mc_mean else "N/A"
+        drivers = ", ".join(s.get("key_drivers", [])[:2]) or "N/A"
+        
+        lines.append(f"│ {name:<27} │ {prob:>10} │ {success:>10} │ {mc_str:>14} │ {drivers[:15]:<15} │")
+    
+    lines.append("└─────────────────────────────┴────────────┴────────────┴────────────────┴─────────────────┘")
+    
+    return "\n".join(lines)
+
+
+def _calculate_robustness_ratio(scenario_summaries: List[Dict[str, Any]], threshold: float = 0.5) -> Dict[str, Any]:
+    """Calculate robustness ratio - how many scenarios pass the success threshold.
+    
+    This is CRITICAL for McKinsey-grade output - showing "X/6 scenarios pass"
+    which demonstrates quantitative rigor.
+    """
+    total = len(scenario_summaries)
+    if total == 0:
+        return {"passed": 0, "total": 0, "ratio_str": "0/0", "robust": False}
+    
+    # Count scenarios where success probability exceeds threshold
+    passed = 0
+    passing_scenarios = []
+    failing_scenarios = []
+    
+    for s in scenario_summaries:
+        success_prob = s.get("success_probability", 0)
+        if success_prob >= threshold:
+            passed += 1
+            passing_scenarios.append(s.get("name", "Unknown"))
+        else:
+            failing_scenarios.append(s.get("name", "Unknown"))
+    
+    return {
+        "passed": passed,
+        "total": total,
+        "ratio_str": f"{passed}/{total}",
+        "ratio_pct": (passed / total) * 100 if total > 0 else 0,
+        "robust": passed >= (total * 0.67),  # Robust if 2/3+ scenarios pass
+        "passing_scenarios": passing_scenarios,
+        "failing_scenarios": failing_scenarios,
+        "threshold_used": threshold,
+    }
 
 
 def _extract_edge_cases(state: IntelligenceState) -> List[Dict[str, Any]]:
@@ -396,13 +473,26 @@ def _build_legendary_prompt(
         insight = exp.get("key_insight", "Strategic analysis provided")[:60]
         expert_table += f"│ {exp['name']:<15} │ {exp.get('turns', 0):>3} turns │ {insight}...\n"
     
-    # Format scenario table
+    # Format scenario table with Engine B quantitative results
     scenario_table = ""
     for i, s in enumerate(scenario_summaries, 1):
         prob = int(s.get("probability", 0.5) * 100)
         conf = int(s.get("confidence", 0.75) * 100)
+        success = int(s.get("success_probability", 0) * 100)
         name = s.get("name", f"Scenario {i}")[:20]
-        scenario_table += f"│ {i} │ {name:<20} │ {prob:>3}% │ {conf:>3}% │\n"
+        scenario_table += f"│ {i} │ {name:<20} │ {prob:>3}% │ {conf:>3}% │ {success:>3}% success │\n"
+    
+    # Build cross-scenario comparison table (McKinsey-grade)
+    cross_scenario_table = _build_cross_scenario_comparison(scenario_summaries)
+    
+    # Calculate robustness ratio (X/6 scenarios pass)
+    robustness = _calculate_robustness_ratio(scenario_summaries)
+    robustness_text = f"""
+ROBUSTNESS ANALYSIS: {robustness['ratio_str']} scenarios pass success threshold
+- Passing scenarios: {', '.join(robustness['passing_scenarios']) or 'None'}
+- Failing scenarios: {', '.join(robustness['failing_scenarios']) or 'None'}  
+- Robustness status: {'✓ ROBUST' if robustness['robust'] else '⚠ NOT ROBUST'} (requires ≥67% pass rate)
+"""
     
     # Format consensus points WITH FULL QUOTES
     consensus_text = ""
@@ -461,6 +551,13 @@ Source: {r['source']}
             source = f.get("source", "QNWIS")
             facts_text += f"│ {i:>2}. {metric[:30]:<30} │ {str(value)[:15]:<15} │ {source[:20]:<20} │\n"
 
+    # Get Engine B metrics for display
+    engine_b_scenarios = stats.get("engine_b_scenarios", 0)
+    avg_success = stats.get("avg_success_probability", 0)
+    sensitivity_drivers = stats.get("sensitivity_drivers", [])
+    robustness_ratio = stats.get("robustness_ratio", "0/0")
+    robustness_pct = stats.get("robustness_pct", 0)
+    
     prompt = f'''You are the Chief Intelligence Officer synthesizing the most comprehensive strategic 
 analysis ever produced by an AI system. You have witnessed:
 
@@ -473,6 +570,11 @@ analysis ever produced by an AI system. You have witnessed:
 ├── Intellectual Rigor: {stats["n_challenges"]} positions challenged, {stats["n_consensus"]} consensus points reached
 ├── Devil's Advocate:   {stats["n_critiques"]} critiques issued, {stats["n_red_flags"]} red flags identified
 ├── Stress Testing:     {stats["n_edge_cases"]} edge cases analyzed + catastrophic failure assessment
+├── QUANTITATIVE COMPUTE (Engine B):
+│   ├── Monte Carlo:    {engine_b_scenarios} scenarios × 10,000 simulations each
+│   ├── Success Rate:   {avg_success:.1f}% average probability of success
+│   ├── Key Drivers:    {', '.join(sensitivity_drivers[:3]) if sensitivity_drivers else 'N/A'}
+│   └── Robustness:     {robustness_ratio} scenarios pass stress tests ({robustness_pct:.0f}%)
 └── Processing:         Completed in {stats["duration"]}
 ═══════════════════════════════════════════════════════════════════════════════
 
@@ -490,6 +592,11 @@ EXPERT PANEL CONTRIBUTIONS:
 
 SCENARIO ANALYSIS RESULTS:
 {scenario_table}
+
+CROSS-SCENARIO COMPARISON (ENGINE B QUANTITATIVE):
+{cross_scenario_table}
+
+{robustness_text}
 
 KEY CONSENSUS POINTS REACHED:
 {consensus_text}
@@ -664,6 +771,11 @@ Gap Analysis: [Specific gaps identified]
 - Robust Findings (true in ALL scenarios): [List 2-3]
 - Contingent Findings (varies by scenario): [List 2-3 with IF-THEN logic]
 
+**ROBUSTNESS RATIO:** [X]/[Y] scenarios pass success threshold
+- Use the robustness data provided above
+- State clearly: "The recommendation passes [X]/[Y] scenario stress tests"
+- List which scenarios pass and which fail
+
 ---
 
 ## V. EXPERT DELIBERATION SYNTHESIS
@@ -764,6 +876,7 @@ Probability: [X]%                    │ Deadline: [Date]
 Early Warning: [Indicator]           │
 ───────────────────────────────────────────────────────────────────────────────
 ANALYTICAL DEPTH: {stats["n_facts"]} facts | {stats["n_scenarios"]} scenarios | {stats["n_turns"]} debate turns | {stats["n_experts"]} experts
+QUANTITATIVE BACKING: {robustness_ratio} scenarios pass | {avg_success:.0f}% avg success probability | Monte Carlo × {engine_b_scenarios}
 ═══════════════════════════════════════════════════════════════════════════════
                 QNWIS Enterprise Intelligence | Qatar Ministry of Labour
 ═══════════════════════════════════════════════════════════════════════════════
@@ -782,6 +895,8 @@ QUALITY CHECK BEFORE OUTPUT:
 □ EVERY red flag has a corresponding response in recommendations
 □ Specific assets, programs, institutions from the facts are named (not generic placeholders)
 □ Report demonstrates extraordinary analytical depth based on actual data provided
+□ ROBUSTNESS RATIO stated: "X/Y scenarios pass" with specific scenario names
+□ Cross-scenario comparison table included showing quantitative results per scenario
 '''
     
     return prompt
@@ -851,6 +966,17 @@ Do NOT proceed with policy analysis for this target. Instead:
     risks = _extract_risks(state)
     edge_cases = _extract_edge_cases(state)  # NEW: Extract edge cases
     facts = state.get("extracted_facts", [])
+    
+    # Extract Engine B aggregate quantitative results
+    engine_b_aggregate = state.get("engine_b_aggregate", {})
+    stats["engine_b_scenarios"] = engine_b_aggregate.get("scenarios_with_compute", 0)
+    stats["avg_success_probability"] = engine_b_aggregate.get("avg_success_probability", 0) * 100
+    stats["sensitivity_drivers"] = engine_b_aggregate.get("sensitivity_drivers", [])
+    
+    # Calculate robustness ratio
+    robustness = _calculate_robustness_ratio(scenario_summaries)
+    stats["robustness_ratio"] = robustness["ratio_str"]
+    stats["robustness_pct"] = robustness["ratio_pct"]
     
     logger.info(
         f"🏛️ Generating Legendary Briefing: "

@@ -7,6 +7,7 @@ from pathlib import Path
 import yaml  # type: ignore[import-untyped]
 
 from .schema import QueryDefinition
+from .models import QuerySpec
 
 PROJECT_ROOT = Path(__file__).resolve().parents[4]
 
@@ -57,6 +58,7 @@ class QueryRegistry:
         """
         self.root = Path(root) if root else DEFAULT_QUERY_ROOT
         self._items: dict[str, QueryDefinition] = {}
+        self._csv_specs: dict[str, QuerySpec] = {}  # For CSV-based queries
         self._version: str = "unloaded"
 
     @property
@@ -86,7 +88,15 @@ class QueryRegistry:
         return _digest_paths(files)
 
     def load_all(self) -> None:
-        """Load every YAML query definition from ALL registry directories."""
+        """Load every YAML query definition from ALL registry directories.
+        
+        Supports two query types:
+        - QueryDefinition: Database queries with sql, dataset, output_schema
+        - QuerySpec: CSV-based queries with source, params, expected_unit
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+        
         # Load from all query directories to get both data/queries and src/qnwis/data/queries
         all_roots = [self.root] + [r for r in DEFAULT_QUERY_ROOTS if r != self.root]
         all_files = []
@@ -103,17 +113,33 @@ class QueryRegistry:
                     qid = data.get("query_id") or data.get("id")
                     if not qid:
                         continue
-                    data["query_id"] = qid  # Normalize to query_id
-                    query_def = QueryDefinition(**data)
-                    if query_def.query_id not in self._items:  # Don't overwrite, first wins
-                        self._items[query_def.query_id] = query_def
-                        all_files.append(file_path)
+                    
+                    # Determine query type based on fields present
+                    if "source" in data and data.get("source") in ("csv", "world_bank", "qatar_api"):
+                        # This is a CSV/API-based QuerySpec
+                        try:
+                            spec = QuerySpec(**data)
+                            if spec.id not in self._csv_specs:
+                                self._csv_specs[spec.id] = spec
+                                all_files.append(file_path)
+                        except Exception as spec_err:
+                            logger.debug(f"QuerySpec validation failed for {file_path.name}: {spec_err}")
+                    else:
+                        # This is a database QueryDefinition
+                        data["query_id"] = qid  # Normalize to query_id
+                        try:
+                            query_def = QueryDefinition(**data)
+                            if query_def.query_id not in self._items:  # Don't overwrite, first wins
+                                self._items[query_def.query_id] = query_def
+                                all_files.append(file_path)
+                        except Exception as def_err:
+                            logger.debug(f"QueryDefinition validation failed for {file_path.name}: {def_err}")
                 except Exception as e:
-                    # Skip invalid YAML files but log the error
-                    import logging
-                    logging.getLogger(__name__).warning(f"Skipping invalid query file {file_path}: {e}")
+                    # Only log at debug level for expected schema mismatches
+                    logger.debug(f"Could not load query file {file_path}: {e}")
 
         self._version = _digest_paths(all_files) if all_files else "empty"
+        logger.info(f"Registry loaded: {len(self._items)} DB queries, {len(self._csv_specs)} CSV queries")
 
     def get(self, query_id: str) -> QueryDefinition:
         """Retrieve a query definition by ID."""
@@ -122,12 +148,22 @@ class QueryRegistry:
         return self._items[query_id]
 
     def all_ids(self) -> list[str]:
-        """Return all registered query identifiers."""
-        return list(self._items.keys())
+        """Return all registered query identifiers (both DB and CSV queries)."""
+        return list(self._items.keys()) + list(self._csv_specs.keys())
 
     def list_query_ids(self) -> list[str]:
         """Return all registered query identifiers (alias for all_ids)."""
         return self.all_ids()
+    
+    def get_csv_spec(self, query_id: str) -> QuerySpec:
+        """Retrieve a CSV query spec by ID."""
+        if query_id not in self._csv_specs:
+            raise KeyError(f"CSV query not found: {query_id}")
+        return self._csv_specs[query_id]
+    
+    def has_query(self, query_id: str) -> bool:
+        """Check if a query ID exists in either registry."""
+        return query_id in self._items or query_id in self._csv_specs
 
 
 def _default_registry_version() -> str:

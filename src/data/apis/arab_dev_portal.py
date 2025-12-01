@@ -165,8 +165,12 @@ class ArabDevPortalClient:
                     "ADP rate limit exceeded",
                     retry_after=float(e.response.headers.get("Retry-After", 60))
                 )
+            elif e.response.status_code == 404:
+                # API endpoint may have changed or dataset doesn't exist
+                logger.warning(f"ADP returned 404 for theme={theme}, country={country} - endpoint may have changed")
+                return []  # Return empty instead of crashing
             logger.error(f"ADP search failed: {e}")
-            raise
+            return []  # Graceful degradation - return empty instead of raising
     
     async def get_dataset_records(
         self,
@@ -222,8 +226,11 @@ class ArabDevPortalClient:
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 429:
                 raise RateLimitExceeded("ADP rate limit exceeded")
+            elif e.response.status_code == 404:
+                logger.warning(f"ADP dataset {dataset_id} not found (404)")
+                return pd.DataFrame()  # Return empty DataFrame
             logger.error(f"ADP fetch failed for {dataset_id}: {e}")
-            raise
+            return pd.DataFrame()  # Graceful degradation
     
     async def get_country_indicators(
         self,

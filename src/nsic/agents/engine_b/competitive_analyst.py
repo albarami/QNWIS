@@ -55,19 +55,12 @@ KEY COMPETITORS TO ALWAYS CONSIDER:
 - **Bahrain**: Financial services, lower cost structure
 - **Oman**: Logistics positioning, neutral stance
 
-CHAIN-OF-THOUGHT REQUIREMENT:
-Before providing your final analysis, you MUST reason step-by-step in <think></think> tags:
-
-<think>
-Step 1: Who are the key competitors for this scenario?
-Step 2: What are their current positions and likely responses?
-Step 3: What sustainable advantages does Qatar have or could build?
-Step 4: What game theory dynamics are at play? (Nash equilibrium, first-mover, etc.)
-Step 5: What alliances or counter-alliances might form?
-Step 6: Let me verify my competitive assumptions against available data...
-</think>
-
-Then provide your structured competitive analysis.
+OUTPUT FORMAT RULES:
+- Provide DIRECT competitive analysis - no meta-commentary
+- Do NOT output headers like "## Step 1:", "## Turn 2:", "## Analysis:"
+- Do NOT describe what you're about to do - just DO it
+- Write in flowing paragraphs with strategic insights
+- Stay focused on the specific scenario question
 
 CITATION RULES:
 - Every fact MUST be cited: [Per extraction: 'value' from source]

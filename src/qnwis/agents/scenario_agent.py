@@ -94,7 +94,7 @@ class ScenarioAgent:
         Fetch or generate baseline forecast from DataClient.
 
         This method attempts to fetch a pre-computed forecast. If not available,
-        it raises an error (no on-the-fly forecasting to maintain determinism).
+        it generates a synthetic baseline to allow scenario analysis to proceed.
 
         Args:
             metric: Metric name
@@ -103,10 +103,10 @@ class ScenarioAgent:
 
         Returns:
             QueryResult with baseline forecast
-
-        Raises:
-            ValueError: If baseline forecast is unavailable
         """
+        from datetime import date, datetime
+        from qnwis.data.deterministic.models import QueryResult, Row, Provenance, Freshness
+        
         # Construct deterministic query ID for baseline forecast
         sector_slug = (sector or "all").lower().replace(" ", "_")
         qid = f"forecast_baseline_{metric}_{sector_slug}_{horizon_months}m"
@@ -120,10 +120,50 @@ class ScenarioAgent:
             )
             return result
         except Exception as exc:
-            raise ValueError(
-                f"Baseline forecast unavailable for {metric}/{sector}. "
-                f"Expected query_id: {qid}. Error: {exc}"
-            ) from exc
+            # Generate synthetic baseline when query doesn't exist
+            logger.warning(
+                "Baseline query '%s' not found, generating synthetic baseline for scenario analysis",
+                qid
+            )
+            
+            # Create synthetic baseline data for the horizon
+            today = date.today()
+            rows = []
+            base_value = 100.0  # Normalized baseline
+            
+            for month_offset in range(horizon_months):
+                month_date = date(
+                    today.year + (today.month + month_offset - 1) // 12,
+                    ((today.month + month_offset - 1) % 12) + 1,
+                    1
+                )
+                rows.append(Row(data={
+                    "date": month_date.isoformat(),
+                    "month": month_offset + 1,
+                    "metric": metric,
+                    "sector": sector or "All",
+                    "value": base_value,
+                    "baseline": base_value,
+                    "adjusted": base_value,  # Will be modified by scenario
+                }))
+            
+            return QueryResult(
+                query_id=qid,
+                rows=rows,
+                unit="index",
+                provenance=Provenance(
+                    source="csv",
+                    dataset_id="synthetic_baseline",
+                    locator="generated",
+                    fields=["date", "month", "metric", "sector", "value", "baseline", "adjusted"],
+                ),
+                freshness=Freshness(
+                    asof_date=today.isoformat(),
+                    updated_at=datetime.now().isoformat(),
+                ),
+                metadata={"synthetic": True, "reason": "baseline_query_not_found"},
+                warnings=[f"Synthetic baseline generated - query '{qid}' not found"],
+            )
 
     def apply(
         self,

@@ -42,6 +42,9 @@ class WorkflowState(TypedDict):
     classification: Optional[Dict[str, Any]]
     prefetch: Optional[Dict[str, Any]]
     rag_context: Optional[Dict[str, Any]]
+    # CRITICAL: extracted_facts must be in TypedDict or LangGraph strips it!
+    extracted_facts: Optional[List[Dict[str, Any]]]  # Facts from prefetch for debates
+    extraction_confidence: Optional[float]  # Confidence in extraction quality
     # McKinsey-Grade Calculation Pipeline
     structured_inputs: Optional[Dict[str, Any]]  # From structure_data_node
     data_quality: Optional[str]  # HIGH/MEDIUM/LOW/FAILED
@@ -1015,7 +1018,45 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
             # Since LLMs resist citation format, we inject programmatically
             logger.info(f"Injecting citations into {len(reports)} agent reports...")
             injector = CitationInjector()
-            prefetch_data = state.get("prefetch", {}).get("data", {})
+            # FIX: Use correct key - prefetch stores as "facts" not "data"
+            extracted_facts = state.get("extracted_facts", [])
+            
+            # Convert extracted facts list to dict format for citation injector
+            # Citation injector expects: {query_id: QueryResult} but we have [{fact}, {fact}, ...]
+            # Build a pseudo-QueryResult structure from extracted facts
+            prefetch_data = {}
+            if extracted_facts:
+                from qnwis.data.deterministic.models import QueryResult, Row, Provenance, Freshness
+                import datetime as dt_module  # Use alias to avoid shadowing module-level datetime
+                
+                # Group facts by source
+                facts_by_source = {}
+                for fact in extracted_facts:
+                    source = fact.get("source", "unknown")
+                    if source not in facts_by_source:
+                        facts_by_source[source] = []
+                    facts_by_source[source].append(fact)
+                
+                # Create pseudo-QueryResult for each source
+                for source, facts in facts_by_source.items():
+                    rows = [Row(data=f) for f in facts]
+                    prefetch_data[source] = QueryResult(
+                        query_id=source,
+                        rows=rows,
+                        unit="unknown",
+                        provenance=Provenance(
+                            source="csv",
+                            dataset_id=source,
+                            locator="prefetch",
+                            fields=list(facts[0].keys()) if facts else [],
+                        ),
+                        freshness=Freshness(
+                            asof_date=dt_module.date.today().isoformat(),
+                            updated_at=dt_module.datetime.now().isoformat(),
+                        ),
+                    )
+                
+                logger.info(f"Built citation map from {len(extracted_facts)} facts across {len(prefetch_data)} sources")
 
             for report in reports:
                 # CRITICAL FIX: Inject into narrative field (this is what UI displays!)
@@ -1719,6 +1760,7 @@ OUTPUT FORMAT (JSON):
                 agents_map=agents_map,
                 agent_reports_map=agent_reports_map,
                 llm_client=self.llm_client,
+                extracted_facts=state.get("extracted_facts", []),  # CRITICAL: Pass facts to debate
                 calculated_results=state.get("calculated_results"),  # NEW: McKinsey pipeline
                 calculation_warning=state.get("calculation_warning")  # NEW: Data confidence warning
             )
@@ -2189,6 +2231,13 @@ Synthesis:"""
             "classification": None,
             "prefetch": None,
             "rag_context": None,
+            "extracted_facts": [],  # CRITICAL: Must be in initial state for LangGraph
+            "extraction_confidence": None,
+            "structured_inputs": None,
+            "data_quality": None,
+            "data_gaps": None,
+            "calculated_results": None,
+            "calculation_warning": None,
             "selected_agents": None,
             "agent_reports": [],
             "debate_results": None,

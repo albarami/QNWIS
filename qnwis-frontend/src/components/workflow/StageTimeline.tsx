@@ -142,7 +142,7 @@ export function StageTimeline({ stageTiming, completedStages, currentStage, insi
               <span className="text-lg">💡</span>
               <h4 className="text-sm font-semibold text-purple-300">EMERGING INSIGHT</h4>
             </div>
-            <p className="text-sm text-slate-300 italic">"{insightPreview}"</p>
+            <p className="text-sm text-slate-300 italic">&ldquo;{insightPreview}&rdquo;</p>
           </div>
         </div>
       )}

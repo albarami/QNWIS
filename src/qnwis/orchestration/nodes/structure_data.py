@@ -362,16 +362,20 @@ def convert_structured_to_model_input(
     # Year 0: Initial investment
     inv = option.get("initial_investment", {})
     if inv.get("amount") and inv.get("amount") != "NOT_AVAILABLE":
-        cash_flows.append(
-            {
-                "year": 0,
-                "investment": float(inv["amount"]),
-                "revenue": 0,
-                "operating_costs": 0,
-                "source": inv.get("source", "Structured from facts"),
-                "confidence": inv.get("confidence", 0.5),
-            }
-        )
+        try:
+            inv_amount = float(inv["amount"])
+            cash_flows.append(
+                {
+                    "year": 0,
+                    "investment": inv_amount,
+                    "revenue": 0,
+                    "operating_costs": 0,
+                    "source": inv.get("source", "Structured from facts"),
+                    "confidence": inv.get("confidence", 0.5),
+                }
+            )
+        except (ValueError, TypeError):
+            pass  # Skip invalid investment amounts
 
     # Years 1-N: Revenue and costs
     revenue_by_year = {r["year"]: r for r in option.get("revenue_projections", [])}
@@ -381,54 +385,73 @@ def convert_structured_to_model_input(
     growth_rate = 0.10  # Default
     gr_info = option.get("growth_rate", {})
     if gr_info.get("value") and gr_info.get("value") != "NOT_AVAILABLE":
-        growth_rate = float(gr_info["value"])
+        try:
+            growth_rate = float(gr_info["value"])
+        except (ValueError, TypeError):
+            growth_rate = 0.10  # Keep default
 
     base_revenue = None
     base_cost = None
 
     if revenue_by_year:
         first_year = min(revenue_by_year.keys())
-        base_revenue = float(revenue_by_year[first_year].get("amount", 0))
+        amt = revenue_by_year[first_year].get("amount", 0)
+        if amt and amt != "NOT_AVAILABLE":
+            try:
+                base_revenue = float(amt)
+            except (ValueError, TypeError):
+                base_revenue = None
 
     if cost_by_year:
         first_year = min(cost_by_year.keys())
-        base_cost = float(cost_by_year[first_year].get("amount", 0))
+        amt = cost_by_year[first_year].get("amount", 0)
+        if amt and amt != "NOT_AVAILABLE":
+            try:
+                base_cost = float(amt)
+            except (ValueError, TypeError):
+                base_cost = None
 
     for year in range(1, time_horizon + 1):
         # Get actual data or project
-        if year in revenue_by_year and revenue_by_year[year].get("amount") not in [
-            None,
-            "NOT_AVAILABLE",
-        ]:
-            revenue = float(revenue_by_year[year]["amount"])
-            rev_source = revenue_by_year[year].get("source", "")
-            rev_confidence = revenue_by_year[year].get("confidence", 0.8)
-        elif base_revenue is not None:
+        revenue = 0
+        rev_source = "NOT_AVAILABLE"
+        rev_confidence = 0.1
+        
+        if year in revenue_by_year:
+            amt = revenue_by_year[year].get("amount")
+            if amt not in [None, "NOT_AVAILABLE", ""]:
+                try:
+                    revenue = float(amt)
+                    rev_source = revenue_by_year[year].get("source", "")
+                    rev_confidence = revenue_by_year[year].get("confidence", 0.8)
+                except (ValueError, TypeError):
+                    pass  # Use defaults
+        
+        if revenue == 0 and base_revenue is not None:
             # Project using growth rate
             revenue = base_revenue * ((1 + growth_rate) ** (year - 1))
             rev_source = f"Projected at {growth_rate*100:.0f}% growth"
             rev_confidence = max(0.3, 0.8 - (year * 0.05))
-        else:
-            revenue = 0
-            rev_source = "NOT_AVAILABLE"
-            rev_confidence = 0.1
 
-        if year in cost_by_year and cost_by_year[year].get("amount") not in [
-            None,
-            "NOT_AVAILABLE",
-        ]:
-            cost = float(cost_by_year[year]["amount"])
-            cost_source = cost_by_year[year].get("source", "")
-            cost_confidence = cost_by_year[year].get("confidence", 0.8)
-        elif base_cost is not None:
+        cost = 0
+        cost_source = "NOT_AVAILABLE"
+        cost_confidence = 0.1
+        
+        if year in cost_by_year:
+            amt = cost_by_year[year].get("amount")
+            if amt not in [None, "NOT_AVAILABLE", ""]:
+                try:
+                    cost = float(amt)
+                    cost_source = cost_by_year[year].get("source", "")
+                    cost_confidence = cost_by_year[year].get("confidence", 0.8)
+                except (ValueError, TypeError):
+                    pass  # Use defaults
+        
+        if cost == 0 and base_cost is not None:
             # Project costs (assume 5% annual increase)
             cost = base_cost * ((1 + 0.05) ** (year - 1))
             cost_source = "Projected at 5% annual increase"
             cost_confidence = max(0.3, 0.8 - (year * 0.05))
-        else:
-            cost = 0
-            cost_source = "NOT_AVAILABLE"
-            cost_confidence = 0.1
 
         avg_confidence = (rev_confidence + cost_confidence) / 2
 

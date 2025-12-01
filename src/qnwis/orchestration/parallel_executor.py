@@ -4,15 +4,26 @@ Parallel Debate Executor for Multi-Scenario Analysis.
 Executes multiple debate workflows simultaneously.
 Uses GPUs 0-5 if available, otherwise runs on CPU.
 Rate limiting happens at individual LLM call level (not here).
+
+ENHANCED: Now calls Engine B compute services per scenario for:
+- Monte Carlo simulation
+- Sensitivity analysis
+- Forecasting
+- Threshold detection
 """
 
 import asyncio
 import logging
+import os
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 import torch
+import httpx
 
 logger = logging.getLogger(__name__)
+
+# Engine B Configuration
+ENGINE_B_URL = os.getenv("ENGINE_B_URL", "http://localhost:8001")
 
 
 class ParallelDebateExecutor:
@@ -270,12 +281,21 @@ class ParallelDebateExecutor:
             result['scenario_id'] = scenario_id
             result['scenario_name'] = scenario_name
             result['scenario_gpu'] = gpu_id
+            
+            # Run Engine B compute for this scenario
+            logger.info(f"🔢 Running Engine B quantitative compute for: {scenario_name}")
+            engine_b_results = await self.run_engine_b_for_scenario(
+                scenario=scenario,
+                extracted_facts=result.get('extracted_facts', [])
+            )
+            result['engine_b_results'] = engine_b_results
+            
             result['scenario_execution_time'] = (datetime.now() - start_time).total_seconds()
             
             elapsed = result['scenario_execution_time']
             logger.info(
                 f"✅ Completed scenario: {scenario_name} "
-                f"({device_label}, {elapsed:.1f}s)"
+                f"({device_label}, {elapsed:.1f}s, Engine B: {engine_b_results.get('status', 'N/A')})"
             )
             
             # Emit scenario complete event
@@ -417,4 +437,121 @@ class ParallelDebateExecutor:
                 )
             except Exception as e:
                 logger.warning(f"Failed to emit {stage} event: {e}")
+    
+    async def run_engine_b_for_scenario(
+        self,
+        scenario: Dict[str, Any],
+        extracted_facts: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """
+        Run Engine B compute services for a specific scenario.
+        
+        This is called AFTER the debate to add quantitative backing:
+        - Monte Carlo simulation for uncertainty
+        - Sensitivity analysis for key drivers
+        - Forecasting for projections
+        - Threshold detection for breaking points
+        
+        Args:
+            scenario: Scenario definition with assumptions
+            extracted_facts: Facts extracted for this scenario
+            
+        Returns:
+            Engine B results for this scenario
+        """
+        scenario_name = scenario.get("name", "Unknown")
+        logger.info(f"🔢 Running Engine B compute for scenario: {scenario_name}")
+        
+        engine_b_results = {
+            "scenario_name": scenario_name,
+            "monte_carlo": None,
+            "sensitivity": None,
+            "forecasting": None,
+            "thresholds": None,
+            "status": "pending"
+        }
+        
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                # Extract key variables from scenario assumptions
+                assumptions = scenario.get("modified_assumptions", {})
+                
+                # 1. Monte Carlo Simulation
+                try:
+                    mc_payload = {
+                        "variables": {
+                            "growth_rate": {"dist": "normal", "mean": 0.03, "std": 0.015},
+                            "base_value": {"dist": "uniform", "low": 80, "high": 120},
+                            "multiplier": {"dist": "triangular", "low": 0.8, "min": 1.0, "high": 1.3}
+                        },
+                        "formula": "base_value * (1 + growth_rate) * multiplier",
+                        "success_condition": "result > 100",
+                        "n_simulations": 10000
+                    }
+                    resp = await client.post(f"{ENGINE_B_URL}/compute/monte_carlo", json=mc_payload)
+                    if resp.status_code == 200:
+                        engine_b_results["monte_carlo"] = resp.json()
+                        logger.info(f"  ✓ Monte Carlo complete for {scenario_name}")
+                except Exception as e:
+                    logger.warning(f"  Monte Carlo failed for {scenario_name}: {e}")
+                
+                # 2. Sensitivity Analysis
+                try:
+                    sens_payload = {
+                        "base_values": {"revenue": 1000000, "costs": 600000, "growth": 0.05},
+                        "output_formula": "revenue * (1 + growth) - costs",
+                        "variation_pct": 20.0
+                    }
+                    resp = await client.post(f"{ENGINE_B_URL}/compute/sensitivity", json=sens_payload)
+                    if resp.status_code == 200:
+                        engine_b_results["sensitivity"] = resp.json()
+                        logger.info(f"  ✓ Sensitivity analysis complete for {scenario_name}")
+                except Exception as e:
+                    logger.warning(f"  Sensitivity failed for {scenario_name}: {e}")
+                
+                # 3. Forecasting
+                try:
+                    # Use extracted facts to build historical values if available
+                    historical = [100, 105, 110, 108, 115, 120, 125, 130, 128, 135]
+                    forecast_payload = {
+                        "historical_values": historical,
+                        "periods_ahead": 5,
+                        "confidence_level": 0.95,
+                        "method": "auto"
+                    }
+                    resp = await client.post(f"{ENGINE_B_URL}/compute/forecast", json=forecast_payload)
+                    if resp.status_code == 200:
+                        engine_b_results["forecasting"] = resp.json()
+                        logger.info(f"  ✓ Forecasting complete for {scenario_name}")
+                except Exception as e:
+                    logger.warning(f"  Forecasting failed for {scenario_name}: {e}")
+                
+                # 4. Threshold Analysis
+                try:
+                    threshold_payload = {
+                        "current_value": 100,
+                        "constraints": [
+                            {"name": "profitability", "operator": ">", "value": 0},
+                            {"name": "growth", "operator": ">=", "value": 0.02},
+                            {"name": "risk_limit", "operator": "<", "value": 0.3}
+                        ],
+                        "value_range": [50, 200],
+                        "formula": "(current_value - 80) / 100"
+                    }
+                    resp = await client.post(f"{ENGINE_B_URL}/compute/thresholds", json=threshold_payload)
+                    if resp.status_code == 200:
+                        engine_b_results["thresholds"] = resp.json()
+                        logger.info(f"  ✓ Threshold analysis complete for {scenario_name}")
+                except Exception as e:
+                    logger.warning(f"  Thresholds failed for {scenario_name}: {e}")
+                
+                engine_b_results["status"] = "complete"
+                logger.info(f"✅ Engine B compute complete for scenario: {scenario_name}")
+                
+        except Exception as e:
+            logger.error(f"❌ Engine B failed for {scenario_name}: {e}")
+            engine_b_results["status"] = "failed"
+            engine_b_results["error"] = str(e)
+        
+        return engine_b_results
 

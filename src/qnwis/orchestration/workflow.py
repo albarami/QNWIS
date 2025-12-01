@@ -341,9 +341,64 @@ async def aggregate_scenarios_for_debate_node(state: IntelligenceState) -> Intel
     state['data_quality_score'] = avg_confidence
     state['confidence_score'] = avg_confidence  # Also set main confidence score
     
+    # Aggregate Engine B quantitative results from all scenarios
+    engine_b_aggregate = {
+        'scenarios_with_compute': 0,
+        'total_monte_carlo_runs': 0,
+        'avg_success_probability': 0,
+        'sensitivity_drivers': [],
+        'forecast_trends': [],
+        'threshold_warnings': [],
+    }
+    
+    success_probs = []
+    for result in scenario_results:
+        engine_b = result.get('engine_b_results', {})
+        if engine_b and engine_b.get('status') == 'complete':
+            engine_b_aggregate['scenarios_with_compute'] += 1
+            
+            # Monte Carlo results
+            mc = engine_b.get('monte_carlo', {})
+            if mc:
+                engine_b_aggregate['total_monte_carlo_runs'] += 1
+                if mc.get('success_probability'):
+                    success_probs.append(mc.get('success_probability', 0))
+            
+            # Sensitivity results
+            sens = engine_b.get('sensitivity', {})
+            if sens and sens.get('sensitivities'):
+                for s in sens.get('sensitivities', [])[:2]:
+                    driver = s.get('variable', '')
+                    if driver and driver not in engine_b_aggregate['sensitivity_drivers']:
+                        engine_b_aggregate['sensitivity_drivers'].append(driver)
+            
+            # Forecasting results
+            fc = engine_b.get('forecasting', {})
+            if fc:
+                trend = fc.get('trend', 'unknown')
+                engine_b_aggregate['forecast_trends'].append({
+                    'scenario': result.get('scenario_name', 'Unknown'),
+                    'trend': trend
+                })
+            
+            # Threshold results
+            th = engine_b.get('thresholds', {})
+            if th and th.get('warnings'):
+                for w in th.get('warnings', []):
+                    engine_b_aggregate['threshold_warnings'].append({
+                        'scenario': result.get('scenario_name', 'Unknown'),
+                        'warning': w
+                    })
+    
+    if success_probs:
+        engine_b_aggregate['avg_success_probability'] = sum(success_probs) / len(success_probs)
+    
+    state['engine_b_aggregate'] = engine_b_aggregate
+    
     state['reasoning_chain'].append(
         f"✅ Aggregated {len(scenario_results)} scenarios: {len(agent_reports)} agent reports, "
-        f"{len(all_facts)} facts, {total_debate_turns} debate turns"
+        f"{len(all_facts)} facts, {total_debate_turns} debate turns, "
+        f"{engine_b_aggregate['scenarios_with_compute']} Engine B computes"
     )
     
     logger.info(
