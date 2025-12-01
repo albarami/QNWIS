@@ -20,6 +20,7 @@ import socket
 import os
 import logging
 from pathlib import Path
+from datetime import datetime
 
 # Setup logging
 logging.basicConfig(
@@ -247,9 +248,13 @@ def check_embeddings() -> bool:
         try:
             model = SentenceTransformer(model_name)
             logger.info(f"  ✅ Model '{model_name}' loaded")
+            
+            # Test embedding generation
+            test_embedding = model.encode("test query", convert_to_numpy=True)
+            logger.info(f"  ✅ Embedding dimension: {test_embedding.shape[0]}")
             return True
         except Exception as e:
-            logger.warning(f"  ⚠️  Model will be downloaded on first use")
+            logger.warning(f"  ⚠️  Model will be downloaded on first use: {e}")
             return True
             
     except ImportError:
@@ -262,12 +267,53 @@ def check_rag_system() -> bool:
     """Check RAG system."""
     logger.info("Checking RAG System...")
     try:
-        from src.qnwis.rag.retriever import DocumentStore
+        # Add project root to path for imports
+        import sys
+        if str(PROJECT_ROOT) not in sys.path:
+            sys.path.insert(0, str(PROJECT_ROOT))
+        
+        # Import RAG components
+        from qnwis.rag.retriever import DocumentStore, Document, SimpleEmbedder
+        from qnwis.rag.embeddings import SentenceEmbedder
+        
         logger.info("  ✅ RAG DocumentStore available")
+        logger.info("  ✅ RAG Document class available")
+        logger.info("  ✅ RAG SentenceEmbedder available")
+        
+        # Check for RAG store files
+        rag_store_json = PROJECT_ROOT / "data" / "rag_store.json"
+        rag_store_embeddings = PROJECT_ROOT / "data" / "rag_store_embeddings.npy"
+        
+        if rag_store_json.exists():
+            size_kb = rag_store_json.stat().st_size / 1024
+            logger.info(f"  ✅ RAG document store found ({size_kb:.1f}KB)")
+        else:
+            # Create empty RAG store
+            logger.info("  📝 Creating RAG document store...")
+            import json
+            rag_store_json.parent.mkdir(parents=True, exist_ok=True)
+            with open(rag_store_json, 'w') as f:
+                json.dump({"documents": [], "metadata": {"created": str(datetime.now())}}, f)
+            logger.info("  ✅ RAG document store created")
+        
+        if rag_store_embeddings.exists():
+            import numpy as np
+            embeddings = np.load(rag_store_embeddings)
+            logger.info(f"  ✅ RAG embeddings found ({embeddings.shape[0]} vectors, dim={embeddings.shape[1] if len(embeddings.shape) > 1 else 'N/A'})")
+        else:
+            # Create empty embeddings file
+            logger.info("  📝 Creating RAG embeddings file...")
+            import numpy as np
+            np.save(rag_store_embeddings, np.array([]))
+            logger.info("  ✅ RAG embeddings file created")
+        
         return True
     except ImportError as e:
-        logger.warning(f"  ⚠️  RAG system: {e}")
-        return True  # Not critical for startup
+        logger.error(f"  ❌ RAG system import failed: {e}")
+        return False
+    except Exception as e:
+        logger.error(f"  ❌ RAG system error: {e}")
+        return False
 
 
 def run_startup_checks() -> dict:
