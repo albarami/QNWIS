@@ -195,19 +195,26 @@ def verify_engine_b_gpus() -> bool:
         health = response.json()
         
         gpu_services = 0
+        total_services = 0
         for name, status in health.get("services", {}).items():
-            gpu_available = status.get("gpu_available", False)
-            if gpu_available:
+            total_services += 1
+            # Check both gpu_available and gpu_used fields
+            gpu_enabled = status.get("gpu_available", False) or status.get("gpu_used", False)
+            if gpu_enabled:
                 gpu_services += 1
                 logger.info(f"  ✅ {name}: GPU enabled")
             else:
                 logger.warning(f"  ⚠️  {name}: CPU only")
         
-        if gpu_services >= 5:
-            logger.info(f"  ✅ Engine B using GPUs ({gpu_services}/7 services)")
+        # All services should use GPU
+        if gpu_services == total_services:
+            logger.info(f"  ✅ Engine B using GPUs ({gpu_services}/{total_services} services)")
+            return True
+        elif gpu_services >= 5:
+            logger.info(f"  ✅ Engine B mostly using GPUs ({gpu_services}/{total_services} services)")
             return True
         else:
-            logger.warning(f"  ⚠️  Only {gpu_services}/7 services using GPU")
+            logger.warning(f"  ⚠️  Only {gpu_services}/{total_services} services using GPU")
             return False
             
     except Exception as e:

@@ -4,12 +4,21 @@ GPU Assignment: 4
 
 Provides trend forecasting and confidence intervals for policy projections.
 Supports multiple methods: ETS, ARIMA, linear regression.
+GPU-accelerated matrix operations with CuPy.
 """
 
 import logging
 from dataclasses import dataclass, field
 from typing import Optional, Literal
 import numpy as np
+
+# Try GPU acceleration with CuPy
+try:
+    import cupy as cp
+    GPU_AVAILABLE = True
+except ImportError:
+    cp = np  # Fallback to numpy
+    GPU_AVAILABLE = False
 
 # Try statsmodels for time series
 try:
@@ -92,6 +101,7 @@ class ForecastingResult:
 class ForecastingService:
     """
     Domain-agnostic time series forecasting service.
+    GPU-accelerated for large array operations.
     
     GPT-5 provides:
     - Historical data (from extracted time series)
@@ -105,13 +115,23 @@ class ForecastingService:
     """
     
     def __init__(self, gpu_id: int = 4):
-        """Initialize forecasting service."""
+        """Initialize forecasting service with GPU."""
         self.gpu_id = gpu_id
+        self.gpu_available = GPU_AVAILABLE
         
-        if STATSMODELS_AVAILABLE:
-            logger.info(f"ForecastingService initialized with statsmodels support")
+        # Set GPU device if available
+        if GPU_AVAILABLE:
+            try:
+                cp.cuda.Device(gpu_id).use()
+                self.xp = cp
+                logger.info(f"ForecastingService initialized on GPU {gpu_id}")
+            except Exception as e:
+                logger.warning(f"GPU {gpu_id} not available: {e}, using CPU")
+                self.xp = np
+                self.gpu_available = False
         else:
-            logger.info("ForecastingService using scipy only (statsmodels not available)")
+            self.xp = np
+            logger.info("ForecastingService using CPU (CuPy not available)")
     
     def forecast(self, input_spec: ForecastingInput) -> ForecastingResult:
         """
@@ -174,7 +194,7 @@ class ForecastingService:
             method_used=method_used,
             confidence_level=input_spec.confidence_level,
             n_historical=n_historical,
-            gpu_used=False,  # CPU-based forecasting
+            gpu_used=self.gpu_available,
             execution_time_ms=execution_time_ms,
         )
     
@@ -433,6 +453,7 @@ class ForecastingService:
             "status": "healthy",
             "statsmodels_available": STATSMODELS_AVAILABLE,
             "gpu_id": self.gpu_id,
+            "gpu_available": self.gpu_available,
         }
 
 

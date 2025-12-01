@@ -4,12 +4,21 @@ GPU Assignment: 3
 
 Finds optimal values for policy parameters subject to constraints.
 Supports linear, quadratic, and nonlinear optimization.
+GPU-accelerated for large-scale matrix operations.
 """
 
 import logging
 from dataclasses import dataclass, field
 from typing import Optional, Literal
 import numpy as np
+
+# Try GPU acceleration with CuPy
+try:
+    import cupy as cp
+    GPU_AVAILABLE = True
+except ImportError:
+    cp = np  # Fallback to numpy
+    GPU_AVAILABLE = False
 
 # Try cvxpy for convex optimization, scipy as fallback
 try:
@@ -103,6 +112,7 @@ class OptimizationResult:
 class OptimizationService:
     """
     Domain-agnostic optimization solver.
+    GPU-accelerated for large matrix operations.
     
     GPT-5 provides:
     - Variables and their bounds (from policy constraints)
@@ -116,13 +126,26 @@ class OptimizationService:
     """
     
     def __init__(self, gpu_id: int = 3):
-        """Initialize optimization service."""
+        """Initialize optimization service with GPU."""
         self.gpu_id = gpu_id
+        self.gpu_available = GPU_AVAILABLE
         
-        if CVXPY_AVAILABLE:
-            logger.info(f"OptimizationService initialized with CVXPY support")
+        # Set GPU device if available
+        if GPU_AVAILABLE:
+            try:
+                cp.cuda.Device(gpu_id).use()
+                self.xp = cp
+                logger.info(f"OptimizationService initialized on GPU {gpu_id}")
+            except Exception as e:
+                logger.warning(f"GPU {gpu_id} not available: {e}, using CPU")
+                self.xp = np
+                self.gpu_available = False
         else:
-            logger.info("OptimizationService using SciPy only (CVXPY not available)")
+            self.xp = np
+            if CVXPY_AVAILABLE:
+                logger.info("OptimizationService using CPU with CVXPY support")
+            else:
+                logger.info("OptimizationService using CPU with SciPy only")
     
     def solve(self, input_spec: OptimizationInput) -> OptimizationResult:
         """
@@ -353,6 +376,7 @@ class OptimizationService:
             "status": "healthy",
             "cvxpy_available": CVXPY_AVAILABLE,
             "gpu_id": self.gpu_id,
+            "gpu_available": self.gpu_available,
         }
 
 

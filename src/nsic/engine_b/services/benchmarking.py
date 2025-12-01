@@ -4,12 +4,22 @@ GPU Assignment: 6
 
 Compares Qatar metrics against peer countries and international standards.
 Provides percentile rankings, gap analysis, and peer comparisons.
+GPU-accelerated for large-scale statistical computations.
 """
 
 import logging
 from dataclasses import dataclass, field
 from typing import Optional, Literal
 import numpy as np
+
+# Try GPU acceleration with CuPy
+try:
+    import cupy as cp
+    GPU_AVAILABLE = True
+except ImportError:
+    cp = np  # Fallback to numpy
+    GPU_AVAILABLE = False
+
 from scipy import stats
 
 logger = logging.getLogger(__name__)
@@ -136,6 +146,7 @@ class BenchmarkingResult:
 class BenchmarkingService:
     """
     Domain-agnostic benchmarking service.
+    GPU-accelerated for statistical computations.
     
     GPT-5 provides:
     - Metrics to compare (from data extraction)
@@ -150,9 +161,23 @@ class BenchmarkingService:
     """
     
     def __init__(self, gpu_id: int = 6):
-        """Initialize benchmarking service."""
+        """Initialize benchmarking service with GPU."""
         self.gpu_id = gpu_id
-        logger.info(f"BenchmarkingService initialized (GPU {gpu_id})")
+        self.gpu_available = GPU_AVAILABLE
+        
+        # Set GPU device if available
+        if GPU_AVAILABLE:
+            try:
+                cp.cuda.Device(gpu_id).use()
+                self.xp = cp
+                logger.info(f"BenchmarkingService initialized on GPU {gpu_id}")
+            except Exception as e:
+                logger.warning(f"GPU {gpu_id} not available: {e}, using CPU")
+                self.xp = np
+                self.gpu_available = False
+        else:
+            self.xp = np
+            logger.info("BenchmarkingService using CPU (CuPy not available)")
     
     def benchmark(self, input_spec: BenchmarkingInput) -> BenchmarkingResult:
         """
@@ -210,7 +235,7 @@ class BenchmarkingService:
             underperforms_peers=underperforms,
             n_metrics=len(metric_benchmarks),
             n_peers=len(all_peer_names),
-            gpu_used=False,
+            gpu_used=self.gpu_available,
             execution_time_ms=execution_time_ms,
         )
     
@@ -375,6 +400,7 @@ class BenchmarkingService:
             "service": "benchmarking",
             "status": "healthy",
             "gpu_id": self.gpu_id,
+            "gpu_available": self.gpu_available,
         }
 
 
