@@ -1,9 +1,15 @@
-"""NSIC Scenarios - Dynamic scenario generation and validation.
+"""NSIC Scenarios - External Factor Scenario Generation.
 
 Key Components:
-- NSICScenarioGenerator: Generates 30 scenarios (1+5+24) from ANY user question
+- NSICScenarioGenerator: Generates 6 EXTERNAL FACTOR scenarios from ANY user question
 - ScenarioLoader: Loads pre-defined YAML templates (for reference/backward compat)
 - ScenarioValidator: Validates scenario structure and content
+
+NEW DESIGN (v2.0):
+- Scenarios are EXTERNAL FACTORS, not policy variations
+- 1 Base Case + 5 domain-relevant external factors
+- Engine B runs FOR EACH scenario
+- Makes recommendations ROBUST across multiple futures
 """
 
 from .generator import (
@@ -11,8 +17,7 @@ from .generator import (
     ScenarioSet,
     GeneratedScenario,
     create_scenario_generator,
-    DEEP_SCENARIO_TYPES,
-    BROAD_CATEGORIES,
+    SCENARIO_CATEGORY_GUIDANCE,
 )
 
 from .loader import (
@@ -32,13 +37,12 @@ from .validator import (
 )
 
 __all__ = [
-    # Generator (NEW - primary interface)
+    # Generator (External Factors Edition)
     "NSICScenarioGenerator",
     "ScenarioSet",
     "GeneratedScenario",
     "create_scenario_generator",
-    "DEEP_SCENARIO_TYPES",
-    "BROAD_CATEGORIES",
+    "SCENARIO_CATEGORY_GUIDANCE",
     # Loader (for templates/backward compatibility)
     "ScenarioLoader",
     "ScenarioDefinition",

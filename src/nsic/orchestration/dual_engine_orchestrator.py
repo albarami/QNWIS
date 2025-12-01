@@ -609,78 +609,55 @@ Provide comprehensive analysis of this scenario's impacts on Qatar's economy and
         )
 
         # =====================================================================
-        # NEW FLOW: Engine B Compute FIRST, then Engine A debates WITH numbers
+        # CORRECT FLOW: Engine B Compute FOR EACH SCENARIO, then Engine A debates
         # =====================================================================
         
-        # Step 2: Engine B v5.0 Compute FIRST (before debate)
-        # Agents will debate WITH these numbers, not guess and validate later
-        logger.info("Step 2: Running Engine B v5.0 compute FIRST (before debate)...")
-        engine_b_compute = await self._run_engine_b_compute_upfront(
-            user_question,
+        # Step 2: Run Engine B v5.0 Compute FOR EACH of the 6 scenarios
+        # Each scenario has different assumptions (oil crash, pandemic, etc.)
+        logger.info(f"Step 2: Running Engine B v5.0 compute for {len(scenario_set.scenarios)} scenarios...")
+        
+        engine_b_compute = await self._run_engine_b_per_scenario(
+            scenario_set,
             on_turn_complete,
         )
         
         logger.info(
-            f"Engine B Compute complete: "
-            f"success_rate={engine_b_compute.get('monte_carlo', {}).get('success_rate', 'N/A')}, "
-            f"trend={engine_b_compute.get('forecasting', {}).get('trend', 'N/A')}"
+            f"Engine B Compute complete for {len(engine_b_compute)} scenarios"
         )
         
-        # Step 3: Format Engine B results for agent prompts
-        quantitative_context = self._format_quantitative_context(engine_b_compute)
+        # Step 3: Format cross-scenario comparison table for agents
+        quantitative_context = self._format_cross_scenario_table(engine_b_compute, scenario_set)
         
-        # Step 4: Run Engine A debate WITH Engine B numbers in prompts
-        logger.info("Step 4: Running Engine A debate WITH quantitative context...")
+        # Step 4: Run Engine A debate WITH cross-scenario results
+        # Agents see: "Policy works in 4/6 scenarios but fails under oil crash"
+        logger.info("Step 4: Running Engine A debate WITH cross-scenario analysis...")
         engine_a_results = await self._process_engine_a_batch(
             scenario_set.engine_a_scenarios,
             max_concurrent=max_concurrent,
             on_turn_complete=on_turn_complete,
-            quantitative_context=quantitative_context,  # NEW: Pass Engine B results
+            quantitative_context=quantitative_context,  # Cross-scenario table
         )
-        
-        # Step 5: Run Engine B (DeepSeek LLM) broad scenarios in parallel
-        # This is the OLD Engine B - broad scenario analysis
-        logger.info("Step 5: Running Engine B (DeepSeek) broad scenarios...")
-        engine_b_scenario_results = await self.engine_b.run_all_scenarios(
-            scenarios=scenario_set.engine_b_scenarios,
-            on_turn_complete=on_turn_complete,
-        )
-        
-        # Convert ScenarioResults to DualEngineResults
-        engine_b_results = []
-        for sr in engine_b_scenario_results:
-            engine_b_results.append(DualEngineResult(
-                scenario_id=sr.scenario_id,
-                scenario_name=sr.scenario_name,
-                domain=sr.domain,
-                engine_a_result=None,
-                engine_b_result=sr,
-                final_content=sr.final_synthesis,
-                confidence=0.75,
-                total_time_ms=sr.total_time_ms,
-            ))
-            self._stats["engine_b_runs"] += 1
 
-        # Step 6: Synthesize (qualitative + quantitative already integrated)
+        # Step 5: Synthesize (qualitative + quantitative already integrated)
         synthesis = self._synthesize_results(
             user_question,
             scenario_set,
             engine_a_results,
-            engine_b_results,
+            [],  # No old Engine B LLM results
         )
         
-        # Step 7: Enhance synthesis with Engine B compute results
-        enhanced_synthesis = self._create_enhanced_synthesis(
+        # Step 6: Enhance synthesis with cross-scenario robustness analysis
+        enhanced_synthesis = self._create_robust_synthesis(
             synthesis,
             engine_b_compute,
+            scenario_set,
         )
 
         result = {
             "question": user_question,
             "scenario_set": scenario_set.to_dict(),
             "engine_a_results": [r.to_dict() for r in engine_a_results],
-            "engine_b_results": [r.to_dict() for r in engine_b_results],
-            "engine_b_compute": engine_b_compute,
+            "engine_b_compute": engine_b_compute,  # Results per scenario
             "synthesis": enhanced_synthesis,
             "stats": self.get_stats(),
             "cache_hit": False,
@@ -1358,7 +1335,291 @@ Your arguments MUST account for the quantitative facts above."""
             return "unlikely"
     
     # =========================================================================
-    # NEW FLOW: Engine B Compute FIRST (before debate)
+    # ENGINE B COMPUTE PER SCENARIO (Correct Flow)
+    # =========================================================================
+    
+    async def _run_engine_b_per_scenario(
+        self,
+        scenario_set,
+        on_progress: Optional[Callable] = None,
+    ) -> Dict[str, Dict[str, Any]]:
+        """
+        Run Engine B v5.0 compute FOR EACH of the 6 scenarios.
+        
+        Each scenario has different assumptions (e.g., oil crash reduces gdp_growth_rate to 0.5).
+        This lets agents see how the policy performs across multiple possible futures.
+        """
+        results = {}
+        
+        for scenario in scenario_set.scenarios:
+            scenario_id = scenario.id
+            assumptions = scenario.metadata.get("assumptions", {})
+            
+            logger.info(f"Computing Engine B for scenario: {scenario.name}")
+            
+            if on_progress:
+                on_progress("engine_b_compute", scenario_id, 0, "start", "", -1)
+            
+            try:
+                # Apply scenario assumptions to base parameters
+                base_effectiveness = assumptions.get("policy_effectiveness", 1.0)
+                base_growth = assumptions.get("gdp_growth_rate", 1.0)
+                base_job_rate = assumptions.get("job_creation_rate", 1.0)
+                base_workforce = assumptions.get("workforce_availability", 1.0)
+                external_risk = assumptions.get("external_risk", 1.0)
+                
+                # Initialize compute services
+                monte_carlo = MonteCarloService(gpu_ids=[0, 1])
+                sensitivity = SensitivityService(gpu_id=2)
+                forecasting = ForecastingService(gpu_id=4)
+                
+                # Monte Carlo with scenario-adjusted parameters
+                mc_result = monte_carlo.simulate(MonteCarloInput(
+                    variables={
+                        "policy_effectiveness": {
+                            "mean": 0.70 * base_effectiveness,
+                            "std": 0.15,
+                            "distribution": "normal"
+                        },
+                        "implementation_quality": {
+                            "mean": 0.80,
+                            "std": 0.10,
+                            "distribution": "normal"
+                        },
+                        "external_factors": {
+                            "mean": 0.85 * external_risk,
+                            "std": 0.12,
+                            "distribution": "normal"
+                        },
+                        "resource_availability": {
+                            "mean": 0.75 * base_growth,
+                            "std": 0.10,
+                            "distribution": "normal"
+                        },
+                    },
+                    formula="policy_effectiveness * implementation_quality * external_factors * resource_availability",
+                    success_condition="result >= 0.35",
+                    n_simulations=10000,
+                    seed=42,
+                ))
+                
+                # Sensitivity analysis
+                sens_result = sensitivity.analyze(SensitivityInput(
+                    base_values={
+                        "policy_effectiveness": 0.70 * base_effectiveness,
+                        "implementation_quality": 0.80,
+                        "external_factors": 0.85 * external_risk,
+                        "resource_availability": 0.75 * base_growth,
+                    },
+                    formula="policy_effectiveness * implementation_quality * external_factors * resource_availability",
+                ))
+                
+                # Forecasting with scenario-adjusted trend
+                historical = [0.55, 0.58, 0.62, 0.65, 0.68]
+                adjusted_historical = [v * base_growth for v in historical]
+                
+                fc_result = forecasting.forecast(ForecastingInput(
+                    historical_values=adjusted_historical,
+                    forecast_horizon=5,
+                ))
+                
+                # Store results for this scenario
+                results[scenario_id] = {
+                    "scenario_name": scenario.name,
+                    "scenario_category": scenario.category,
+                    "assumptions": assumptions,
+                    "monte_carlo": {
+                        "success_rate": mc_result.success_rate,
+                        "mean_result": mc_result.mean_result,
+                        "var_95": mc_result.var_95,
+                        "p5": mc_result.percentiles.get("p5", 0),
+                        "p95": mc_result.percentiles.get("p95", 0),
+                    },
+                    "sensitivity": {
+                        "top_drivers": sens_result.top_drivers,
+                    },
+                    "forecasting": {
+                        "trend": fc_result.trend,
+                        "final_forecast": fc_result.forecasts[-1].point_forecast if fc_result.forecasts else 0,
+                    },
+                    "risk_level": self._calculate_risk_level(mc_result.success_rate, external_risk),
+                }
+                
+                logger.debug(
+                    f"Scenario {scenario.name}: success_rate={mc_result.success_rate:.1%}"
+                )
+                
+            except Exception as e:
+                logger.error(f"Engine B failed for scenario {scenario_id}: {e}")
+                results[scenario_id] = {
+                    "scenario_name": scenario.name,
+                    "error": str(e),
+                }
+        
+        return results
+    
+    def _calculate_risk_level(self, success_rate: float, external_risk: float) -> str:
+        """Calculate risk level based on success rate and external factors."""
+        if success_rate >= 0.70 and external_risk >= 0.8:
+            return "low"
+        elif success_rate >= 0.50:
+            return "medium"
+        elif success_rate >= 0.30:
+            return "high"
+        else:
+            return "critical"
+    
+    def _format_cross_scenario_table(
+        self,
+        engine_b_compute: Dict[str, Dict[str, Any]],
+        scenario_set,
+    ) -> str:
+        """
+        Format cross-scenario comparison table for Engine A agents.
+        
+        Agents see how the policy performs across all 6 possible futures.
+        """
+        lines = [
+            "═" * 80,
+            "CROSS-SCENARIO ANALYSIS (Engine B Compute Results)",
+            "How does this policy perform across different possible futures?",
+            "═" * 80,
+            "",
+            "| Scenario | Success Rate | Risk Level | Top Driver | Trend |",
+            "|----------|--------------|------------|------------|-------|",
+        ]
+        
+        success_count = 0
+        total_count = 0
+        
+        for scenario in scenario_set.scenarios:
+            scenario_id = scenario.id
+            data = engine_b_compute.get(scenario_id, {})
+            
+            if "error" in data:
+                lines.append(f"| {scenario.name} | ERROR | - | - | - |")
+                continue
+            
+            mc = data.get("monte_carlo", {})
+            sens = data.get("sensitivity", {})
+            fc = data.get("forecasting", {})
+            
+            success_rate = mc.get("success_rate", 0)
+            risk_level = data.get("risk_level", "unknown")
+            top_driver = sens.get("top_drivers", ["N/A"])[0] if sens.get("top_drivers") else "N/A"
+            trend = fc.get("trend", "N/A")
+            
+            # Track successes (>50% success rate)
+            total_count += 1
+            if success_rate >= 0.50:
+                success_count += 1
+            
+            lines.append(
+                f"| {scenario.name[:20]:<20} | {success_rate:>6.1%} | {risk_level:<10} | {top_driver[:15]:<15} | {trend:<8} |"
+            )
+        
+        lines.extend([
+            "",
+            "═" * 80,
+            f"ROBUSTNESS: Policy succeeds in {success_count}/{total_count} scenarios (>50% success rate)",
+            "",
+        ])
+        
+        # Add key insights
+        if success_count == total_count:
+            lines.append("✅ ROBUST: Policy works across all scenarios")
+        elif success_count >= total_count * 0.67:
+            lines.append("⚠️ MOSTLY ROBUST: Policy works in most scenarios, but has vulnerabilities")
+        elif success_count >= total_count * 0.5:
+            lines.append("⚠️ FRAGILE: Policy fails in significant number of scenarios")
+        else:
+            lines.append("❌ HIGH RISK: Policy fails in majority of scenarios")
+        
+        # Identify most vulnerable scenarios
+        vulnerable = [
+            (s.name, engine_b_compute.get(s.id, {}).get("monte_carlo", {}).get("success_rate", 0))
+            for s in scenario_set.scenarios
+            if engine_b_compute.get(s.id, {}).get("monte_carlo", {}).get("success_rate", 0) < 0.5
+        ]
+        
+        if vulnerable:
+            lines.append("")
+            lines.append("VULNERABLE TO:")
+            for name, rate in sorted(vulnerable, key=lambda x: x[1]):
+                lines.append(f"  - {name}: only {rate:.1%} success rate")
+        
+        lines.extend([
+            "",
+            "═" * 80,
+            "Your debate must address: Is this level of risk acceptable?",
+            "═" * 80,
+        ])
+        
+        return "\n".join(lines)
+    
+    def _create_robust_synthesis(
+        self,
+        synthesis: Dict[str, Any],
+        engine_b_compute: Dict[str, Dict[str, Any]],
+        scenario_set,
+    ) -> Dict[str, Any]:
+        """
+        Create synthesis with cross-scenario robustness analysis.
+        """
+        enhanced = dict(synthesis)
+        
+        # Calculate robustness metrics
+        success_rates = []
+        for scenario in scenario_set.scenarios:
+            data = engine_b_compute.get(scenario.id, {})
+            mc = data.get("monte_carlo", {})
+            if "success_rate" in mc:
+                success_rates.append(mc["success_rate"])
+        
+        if success_rates:
+            enhanced["robustness"] = {
+                "scenarios_tested": len(success_rates),
+                "scenarios_passed": sum(1 for r in success_rates if r >= 0.5),
+                "average_success_rate": sum(success_rates) / len(success_rates),
+                "min_success_rate": min(success_rates),
+                "max_success_rate": max(success_rates),
+            }
+            
+            # Identify vulnerabilities
+            vulnerable_scenarios = [
+                {
+                    "scenario": s.name,
+                    "success_rate": engine_b_compute.get(s.id, {}).get("monte_carlo", {}).get("success_rate", 0),
+                    "category": s.category,
+                }
+                for s in scenario_set.scenarios
+                if engine_b_compute.get(s.id, {}).get("monte_carlo", {}).get("success_rate", 0) < 0.5
+            ]
+            enhanced["vulnerabilities"] = vulnerable_scenarios
+            
+            # Overall robustness score
+            robustness_score = (
+                enhanced["robustness"]["scenarios_passed"] / 
+                enhanced["robustness"]["scenarios_tested"]
+            ) * 100
+            enhanced["robustness_score"] = robustness_score
+            
+            # Interpretation
+            if robustness_score >= 83:  # 5/6 or 6/6
+                enhanced["robustness_interpretation"] = "highly_robust"
+            elif robustness_score >= 67:  # 4/6
+                enhanced["robustness_interpretation"] = "robust"
+            elif robustness_score >= 50:  # 3/6
+                enhanced["robustness_interpretation"] = "fragile"
+            else:
+                enhanced["robustness_interpretation"] = "high_risk"
+        
+        enhanced["analysis_type"] = "cross_scenario_robust"
+        
+        return enhanced
+    
+    # =========================================================================
+    # LEGACY: Engine B Compute (single run - kept for backwards compatibility)
     # =========================================================================
     
     async def _run_engine_b_compute_upfront(

@@ -1,16 +1,26 @@
 """
-NSIC Scenario Generator
+NSIC Scenario Generator - External Factors Edition
 
-Generates 30 scenarios from ANY user question:
-- 1 Base Case: Current conditions analysis
-- 5 Deep Scenarios: Strategic variations (Engine A, 100 turns)
-- 24 Broad Scenarios: Parametric variations (Engine B, 25 turns)
+Generates 6 EXTERNAL FACTOR scenarios from ANY user question:
+- 1 Base Case: Current trajectory continues
+- 5 External Factor Scenarios: Events that could impact the policy
 
-Key Features:
-- Scenarios are DERIVED from user question (not generic)
-- Stake-prompting for specificity (ported from QNWIS)
-- Qatar context validation for realism
-- Fixed 1+5+24 structure for consistent analysis
+KEY INSIGHT:
+Scenarios are NOT policy variations. They are "what if X happens while 
+we implement this policy?" This makes recommendations ROBUST across 
+multiple possible futures.
+
+DOMAIN-AGNOSTIC:
+The scenarios are generated dynamically by GPT-5 based on the query domain.
+Labor policy gets labor-relevant scenarios.
+Healthcare gets healthcare-relevant scenarios.
+Nothing is hardcoded.
+
+Flow:
+1. Agent reads query → identifies domain
+2. Agent generates 6 RELEVANT external factors for THAT domain
+3. Engine B computes for EACH scenario
+4. Engine A debates with cross-scenario results
 """
 
 import logging
@@ -68,99 +78,51 @@ MATHEMATICAL CONSTRAINTS:
 
 
 # =============================================================================
-# DEEP SCENARIO TYPES (5 Fixed Strategic Types)
+# EXTERNAL FACTOR SCENARIO CATEGORIES (Template - Not Hardcoded)
 # =============================================================================
+# These are EXAMPLES. The actual scenarios are generated dynamically by GPT-5
+# based on the query domain. A labor query gets labor-relevant scenarios.
+# A healthcare query gets healthcare-relevant scenarios.
 
-DEEP_SCENARIO_TYPES = [
-    {
-        "id": "optimistic",
-        "name": "Optimistic Scenario",
-        "description": "Best realistic case - favorable conditions align",
-        "prompt_template": """
-SCENARIO: OPTIMISTIC
-Analyze under favorable but REALISTIC conditions:
-- Strong oil prices and stable revenue
-- Regional cooperation rather than competition
-- Talent availability meets demand
-- No major disruptions
+SCENARIO_CATEGORY_GUIDANCE = """
+Generate 6 external factor scenarios that could impact this policy decision.
 
-Be specific: What exact conditions would make this succeed?
-What are the realistic upper bounds given Qatar's constraints?
+Scenario 0: BASE CASE - Current trajectory continues, no major shocks
 
-QUESTION TO ANALYZE: {question}
+Scenarios 1-5 should cover these categories (adapted to the domain):
+
+1. ECONOMIC SHOCK
+   - Examples: Oil crash, recession, budget crisis, inflation spike
+   - How: Affects government revenue, private sector growth, job creation
+
+2. REGIONAL COMPETITION  
+   - Examples: Saudi/UAE policy changes, talent war, investment competition
+   - How: Changes labor market dynamics, attracts/repels workforce
+
+3. BLACK SWAN
+   - Examples: Pandemic, blockade, war, natural disaster, cyber attack
+   - How: Major disruption requiring emergency response
+
+4. POSITIVE DISRUPTION
+   - Examples: Tech breakthrough, mega investment, new industry boom
+   - How: Creates unexpected opportunities or labor demand shifts
+
+5. POLICY/REGULATORY CHANGE
+   - Examples: New regulations, GCC coordination, trade agreements
+   - How: Changes the rules of the game
+
+For EACH scenario, you MUST provide:
+- name: Short identifier (e.g., "oil_crash", "pandemic_2")
+- description: What happens (specific, not vague)
+- assumptions: Dictionary of variable adjustments:
+  {
+    "gdp_growth_rate": 0.5,        # Multiplier: 0.5 = 50% of base
+    "job_creation_rate": 0.7,      # Multiplier
+    "workforce_availability": 1.2, # Multiplier  
+    "policy_effectiveness": 0.8,   # Multiplier
+    "external_risk": 0.6,          # Multiplier (lower = more risk)
+  }
 """
-    },
-    {
-        "id": "pessimistic",
-        "name": "Pessimistic Scenario",
-        "description": "Worst realistic case - challenges compound",
-        "prompt_template": """
-SCENARIO: PESSIMISTIC
-Analyze under challenging but REALISTIC conditions:
-- Oil price volatility or sustained low prices
-- Intensified regional competition
-- Talent shortage or brain drain
-- Economic headwinds
-
-Be specific: What exact challenges could derail this?
-What are realistic downside scenarios (not apocalyptic)?
-
-QUESTION TO ANALYZE: {question}
-"""
-    },
-    {
-        "id": "competitive_shock",
-        "name": "Competitive Shock Scenario",
-        "description": "Major competitor makes aggressive move",
-        "prompt_template": """
-SCENARIO: COMPETITIVE SHOCK
-Analyze if a major competitor takes aggressive action:
-- Dubai announces major expansion with tax incentives
-- Saudi launches competing initiative with massive investment
-- Singapore/Hong Kong expands GCC presence
-- Regional cooperation excludes Qatar
-
-Be specific: Which competitor? What exact move? What impact on Qatar?
-
-QUESTION TO ANALYZE: {question}
-"""
-    },
-    {
-        "id": "policy_shift",
-        "name": "Policy Shift Scenario",
-        "description": "Government significantly changes approach",
-        "prompt_template": """
-SCENARIO: POLICY SHIFT
-Analyze if Qatar government changes policy direction:
-- Accelerated vs gradual nationalization
-- Changed investment priorities
-- New regulatory framework
-- Shifted diplomatic/trade relationships
-
-Be specific: Which policy? What change? Timeline? Impact on each option?
-
-QUESTION TO ANALYZE: {question}
-"""
-    },
-    {
-        "id": "black_swan",
-        "name": "Black Swan Scenario",
-        "description": "Low-probability, high-impact disruption",
-        "prompt_template": """
-SCENARIO: BLACK SWAN
-Analyze under unexpected major disruption:
-- Regional geopolitical crisis
-- Global financial system shock
-- Technology disruption (AI displaces key industries)
-- Climate/environmental crisis affecting Gulf
-
-Be specific: What disruption is Qatar uniquely vulnerable to?
-What would be the mechanism and timeline of impact?
-
-QUESTION TO ANALYZE: {question}
-"""
-    },
-]
 
 
 # =============================================================================
@@ -248,42 +210,61 @@ class GeneratedScenario:
 
 @dataclass
 class ScenarioSet:
-    """Complete set of 30 scenarios for a user question."""
+    """
+    Complete set of 6 EXTERNAL FACTOR scenarios for a user question.
+    
+    NEW DESIGN:
+    - 1 Base Case: Current trajectory
+    - 5 External Factors: Events that could impact ANY policy
+    
+    These are NOT policy variations. They are "what if X happens?"
+    """
     original_question: str
     question_context: Dict[str, Any]
-    base_case: GeneratedScenario
-    deep_scenarios: List[GeneratedScenario]  # 5
-    broad_scenarios: List[GeneratedScenario]  # 24
+    scenarios: List[GeneratedScenario]  # 6 total (base + 5 external factors)
     generated_at: datetime = field(default_factory=datetime.now)
     
     @property
     def total_count(self) -> int:
-        return 1 + len(self.deep_scenarios) + len(self.broad_scenarios)
+        return len(self.scenarios)
+    
+    @property
+    def base_case(self) -> GeneratedScenario:
+        """The base case scenario (index 0)."""
+        return self.scenarios[0] if self.scenarios else None
+    
+    @property
+    def external_factors(self) -> List[GeneratedScenario]:
+        """External factor scenarios (indices 1-5)."""
+        return self.scenarios[1:] if len(self.scenarios) > 1 else []
     
     @property
     def all_scenarios(self) -> List[GeneratedScenario]:
-        return [self.base_case] + self.deep_scenarios + self.broad_scenarios
+        return self.scenarios
     
     @property
     def engine_a_scenarios(self) -> List[GeneratedScenario]:
-        """Scenarios for Engine A (deep analysis, 100 turns)."""
-        return [self.base_case] + self.deep_scenarios
+        """All scenarios go to Engine A for debate (with Engine B compute results)."""
+        return self.scenarios
     
     @property
     def engine_b_scenarios(self) -> List[GeneratedScenario]:
-        """Scenarios for Engine B (broad exploration, 25 turns)."""
-        return self.broad_scenarios
+        """Legacy - no longer used for DeepSeek LLM runs."""
+        return []  # Engine B is now compute, not LLM
+    
+    def get_scenario_assumptions(self) -> Dict[str, Dict[str, float]]:
+        """Get assumptions for each scenario (used by Engine B compute)."""
+        return {
+            s.id: s.metadata.get("assumptions", {})
+            for s in self.scenarios
+        }
     
     def to_dict(self) -> Dict[str, Any]:
         return {
             "original_question": self.original_question,
             "question_context": self.question_context,
-            "base_case": self.base_case.to_dict(),
-            "deep_scenarios": [s.to_dict() for s in self.deep_scenarios],
-            "broad_scenarios": [s.to_dict() for s in self.broad_scenarios],
+            "scenarios": [s.to_dict() for s in self.scenarios],
             "total_count": self.total_count,
-            "engine_a_count": len(self.engine_a_scenarios),
-            "engine_b_count": len(self.engine_b_scenarios),
             "generated_at": self.generated_at.isoformat(),
         }
 
@@ -294,18 +275,17 @@ class ScenarioSet:
 
 class NSICScenarioGenerator:
     """
-    Generates 30 scenarios from ANY user question.
+    Generates 6 EXTERNAL FACTOR scenarios from ANY user question.
     
     Output Structure:
-    - 1 Base Case: Analyze under current conditions
-    - 5 Deep Scenarios: Strategic variations (Engine A, 100 turns each)
-    - 24 Broad Scenarios: Parametric variations (Engine B, 25 turns each)
+    - 1 Base Case: Current trajectory continues
+    - 5 External Factors: Domain-relevant events that could impact policy
     
     Key Features:
-    - Scenarios are DERIVED from user question
-    - Stake-prompting ensures specificity
-    - Qatar context validation for realism
-    - Fixed structure for consistent analysis
+    - Scenarios are EXTERNAL FACTORS, not policy variations
+    - Generated dynamically by GPT-5 based on query domain
+    - Each scenario has assumptions for Engine B compute
+    - Makes recommendations ROBUST across multiple futures
     """
     
     def __init__(self, llm_client=None):
@@ -313,11 +293,10 @@ class NSICScenarioGenerator:
         Initialize scenario generator.
         
         Args:
-            llm_client: Optional LLM client for enhanced question analysis.
-                       If None, uses rule-based analysis.
+            llm_client: Optional LLM client for scenario generation.
         """
         self._llm_client = llm_client
-        logger.info("NSICScenarioGenerator initialized")
+        logger.info("NSICScenarioGenerator initialized (External Factors Edition)")
     
     @property
     def llm_client(self):
@@ -332,46 +311,302 @@ class NSICScenarioGenerator:
     
     async def generate(self, user_question: str) -> ScenarioSet:
         """
-        Generate 30 scenarios from user question.
+        Generate 6 EXTERNAL FACTOR scenarios from user question.
         
         Args:
             user_question: The ministerial policy question
             
         Returns:
-            ScenarioSet with 1 base + 5 deep + 24 broad scenarios
+            ScenarioSet with 6 scenarios (1 base + 5 external factors)
         """
-        logger.info(f"Generating scenarios for: {user_question[:100]}...")
+        logger.info(f"Generating 6 external factor scenarios for: {user_question[:100]}...")
         
-        # Step 1: Analyze the question to understand context
+        # Step 1: Analyze the question to understand domain
         context = await self._analyze_question(user_question)
-        logger.info(f"Question context: domain={context.get('domain')}, options={context.get('options')}")
+        domain = context.get("domain", "general")
+        logger.info(f"Question domain: {domain}")
         
-        # Step 2: Create base case
-        base_case = self._create_base_case(user_question, context)
+        # Step 2: Generate 6 domain-relevant external factor scenarios
+        scenarios = await self._generate_external_factor_scenarios(user_question, domain, context)
         
-        # Step 3: Create 5 deep scenarios (strategic)
-        deep_scenarios = await self._create_deep_scenarios(user_question, context)
-        assert len(deep_scenarios) == 5, f"Expected 5 deep scenarios, got {len(deep_scenarios)}"
+        assert len(scenarios) == 6, f"Expected 6 scenarios, got {len(scenarios)}"
         
-        # Step 4: Create 24 broad scenarios (parametric)
-        broad_scenarios = self._create_broad_scenarios(user_question, context)
-        assert len(broad_scenarios) == 24, f"Expected 24 broad scenarios, got {len(broad_scenarios)}"
-        
-        # Step 5: Assemble scenario set
+        # Step 3: Assemble scenario set
         scenario_set = ScenarioSet(
             original_question=user_question,
             question_context=context,
-            base_case=base_case,
-            deep_scenarios=deep_scenarios,
-            broad_scenarios=broad_scenarios,
+            scenarios=scenarios,
         )
         
         logger.info(
             f"Generated {scenario_set.total_count} scenarios: "
-            f"1 base + {len(deep_scenarios)} deep + {len(broad_scenarios)} broad"
+            f"1 base case + 5 external factors"
         )
         
         return scenario_set
+    
+    async def _generate_external_factor_scenarios(
+        self,
+        question: str,
+        domain: str,
+        context: Dict[str, Any],
+    ) -> List[GeneratedScenario]:
+        """
+        Generate 6 domain-relevant external factor scenarios using GPT-5.
+        
+        This is NOT hardcoded. GPT-5 generates relevant scenarios based on domain.
+        """
+        scenarios = []
+        
+        # Try LLM generation first
+        if self.llm_client:
+            try:
+                llm_scenarios = await self._generate_scenarios_with_llm(question, domain, context)
+                if llm_scenarios and len(llm_scenarios) == 6:
+                    return llm_scenarios
+            except Exception as e:
+                logger.warning(f"LLM scenario generation failed, using fallback: {e}")
+        
+        # Fallback: Generate domain-adapted scenarios
+        return self._generate_fallback_scenarios(question, domain, context)
+    
+    async def _generate_scenarios_with_llm(
+        self,
+        question: str,
+        domain: str,
+        context: Dict[str, Any],
+    ) -> List[GeneratedScenario]:
+        """Generate scenarios using GPT-5 for domain relevance."""
+        
+        prompt = f"""
+{SCENARIO_CATEGORY_GUIDANCE}
+
+DOMAIN: {domain}
+QUERY: {question}
+
+Generate 6 external factor scenarios specific to this domain and query.
+Each scenario is an event that could happen WHILE the policy is being implemented.
+
+Output as JSON array:
+[
+  {{
+    "id": "base_case",
+    "name": "Base Case",
+    "category": "base_case",
+    "description": "Current trajectory continues with no major shocks",
+    "assumptions": {{
+      "gdp_growth_rate": 1.0,
+      "job_creation_rate": 1.0,
+      "workforce_availability": 1.0,
+      "policy_effectiveness": 1.0,
+      "external_risk": 1.0
+    }}
+  }},
+  ...5 more scenarios
+]
+"""
+        
+        response = await self.llm_client.generate(
+            prompt=prompt,
+            system="You are an expert scenario planner. Generate realistic, domain-specific external factor scenarios.",
+            max_tokens=2000,
+        )
+        
+        # Parse JSON from response
+        try:
+            # Extract JSON from response
+            json_match = re.search(r'\[[\s\S]*\]', response)
+            if json_match:
+                scenario_data = json.loads(json_match.group())
+                return [
+                    GeneratedScenario(
+                        id=s["id"],
+                        name=s["name"],
+                        category=s.get("category", "external_factor"),
+                        description=s["description"],
+                        prompt=f"Analyze under scenario: {s['name']}\n{s['description']}\n\nQUESTION: {question}",
+                        parameters={},
+                        assigned_engine="A",
+                        target_turns=150,
+                        metadata={"assumptions": s.get("assumptions", {})},
+                    )
+                    for s in scenario_data
+                ]
+        except json.JSONDecodeError as e:
+            logger.warning(f"Failed to parse LLM scenario JSON: {e}")
+        
+        return []
+    
+    def _generate_fallback_scenarios(
+        self,
+        question: str,
+        domain: str,
+        context: Dict[str, Any],
+    ) -> List[GeneratedScenario]:
+        """Generate fallback scenarios adapted to domain."""
+        
+        # Domain-specific scenario templates
+        domain_scenarios = self._get_domain_scenarios(domain)
+        
+        scenarios = []
+        for i, scenario_template in enumerate(domain_scenarios):
+            scenarios.append(GeneratedScenario(
+                id=scenario_template["id"],
+                name=scenario_template["name"],
+                category=scenario_template["category"],
+                description=scenario_template["description"],
+                prompt=f"""
+Analyze under scenario: {scenario_template['name']}
+{scenario_template['description']}
+
+QUESTION: {question}
+
+Your analysis MUST account for how this external factor changes the outcome.
+""",
+                parameters={},
+                assigned_engine="A",
+                target_turns=150,
+                metadata={"assumptions": scenario_template["assumptions"]},
+            ))
+        
+        return scenarios
+    
+    def _get_domain_scenarios(self, domain: str) -> List[Dict[str, Any]]:
+        """Get domain-adapted scenario templates."""
+        
+        # Base case always first
+        base = {
+            "id": "base_case",
+            "name": "Base Case",
+            "category": "base_case",
+            "description": "Current trajectory continues with no major external shocks. Existing trends persist.",
+            "assumptions": {
+                "gdp_growth_rate": 1.0,
+                "job_creation_rate": 1.0,
+                "workforce_availability": 1.0,
+                "policy_effectiveness": 1.0,
+                "external_risk": 1.0,
+            },
+        }
+        
+        # Domain-specific external factors
+        if domain in ["labor", "employment", "workforce", "qatarization"]:
+            external_factors = [
+                {
+                    "id": "oil_crash",
+                    "name": "Oil Price Crash",
+                    "category": "economic_shock",
+                    "description": "Oil drops to $45/barrel for 18+ months. Government revenue falls 30%, budget cuts across sectors.",
+                    "assumptions": {"gdp_growth_rate": 0.5, "job_creation_rate": 0.6, "policy_effectiveness": 0.7, "external_risk": 0.5},
+                },
+                {
+                    "id": "saudi_competition",
+                    "name": "Saudi Talent War",
+                    "category": "regional_competition",
+                    "description": "Saudi announces QR 50B talent fund with 0% income tax, targeting 50,000 Gulf professionals.",
+                    "assumptions": {"workforce_availability": 0.7, "job_creation_rate": 0.9, "external_risk": 0.6},
+                },
+                {
+                    "id": "pandemic_2",
+                    "name": "Pandemic 2.0",
+                    "category": "black_swan",
+                    "description": "Major health crisis causes expatriate exodus. 15% workforce reduction over 12 months.",
+                    "assumptions": {"workforce_availability": 1.3, "job_creation_rate": 0.6, "policy_effectiveness": 0.8, "external_risk": 0.4},
+                },
+                {
+                    "id": "ai_automation",
+                    "name": "AI Automation Boom",
+                    "category": "positive_disruption",
+                    "description": "AI breakthrough reduces labor needs by 20% in admin/support roles, creates new tech sector jobs.",
+                    "assumptions": {"job_creation_rate": 0.8, "workforce_availability": 1.1, "policy_effectiveness": 1.2},
+                },
+                {
+                    "id": "gcc_integration",
+                    "name": "GCC Labor Mobility",
+                    "category": "policy_environment",
+                    "description": "GCC announces shared labor mobility agreement. Workers can move freely between member states.",
+                    "assumptions": {"workforce_availability": 0.8, "job_creation_rate": 1.0, "policy_effectiveness": 0.7, "external_risk": 0.7},
+                },
+            ]
+        elif domain in ["healthcare", "health", "medical"]:
+            external_factors = [
+                {
+                    "id": "medical_tourism_boom",
+                    "name": "Medical Tourism Boom",
+                    "category": "positive_disruption",
+                    "description": "Regional instability drives medical tourism to Qatar. Hospital capacity stressed.",
+                    "assumptions": {"job_creation_rate": 1.4, "workforce_availability": 0.9, "policy_effectiveness": 0.9},
+                },
+                {
+                    "id": "health_crisis",
+                    "name": "Regional Health Crisis",
+                    "category": "black_swan",
+                    "description": "Major disease outbreak in region. Qatar's healthcare system under pressure.",
+                    "assumptions": {"workforce_availability": 0.8, "policy_effectiveness": 0.6, "external_risk": 0.4},
+                },
+                {
+                    "id": "brain_drain",
+                    "name": "Healthcare Brain Drain",
+                    "category": "regional_competition",
+                    "description": "UAE/Saudi offer 50% higher salaries for medical professionals. Qatar loses 15% of doctors.",
+                    "assumptions": {"workforce_availability": 0.7, "policy_effectiveness": 0.8, "external_risk": 0.6},
+                },
+                {
+                    "id": "insurance_reform",
+                    "name": "Insurance System Reform",
+                    "category": "policy_environment",
+                    "description": "Mandatory universal health insurance implemented. Changes provider economics.",
+                    "assumptions": {"job_creation_rate": 1.1, "policy_effectiveness": 1.2, "external_risk": 0.9},
+                },
+                {
+                    "id": "telemedicine_breakthrough",
+                    "name": "Telemedicine Revolution",
+                    "category": "positive_disruption",
+                    "description": "AI diagnostics and telemedicine reduce need for in-person care by 25%.",
+                    "assumptions": {"job_creation_rate": 0.8, "workforce_availability": 1.2, "policy_effectiveness": 1.3},
+                },
+            ]
+        else:
+            # Generic external factors for any domain
+            external_factors = [
+                {
+                    "id": "economic_shock",
+                    "name": "Economic Recession",
+                    "category": "economic_shock",
+                    "description": "Global recession reduces Qatar's GDP growth. Budget constraints affect all sectors.",
+                    "assumptions": {"gdp_growth_rate": 0.6, "job_creation_rate": 0.7, "policy_effectiveness": 0.8, "external_risk": 0.5},
+                },
+                {
+                    "id": "regional_competition",
+                    "name": "Regional Competition Intensifies",
+                    "category": "regional_competition",
+                    "description": "UAE and Saudi make aggressive moves in Qatar's key sectors.",
+                    "assumptions": {"workforce_availability": 0.8, "job_creation_rate": 0.9, "external_risk": 0.6},
+                },
+                {
+                    "id": "black_swan",
+                    "name": "Major Disruption",
+                    "category": "black_swan",
+                    "description": "Unexpected crisis (geopolitical, environmental, or technological) disrupts normal operations.",
+                    "assumptions": {"policy_effectiveness": 0.6, "external_risk": 0.4, "job_creation_rate": 0.7},
+                },
+                {
+                    "id": "positive_disruption",
+                    "name": "Breakthrough Opportunity",
+                    "category": "positive_disruption",
+                    "description": "Major positive development creates unexpected opportunities.",
+                    "assumptions": {"job_creation_rate": 1.3, "policy_effectiveness": 1.2, "external_risk": 1.1},
+                },
+                {
+                    "id": "policy_change",
+                    "name": "Policy Environment Shift",
+                    "category": "policy_environment",
+                    "description": "New regulations or international agreements change the operating environment.",
+                    "assumptions": {"policy_effectiveness": 0.8, "external_risk": 0.8},
+                },
+            ]
+        
+        return [base] + external_factors
     
     def generate_sync(self, user_question: str) -> ScenarioSet:
         """Synchronous wrapper for generate."""
