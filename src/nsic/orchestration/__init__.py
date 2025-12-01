@@ -46,6 +46,12 @@ from .semantic_cache import (
     create_semantic_cache,
 )
 
+from .compute_enhanced_orchestrator import (
+    ComputeEnhancedOrchestrator,
+    ComputeEnhancedResult,
+    create_compute_enhanced_orchestrator,
+)
+
 __all__ = [
     # DeepSeek Client
     "DeepSeekClient",
@@ -81,4 +87,8 @@ __all__ = [
     "CacheEntry",
     "CacheStats",
     "create_semantic_cache",
+    # Compute-Enhanced Orchestrator (Engine B v5.0)
+    "ComputeEnhancedOrchestrator",
+    "ComputeEnhancedResult",
+    "create_compute_enhanced_orchestrator",
 ]
