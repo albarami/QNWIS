@@ -59,7 +59,7 @@ def create_llm_client(state: IntelligenceState) -> LLMClient:
     model = metadata.get("llm_model") or os.getenv("QNWIS_LANGGRAPH_LLM_MODEL")
     if not model:
         if provider == "azure":
-            model = os.getenv("QNWIS_AZURE_MODEL", "gpt-4o")
+            model = os.getenv("QNWIS_AZURE_MODEL", "gpt-5-chat")
         elif provider == "anthropic":
             model = "claude-sonnet-4-20250514"  # Sonnet 4.5
         elif provider == "openai":

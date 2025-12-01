@@ -1,8 +1,8 @@
 # Readiness Report: Steps 1-33
 
-**Generated:** 2025-11-29T03:05:15.782235
+**Generated:** 2025-11-29T20:32:39.938408
 **Overall Status:** FAIL
-**Execution Time:** 561 ms
+**Execution Time:** 523 ms
 
 ## Summary
 
@@ -17,7 +17,7 @@
 ## Gate Results
 
 ### step_completeness [PASS]
-- **Duration:** 18 ms
+- **Duration:** 15 ms
 - **Severity:** ERROR
 ```json
 {
@@ -360,7 +360,7 @@
 - `docs/IMPLEMENTATION_ROADMAP.md`
 
 ### no_placeholders [FAIL]
-- **Duration:** 536 ms
+- **Duration:** 507 ms
 - **Severity:** ERROR
 ```json
 {
@@ -478,7 +478,7 @@
     },
     {
       "file": "src/qnwis/llm/client.py",
-      "line": 253,
+      "line": 251,
       "pattern": "^\\s*pass\\s*$",
       "snippet": "pass"
     },

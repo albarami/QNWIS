@@ -45,6 +45,15 @@ DOCUMENT_SOURCES: Dict[str, Dict[str, Any]] = {
         'update_frequency': 'quarterly',
         'priority': 'medium',
         'description': 'IMF Article IV consultations and reports'
+    },
+    'rnd_reports': {
+        'type': 'filesystem',
+        'path': Path('R&D team summaries and reports/'),
+        'pattern': '*.pdf',
+        'expected_count': 60,
+        'update_frequency': 'monthly',
+        'priority': 'critical',
+        'description': 'R&D team research reports - Qatar labor market, AI, skills, WEF'
     }
 }
 

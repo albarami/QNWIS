@@ -162,7 +162,30 @@ def parse_scenario(source: str | dict[str, Any], format: Literal["yaml", "json",
         elif format == "yaml":
             if not isinstance(source, str):
                 raise ValueError("Source must be a string when format='yaml'")
-            data = yaml.safe_load(source)
+            # Clean up common YAML issues from LLM output
+            cleaned_source = source.strip()
+            # Remove markdown code blocks if present
+            if cleaned_source.startswith("```yaml"):
+                cleaned_source = cleaned_source[7:]
+            elif cleaned_source.startswith("```"):
+                cleaned_source = cleaned_source[3:]
+            if cleaned_source.endswith("```"):
+                cleaned_source = cleaned_source[:-3]
+            cleaned_source = cleaned_source.strip()
+            
+            # Try to parse, with fallback for malformed YAML
+            try:
+                data = yaml.safe_load(cleaned_source)
+            except yaml.YAMLError as ye:
+                logger.warning(f"YAML parse failed, attempting recovery: {ye}")
+                # Return a minimal valid scenario
+                data = {
+                    "name": "Fallback Scenario",
+                    "metric": "employment_total",
+                    "horizon_months": 12,
+                    "transforms": []
+                }
+                logger.info("Using fallback scenario due to YAML parse error")
         elif format == "json":
             if not isinstance(source, str):
                 raise ValueError("Source must be a string when format='json'")

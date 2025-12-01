@@ -208,7 +208,7 @@ Provide your analysis:"""
         return await self.generate_async(
             prompt=prompt,
             system=system,
-            task_type=TaskType.REASONING,
+            task_type=TaskType.AGENT_ANALYSIS,  # Use primary model for deep reasoning
             max_tokens=4000,
         )
     
@@ -256,33 +256,68 @@ Verify:"""
         """
         Synthesize outputs from both engines into final insight.
         
+        FIX 6: Updated with McKinsey-grade financial requirements.
+        
         Args:
             engine_a_output: Output from Azure GPT-5 (deep analysis)
             engine_b_output: Output from local model (broad exploration)
             
         Returns:
-            NSICResponse with synthesized insight
+            NSICResponse with synthesized insight including NPV/IRR
         """
         system = """You are the Meta-Synthesizer for NSIC's dual-engine ensemble.
-Combine insights from both engines:
-- Identify consensus points
-- Resolve contradictions
-- Synthesize comprehensive insight
-- Cite which engine contributed each point"""
+
+REQUIRED OUTPUT FORMAT (McKinsey-Grade):
+
+## 1. EXECUTIVE RECOMMENDATION
+[Clear choice: Option A or Option B]
+Confidence: [X%] with justification
+
+## 2. FINANCIAL COMPARISON TABLE
+
+| Metric | Option A | Option B | Source |
+|--------|----------|----------|--------|
+| NPV (10yr, 8%) | QAR X B | QAR Y B | NSIC Model |
+| IRR | X% | Y% | NSIC Model |
+| GDP Impact | +X% | +Y% | Engine A |
+| Jobs Created | X,XXX | Y,YYY | Engine B |
+| Payback Period | X years | Y years | NSIC Model |
+
+## 3. KEY DEBATE FINDINGS
+- Consensus points from both engines
+- Contested points with resolution
+
+## 4. RISK MATRIX
+
+| Risk | Probability | Impact | Mitigation | Owner |
+|------|-------------|--------|------------|-------|
+(Top 5 risks)
+
+## 5. IMPLEMENTATION ROADMAP
+Phase 1 (0-6 months): ...
+Phase 2 (6-18 months): ...
+Phase 3 (18-36 months): ...
+Phase 4 (36-60 months): ...
+
+## 6. DISSENTING VIEW
+[Summary of strongest counter-argument]
+
+CITATION REQUIREMENT: Every number must have [Source] tag.
+"""
         
-        prompt = f"""## Engine A (Deep Analysis):
+        prompt = f"""## Engine A (Deep Analysis - 6 scenarios, 600 turns):
 {engine_a_output}
 
-## Engine B (Broad Exploration):
+## Engine B (Broad Exploration - 24 scenarios, 600 turns):
 {engine_b_output}
 
-## Synthesized Insight:"""
+## Synthesized Ministerial Brief:"""
         
         return await self.generate_async(
             prompt=prompt,
             system=system,
-            task_type=TaskType.SYNTHESIS,
-            max_tokens=4000,
+            task_type=TaskType.FINAL_SYNTHESIS,  # Use primary model for synthesis
+            max_tokens=6000,  # Increased for full brief
         )
     
     def get_stats(self) -> Dict[str, Any]:

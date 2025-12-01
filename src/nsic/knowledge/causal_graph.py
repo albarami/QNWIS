@@ -637,3 +637,67 @@ def create_causal_graph(
     """
     return CausalGraph(gpu_device=gpu_device, embedding_dim=embedding_dim)
 
+
+def load_causal_graph(
+    filepath: str,
+    gpu_device: str = "cuda:4",
+) -> CausalGraph:
+    """
+    Load a pre-populated CausalGraph from a pickle file.
+    
+    Args:
+        filepath: Path to the saved knowledge graph pickle file
+        gpu_device: GPU device for embeddings
+        
+    Returns:
+        CausalGraph instance with pre-loaded data
+    """
+    import pickle
+    import os
+    
+    if not os.path.exists(filepath):
+        raise FileNotFoundError(f"Knowledge graph file not found: {filepath}")
+    
+    logger.info(f"Loading knowledge graph from: {filepath}")
+    
+    with open(filepath, 'rb') as f:
+        kg_data = pickle.load(f)
+    
+    # Determine embedding dimension from saved data
+    embedding_dim = 768
+    if kg_data['nodes']:
+        first_node = list(kg_data['nodes'].values())[0]
+        if first_node.get('embedding') is not None:
+            embedding_dim = len(first_node['embedding'])
+    
+    # Create graph with correct dimension
+    graph = CausalGraph(gpu_device=gpu_device, embedding_dim=embedding_dim)
+    
+    # Restore nodes
+    for node_id, node_data in kg_data['nodes'].items():
+        node = CausalNode(
+            id=node_data['id'],
+            name=node_data['name'],
+            node_type=node_data['node_type'],
+            domain=node_data['domain'],
+            embedding=node_data.get('embedding'),
+            attributes=node_data.get('attributes', {}),
+        )
+        graph.add_node(node)
+    
+    # Restore edges
+    for source, target, edge_data in kg_data['edges']:
+        edge = CausalEdge(
+            source_id=source,
+            target_id=target,
+            relation_type=edge_data.get('relation', 'causes'),
+            strength=edge_data.get('strength', 0.5),
+            confidence=edge_data.get('confidence', 0.5),
+            evidence=edge_data.get('evidence', []),
+        )
+        graph.add_edge(edge)
+    
+    logger.info(f"Loaded knowledge graph: {len(graph.nodes)} nodes, {graph.graph.number_of_edges()} edges")
+    
+    return graph
+

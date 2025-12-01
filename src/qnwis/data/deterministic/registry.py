@@ -11,22 +11,27 @@ from .schema import QueryDefinition
 PROJECT_ROOT = Path(__file__).resolve().parents[4]
 
 
-def _resolve_default_root() -> Path:
-    """Determine the default queries root, preferring bundled sources."""
+def _resolve_default_roots() -> list[Path]:
+    """Return ALL query directories that exist and have YAML files."""
     candidates = [
         PROJECT_ROOT / "data" / "queries",
         PROJECT_ROOT / "src" / "qnwis" / "data" / "queries",
     ]
+    roots = []
     for candidate in candidates:
         if candidate.exists() and any(candidate.glob("*.yaml")):
-            return candidate
-    for candidate in candidates:
-        if candidate.exists():
-            return candidate
-    return candidates[-1]
+            roots.append(candidate)
+    return roots if roots else [candidates[-1]]
+
+
+def _resolve_default_root() -> Path:
+    """Determine the PRIMARY queries root for backwards compatibility."""
+    roots = _resolve_default_roots()
+    return roots[0] if roots else PROJECT_ROOT / "data" / "queries"
 
 
 DEFAULT_QUERY_ROOT = _resolve_default_root()
+DEFAULT_QUERY_ROOTS = _resolve_default_roots()  # ALL directories
 
 
 def _digest_paths(files: Iterable[Path]) -> str:
@@ -81,19 +86,34 @@ class QueryRegistry:
         return _digest_paths(files)
 
     def load_all(self) -> None:
-        """Load every YAML query definition from the registry root."""
-        if not self.root.exists():
-            raise FileNotFoundError(f"Query registry directory not found: {self.root}")
+        """Load every YAML query definition from ALL registry directories."""
+        # Load from all query directories to get both data/queries and src/qnwis/data/queries
+        all_roots = [self.root] + [r for r in DEFAULT_QUERY_ROOTS if r != self.root]
+        all_files = []
+        
+        for root in all_roots:
+            if not root.exists():
+                continue
+            
+            files = list(root.glob("*.yaml"))
+            for file_path in sorted(files, key=lambda p: p.name):
+                try:
+                    data = yaml.safe_load(file_path.read_text(encoding="utf-8")) or {}
+                    # Handle both 'query_id' and 'id' keys
+                    qid = data.get("query_id") or data.get("id")
+                    if not qid:
+                        continue
+                    data["query_id"] = qid  # Normalize to query_id
+                    query_def = QueryDefinition(**data)
+                    if query_def.query_id not in self._items:  # Don't overwrite, first wins
+                        self._items[query_def.query_id] = query_def
+                        all_files.append(file_path)
+                except Exception as e:
+                    # Skip invalid YAML files but log the error
+                    import logging
+                    logging.getLogger(__name__).warning(f"Skipping invalid query file {file_path}: {e}")
 
-        files = list(self.root.glob("*.yaml"))
-        for file_path in sorted(files, key=lambda p: p.name):
-            data = yaml.safe_load(file_path.read_text(encoding="utf-8")) or {}
-            query_def = QueryDefinition(**data)
-            if query_def.query_id in self._items:
-                raise ValueError(f"Duplicate query_id: {query_def.query_id}")
-            self._items[query_def.query_id] = query_def
-
-        self._version = _digest_paths(files) if files else "empty"
+        self._version = _digest_paths(all_files) if all_files else "empty"
 
     def get(self, query_id: str) -> QueryDefinition:
         """Retrieve a query definition by ID."""

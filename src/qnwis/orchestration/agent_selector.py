@@ -103,7 +103,7 @@ class AgentSelector:
                 "type": "deterministic",
                 "requires": ["time_series_employment", "historical_trends"],
                 "description": "Historical labor market trend analysis",
-                "queries": ["timeseries_employment_all_12m"],
+                "queries": ["unemployment_trends_monthly"],  # Fixed: use available query
                 "module": "qnwis.agents.time_machine",
                 "class": "TimeMachineAgent",
             },
@@ -111,7 +111,7 @@ class AgentSelector:
                 "type": "deterministic",
                 "requires": ["time_series_employment"],
                 "description": "Workforce forecasting and retention prediction",
-                "queries": ["ts_retention_by_sector"],
+                "queries": ["retention_rate_by_sector"],
                 "module": "qnwis.agents.predictor",
                 "class": "PredictorAgent",
             },
@@ -119,7 +119,7 @@ class AgentSelector:
                 "type": "deterministic",
                 "requires": ["sector_metrics", "labor_market"],
                 "description": "Labor market scenario modeling",
-                "queries": ["syn_sector_metrics"],
+                "queries": ["sector_growth_rate"],  # Fixed: use available query
                 "module": "qnwis.agents.scenario_agent",
                 "class": "ScenarioAgent",
             },
@@ -127,7 +127,7 @@ class AgentSelector:
                 "type": "deterministic",
                 "requires": ["sector_metrics", "labor_market"],
                 "description": "Statistical pattern detection in labor data",
-                "queries": ["syn_attrition_by_sector_latest"],
+                "queries": ["attrition_rate_monthly"],  # Fixed: use available query
                 "module": "qnwis.agents.pattern_detective",
                 "class": "PatternDetectiveAgent",
             },
@@ -135,7 +135,7 @@ class AgentSelector:
                 "type": "deterministic",
                 "requires": ["time_series", "sector_metrics"],
                 "description": "Automated pattern mining algorithms",
-                "queries": ["timeseries_retention_all_12m"],
+                "queries": ["retention_rate_by_sector"],  # Fixed: use available query
                 "module": "qnwis.agents.pattern_miner",
                 "class": "PatternMinerAgent",
             },

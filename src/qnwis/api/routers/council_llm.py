@@ -34,7 +34,7 @@ import inspect
 logger.info(f"🔍 run_workflow_stream source file: {inspect.getfile(run_workflow_stream)}")
 logger.info(f"🔍 run_workflow_stream module: {run_workflow_stream.__module__}")
 router = APIRouter(tags=["council-llm"])
-STREAM_TIMEOUT_SECONDS = 3600  # 60 minutes - allows deep analysis with complete synthesis
+STREAM_TIMEOUT_SECONDS = 7200  # 2 hours - allows full E2E runs
 
 try:
     _async_timeout = asyncio.timeout  # Python 3.11+

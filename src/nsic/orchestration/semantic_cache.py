@@ -6,7 +6,7 @@ Uses cosine similarity between query embeddings to determine cache hits.
 
 Integration:
 - Used by DualEngineOrchestrator before processing
-- Leverages existing embeddings server (port 8005)
+- Leverages existing embeddings server (port 8100 - CPU)
 - Configurable similarity threshold (default 0.92)
 """
 
@@ -94,7 +94,7 @@ class SemanticCache:
         similarity_threshold: float = 0.92,
         max_entries: int = 1000,
         ttl_hours: float = 24.0,
-        embeddings_url: str = "http://localhost:8005",
+        embeddings_url: str = "http://localhost:8100",  # CPU embeddings server
     ):
         """
         Initialize semantic cache.
@@ -248,7 +248,7 @@ class SemanticCache:
                 async with session.post(
                     f"{self.embeddings_url}/embed",
                     json={"text": text},
-                    timeout=aiohttp.ClientTimeout(total=10),
+                    timeout=aiohttp.ClientTimeout(total=7200),
                 ) as response:
                     if response.status == 200:
                         data = await response.json()
@@ -264,7 +264,7 @@ class SemanticCache:
                 response = requests.post(
                     f"{self.embeddings_url}/embed",
                     json={"text": text},
-                    timeout=10,
+                    timeout=7200,
                 )
                 if response.status_code == 200:
                     data = response.json()

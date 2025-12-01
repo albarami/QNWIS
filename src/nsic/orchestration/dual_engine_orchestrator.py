@@ -19,7 +19,7 @@ import logging
 import asyncio
 import time
 from dataclasses import dataclass, field
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any, Optional, Tuple, Callable
 from datetime import datetime
 
 from .timing_logger import TimingLogger, Stage, get_timing_logger
@@ -72,16 +72,28 @@ class DualEngineResult:
     timestamp: datetime = field(default_factory=datetime.now)
     
     def to_dict(self) -> Dict[str, Any]:
+        # Calculate turns completed
+        turns_completed = 0
+        if self.engine_a_result:
+            turns_completed = self.engine_a_result.get("turns_completed", 1)
+        elif self.engine_b_result:
+            # engine_b_result is a ScenarioResult with a 'turns' list
+            turns_completed = len(getattr(self.engine_b_result, 'turns', [])) if self.engine_b_result else 0
+        
         return {
             "scenario_id": self.scenario_id,
             "scenario_name": self.scenario_name,
             "domain": self.domain,
             "engine_a_completed": self.engine_a_result is not None,
             "engine_b_completed": self.engine_b_result is not None,
+            "engine_a_result": self.engine_a_result,
+            "engine_b_result": self.engine_b_result.to_dict() if self.engine_b_result and hasattr(self.engine_b_result, 'to_dict') else None,
             "arbitration_completed": self.arbitration_result is not None,
             "confidence": self.confidence,
+            "turns_completed": turns_completed,
             "total_time_ms": self.total_time_ms,
             "timing_breakdown": self.timing_breakdown,
+            "final_content": self.final_content,  # FIX: Include actual content, not just length!
             "final_content_length": len(self.final_content),
             "degradation_state": self.degradation_state,
             "is_degraded": self.degradation_state.get("is_degraded", False) if self.degradation_state else False,
@@ -192,7 +204,12 @@ class DualEngineOrchestrator:
         state: Optional[AnalysisState] = None,
     ) -> Tuple[Optional[Dict[str, Any]], Optional[AnalysisState]]:
         """
-        Run Engine A (Azure GPT-5) for deep analysis with graceful degradation.
+        Run Engine A using full QNWIS LLMWorkflow (graph_llm.py).
+        
+        Uses:
+        - 5 LLM Debating Agents: MicroEconomist, MacroEconomist, Nationalization, Skills, PatternDetective
+        - 7 Deterministic Data Agents: TimeMachine, Predictor, ScenarioAgent, etc.
+        - Full pipeline: classify → prefetch → rag → agents → debate → critique → verify → synthesize
 
         Args:
             scenario: ScenarioDefinition
@@ -204,41 +221,68 @@ class DualEngineOrchestrator:
         """
         state = state or self.error_handler.create_state()
 
-        if not self.llm_client:
-            logger.warning("Azure LLM client not available for Engine A")
-            state = await self.error_handler.handle_engine_a_failure(
-                state, Exception("LLM client not available")
-            )
-            return None, state
-
         with self.timing.time_stage(Stage.ENGINE_A, scenario.id):
             try:
-                # Build scenario prompt
-                scenario_text = f"""Scenario: {scenario.name}
+                # Import the full QNWIS workflow with 12 agents
+                from src.qnwis.orchestration.graph_llm import LLMWorkflow
+                from src.qnwis.agents.base import DataClient
+                from src.qnwis.llm.client import LLMClient as QNWISLLMClient
+                
+                # Build the question from scenario
+                question = f"""Scenario Analysis: {scenario.name}
+
 Domain: {scenario.domain}
 Description: {scenario.description}
 
-Inputs:
+Key Variables:
 """
                 for inp in scenario.inputs:
-                    scenario_text += f"- {inp.variable}: {inp.base_value} → {inp.shock_value} ({inp.shock_type})\n"
+                    question += f"- {inp.variable}: changes from {inp.base_value} to {inp.shock_value} ({inp.shock_type})\n"
+                
+                question += f"""
+Context: {context if context else 'Analyze using available data sources'}
 
-                # Run deep analysis
-                response = await self.llm_client.analyze_scenario(
-                    scenario=scenario_text,
-                    context=context,
-                    depth="comprehensive",
-                )
+Provide comprehensive analysis of this scenario's impacts on Qatar's economy and policy objectives."""
 
+                logger.info(f"Engine A: Running full 12-agent QNWIS workflow for {scenario.id}")
+                
+                # Initialize workflow with data client and LLM
+                data_client = DataClient()
+                llm_client = QNWISLLMClient()
+                workflow = LLMWorkflow(data_client=data_client, llm_client=llm_client)
+                
+                # Run the full workflow (5 debating agents + 7 deterministic agents)
+                start_time = time.time()
+                result = await workflow.run(question)
+                elapsed_ms = (time.time() - start_time) * 1000
+                
                 self._stats["engine_a_runs"] += 1
+                
+                # Extract synthesis from workflow result
+                synthesis = result.get("synthesis", "")
+                agent_reports = result.get("agent_reports", [])
+                debate_results = result.get("debate_results", {})
+                verification = result.get("verification", {})
+                
+                # Count debate turns
+                debate_turns = debate_results.get("total_turns", 0) if debate_results else 0
+                
+                logger.info(
+                    f"Engine A complete: {len(agent_reports)} agents, "
+                    f"{debate_turns} debate turns, {elapsed_ms:.0f}ms"
+                )
 
                 return {
                     "engine": "engine_a",
-                    "content": response.content,
-                    "model": response.model,
-                    "task_type": response.task_type,
-                    "latency_ms": response.latency_ms,
-                    "turns_completed": 1,  # Single deep turn
+                    "content": synthesis,
+                    "agent_reports": agent_reports,
+                    "debate_results": debate_results,
+                    "verification": verification,
+                    "model": "qnwis_12_agent_workflow",
+                    "task_type": "full_analysis",
+                    "latency_ms": elapsed_ms,
+                    "turns_completed": debate_turns,
+                    "agents_used": len(agent_reports),
                 }, state
 
             except asyncio.TimeoutError as e:
@@ -508,6 +552,7 @@ Inputs:
         user_question: str,
         max_concurrent: int = 2,
         use_cache: bool = True,
+        on_turn_complete: Optional[Callable] = None,  # Live turn-by-turn callback
     ) -> Dict[str, Any]:
         """
         Process a user question through the dual-engine pipeline.
@@ -522,6 +567,7 @@ Inputs:
             user_question: The ministerial policy question
             max_concurrent: Max concurrent scenarios
             use_cache: Whether to check/update semantic cache
+            on_turn_complete: Optional callback(engine, scenario_id, scenario_name, turn_num, agent_name, content, gpu_id)
 
         Returns:
             Dict with results from both engines and final synthesis
@@ -557,13 +603,30 @@ Inputs:
         engine_a_results = await self._process_engine_a_batch(
             scenario_set.engine_a_scenarios,
             max_concurrent=max_concurrent,
+            on_turn_complete=on_turn_complete,  # Pass callback (limited support in QNWIS workflow)
         )
 
-        # Step 3: Process Engine B scenarios (broad exploration)
-        engine_b_results = await self._process_engine_b_batch(
-            scenario_set.engine_b_scenarios,
-            max_concurrent=max_concurrent,
+        # Step 3: Process Engine B scenarios (broad exploration) - 8-way parallel!
+        # Use run_all_scenarios which splits 24 scenarios across 8 GPUs
+        engine_b_scenario_results = await self.engine_b.run_all_scenarios(
+            scenarios=scenario_set.engine_b_scenarios,
+            on_turn_complete=on_turn_complete,  # Live turn callback
         )
+        
+        # Convert ScenarioResults to DualEngineResults and update stats
+        engine_b_results = []
+        for sr in engine_b_scenario_results:
+            engine_b_results.append(DualEngineResult(
+                scenario_id=sr.scenario_id,
+                scenario_name=sr.scenario_name,
+                domain=sr.domain,
+                engine_a_result=None,
+                engine_b_result=sr,  # Pass the ScenarioResult directly
+                final_content=sr.final_synthesis,
+                confidence=0.75,  # Default confidence for Engine B
+                total_time_ms=sr.total_time_ms,
+            ))
+            self._stats["engine_b_runs"] += 1  # FIX: Increment stats counter
 
         # Step 4: Synthesize results
         synthesis = self._synthesize_results(
@@ -598,6 +661,7 @@ Inputs:
         self,
         scenarios: List[GeneratedScenario],
         max_concurrent: int = 2,
+        on_turn_complete: Optional[Callable] = None,  # Future: Connect to QNWIS workflow
     ) -> List[DualEngineResult]:
         """
         Process scenarios through Engine A (deep analysis).
@@ -605,6 +669,7 @@ Inputs:
         Args:
             scenarios: List of GeneratedScenario for Engine A
             max_concurrent: Max concurrent scenarios
+            on_turn_complete: Optional callback (limited support in QNWIS workflow)
             
         Returns:
             List of DualEngineResult
@@ -614,11 +679,16 @@ Inputs:
         results = []
         semaphore = asyncio.Semaphore(max_concurrent)
         
-        async def process_one(scenario: GeneratedScenario):
+        async def process_one(scenario: GeneratedScenario, idx: int):
             async with semaphore:
-                return await self._run_engine_a_generated(scenario)
+                # Pass callback to Engine A for turn-by-turn logging
+                result = await self._run_engine_a_generated(
+                    scenario,
+                    on_turn_complete=on_turn_complete,  # Callback is now invoked inside QNWIS workflow
+                )
+                return result
         
-        tasks = [process_one(s) for s in scenarios]
+        tasks = [process_one(s, i) for i, s in enumerate(scenarios)]
         raw_results = await asyncio.gather(*tasks, return_exceptions=True)
         
         for i, result in enumerate(raw_results):
@@ -667,33 +737,66 @@ Inputs:
     async def _run_engine_a_generated(
         self,
         scenario: GeneratedScenario,
+        on_turn_complete: Optional[Callable] = None,  # Live debate logging callback
     ) -> Optional[DualEngineResult]:
         """
-        Run Engine A on a generated scenario.
+        Run Engine A on a generated scenario using full QNWIS 12-agent workflow.
         
         Args:
             scenario: GeneratedScenario to process
+            on_turn_complete: Optional callback for live turn-by-turn logging
             
         Returns:
             DualEngineResult or None on failure
         """
         start_time = time.time()
         
-        if not self.llm_client:
-            logger.warning("Azure LLM client not available for Engine A")
-            return None
-        
         with self.timing.time_stage(Stage.ENGINE_A, scenario.id):
             try:
-                response = await self.llm_client.analyze_scenario(
-                    scenario=scenario.prompt,
-                    context="",
-                    depth="comprehensive",
+                # Import the full QNWIS workflow with 12 agents
+                from src.qnwis.orchestration.graph_llm import LLMWorkflow
+                from src.qnwis.agents.base import DataClient
+                from src.qnwis.llm.client import LLMClient as QNWISLLMClient
+                
+                # Build the question from scenario
+                question = f"""Scenario Analysis: {scenario.name}
+
+Category: {scenario.category}
+Description: {scenario.description}
+
+{scenario.prompt}
+
+Provide comprehensive analysis of this scenario's impacts on Qatar's economy and policy objectives."""
+
+                logger.info(f"Engine A: Running full 12-agent QNWIS workflow for {scenario.id}")
+                
+                # Initialize workflow with data client and LLM
+                data_client = DataClient()
+                llm_client = QNWISLLMClient()
+                workflow = LLMWorkflow(data_client=data_client, llm_client=llm_client)
+                
+                # Run the full workflow with turn-by-turn logging callback
+                result = await workflow.run(
+                    question,
+                    on_turn_complete=on_turn_complete,  # Pass callback for live logging
+                    scenario_id=scenario.id,
+                    scenario_name=scenario.name,
                 )
                 
                 self._stats["engine_a_runs"] += 1
                 
                 total_time_ms = (time.time() - start_time) * 1000
+                
+                # Extract results from workflow
+                synthesis = result.get("synthesis", "")
+                agent_reports = result.get("agent_reports", [])
+                debate_results = result.get("debate_results", {})
+                debate_turns = debate_results.get("total_turns", 0) if isinstance(debate_results, dict) else 0
+                
+                logger.info(
+                    f"Engine A complete: {len(agent_reports)} agents, "
+                    f"{debate_turns} debate turns, {total_time_ms:.0f}ms"
+                )
                 
                 return DualEngineResult(
                     scenario_id=scenario.id,
@@ -701,17 +804,22 @@ Inputs:
                     domain=scenario.category,
                     engine_a_result={
                         "engine": "engine_a",
-                        "content": response.content,
-                        "model": response.model,
-                        "latency_ms": response.latency_ms,
+                        "content": synthesis,
+                        "agent_reports": [str(r)[:500] for r in agent_reports],
+                        "debate_results": {"total_turns": debate_turns},
+                        "model": "qnwis_12_agent_workflow",
+                        "latency_ms": total_time_ms,
+                        "turns_completed": debate_turns,
                     },
-                    final_content=response.content,
+                    final_content=synthesis,
                     confidence=0.85,
                     total_time_ms=total_time_ms,
                 )
                 
             except Exception as e:
                 logger.error(f"Engine A failed for {scenario.id}: {e}")
+                import traceback
+                traceback.print_exc()
                 return None
     
     async def _run_engine_b_generated(
@@ -790,8 +898,58 @@ Inputs:
             engine_b_results: Results from Engine B (broad)
             
         Returns:
-            Synthesis dict with key findings
+            Synthesis dict with key findings and recommendations
         """
+        # Extract key findings from Engine A (deep analysis)
+        key_findings = []
+        for result in engine_a_results:
+            if result.final_content:
+                # Extract first meaningful sentence as a finding
+                content = result.final_content.strip()
+                if len(content) > 50:
+                    finding = {
+                        "scenario": result.scenario_name,
+                        "insight": content[:300] + "..." if len(content) > 300 else content,
+                        "confidence": result.confidence,
+                        "source": "engine_a"
+                    }
+                    key_findings.append(finding)
+        
+        # Extract key findings from Engine B (broad exploration)
+        for result in engine_b_results:
+            if result.final_content:
+                content = result.final_content.strip()
+                if len(content) > 50:
+                    finding = {
+                        "scenario": result.scenario_name,
+                        "insight": content[:300] + "..." if len(content) > 300 else content,
+                        "confidence": result.confidence,
+                        "source": "engine_b"
+                    }
+                    key_findings.append(finding)
+        
+        # Generate recommendations based on findings
+        recommendations = []
+        if engine_a_results:
+            # Base case recommendation
+            base_result = engine_a_results[0]
+            if base_result.final_content:
+                recommendations.append({
+                    "priority": 1,
+                    "recommendation": f"Based on base case analysis: {base_result.final_content[:200]}...",
+                    "confidence": base_result.confidence,
+                })
+        
+        # Add recommendations from high-confidence Engine B results
+        high_conf_b = [r for r in engine_b_results if r.confidence >= 0.7]
+        for i, result in enumerate(high_conf_b[:3]):  # Top 3 high-confidence
+            if result.final_content:
+                recommendations.append({
+                    "priority": i + 2,
+                    "recommendation": f"From {result.scenario_name}: {result.final_content[:150]}...",
+                    "confidence": result.confidence,
+                })
+        
         return {
             "question": question,
             "scenarios_analyzed": scenario_set.total_count,
@@ -801,6 +959,8 @@ Inputs:
             "deep_scenario_count": len([r for r in engine_a_results if r.scenario_id.startswith("deep_")]),
             "broad_scenario_count": len(engine_b_results),
             "overall_confidence": self._calculate_overall_confidence(engine_a_results, engine_b_results),
+            "key_findings": key_findings,
+            "recommendations": recommendations,
         }
     
     def _calculate_overall_confidence(

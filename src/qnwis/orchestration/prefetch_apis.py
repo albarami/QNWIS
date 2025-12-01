@@ -17,6 +17,117 @@ load_dotenv()
 
 from .data_quality import calculate_data_quality, identify_missing_data
 
+import json
+import logging
+logger = logging.getLogger(__name__)
+
+# =============================================================================
+# LLM-BASED SMART QUERY GENERATION
+# Generates contextual search queries for Semantic Scholar and Perplexity
+# =============================================================================
+
+SMART_QUERY_PROMPT = """You are a PhD researcher preparing to search academic databases. Given a user's question, generate search queries like a REAL RESEARCHER would.
+
+USER QUESTION: {question}
+
+THINK LIKE A RESEARCHER:
+- DO NOT include specific country names (Qatar, UAE, etc.) in academic queries
+- Search for the TOPIC/CONCEPT, not the geography
+- Use academic terminology that yields the most papers
+- The research findings will be APPLIED to the specific context later
+- Broader queries = more relevant papers
+
+Example: If question is "What skills should Qatar invest in for AI?"
+- BAD query: "Qatar AI skills investment"  (too narrow, few results)
+- GOOD query: "artificial intelligence workforce skills gap"  (broad, many results)
+- GOOD query: "machine learning job market transformation"  (topic-focused)
+- GOOD query: "digital skills future of work automation"  (conceptual)
+
+RESPOND WITH VALID JSON:
+{{
+    "academic_queries": [
+        "broad topic-focused academic query 1",
+        "broad topic-focused academic query 2",
+        "broad topic-focused academic query 3",
+        "broad topic-focused academic query 4"
+    ],
+    "realtime_queries": [
+        "specific real-time query with location for current data 1",
+        "specific real-time query with location for current data 2"
+    ],
+    "key_concepts": ["concept1", "concept2", "concept3", "concept4", "concept5"],
+    "data_needs": "brief description of what data would answer this question"
+}}
+
+CRITICAL FOR ACADEMIC QUERIES:
+- Use 2-4 word phrases that academics use in paper titles
+- NO country names, NO proper nouns
+- Focus on phenomena, not places
+- Think: what would a researcher title their paper?
+"""
+
+async def generate_smart_queries(question: str) -> Dict[str, Any]:
+    """
+    Use LLM to generate contextually relevant search queries.
+    
+    Instead of generic keyword matching, this creates smart queries
+    based on understanding what the user actually wants to know.
+    """
+    endpoint = os.environ.get("AZURE_OPENAI_ENDPOINT", "").rstrip("/")
+    api_key = os.environ.get("AZURE_OPENAI_API_KEY")
+    
+    if not endpoint or not api_key:
+        # Fallback to basic query extraction
+        return {
+            "academic_queries": [question[:100]],
+            "realtime_queries": [question[:100]],
+            "key_concepts": [],
+            "data_needs": question
+        }
+    
+    try:
+        url = f"{endpoint}/openai/deployments/gpt-5-chat/chat/completions?api-version=2024-08-01-preview"
+        
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                url,
+                headers={"api-key": api_key, "Content-Type": "application/json"},
+                json={
+                    "messages": [
+                        {"role": "system", "content": "You are a research query optimizer. Always respond with valid JSON."},
+                        {"role": "user", "content": SMART_QUERY_PROMPT.format(question=question)}
+                    ],
+                    "max_tokens": 400,
+                    "temperature": 0.2
+                },
+                timeout=aiohttp.ClientTimeout(total=10)
+            ) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    content = data["choices"][0]["message"]["content"]
+                    
+                    # Parse JSON
+                    if "```json" in content:
+                        content = content.split("```json")[1].split("```")[0]
+                    elif "```" in content:
+                        content = content.split("```")[1].split("```")[0]
+                    
+                    result = json.loads(content.strip())
+                    logger.info(f"🧠 Smart queries generated: {result.get('academic_queries', [])[:2]}")
+                    return result
+                    
+    except Exception as e:
+        logger.warning(f"⚠️ Smart query generation failed: {e}")
+    
+    # Fallback
+    return {
+        "academic_queries": [question[:100]],
+        "realtime_queries": [question[:100]],
+        "key_concepts": [],
+        "data_needs": question
+    }
+
+
 # Safe printing helper to avoid UnicodeEncodeError on limited consoles
 def _safe_print(message: str) -> None:
     try:
@@ -777,6 +888,15 @@ class CompletePrefetchLayer:
         ):
             _safe_print("🧠 Triggering: Knowledge Graph (cross-domain reasoning)")
             add_task(lambda: self._fetch_knowledge_graph_context(query), "knowledge_graph")
+
+        # ========================================================================
+        # SMART CONTEXT-AWARE FETCHING (Always triggered for any question)
+        # Uses LLM to generate contextually relevant queries
+        # ========================================================================
+        _safe_print("\n🧠 Triggering: Smart context-aware Semantic Scholar & Perplexity")
+        add_task(lambda: self._fetch_semantic_scholar_smart(query), "semantic_smart")
+        if self.perplexity_api_key:
+            add_task(lambda: self._fetch_perplexity_smart(query), "perplexity_smart")
 
         if tasks:
             _safe_print(f"\n🚀 Executing {len(tasks)} unique parallel API calls...")
@@ -1585,6 +1705,270 @@ class CompletePrefetchLayer:
             _safe_print(f"⚠️  Perplexity food security error: {e}")
             return []
 
+    # ================== SMART CONTEXT-AWARE FETCHING ==================
+    
+    async def _fetch_semantic_scholar_smart(self, query: str) -> List[Dict[str, Any]]:
+        """
+        Fetch academic research using LLM-generated smart queries.
+        
+        AGGRESSIVE SEARCH STRATEGY:
+        1. Use ALL generated academic queries (not just 2)
+        2. Request 50 papers per query (not 10)
+        3. Use multiple search strategies (search + bulk + recommendations)
+        4. Soft filtering - don't discard papers, just score them
+        5. Return top 20 most relevant papers
+        """
+        try:
+            _safe_print("🧠 Semantic Scholar: Comprehensive academic research extraction...")
+            
+            # Generate smart queries using LLM
+            smart_queries = await generate_smart_queries(query)
+            academic_queries = smart_queries.get("academic_queries", [query[:100]])
+            key_concepts = smart_queries.get("key_concepts", [])
+            
+            # Also add broader queries based on the original question
+            broader_queries = [
+                query[:80],  # Original question truncated
+                " ".join(key_concepts[:3]) if key_concepts else query[:50],  # Key concepts
+            ]
+            all_queries = list(set(academic_queries + broader_queries))
+            
+            _safe_print(f"   📚 Searching with {len(all_queries)} queries")
+            _safe_print(f"   📚 Key concepts: {key_concepts}")
+            
+            api_key = os.getenv("SEMANTIC_SCHOLAR_API_KEY", "").strip()
+            headers = {"x-api-key": api_key} if api_key else {}
+            
+            all_papers = []
+            seen_ids = set()
+            
+            # Strategy 1: Regular search with ALL queries
+            for search_query in all_queries[:4]:  # Use up to 4 queries
+                try:
+                    url = "https://api.semanticscholar.org/graph/v1/paper/search"
+                    params = {
+                        "query": search_query,
+                        "fields": "title,year,abstract,url,citationCount,paperId",
+                        "limit": "50"  # Get 50 per query
+                    }
+                    
+                    _safe_print(f"   🔍 Searching: '{search_query[:50]}...'")
+                    response = await asyncio.to_thread(
+                        lambda q=search_query: requests.get(url, params={"query": q, "fields": "title,year,abstract,url,citationCount,paperId", "limit": "50"}, headers=headers, timeout=15)
+                    )
+                    
+                    if response.status_code == 200:
+                        data = response.json()
+                        papers = data.get("data", [])
+                        _safe_print(f"      Found {len(papers)} papers")
+                        
+                        for paper in papers:
+                            paper_id = paper.get("paperId")
+                            if paper_id and paper_id not in seen_ids:
+                                seen_ids.add(paper_id)
+                                paper["_query"] = search_query
+                                all_papers.append(paper)
+                    
+                    await asyncio.sleep(0.3)
+                    
+                except Exception as e:
+                    _safe_print(f"      Query error: {e}")
+                    continue
+            
+            # Strategy 2: Bulk search for more results
+            if len(all_papers) < 30:
+                try:
+                    bulk_query = " OR ".join(key_concepts[:3]) if key_concepts else query[:60]
+                    url = "https://api.semanticscholar.org/graph/v1/paper/search/bulk"
+                    params = {
+                        "query": bulk_query,
+                        "fields": "title,year,abstract,url,citationCount,paperId",
+                        "limit": "100"
+                    }
+                    
+                    _safe_print(f"   📦 Bulk search: '{bulk_query[:40]}...'")
+                    response = await asyncio.to_thread(
+                        lambda: requests.get(url, params=params, headers=headers, timeout=15)
+                    )
+                    
+                    if response.status_code == 200:
+                        data = response.json()
+                        papers = data.get("data", [])
+                        _safe_print(f"      Bulk returned {len(papers)} papers")
+                        
+                        for paper in papers:
+                            paper_id = paper.get("paperId")
+                            if paper_id and paper_id not in seen_ids:
+                                seen_ids.add(paper_id)
+                                paper["_query"] = "bulk"
+                                all_papers.append(paper)
+                    
+                    await asyncio.sleep(0.3)
+                    
+                except Exception as e:
+                    _safe_print(f"      Bulk search error: {e}")
+            
+            _safe_print(f"   📊 Total unique papers collected: {len(all_papers)}")
+            
+            # Score and rank papers by relevance
+            scored_papers = []
+            for paper in all_papers:
+                title = paper.get("title", "").lower()
+                abstract = str(paper.get("abstract", "")).lower()
+                text = title + " " + abstract
+                citations = paper.get("citationCount", 0) or 0
+                year = paper.get("year", 2020) or 2020
+                
+                # Calculate relevance score
+                score = 0
+                
+                # Concept matching (most important)
+                concept_matches = sum(1 for c in key_concepts if c.lower() in text)
+                score += concept_matches * 20
+                
+                # Query word matching
+                query_words = query.lower().split()
+                word_matches = sum(1 for w in query_words if len(w) > 3 and w in text)
+                score += word_matches * 5
+                
+                # Citation boost (log scale to avoid domination)
+                import math
+                score += math.log10(citations + 1) * 3
+                
+                # Recency boost
+                score += max(0, (year - 2015)) * 2
+                
+                paper["_score"] = score
+                scored_papers.append(paper)
+            
+            # Sort by score and take top results
+            scored_papers.sort(key=lambda p: p.get("_score", 0), reverse=True)
+            top_papers = scored_papers[:20]  # Return top 20
+            
+            _safe_print(f"   ✅ Selected top {len(top_papers)} most relevant papers")
+            
+            # Convert to facts
+            all_facts = []
+            for paper in top_papers:
+                citations = paper.get("citationCount", 0) or 0
+                all_facts.append({
+                    "metric": "academic_research",
+                    "value": paper.get("title", ""),
+                    "source": f"Semantic Scholar ({paper.get('year', 'N/A')}) - {citations} citations",
+                    "source_priority": 75 + min(paper.get("_score", 0) / 10, 15),  # Boost priority by score
+                    "confidence": min(0.70 + (paper.get("_score", 0) / 100), 0.95),
+                    "raw_text": f"Research: {paper.get('title')} | Citations: {citations} | {str(paper.get('abstract', ''))[:300]}",
+                    "timestamp": datetime.now().isoformat(),
+                    "url": paper.get("url", ""),
+                    "paper_id": paper.get("paperId", ""),
+                    "relevance_score": paper.get("_score", 0)
+                })
+            
+            return all_facts
+            
+        except Exception as e:
+            _safe_print(f"⚠️ Semantic Scholar smart search error: {e}")
+            import traceback
+            traceback.print_exc()
+            return []
+    
+    async def _fetch_perplexity_smart(self, query: str) -> List[Dict[str, Any]]:
+        """
+        Fetch real-time intelligence using LLM-generated smart queries.
+        
+        Uses contextually relevant queries to get the most useful
+        current information for the user's specific question.
+        """
+        if not self.perplexity_api_key:
+            _safe_print("⚠️  Perplexity: No API key")
+            return []
+        
+        try:
+            _safe_print("🧠 Perplexity: Generating smart real-time queries...")
+            
+            # Generate smart queries using LLM
+            smart_queries = await generate_smart_queries(query)
+            realtime_queries = smart_queries.get("realtime_queries", [query[:100]])
+            data_needs = smart_queries.get("data_needs", query)
+            
+            _safe_print(f"   Smart queries: {realtime_queries}")
+            _safe_print(f"   Data needs: {data_needs[:80]}...")
+            
+            url = "https://api.perplexity.ai/chat/completions"
+            headers = {
+                "Authorization": f"Bearer {self.perplexity_api_key}",
+                "Content-Type": "application/json"
+            }
+            
+            all_facts = []
+            
+            # Combine queries into one comprehensive prompt
+            combined_query = " ".join(realtime_queries[:2])
+            
+            payload = {
+                "model": "sonar-pro",
+                "messages": [{
+                    "role": "user",
+                    "content": (
+                        f"Find the most recent, specific data and statistics to answer:\n\n"
+                        f"QUESTION: {query}\n\n"
+                        f"SEARCH FOCUS: {combined_query}\n\n"
+                        f"DATA NEEDED: {data_needs}\n\n"
+                        "Provide:\n"
+                        "1. Specific numbers and statistics with exact figures\n"
+                        "2. Most recent data available (2024-2025 preferred)\n"
+                        "3. Source citations for verification\n"
+                        "4. Comparisons if relevant (regional, historical)\n"
+                        "Be concise but data-rich."
+                    ),
+                }],
+                "max_tokens": 700
+            }
+            
+            async with aiohttp.ClientSession() as session:
+                async with session.post(url, headers=headers, json=payload) as response:
+                    _safe_print(f"   Perplexity smart status: {response.status}")
+                    
+                    if response.status == 200:
+                        data = await response.json()
+                        answer = data["choices"][0]["message"]["content"]
+                        citations = data.get("citations", [])
+                        
+                        _safe_print(f"   Perplexity response: {answer[:100]}...")
+                        _safe_print(f"   Citations: {len(citations)}")
+                        
+                        all_facts.append({
+                            "metric": "realtime_intelligence",
+                            "value": answer[:500],
+                            "source": "Perplexity AI (smart context-aware search)",
+                            "source_priority": 85,
+                            "confidence": 0.85,
+                            "raw_text": answer,
+                            "citations": citations,
+                            "timestamp": datetime.now().isoformat(),
+                            "query_used": combined_query,
+                            "data_needs": data_needs
+                        })
+                        
+                        # Extract citations as facts
+                        for i, citation in enumerate(citations[:3]):
+                            all_facts.append({
+                                "metric": f"verified_source_{i+1}",
+                                "value": citation,
+                                "source": "Perplexity (verified citation)",
+                                "source_priority": 80,
+                                "confidence": 0.80,
+                                "raw_text": f"Source: {citation}",
+                                "timestamp": datetime.now().isoformat()
+                            })
+                        
+                        return all_facts
+            
+            return []
+            
+        except Exception as e:
+            _safe_print(f"⚠️ Perplexity smart search error: {e}")
+            return []
 
     async def fetch_all_sources_with_gaps(self, query: str) -> Dict[str, Any]:
         """

@@ -72,6 +72,7 @@ class IntelligenceState(TypedDict, total=False):
     scenario_baselines: Annotated[Optional[Dict[str, Any]], take_last]  # For scenario generator
     data_sources: Annotated[List[str], merge_lists]
     data_quality_score: Annotated[float, take_last]  # 0.0 to 1.0
+    semantic_routing: Annotated[Optional[Dict[str, Any]], take_last]  # LLM-based query understanding
 
     # McKinsey-Grade Calculation Pipeline
     structured_inputs: Annotated[Optional[Dict[str, Any]], take_last]  # From structure_data_node

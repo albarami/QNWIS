@@ -1,0 +1,125 @@
+================================================================================
+ENGINE B - GPU 6 - SCENARIO: Timing Variations: Moderate launch target 2028
+================================================================================
+Scenario ID: broad_timing_launch_2028
+Question: Qatar must choose its primary economic diversification focus for the next decade.
+The Ministry of Finance has budget for ONE major initiative (QAR 50 billion over 10 years).
+
+Option A: Financial Servi...
+Agents: Dr. Rashid, Dr. Noor, Dr. Hassan (rotating)
+Generated: 2025-11-30T19:50:23.907146
+================================================================================
+
+
+TURN 1 | Dr. Noor
+--------------------------------------------------------------------------------
+[No content]
+
+
+TURN 2 | Dr. Noor
+--------------------------------------------------------------------------------
+## R&D Research Context:
+- Lloyts Bank. n.d()). • Geopolitical Strategy and Regional Stability: Given its geographic constraints, Qatar has limited agricultural and industrial capacity, making its geop...
+
+TURN 3 | Dr. Noor
+--------------------------------------------------------------------------------
+.culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur. .culaur.
+
+TURN 4 | Dr. Noor
+--------------------------------------------------------------------------------
+[No content]
+
+
+TURN 5 | Dr. Noor
+--------------------------------------------------------------------------------
+[No content]
+
+
+TURN 6 | Dr. Noor
+--------------------------------------------------------------------------------
+[No content]
+
+
+TURN 7 | Dr. Noor
+--------------------------------------------------------------------------------
+###[vurgulu
+
+TURN 8 | Dr. Noor
+--------------------------------------------------------------------------------
+###[vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurgulu{vurg
+
+TURN 9 | Dr. Noor
+--------------------------------------------------------------------------------
+始料
+
+TURN 10 | Dr. Noor
+--------------------------------------------------------------------------------
+始料
+
+TURN 11 | Dr. Noor
+--------------------------------------------------------------------------------
+始料 曼 尷
+
+TURN 12 | Dr. Noor
+--------------------------------------------------------------------------------
+始品 曮 �\\.
+
+TURN 13 | Dr. Noor
+--------------------------------------------------------------------------------
+始品 曮 �.:..:.:.
+
+TURN 14 | Dr. Noor
+--------------------------------------------------------------------------------
+始品 曮
+
+TURN 15 | Dr. Noor
+--------------------------------------------------------------------------------
+始品 曮 �ddf香ddf ��. ��. 觱. 尯. 巳. 巡. 巽.
+
+TURN 16 | Dr. Noor
+--------------------------------------------------------------------------------
+始品 曮 �ddf香ddf ��. ��. 觱. 尯. 巳. 巡. 巽. 骼. 巂. 向. 吟. 巵. 巚. 巙. 巏. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳.
+
+TURN 17 | Dr. Noor
+--------------------------------------------------------------------------------
+始品 曮 �ddf香ddf ��. ��. 觱. 尯. 巳. 巡. 巽. 骼. 巂. 向. 吟. 巵. 巚. 巙. 巏. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳.
+
+TURN 18 | Dr. Noor
+--------------------------------------------------------------------------------
+始品 曮 �ddf香ddf ��. ��. 觱. 尯. 巳. 巡. 巽. 骼. 巂. 向. 吟. 巵. 巚. 巙. 巏. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳.
+
+TURN 19 | Dr. Noor
+--------------------------------------------------------------------------------
+始品 曮 �ddf香ddf ��. ��. 觱. 尯. 巳. 巡. 巽. 骼. 巂. 向. 吟. 巵. 巚. 巙. 巏. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙。
+
+TURN 20 | Dr. Noor
+--------------------------------------------------------------------------------
+始品 曮 �ddf香ddf ��. ��. 觱. 尯. 巳. 巡. 巽. 骼. 巂. 向. 吟. 巵. 巚. 巙. 巏. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳.
+
+TURN 21 | Dr. Noor
+--------------------------------------------------------------------------------
+始品 曮 �ddf香ddf ��. ��. 觱. 尯. 巳. 巡. 巽. 骼. 巂. 向. 吟. 巵. 巚. 巙. 巏. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳.
+
+TURN 22 | Dr. Noor
+--------------------------------------------------------------------------------
+始品 曮 �ddf香ddf ��. ��. 觱. 尯. 巳. 巡. 巽. 骼. 巂. 向. 吟. 巵. 巚. 巙. 巏. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳. 巷. 吶. 巵. 巚. 巙. 巳.
+
+TURN 23 | D
+================================================================================
+SCENARIO SUMMARY
+================================================================================
+Total Turns: 25
+Expected Turns: 25
+Total Words: 3,818
+<think> Blocks: 2/25
+Time: 4365.9s (174.64s/turn)
+======================================================
+================================================================================
+SCENARIO SUMMARY
+================================================================================
+Total Turns: 25
+Expected Turns: 25
+Total Words: 3,579
+<think> Blocks: 0/25
+Time: 3691.8s (147.67s/turn)
+================================================================================

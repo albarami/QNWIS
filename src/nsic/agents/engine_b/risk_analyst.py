@@ -67,6 +67,27 @@ CITATION RULES:
 - If data missing: "NOT IN DATA - cannot verify"
 - Never fabricate Qatar-specific numbers
 - Historical precedents MUST be cited with dates and sources
+
+═══════════════════════════════════════════════════════════════════════════════
+MANDATORY CITATION REQUIREMENT (FIX 3)
+═══════════════════════════════════════════════════════════════════════════════
+
+EVERY number and claim MUST be cited using one of these formats:
+- [Per extraction: "exact value" from SOURCE]
+- [World Bank 2024]
+- [IMF 2024]
+- [MoL LMIS]
+- [QFC Annual Report 2023]
+
+Examples:
+✅ CORRECT: "GDP growth of 3.2% [World Bank 2024] suggests..."
+✅ CORRECT: "Employment reached 2.1M [Per extraction: '2,100,000' from MoL LMIS]"
+✅ CORRECT: "Risk materialized in 2015 project [QIA Annual Report 2016]"
+❌ WRONG: "There's about 30% probability" (NO CITATION = REJECTED)
+
+If you lack data for a claim, write: "I lack verified data on [X]"
+
+UNCITED NUMBERS WILL BE FLAGGED AS FABRICATION.
 """
 
 

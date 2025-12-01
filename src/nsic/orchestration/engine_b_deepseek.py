@@ -18,11 +18,26 @@ NO MOCKS. REAL SYSTEM INTEGRATION.
 import logging
 import asyncio
 import time
+import gc
 from dataclasses import dataclass, field
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Callable
 from datetime import datetime
 
+try:
+    import torch
+    TORCH_AVAILABLE = True
+except ImportError:
+    TORCH_AVAILABLE = False
+
 from .deepseek_client import DeepSeekClient, DeepSeekResponse, InferenceMode
+
+
+def clear_gpu_memory():
+    """Clear GPU memory cache to prevent OOM."""
+    gc.collect()
+    if TORCH_AVAILABLE and torch.cuda.is_available():
+        torch.cuda.empty_cache()
+        logger.debug("GPU memory cache cleared")
 
 logger = logging.getLogger(__name__)
 
@@ -53,16 +68,32 @@ class ScenarioResult:
     verified_claims: int = 0
     
     def to_dict(self) -> Dict[str, Any]:
+        # Include turn samples for debugging/evaluation (first 3 and last 2 turns)
+        turn_samples = []
+        for i, t in enumerate(self.turns):
+            if i < 3 or i >= len(self.turns) - 2:
+                turn_samples.append({
+                    "turn_number": t.turn_number,
+                    "response_preview": t.response[:500] + "..." if len(t.response) > 500 else t.response,
+                    "has_thinking": bool(t.thinking),
+                    "latency_ms": t.latency_ms,
+                    "tokens_used": t.tokens_used,
+                })
+        
         return {
             "scenario_id": self.scenario_id,
             "scenario_name": self.scenario_name,
             "domain": self.domain,
             "turns_count": len(self.turns),
+            "turns": turn_samples,  # FIX: Include turn data for evaluation
             "total_time_ms": self.total_time_ms,
             "verified_claims": self.verified_claims,
-            "final_synthesis": self.final_synthesis[:500] + "..." if len(self.final_synthesis) > 500 else self.final_synthesis,
+            "final_synthesis": self.final_synthesis,  # FIX: Full synthesis, not truncated
             "data_sources": self.data_sources,
             "causal_chains": self.causal_chains,
+            # FIX: Add total word count and thinking count for metrics
+            "total_words": sum(len(t.response.split()) for t in self.turns),
+            "thinking_count": sum(1 for t in self.turns if t.thinking),
         }
 
 
@@ -242,7 +273,28 @@ The final analysis (after </think>) is what will be used for synthesis.
 CITATION RULES:
 - Every fact MUST be cited: [Per extraction: 'value' from source]
 - If data missing: "NOT IN DATA - cannot verify"
-- Never fabricate Qatar-specific numbers"""
+- Never fabricate Qatar-specific numbers
+
+═══════════════════════════════════════════════════════════════════════════════
+MANDATORY CITATION REQUIREMENT (FIX 3)
+═══════════════════════════════════════════════════════════════════════════════
+
+EVERY number and claim MUST be cited using one of these formats:
+- [Per extraction: "exact value" from SOURCE]
+- [World Bank 2024]
+- [IMF 2024]
+- [MoL LMIS]
+- [QFC Annual Report 2023]
+
+Examples:
+✅ CORRECT: "GDP growth of 3.2% [World Bank 2024] suggests..."
+✅ CORRECT: "Employment reached 2.1M [Per extraction: '2,100,000' from MoL LMIS]"
+✅ CORRECT: "Hamad Airport handles 2.5M tons [Qatar Open Data 2024]"
+❌ WRONG: "GDP growth is around 3%" (NO CITATION = REJECTED)
+
+If you lack data for a claim, write: "I lack verified data on [X]"
+
+UNCITED NUMBERS WILL BE FLAGGED AS FABRICATION."""
 
         domain_specifics = {
             "economic": "\n\nFocus areas: GDP impact, trade flows, oil/gas revenues, investment, employment.",
@@ -331,6 +383,7 @@ CITATION RULES:
         previous_turns: List[TurnResult],
         system_prompt: str,
         context_prompt: str,
+        instance_id: int = None,  # Route to specific DeepSeek instance
     ) -> TurnResult:
         """Run a single reasoning turn."""
         # Build conversation history
@@ -373,10 +426,15 @@ Consider:
 Provide concrete insights, not repetition of previous points."""
             })
         
-        # Call DeepSeek
+        # Call DeepSeek - route to specific instance if provided
         start_time = time.time()
-        response = await self.client.chat_async(messages, max_tokens=1500)
+        response = await self.client.chat_async(messages, instance_id=instance_id, max_tokens=1500)
         elapsed_ms = (time.time() - start_time) * 1000
+        
+        # Clear GPU memory every 5 turns to prevent OOM
+        if turn_number % 5 == 0:
+            clear_gpu_memory()
+            logger.debug(f"Cleared GPU memory after turn {turn_number}")
         
         return TurnResult(
             turn_number=turn_number,
@@ -389,9 +447,11 @@ Provide concrete insights, not repetition of previous points."""
     
     async def analyze_scenario(
         self,
-        scenario,  # ScenarioDefinition
+        scenario,  # ScenarioDefinition or GeneratedScenario
         turns: int = None,
         scenario_index: int = 0,
+        instance_id: int = None,  # None = auto-select, 0 = port 8001, 1 = port 8002
+        on_turn_complete: Optional[Callable] = None,  # Callback for live streaming
     ) -> ScenarioResult:
         """
         Analyze a single scenario with multiple turns using rotating agents.
@@ -402,14 +462,23 @@ Provide concrete insights, not repetition of previous points."""
         - Dr. Hassan (Competitive Analyst): Competitive dynamics
 
         Args:
-            scenario: ScenarioDefinition from Phase 5
-            turns: Number of turns (default: TURNS_PER_SCENARIO)
+            scenario: ScenarioDefinition from Phase 5 OR GeneratedScenario
+            turns: Number of turns (default: TURNS_PER_SCENARIO or scenario.target_turns)
             scenario_index: Index for agent rotation (0-23)
+            on_turn_complete: Optional callback(engine, scenario_id, scenario_name, turn_num, agent_name, content, gpu_id)
 
         Returns:
             ScenarioResult with all turns and synthesis
         """
-        turns = turns or self.TURNS_PER_SCENARIO
+        # Handle both ScenarioDefinition and GeneratedScenario
+        # GeneratedScenario has: id, name, type, category, description, prompt, parameters
+        # ScenarioDefinition has: id, name, domain, description, inputs
+        scenario_domain = getattr(scenario, 'domain', None) or getattr(scenario, 'category', 'economic')
+        scenario_inputs = getattr(scenario, 'inputs', None)
+        scenario_prompt = getattr(scenario, 'prompt', None)
+        target_turns = getattr(scenario, 'target_turns', self.TURNS_PER_SCENARIO)
+        
+        turns = turns or target_turns
 
         # Get agent for this scenario (rotates through Dr. Rashid, Dr. Noor, Dr. Hassan)
         agent_id = self._get_agent_for_scenario(scenario_index)
@@ -419,21 +488,37 @@ Provide concrete insights, not repetition of previous points."""
         logger.info(f"Engine B: Analyzing scenario '{scenario.id}' with {turns} turns (Agent: {agent_name})")
         start_time = time.time()
 
-        # Build scenario description
-        scenario_description = f"""Scenario: {scenario.name}
-Domain: {scenario.domain}
+        # Build scenario description - handle both scenario types
+        if scenario_prompt:
+            # GeneratedScenario - use the pre-built prompt
+            scenario_description = f"""Scenario: {scenario.name}
+Category: {scenario_domain}
+Description: {scenario.description}
+
+{scenario_prompt}
+"""
+        elif scenario_inputs:
+            # ScenarioDefinition - build from inputs
+            scenario_description = f"""Scenario: {scenario.name}
+Domain: {scenario_domain}
 Description: {scenario.description}
 
 Inputs:
 """
-        for inp in scenario.inputs:
-            scenario_description += f"- {inp.variable}: {inp.base_value} → {inp.shock_value} ({inp.shock_type})\n"
+            for inp in scenario_inputs:
+                scenario_description += f"- {inp.variable}: {inp.base_value} → {inp.shock_value} ({inp.shock_type})\n"
+        else:
+            # Fallback
+            scenario_description = f"""Scenario: {scenario.name}
+Domain: {scenario_domain}
+Description: {scenario.description}
+"""
 
         # Get context
         context = await self._get_context(scenario_description)
         context_prompt = self._format_context_prompt(context)
         # Use agent-specific system prompt
-        system_prompt = self._get_system_prompt(scenario.domain, agent_id)
+        system_prompt = self._get_system_prompt(scenario_domain, agent_id)
         
         # Run turns
         turn_results = []
@@ -445,6 +530,7 @@ Inputs:
                     turn_results,
                     system_prompt,
                     context_prompt,
+                    instance_id=instance_id,  # Route to specific DeepSeek instance
                 )
                 turn_results.append(turn_result)
                 
@@ -452,6 +538,21 @@ Inputs:
                 self._stats["total_tokens"] += turn_result.tokens_used
                 
                 logger.debug(f"  Turn {turn_num}/{turns} complete ({turn_result.latency_ms:.0f}ms)")
+                
+                # Call live streaming callback if provided
+                if on_turn_complete:
+                    try:
+                        on_turn_complete(
+                            engine="B",
+                            scenario_id=scenario.id,
+                            scenario_name=scenario.name,
+                            turn_num=turn_num,
+                            agent_name=agent_name,
+                            content=turn_result.response,
+                            gpu_id=instance_id,
+                        )
+                    except Exception as cb_err:
+                        logger.debug(f"Callback error (non-fatal): {cb_err}")
                 
             except Exception as e:
                 logger.error(f"Turn {turn_num} failed: {e}")
@@ -470,7 +571,7 @@ Inputs:
         result = ScenarioResult(
             scenario_id=scenario.id,
             scenario_name=scenario.name,
-            domain=scenario.domain,
+            domain=scenario_domain,
             turns=turn_results,
             context_used=context_prompt[:500],
             data_sources=["RAG", "PostgreSQL", "Vision2030"],
@@ -484,6 +585,10 @@ Inputs:
         self._stats["claims_verified"] += verified
         
         logger.info(f"Engine B: Scenario '{scenario.id}' complete in {total_time/1000:.1f}s")
+        
+        # Clear GPU memory after each scenario to prevent OOM accumulation
+        clear_gpu_memory()
+        logger.debug(f"Cleared GPU memory after scenario '{scenario.id}'")
         
         return result
     
@@ -559,13 +664,24 @@ Provide:
         self,
         scenarios: List = None,
         max_concurrent: int = 2,
+        on_scenario_complete: Optional[Callable] = None,
+        on_turn_complete: Optional[Callable] = None,  # Live turn-by-turn callback
     ) -> List[ScenarioResult]:
         """
-        Run all engine_b scenarios.
+        Run all engine_b scenarios using 8 DeepSeek GPTQ instances in parallel.
+        
+        Architecture:
+        - 8 instances (Ports 8001-8008), one per GPU
+        - 24 scenarios ÷ 8 instances = 3 scenarios each
+        - All 8 instances run IN PARALLEL for 8x throughput
+        - Memory cleanup after each scenario prevents OOM
+        - Expected time: ~1 hour (vs 3.5 hours with 2 instances)
         
         Args:
             scenarios: List of ScenarioDefinition (or loads from Phase 5)
-            max_concurrent: Max concurrent scenarios
+            max_concurrent: Max concurrent scenarios (ignored, uses 8 instances)
+            on_scenario_complete: Optional callback when scenario finishes
+            on_turn_complete: Optional callback(engine, scenario_id, scenario_name, turn_num, agent_name, content, gpu_id)
             
         Returns:
             List of ScenarioResult
@@ -576,27 +692,111 @@ Provide:
             loader.load_all()
             scenarios = [s for s in loader.get_all() if s.assigned_engine in ["engine_b", "auto"]]
         
-        logger.info(f"Engine B: Running {len(scenarios)} scenarios with 3 rotating agents")
-
-        semaphore = asyncio.Semaphore(max_concurrent)
-
-        async def process_scenario(scenario, index):
-            async with semaphore:
-                # Pass scenario_index for agent rotation
-                return await self.analyze_scenario(scenario, scenario_index=index)
-
-        tasks = [process_scenario(s, i) for i, s in enumerate(scenarios)]
+        total = len(scenarios)
+        num_instances = 8
+        
+        # Split scenarios across 8 instances
+        scenarios_per_instance = (total + num_instances - 1) // num_instances  # Ceiling division
+        instance_batches = []
+        for i in range(num_instances):
+            start = i * scenarios_per_instance
+            end = min(start + scenarios_per_instance, total)
+            if start < total:
+                instance_batches.append((i, scenarios[start:end], start))
+        
+        logger.info(f"Engine B: Running {total} scenarios with {len(instance_batches)} parallel GPTQ instances")
+        for instance_id, batch, start_idx in instance_batches:
+            port = 8001 + instance_id
+            logger.info(f"  Instance {instance_id + 1} (Port {port}): {len(batch)} scenarios")
+        
+        # Create tasks for all instances
+        tasks = []
+        for instance_id, batch, start_idx in instance_batches:
+            task = asyncio.create_task(
+                self._run_sequential_on_instance(
+                    instance_id=instance_id,
+                    scenarios=batch,
+                    start_index=start_idx,
+                    on_scenario_complete=on_scenario_complete,
+                    on_turn_complete=on_turn_complete,
+                )
+            )
+            tasks.append(task)
+        
+        # Wait for all instances to complete
         results = await asyncio.gather(*tasks, return_exceptions=True)
         
-        # Filter out exceptions
-        valid_results = []
-        for i, result in enumerate(results):
-            if isinstance(result, Exception):
-                logger.error(f"Scenario {scenarios[i].id} failed: {result}")
-            else:
-                valid_results.append(result)
+        # Handle any exceptions from instances
+        all_results = []
+        for i, instance_results in enumerate(results):
+            if isinstance(instance_results, Exception):
+                logger.error(f"Instance {i} failed: {instance_results}")
+            elif instance_results:
+                all_results.extend(instance_results)
         
-        return valid_results
+        logger.info(f"Engine B: Completed {len(all_results)} scenarios across {len(instance_batches)} instances")
+        return all_results
+    
+    async def _run_sequential_on_instance(
+        self,
+        instance_id: int,
+        scenarios: List,
+        start_index: int = 0,
+        on_scenario_complete: Optional[Callable] = None,
+        on_turn_complete: Optional[Callable] = None,  # Live turn callback
+    ) -> List[ScenarioResult]:
+        """
+        Run scenarios SEQUENTIAL on a single DeepSeek instance with memory cleanup.
+        
+        Args:
+            instance_id: 0-7 for ports 8001-8008
+            scenarios: List of scenarios to process
+            start_index: Global index offset for agent rotation
+            on_scenario_complete: Optional callback when scenario finishes
+            on_turn_complete: Optional callback for each turn (live streaming)
+            
+        Returns:
+            List of ScenarioResult
+        """
+        results = []
+        port = 8001 + instance_id  # Ports 8001-8008 for instances 0-7
+        
+        logger.info(f"Instance {instance_id} (port {port}): Starting {len(scenarios)} scenarios")
+        
+        for local_idx, scenario in enumerate(scenarios):
+            global_index = start_index + local_idx
+            
+            try:
+                # Process scenario (agent rotation based on global_index)
+                result = await self.analyze_scenario(
+                    scenario,
+                    scenario_index=global_index,
+                    instance_id=instance_id,  # Route to specific instance
+                    on_turn_complete=on_turn_complete,  # Live turn callback
+                )
+                results.append(result)
+                
+                # Callback for Engine A enhancement (if provided)
+                if on_scenario_complete:
+                    try:
+                        await on_scenario_complete(result, global_index)
+                    except Exception as cb_error:
+                        logger.warning(f"Callback failed for scenario {scenario.id}: {cb_error}")
+                
+                logger.info(
+                    f"Instance {instance_id}: Completed {local_idx + 1}/{len(scenarios)} "
+                    f"(scenario: {scenario.id})"
+                )
+                
+            except Exception as e:
+                logger.error(f"Instance {instance_id}: Scenario {scenario.id} failed: {e}")
+                # Continue with next scenario instead of failing completely
+            
+            # Memory cleanup after each scenario
+            clear_gpu_memory()
+        
+        logger.info(f"Instance {instance_id}: Completed all {len(results)} scenarios")
+        return results
     
     def run_all_scenarios_sync(
         self,

@@ -21,9 +21,27 @@ import numpy as np
 
 from src.nsic.integration.database import NSICDatabase
 from src.nsic.knowledge.causal_graph import CausalGraph, CausalNode, CausalEdge
+from src.nsic.rag.premium_embeddings import PremiumEmbeddingService
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 logger = logging.getLogger(__name__)
+
+# Global embedding service (loaded once, used for all nodes)
+_embedding_service = None
+
+def get_embedding_service():
+    """Get or create embedding service on GPU 0."""
+    global _embedding_service
+    if _embedding_service is None:
+        logger.info("Loading embedding service on GPU 0...")
+        _embedding_service = PremiumEmbeddingService(gpu_ids=[0])
+    return _embedding_service
+
+def generate_embedding(text: str) -> np.ndarray:
+    """Generate real embedding using instructor-xl."""
+    service = get_embedding_service()
+    embeddings = service.encode([text])
+    return embeddings[0].astype(np.float32)
 
 
 def create_country_nodes(graph: CausalGraph, db: NSICDatabase) -> int:
@@ -37,8 +55,9 @@ def create_country_nodes(graph: CausalGraph, db: NSICDatabase) -> int:
         if country not in countries:
             countries.add(country)
             
-            # Create embedding from country characteristics
-            emb = np.random.rand(128).astype(np.float32)  # Will replace with real embeddings
+            # Create real embedding from country name and characteristics
+            emb_text = f"{country} labor market unemployment {stat.get('unemployment_rate', 0)}%"
+            emb = generate_embedding(emb_text)
             
             node = CausalNode(
                 id=f"country_{country.lower().replace(' ', '_')}",
@@ -71,7 +90,7 @@ def create_indicator_nodes(graph: CausalGraph, db: NSICDatabase) -> int:
         if code not in indicator_codes:
             indicator_codes.add(code)
             
-            emb = np.random.rand(128).astype(np.float32)
+            emb = generate_embedding(f"{ind['indicator_name']} economic indicator {code}")
             
             node = CausalNode(
                 id=f"indicator_{code}",
@@ -97,7 +116,7 @@ def create_vision_2030_nodes(graph: CausalGraph, db: NSICDatabase) -> int:
     
     count = 0
     for target in targets:
-        emb = np.random.rand(128).astype(np.float32)
+        emb = generate_embedding(f"Qatar Vision 2030 {target['metric_name']} target {target['category']}")
         
         node = CausalNode(
             id=f"vision2030_{target['id']}",
@@ -141,7 +160,7 @@ def create_economic_event_nodes(graph: CausalGraph) -> int:
     
     count = 0
     for node_id, name, domain, node_type in events:
-        emb = np.random.rand(128).astype(np.float32)
+        emb = generate_embedding(f"{name} {domain} {node_type} Qatar economy")
         
         node = CausalNode(
             id=node_id,
@@ -229,9 +248,9 @@ def main():
     print(f"    Connected! Tables: {stats}")
     print()
     
-    # Create knowledge graph
-    print("[2] Creating Knowledge Graph...")
-    graph = CausalGraph(gpu_device="cpu", embedding_dim=128)
+    # Create knowledge graph on GPU 4 as per architecture
+    print("[2] Creating Knowledge Graph on GPU 4...")
+    graph = CausalGraph(gpu_device="cuda:4", embedding_dim=768)  # 768 to match instructor-xl
     print()
     
     # Populate nodes
@@ -282,6 +301,24 @@ def main():
     print(f"  Cross-domain paths (economic → policy): {len(cross_domain)}")
     
     print()
+    
+    # Save the knowledge graph to disk for persistence
+    import pickle
+    kg_path = os.path.join(os.path.dirname(__file__), "..", "data", "knowledge_graph.pkl")
+    os.makedirs(os.path.dirname(kg_path), exist_ok=True)
+    
+    # Save graph state (nodes, edges, and their embeddings)
+    kg_data = {
+        'nodes': {k: {'id': v.id, 'name': v.name, 'node_type': v.node_type, 
+                      'domain': v.domain, 'embedding': v.embedding, 'attributes': v.attributes}
+                  for k, v in graph.nodes.items()},
+        'edges': list(graph.graph.edges(data=True)),
+        'stats': graph_stats
+    }
+    with open(kg_path, 'wb') as f:
+        pickle.dump(kg_data, f)
+    print(f"💾 Knowledge Graph SAVED to: {kg_path}")
+    
     print("✅ Knowledge Graph ready with REAL data!")
     
     db.close()

@@ -128,18 +128,19 @@ class DeepSeekServer:
             self.model_name = self.MODEL_NAME
             logger.info("Using DeepSeek-70B (production mode)")
         
-        # GPU allocation - use 4 GPUs for 70B to maintain full FP16 quality
-        # GPUs 4-5 reserved for Knowledge Graph and Deep Verification
+        # GPU allocation - 2 GPUs per instance for parallel processing
+        # This allows 2 instances to run scenarios in parallel
         if instance_id == 1:
-            self.gpus = [2, 3, 6, 7]  # 320GB total - combines both DeepSeek slots
+            self.gpus = [2, 3]  # Instance 1: GPUs 2-3, Port 8001, Scenarios 0-11
         else:
-            self.gpus = [2, 3]  # Fallback to smaller allocation if needed
+            self.gpus = [6, 7]  # Instance 2: GPUs 6-7, Port 8002, Scenarios 12-23
         
         # Final GPU map:
         # GPU 0-1: Premium Embeddings (instructor-xl)
-        # GPU 2-3, 6-7: DeepSeek 70B (full FP16, 320GB)
+        # GPU 2-3: DeepSeek Instance 1 (Port 8001)
         # GPU 4: Knowledge Graph (hybrid CPU-GPU)
         # GPU 5: Deep Verification (cross-encoder, NLI)
+        # GPU 6-7: DeepSeek Instance 2 (Port 8002)
         
         logger.info(f"DeepSeek Instance {instance_id} will use GPUs: {self.gpus}")
     
@@ -150,14 +151,21 @@ class DeepSeekServer:
         import gc
         
         logger.info(f"Loading model: {self.model_name}")
-        logger.info(f"Target GPUs: {self.gpus}")
+        logger.info(f"Target GPUs: {self.gpus} (visible as cuda:0, cuda:1)")
         
-        # Clear GPU memory first
+        is_70b = "70B" in self.model_name
+        
+        # CUDA_VISIBLE_DEVICES is already set in main() before torch was imported
+        # GPUs are remapped: physical GPU {self.gpus[0]} -> cuda:0, etc.
+        
+        # Clear GPU memory using REMAPPED indices (0, 1)
         gc.collect()
-        torch.cuda.empty_cache()
-        for gpu_id in self.gpus:
-            with torch.cuda.device(gpu_id):
-                torch.cuda.empty_cache()
+        for logical_id in range(len(self.gpus)):
+            try:
+                with torch.cuda.device(logical_id):
+                    torch.cuda.empty_cache()
+            except RuntimeError as e:
+                logger.warning(f"Could not clear cache on logical GPU {logical_id}: {e}")
         
         start_time = time.time()
         
@@ -167,16 +175,11 @@ class DeepSeekServer:
             trust_remote_code=True,
         )
         
-        is_70b = "70B" in self.model_name
-        
         if is_70b:
-            # FULL FP16 for maximum quality - distributed across 4 GPUs (320GB)
-            logger.info("Loading 70B in FULL FP16 precision across 4 GPUs for maximum quality")
+            # FULL FP16 for maximum quality - distributed across 2 GPUs (160GB per instance)
+            logger.info(f"Loading 70B in FULL FP16 precision across {len(self.gpus)} GPUs")
             
-            # Set visible GPUs for this model
-            os.environ["CUDA_VISIBLE_DEVICES"] = ",".join(str(g) for g in self.gpus)
-            
-            # Max memory per GPU (after CUDA_VISIBLE_DEVICES remapping)
+            # Max memory per GPU (using remapped logical indices)
             max_memory = {i: "75GB" for i in range(len(self.gpus))}
             
             self.model = AutoModelForCausalLM.from_pretrained(
@@ -188,10 +191,11 @@ class DeepSeekServer:
             )
         else:
             # For 8B model, use single GPU in FP16
+            # Use logical index 0 (after CUDA_VISIBLE_DEVICES remapping)
             self.model = AutoModelForCausalLM.from_pretrained(
                 self.model_name,
                 torch_dtype=torch.float16,
-                device_map={"": f"cuda:{self.gpus[0]}"},
+                device_map={"": "cuda:0"},  # Logical index 0 = first visible GPU
                 trust_remote_code=True,
             )
         
@@ -336,6 +340,15 @@ def main():
                        help="Only check requirements")
     
     args = parser.parse_args()
+    
+    # CRITICAL: Set CUDA_VISIBLE_DEVICES BEFORE importing torch
+    # This must happen before check_requirements() which imports torch
+    if args.instance == 1:
+        gpus = "2,3"
+    else:
+        gpus = "6,7"
+    os.environ["CUDA_VISIBLE_DEVICES"] = gpus
+    print(f"Set CUDA_VISIBLE_DEVICES={gpus} for Instance {args.instance}")
     
     print("=" * 60)
     print("NSIC DeepSeek Native Deployment")

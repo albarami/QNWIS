@@ -99,11 +99,19 @@ class PatternDetectiveAgent:
         logger.info(
             "detect_anomalous_retention params=%s queries=%s",
             {"z_threshold": z_threshold, "min_sample_size": min_sample_size},
-            ["syn_attrition_by_sector_latest"],
+            ["attrition_rate_monthly"],
         )
 
-        # Fetch attrition data
-        res = self.client.run("syn_attrition_by_sector_latest")
+        # Fetch attrition data - use available query
+        try:
+            res = self.client.run("attrition_rate_monthly")
+        except Exception as e:
+            logger.warning(f"Attrition data not available: {e}")
+            return AgentReport(
+                agent="PatternDetective",
+                findings=[],
+                warnings=["Attrition by sector data not available from current sources"],
+            )
 
         if len(res.rows) < min_sample_size:
             return AgentReport(

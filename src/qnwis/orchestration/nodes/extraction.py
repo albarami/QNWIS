@@ -8,7 +8,9 @@ Uses intelligent routing to maximize data coverage.
 from __future__ import annotations
 
 import logging
-from typing import List, Dict, Any
+import os
+import json
+from typing import List, Dict, Any, Optional
 
 from ..state import IntelligenceState
 from ..prefetch_apis import get_complete_prefetch
@@ -16,6 +18,107 @@ from ..DATA_SOURCE_REGISTRY import DATA_SOURCES, QUERY_ROUTING, get_sources_for_
 from .scenario_baseline_requirements import enhance_facts_with_scenario_baselines
 
 logger = logging.getLogger(__name__)
+
+
+# =============================================================================
+# LLM-BASED SEMANTIC QUERY UNDERSTANDING
+# =============================================================================
+
+SEMANTIC_ROUTING_PROMPT = """You are a data routing expert. Analyze this query and determine which data sources are most relevant.
+
+QUERY: {query}
+
+AVAILABLE DATA SOURCES AND THEIR DOMAINS:
+1. MOL_LMIS - Qatar Ministry of Labour: employment, wages, Qatarization, skills, workforce, labor mobility
+2. GCC_STAT - Regional: GCC comparisons, unemployment rates, labor participation across 6 countries
+3. WORLD_BANK - Global: GDP, education, health, demographics, trade, infrastructure (1400+ indicators)
+4. IMF_DATA - Economic forecasts: GDP growth, inflation, fiscal balance, debt (forecasts to 2029)
+5. ILO_STAT - International labor: global employment benchmarks, working conditions, wages
+6. FAO_STAT - Food/Agriculture: food security, agricultural production, food imports
+7. UNWTO - Tourism: visitor arrivals, tourism revenue, hospitality sector
+8. IEA_ENERGY - Energy: oil/gas production, renewable energy, emissions
+9. UNCTAD - Investment: FDI flows, investment climate, trade facilitation
+10. ESCWA_TRADE - Arab trade: exports, imports, bilateral trade, product-level data
+11. QATAR_OPEN_DATA - Qatar government: public datasets, national statistics
+12. SEMANTIC_SCHOLAR - Research: 214M academic papers, labor economics research
+13. PERPLEXITY - Real-time: current events, recent statistics, market developments
+14. BRAVE_SEARCH - Web: news, company info, government announcements
+15. KNOWLEDGE_GRAPH - Relationships: sector-skill-occupation mappings, policy impacts
+16. RAG_SYSTEM - R&D Reports: 56 research documents on Qatar labor market, AI, skills
+
+Analyze the MEANING and CONTEXT of the query, not just keywords.
+
+RESPOND WITH VALID JSON:
+{{
+    "intent": "brief description of what the user wants to know",
+    "domains": ["primary_domain", "secondary_domain"],
+    "required_sources": ["SOURCE1", "SOURCE2", "SOURCE3"],
+    "optional_sources": ["SOURCE4", "SOURCE5"],
+    "reasoning": "why these sources are relevant"
+}}
+
+IMPORTANT: Choose sources based on SEMANTIC UNDERSTANDING, not keyword matching.
+For example:
+- "How competitive is Qatar's workforce?" → needs GCC_STAT, WORLD_BANK, ILO (for benchmarking), not just LMIS
+- "Can Qatar feed itself?" → needs FAO, UN Comtrade, World Bank (food imports), not energy data
+- "Should Qatar invest in solar?" → needs IEA, UNCTAD, World Bank, Perplexity (recent developments)
+"""
+
+
+async def analyze_query_semantically(query: str) -> Dict[str, Any]:
+    """
+    Use LLM to semantically understand the query and determine relevant data sources.
+    
+    This replaces simple keyword matching with contextual understanding.
+    """
+    import aiohttp
+    
+    endpoint = os.environ.get("AZURE_OPENAI_ENDPOINT", "").rstrip("/")
+    api_key = os.environ.get("AZURE_OPENAI_API_KEY")
+    
+    if not endpoint or not api_key:
+        logger.warning("⚠️ Azure OpenAI not configured, falling back to keyword routing")
+        return None
+    
+    try:
+        url = f"{endpoint}/openai/deployments/gpt-5-chat/chat/completions?api-version=2024-08-01-preview"
+        
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                url,
+                headers={"api-key": api_key, "Content-Type": "application/json"},
+                json={
+                    "messages": [
+                        {"role": "system", "content": "You are a data routing expert. Always respond with valid JSON."},
+                        {"role": "user", "content": SEMANTIC_ROUTING_PROMPT.format(query=query)}
+                    ],
+                    "max_tokens": 500,
+                    "temperature": 0.1
+                },
+                timeout=aiohttp.ClientTimeout(total=15)
+            ) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    content = data["choices"][0]["message"]["content"]
+                    
+                    # Parse JSON from response
+                    # Handle markdown code blocks if present
+                    if "```json" in content:
+                        content = content.split("```json")[1].split("```")[0]
+                    elif "```" in content:
+                        content = content.split("```")[1].split("```")[0]
+                    
+                    routing = json.loads(content.strip())
+                    logger.info(f"🧠 Semantic analysis: {routing.get('intent', 'unknown')}")
+                    logger.info(f"📊 Required sources: {routing.get('required_sources', [])}")
+                    return routing
+                else:
+                    logger.warning(f"⚠️ Semantic analysis failed: {resp.status}")
+                    return None
+                    
+    except Exception as e:
+        logger.warning(f"⚠️ Semantic analysis error: {e}")
+        return None
 
 
 async def data_extraction_node(state: IntelligenceState) -> IntelligenceState:
@@ -40,9 +143,48 @@ async def data_extraction_node(state: IntelligenceState) -> IntelligenceState:
     warnings = state.setdefault("warnings", [])
     errors = state.setdefault("errors", [])
 
-    # Determine which sources to query based on query
+    # ==========================================================================
+    # PHASE 0: LLM-BASED SEMANTIC QUERY UNDERSTANDING
+    # Uses GPT to understand context, not just keyword matching
+    # ==========================================================================
+    semantic_routing = None
+    try:
+        logger.info("🧠 Phase 0: Semantic query analysis (LLM-based understanding)...")
+        semantic_routing = await analyze_query_semantically(query)
+        
+        if semantic_routing:
+            intent = semantic_routing.get("intent", "unknown")
+            domains = semantic_routing.get("domains", [])
+            required_sources = semantic_routing.get("required_sources", [])
+            reasoning = semantic_routing.get("reasoning", "")
+            
+            logger.info(f"🧠 Intent understood: {intent}")
+            logger.info(f"🧠 Domains identified: {domains}")
+            logger.info(f"🧠 Required sources: {required_sources}")
+            
+            reasoning_chain.append(f"🧠 Semantic Analysis: {intent}")
+            reasoning_chain.append(f"📊 Domains: {', '.join(domains)}")
+            reasoning_chain.append(f"📊 LLM-selected sources: {', '.join(required_sources)}")
+            
+            # Store semantic routing in state for agents to use
+            state["semantic_routing"] = semantic_routing
+        else:
+            logger.info("⚠️ Semantic analysis unavailable, using keyword-based routing")
+            
+    except Exception as e:
+        logger.warning(f"⚠️ Semantic analysis failed: {e}, falling back to keywords")
+
+    # Determine which sources to query based on query (keyword fallback)
     relevant_sources = get_sources_for_query(query)
-    logger.info(f"📊 Sources identified: {relevant_sources}")
+    
+    # Merge LLM-selected sources with keyword-selected sources
+    if semantic_routing:
+        llm_sources = semantic_routing.get("required_sources", []) + semantic_routing.get("optional_sources", [])
+        for src in llm_sources:
+            if src not in relevant_sources:
+                relevant_sources.append(src)
+    
+    logger.info(f"📊 Final sources to query: {relevant_sources}")
     reasoning_chain.append(f"Identified {len(relevant_sources)} relevant data sources for query")
 
     all_facts = []

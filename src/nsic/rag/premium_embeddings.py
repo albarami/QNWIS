@@ -54,7 +54,10 @@ class PremiumEmbeddingService:
     """
     
     # Model configuration
-    MODEL_NAME = "hkunlp/instructor-xl"
+    # Use local safetensors version to bypass torch.load CVE check
+    # Downloaded from refs/pr/6 which has model.safetensors
+    MODEL_NAME = "D:/huggingface_cache/instructor-xl-safetensors"
+    MODEL_NAME_HUB = "hkunlp/instructor-xl"  # Original hub name for reference
     MODEL_VERSION = "1.0.0"
     DEFAULT_EMBEDDING_DIM = 768  # instructor-xl default, but detected dynamically
     
@@ -96,10 +99,22 @@ class PremiumEmbeddingService:
             else:
                 device = "cpu"
         self.device = device
+        self.multi_gpu = False
+        self._pool = None
         
-        # Load model
+        # Load model on primary GPU
         logger.info(f"Loading embedding model: {model_name} on {device}")
         self.model = SentenceTransformer(model_name, device=device)
+        
+        # Enable multi-GPU pool if multiple GPUs available and requested
+        if TORCH_AVAILABLE and torch.cuda.is_available() and len(self.gpu_ids) > 1:
+            num_gpus = torch.cuda.device_count()
+            if num_gpus >= len(self.gpu_ids):
+                logger.info(f"Multi-GPU available: {self.gpu_ids} (will use pool for large batches)")
+                self.multi_gpu = True
+                # Note: Pool is started on-demand for large batches to avoid process overhead
+            else:
+                logger.info(f"Multi-GPU requested but only {num_gpus} GPUs available")
         
         # Get actual embedding dimension from model
         self.embedding_dim = self.model.get_sentence_embedding_dimension()
@@ -121,7 +136,7 @@ class PremiumEmbeddingService:
         
         logger.info(
             f"PremiumEmbeddingService initialized: model={model_name}, "
-            f"device={device}, cache={cache_enabled}"
+            f"device={device}, cache={cache_enabled}, multi_gpu={self.multi_gpu}"
         )
     
     def _prepare_instruction(self, text: str, task: str = "default") -> str:
@@ -267,6 +282,8 @@ class PremiumEmbeddingService:
         stats = {
             "model_name": self.model_name,
             "device": str(self.device),
+            "gpu_ids": self.gpu_ids,
+            "multi_gpu": self.multi_gpu,
             "encode_calls": self._encode_calls,
             "total_texts_encoded": self._total_texts,
             "embedding_dim": self.embedding_dim,

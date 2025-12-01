@@ -234,16 +234,29 @@ class LegendaryDebateOrchestrator:
     MAX_TURNS_TOTAL = 150  # Changed from 30 to ensure legendary depth
     MAX_TURNS_PER_PHASE = DEBATE_CONFIGS["standard"]["phases"]
     
-    def __init__(self, emit_event_fn: Callable, llm_client: LLMClient):
+    def __init__(
+        self, 
+        emit_event_fn: Callable, 
+        llm_client: LLMClient,
+        on_turn_complete: Optional[Callable] = None,  # For NSIC live debate logging
+        scenario_id: str = "",  # Scenario ID for logging
+        scenario_name: str = "",  # Scenario name for logging
+    ):
         """
         Initialize debate orchestrator.
         
         Args:
             emit_event_fn: Async callback for emitting events
             llm_client: LLM client for orchestrator operations
+            on_turn_complete: Optional callback(engine, scenario_id, scenario_name, turn_num, agent_name, content, gpu_id)
+            scenario_id: Scenario ID for logging context
+            scenario_name: Scenario name for logging context
         """
         self.emit_event = emit_event_fn
         self.llm_client = llm_client
+        self.on_turn_complete = on_turn_complete  # NSIC callback for live logging
+        self.scenario_id = scenario_id
+        self.scenario_name = scenario_name
         self.conversation_history: List[Dict[str, Any]] = []
         self.turn_counter = 0
         self.start_time = None
@@ -261,26 +274,82 @@ class LegendaryDebateOrchestrator:
         """
         Rephrase text to avoid Azure content filter false positives.
         
-        Azure's "jailbreak" detection can be triggered by:
-        - "Devil's Advocate" (sounds like role-playing as adversary)
-        - "Catastrophic failure" (sounds like planning destruction)
-        - "Worst-case" (sounds like planning harm)
-        - "Nightmare scenario" (sounds like planning harm)
+        Azure's "jailbreak" detection triggers on legitimate policy analysis
+        terms that sound adversarial. This method replaces them with safe
+        alternatives that maintain meaning.
         
-        This replaces them with safe alternatives that maintain meaning.
+        Common false positive triggers:
+        - "Devil's Advocate" → sounds like adversarial role-play
+        - "Catastrophic failure" → sounds like planning destruction
+        - "Attack the argument" → sounds like aggression
+        - "Worst-case scenario" → sounds like planning harm
+        - "Exploit weakness" → sounds like hacking
         """
         replacements = {
-            "DEVIL'S ADVOCATE": "CRITICAL ANALYST",
-            "Devil's Advocate": "Critical Analyst",
-            "devil's advocate": "critical analyst",
-            "CATASTROPHIC FAILURE": "significant risk",
-            "catastrophic failure": "significant risk",
-            "WORST-CASE": "challenging scenario",
-            "worst-case": "challenging scenario",
-            "NIGHTMARE SCENARIO": "risk scenario",
-            "nightmare scenario": "risk scenario",
-            "paranoid mode": "thorough analysis mode",
+            # ===== Role Descriptions =====
+            "DEVIL'S ADVOCATE": "CRITICAL REVIEWER",
+            "Devil's Advocate": "Critical Reviewer",
+            "devil's advocate": "critical reviewer",
+            "play devil's advocate": "provide critical analysis",
+            "acting as devil's advocate": "providing critical review",
+            
+            # ===== Disaster/Failure Language =====
+            "CATASTROPHIC FAILURE": "major setback",
+            "catastrophic failure": "major setback",
+            "CATASTROPHIC": "severe",
+            "catastrophic": "severe",
+            "DISASTROUS": "significant negative",
+            "disastrous": "significant negative",
+            "DEVASTATING": "highly impactful",
+            "devastating": "highly impactful",
+            
+            # ===== Scenario Language =====
+            "WORST-CASE SCENARIO": "challenging scenario",
+            "worst-case scenario": "challenging scenario",
+            "WORST-CASE": "challenging",
+            "worst-case": "challenging",
+            "worst case": "challenging case",
+            "NIGHTMARE SCENARIO": "difficult scenario",
+            "nightmare scenario": "difficult scenario",
+            "doomsday scenario": "adverse scenario",
+            
+            # ===== Aggressive Analysis Language =====
+            "attack the argument": "critically examine the argument",
+            "attack this position": "challenge this position",
+            "attack the assumptions": "question the assumptions",
+            "destroy assumptions": "rigorously test assumptions",
+            "tear apart": "thoroughly analyze",
+            "rip apart": "carefully deconstruct",
+            
+            # ===== Exploit Language =====
+            "exploit weakness": "address vulnerability",
+            "exploit vulnerabilities": "identify improvement areas",
+            "exploit the opportunity": "leverage the opportunity",
+            "exploit gaps": "address gaps",
+            
+            # ===== Combat/War Metaphors =====
+            "war room": "strategy session",
+            "battle plan": "action plan",
+            "ammunition": "supporting evidence",
+            "arsenal": "toolkit",
+            "weapons": "tools",
+            
+            # ===== Mode Descriptions =====
+            "paranoid mode": "thorough review mode",
             "pessimistic mode": "risk-aware mode",
+            "aggressive analysis": "comprehensive analysis",
+            "hostile review": "critical review",
+            
+            # ===== Economic/Risk Terms =====
+            "black swan event": "rare high-impact event",
+            "black swan": "rare event",
+            "tail risk event": "low-probability high-impact event",
+            "tail risk": "extreme scenario",
+            "systemic collapse": "systemic stress",
+            "market crash": "market correction",
+            "economic collapse": "economic contraction",
+            "meltdown": "significant decline",
+            "crisis scenario": "stress scenario",
         }
         result = text
         for old, new in replacements.items():
@@ -299,20 +368,167 @@ class LegendaryDebateOrchestrator:
         )
         return sorted_agents
     
+    def _validate_engagement(self, content: str, previous_agent: str) -> bool:
+        """
+        FIX 5: Validate that agent engaged with previous speaker.
+        
+        Checks that the response:
+        1. Mentions the previous agent by name
+        2. Contains engagement verbs (challenge, agree, build on, etc.)
+        
+        Args:
+            content: The response content to validate
+            previous_agent: Name of the previous speaker
+            
+        Returns:
+            True if engagement is valid, False otherwise
+        """
+        if not content or not previous_agent:
+            return False
+        
+        content_lower = content.lower()
+        prev_lower = previous_agent.lower()
+        
+        # Must mention previous agent (or use generic "previous speaker" equivalent)
+        agent_mentioned = (
+            prev_lower in content_lower or 
+            previous_agent in content or
+            "previous" in content_lower or
+            "earlier" in content_lower or
+            "above" in content_lower
+        )
+        
+        if not agent_mentioned:
+            return False
+        
+        # Must have engagement verb
+        engagement_verbs = [
+            "challenge", "disagree", "question", "but ", "however",
+            "building on", "extending", "agree with", "while", "although",
+            "counter", "dispute", "support", "concur", "differ",
+            "correct", "incorrect", "overlook", "miss", "ignor"
+        ]
+        has_engagement = any(verb in content_lower for verb in engagement_verbs)
+        
+        return has_engagement
+    
+    def _get_engagement_prompt(self, previous_agent: str) -> str:
+        """FIX 5: Generate engagement prompt for agents that fail validation."""
+        return f"""
+═══════════════════════════════════════════════════════════════════════════════
+MANDATORY ENGAGEMENT REQUIREMENT (FIX 5)
+═══════════════════════════════════════════════════════════════════════════════
+
+Your response MUST begin with ONE of these patterns:
+
+1. "I challenge {previous_agent}'s claim that [X] because [evidence]..."
+2. "Building on {previous_agent}'s point about [X], the data shows [Y]..."
+3. "I question {previous_agent}'s assumption that [X] - the evidence suggests..."
+4. "While {previous_agent} correctly notes [X], they overlook [Y]..."
+5. "I agree with {previous_agent} on [X], but we must also consider [Y]..."
+
+You CANNOT simply state your opinion without engaging with what was just said.
+Responses without engagement will be REJECTED.
+"""
+    
+    def _extract_confidence(self, text: str) -> float:
+        """
+        FIX 5: Extract confidence level from agent statement.
+        
+        Looks for explicit confidence statements like:
+        - "85% confidence"
+        - "confidence of 70%"
+        - "I am 90% certain"
+        
+        Args:
+            text: Agent response text
+            
+        Returns:
+            Float 0.0-1.0 representing confidence level (default 0.5 if not found)
+        """
+        if not text:
+            return 0.5
+        
+        text_lower = text.lower()
+        
+        # Look for explicit confidence statements
+        patterns = [
+            r'(\d+)%?\s*confidence',
+            r'confidence\s*(?:of\s*)?:?\s*(\d+)%?',
+            r'(\d+)%?\s*certain',
+            r'certainty\s*(?:of\s*)?:?\s*(\d+)%?',
+            r'confidence\s*level\s*(?:of\s*)?:?\s*(\d+)%?',
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, text_lower)
+            if match:
+                try:
+                    value = float(match.group(1))
+                    # Convert to 0-1 range if percentage
+                    return value / 100 if value > 1 else value
+                except (ValueError, IndexError):
+                    continue
+        
+        # Default to 50% if no explicit confidence found
+        return 0.5
+    
+    def _check_low_confidence_agents(
+        self, 
+        agent_positions: Dict[str, str],
+        threshold: float = 0.65
+    ) -> List[Dict[str, Any]]:
+        """
+        FIX 5: Check for agents with low confidence recommendations.
+        
+        Flags agents whose confidence is below threshold for ministerial review.
+        
+        Args:
+            agent_positions: Dict of agent_name -> final position text
+            threshold: Minimum confidence required (default 0.65 = 65%)
+            
+        Returns:
+            List of dicts with agent name, confidence, and warning message
+        """
+        low_confidence_agents = []
+        
+        for agent_name, position_text in agent_positions.items():
+            confidence = self._extract_confidence(position_text)
+            
+            if confidence < threshold:
+                low_confidence_agents.append({
+                    "agent": agent_name,
+                    "confidence": confidence,
+                    "message": f"⚠️ {agent_name}: {confidence:.0%} confidence (below {threshold:.0%} threshold)"
+                })
+                logger.warning(f"⚠️ {agent_name}: {confidence:.0%} confidence recommendation (Turn {self.turn_counter})")
+        
+        return low_confidence_agents
+    
     def _format_query_context(self) -> str:
         """
         Format the query and extracted facts as context to inject into agent prompts.
         This ensures agents stay ON-TOPIC and use REAL DATA.
         
         NOW INCLUDES CALCULATED RESULTS from the McKinsey pipeline.
+        FIX 4: Added TOPIC LOCK to force agents to stay on topic.
         """
         context_parts = []
         
-        # Add the actual question being debated
+        # FIX 4: TOPIC LOCK - Force agents to stay on topic
         context_parts.append("=" * 60)
-        context_parts.append("CRITICAL: THE QUESTION BEING ANALYZED")
+        context_parts.append("🔒 TOPIC LOCK - YOU MUST ONLY DISCUSS:")
         context_parts.append("=" * 60)
         context_parts.append(self.question)
+        context_parts.append("")
+        context_parts.append("EVERY sentence must answer: 'How does this help decide the question above?'")
+        context_parts.append("")
+        context_parts.append("FORBIDDEN (immediate disqualification):")
+        context_parts.append("- General economic theory not specific to this question")
+        context_parts.append("- Historical examples unless directly relevant to Qatar's choice")
+        context_parts.append("- Tangential topics not in the question")
+        context_parts.append("- Meta-discussion about methodology")
+        context_parts.append("- Repetition of points already made")
         context_parts.append("")
         
         # ==================================================================
@@ -1518,14 +1734,17 @@ Return as JSON array of 5 scenarios."""
                      if hasattr(agent, 'identify_catastrophic_risks')}
         
         # Build question-specific context for risk analysis
-        # NOTE: Uses soft language to avoid Azure content filter
+        # CRITICAL: Apply content filter to avoid Azure "jailbreak" false positives
+        safe_question = self._rephrase_for_content_filter(self.question[:500])
         query_context = f"""
 The decision being analyzed:
-{self.question[:500]}
+{safe_question}
 
-Please focus your risk analysis on the specific options in this decision,
-rather than general global or regional trends.
+Please focus your analysis on practical considerations for the specific options,
+identifying implementation challenges and resource requirements.
 """
+        # Apply content filter again to the full context
+        query_context = self._rephrase_for_content_filter(query_context)
         
         for agent_name, agent in llm_agents.items():
             if not self._can_emit_turn():
@@ -1682,12 +1901,17 @@ What are 2-3 practical considerations to keep in mind?"""
         agents_map: Dict[str, Any],
         llm_client: LLMClient
     ) -> Dict:
-        """Build sophisticated consensus using LLM synthesis."""
+        """
+        Build sophisticated consensus using LLM synthesis.
+        
+        FIX 5: Now includes confidence validation - flags agents below 65% threshold.
+        """
         self.current_phase = "consensus_building"
         await self._emit_phase("consensus_building", "Synthesizing final positions")
         
         # Only LLM agents state final positions (deterministic agents don't have opinions)
         final_positions = []
+        agent_position_texts = {}  # FIX 5: Track for confidence check
         llm_agents = {name: agent for name, agent in agents_map.items() 
                      if hasattr(agent, 'state_final_position')}
         
@@ -1710,6 +1934,13 @@ What are 2-3 practical considerations to keep in mind?"""
                 "agent": agent_name,
                 "position": final_pos
             })
+            agent_position_texts[agent_name] = final_pos  # FIX 5: Store for check
+        
+        # FIX 5: Check for low confidence agents
+        low_confidence_agents = self._check_low_confidence_agents(
+            agent_position_texts, 
+            threshold=0.65
+        )
         
         # LLM synthesizes consensus
         positions_text = "\n\n".join([
@@ -1717,11 +1948,24 @@ What are 2-3 practical considerations to keep in mind?"""
             for p in final_positions
         ])
         
+        # FIX 5: Add low confidence warning to synthesis prompt
+        confidence_warning = ""
+        if low_confidence_agents:
+            warning_list = "\n".join([a["message"] for a in low_confidence_agents])
+            confidence_warning = f"""
+
+⚠️ LOW CONFIDENCE WARNING:
+{len(low_confidence_agents)} agent(s) have confidence below 65% threshold:
+{warning_list}
+
+These recommendations require additional data validation before ministerial action.
+"""
+        
         synthesis_prompt = f"""After {self.turn_counter} turns of debate, synthesize the final consensus.
 
 Final positions from all agents:
 {positions_text}
-
+{confidence_warning}
 Provide:
 1. Areas of strong consensus
 2. Remaining disagreements  
@@ -1851,6 +2095,21 @@ Include:
         
         if self.emit_event:
             await self.emit_event("debate:turn", "streaming", turn_data)
+        
+        # NSIC: Call live debate logging callback for EVERY turn
+        if self.on_turn_complete:
+            try:
+                self.on_turn_complete(
+                    engine="A",
+                    scenario_id=self.scenario_id,
+                    scenario_name=self.scenario_name,
+                    turn_num=self.turn_counter,
+                    agent_name=agent_name,
+                    content=message,  # Full content, not truncated
+                    gpu_id=None,
+                )
+            except Exception as e:
+                logger.debug(f"NSIC callback error (non-fatal): {e}")
     
     async def _emit_phase(self, phase_name: str, message: str):
         """Emit phase change event."""

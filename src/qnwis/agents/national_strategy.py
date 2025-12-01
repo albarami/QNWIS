@@ -98,11 +98,11 @@ class NationalStrategyAgent:
         logger.info(
             "gcc_benchmark params=%s queries=%s",
             {"min_countries": min_countries},
-            ["syn_unemployment_rate_gcc_latest"],
+            ["syn_unemployment_gcc_latest"],
         )
 
         # Fetch GCC unemployment data
-        gcc_res = self.client.run("syn_unemployment_rate_gcc_latest")
+        gcc_res = self.client.run("syn_unemployment_gcc_latest")
 
         if len(gcc_res.rows) < min_countries:
             return AgentReport(

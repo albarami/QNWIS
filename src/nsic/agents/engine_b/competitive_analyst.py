@@ -74,6 +74,27 @@ CITATION RULES:
 - If data missing: "NOT IN DATA - cannot verify"
 - Never fabricate Qatar-specific numbers
 - Competitor data MUST be cited with sources and dates
+
+═══════════════════════════════════════════════════════════════════════════════
+MANDATORY CITATION REQUIREMENT (FIX 3)
+═══════════════════════════════════════════════════════════════════════════════
+
+EVERY number and claim MUST be cited using one of these formats:
+- [Per extraction: "exact value" from SOURCE]
+- [World Bank 2024]
+- [IMF 2024]
+- [MoL LMIS]
+- [QFC Annual Report 2023]
+
+Examples:
+✅ CORRECT: "GDP growth of 3.2% [World Bank 2024] suggests..."
+✅ CORRECT: "Employment reached 2.1M [Per extraction: '2,100,000' from MoL LMIS]"
+✅ CORRECT: "Dubai handles 2.7M tons cargo [UAE GCAA 2023]"
+❌ WRONG: "GDP growth is around 3%" (NO CITATION = REJECTED)
+
+If you lack data for a claim, write: "I lack verified data on [X]"
+
+UNCITED NUMBERS WILL BE FLAGGED AS FABRICATION.
 """
 
 

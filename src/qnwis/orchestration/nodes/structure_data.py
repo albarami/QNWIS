@@ -67,38 +67,38 @@ For each option, extract or note as NOT_AVAILABLE:
    - Or specific if mentioned in query
 
 OUTPUT FORMAT - Respond with ONLY this JSON, no other text:
-{
+{{
   "options": [
-    {
+    {{
       "name": "Option A name",
       "description": "Brief description",
-      "initial_investment": {
+      "initial_investment": {{
         "amount": 50000000000,
         "currency": "QAR",
         "source": "Ministry of Finance budget allocation",
         "confidence": 0.9
-      },
+      }},
       "revenue_projections": [
-        {"year": 1, "amount": 1000000000, "source": "...", "confidence": 0.7},
-        {"year": 2, "amount": 2000000000, "source": "...", "confidence": 0.7}
+        {{"year": 1, "amount": 1000000000, "source": "...", "confidence": 0.7}},
+        {{"year": 2, "amount": 2000000000, "source": "...", "confidence": 0.7}}
       ],
       "cost_projections": [
-        {"year": 1, "amount": 500000000, "source": "...", "confidence": 0.8}
+        {{"year": 1, "amount": 500000000, "source": "...", "confidence": 0.8}}
       ],
-      "growth_rate": {"value": 0.15, "source": "Industry benchmark", "confidence": 0.6},
+      "growth_rate": {{"value": 0.15, "source": "Industry benchmark", "confidence": 0.6}},
       "data_gaps": ["No data on Year 5-10 costs", "Growth rate is estimated"],
       "assumptions": ["Assumed 15% annual growth based on DIFC precedent"]
-    }
+    }}
   ],
-  "discount_rate": {
+  "discount_rate": {{
     "value": 0.08,
     "justification": "Qatar sovereign cost of capital",
     "source": "Central Bank of Qatar"
-  },
+  }},
   "time_horizon_years": 10,
   "overall_data_quality": "MEDIUM",
   "critical_data_gaps": ["..."]
-}
+}}
 
 REMEMBER: 
 - If data is not in the extracted facts, say NOT_AVAILABLE

@@ -7,6 +7,7 @@ from .causal_graph import (
     CausalChain,
     GPUEmbeddingProcessor,
     create_causal_graph,
+    load_causal_graph,
 )
 
 __all__ = [
@@ -16,4 +17,5 @@ __all__ = [
     "CausalChain",
     "GPUEmbeddingProcessor",
     "create_causal_graph",
+    "load_causal_graph",
 ]

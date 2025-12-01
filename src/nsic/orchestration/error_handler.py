@@ -470,7 +470,7 @@ class NSICErrorHandler:
         try:
             import requests
             other_port = 8002 if failed_instance == 1 else 8001
-            response = requests.get(f"http://localhost:{other_port}/v1/models", timeout=2)
+            response = requests.get(f"http://localhost:{other_port}/v1/models", timeout=7200)
             return response.status_code == 200
         except Exception:
             return False

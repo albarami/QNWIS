@@ -753,16 +753,39 @@ class PatternMinerAgent:
 
         return "\n".join(lines)
 
+    # Map metric names to actual available query files
+    METRIC_TO_QUERY = {
+        "retention": "retention_rate_by_sector",
+        "attrition": "attrition_rate_monthly",
+        "qatarization": "qatarization_rate_by_sector",
+        "unemployment": "unemployment_trends_monthly",
+        "salary": "salary_distribution_by_sector",
+        "employment": "employment_share_by_gender",
+        "sector_growth": "sector_growth_rate",
+        "skills_gap": "skills_gap_analysis",
+    }
+    
     def _build_timeseries_qid(
         self,
         metric: str,
         cohort: str | None,
         window: int,
     ) -> str:
-        """Construct deterministic time-series query identifier."""
-        metric_slug = metric.lower().replace(" ", "_")
+        """
+        Construct deterministic time-series query identifier.
+        
+        Uses METRIC_TO_QUERY mapping to find actual available queries.
+        Falls back to constructed name if not in mapping.
+        """
+        metric_lower = metric.lower().replace(" ", "_")
+        
+        # Use mapped query name if available
+        if metric_lower in self.METRIC_TO_QUERY:
+            return self.METRIC_TO_QUERY[metric_lower]
+        
+        # Fallback to constructed name (may not exist)
         cohort_slug = (cohort or "all").lower().replace(" ", "_")
-        return f"timeseries_{metric_slug}_{cohort_slug}_{window}m"
+        return f"timeseries_{metric_lower}_{cohort_slug}_{window}m"
 
     def _load_metric_series(
         self,

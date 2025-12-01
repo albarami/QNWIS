@@ -1,0 +1,283 @@
+{
+  "timestamp": "2025-11-30T20:51:55.759543",
+  "question": "Qatar must choose its primary economic diversification focus for the next decade.\nThe Ministry of Finance has budget for ONE major initiative (QAR 50 billion over 10 years).\n\nOption A: Financial Services Hub\n- Target: Become the leading Islamic finance and wealth management center in the GCC\n- Compete directly with Dubai International Financial Centre (DIFC)\n- Leverage QIA's $450B sovereign wealth for anchor investments\n\nOption B: Advanced Logistics & Trade Hub\n- Target: Become the GCC's premier air cargo and re-export hub\n- Expand Hamad International Airport cargo capacity 3x\n- Leverage geographic position between Europe, Asia, and Africa\n\nCurrent Context:\n- Qatar Financial Centre currently employs 1,200 Qataris (5% of target 25,000)\n- Hamad Airport handles 2.5M tons cargo/year (Dubai: 2.7M tons)\n- Dubai has 40+ year head start in financial services\n- Saudi Arabia investing $100B in NEOM logistics zone\n- Qatari STEM/business graduates: 4,500 per year combined\n\nWhich option should Qatar prioritize and why?",
+  "total_scenarios": 30,
+  "total_turns": 1181,
+  "total_words": 264448,
+  "think_blocks": 61,
+  "engine_a": {
+    "scenarios": 6,
+    "turns": 581,
+    "expected_turns_per_scenario": 100,
+    "agents": [
+      "Dr. Ahmed",
+      "Dr. Sarah",
+      "Dr. Mohammed",
+      "Dr. Layla",
+      "PatternDetective"
+    ],
+    "files": [
+      "deep_black_swan.txt",
+      "deep_policy_shift.txt",
+      "deep_optimistic.txt",
+      "deep_pessimistic.txt",
+      "deep_competitive_shock.txt",
+      "base_case.txt"
+    ]
+  },
+  "engine_b": {
+    "scenarios": 24,
+    "turns": 600,
+    "expected_turns_per_scenario": 25,
+    "agents": [
+      "Dr. Rashid",
+      "Dr. Noor",
+      "Dr. Hassan"
+    ],
+    "files": [
+      "gpu2_broad_competitive_dubai_aggressive.txt",
+      "gpu5_broad_policy_restricted_immigration.txt",
+      "gpu0_broad_economic_oil_low.txt",
+      "gpu3_broad_competitive_gcc_cooperation.txt",
+      "gpu1_broad_economic_gdp_high.txt",
+      "gpu7_broad_timing_phased_5yr.txt",
+      "gpu4_broad_policy_fast_nationalization.txt",
+      "gpu6_broad_timing_launch_2026.txt",
+      "gpu5_broad_policy_high_subsidies.txt",
+      "gpu2_broad_competitive_saudi_neom.txt",
+      "gpu2_broad_competitive_uae_coalition.txt",
+      "gpu4_broad_policy_slow_nationalization.txt",
+      "gpu5_broad_policy_market_driven.txt",
+      "gpu0_broad_economic_oil_mid.txt",
+      "gpu1_broad_economic_gdp_low.txt",
+      "gpu1_broad_economic_gdp_negative.txt",
+      "gpu6_broad_timing_launch_2028.txt",
+      "gpu4_broad_policy_open_immigration.txt",
+      "gpu0_broad_economic_oil_high.txt",
+      "gpu3_broad_competitive_singapore_entry.txt",
+      "gpu7_broad_timing_phased_10yr.txt",
+      "gpu3_broad_competitive_china_partnership.txt",
+      "gpu7_broad_timing_big_bang.txt",
+      "gpu6_broad_timing_launch_2030.txt"
+    ]
+  },
+  "verification": {
+    "engine_a_turns_logged": 581,
+    "engine_b_turns_logged": 600,
+    "all_files_created": 30,
+    "scenarios_by_id": {
+      "deep_black_swan": {
+        "engine": "A",
+        "turns_logged": 95,
+        "time_seconds": 5759.8,
+        "sec_per_turn": 60.63,
+        "suspicious": false
+      },
+      "deep_policy_shift": {
+        "engine": "A",
+        "turns_logged": 97,
+        "time_seconds": 5758.6,
+        "sec_per_turn": 59.37,
+        "suspicious": false
+      },
+      "deep_optimistic": {
+        "engine": "A",
+        "turns_logged": 101,
+        "time_seconds": 5753.0,
+        "sec_per_turn": 56.96,
+        "suspicious": false
+      },
+      "deep_pessimistic": {
+        "engine": "A",
+        "turns_logged": 101,
+        "time_seconds": 5752.9,
+        "sec_per_turn": 56.96,
+        "suspicious": false
+      },
+      "deep_competitive_shock": {
+        "engine": "A",
+        "turns_logged": 89,
+        "time_seconds": 5751.5,
+        "sec_per_turn": 64.62,
+        "suspicious": false
+      },
+      "base_case": {
+        "engine": "A",
+        "turns_logged": 98,
+        "time_seconds": 5748.8,
+        "sec_per_turn": 58.66,
+        "suspicious": false
+      },
+      "broad_competitive_dubai_aggressive": {
+        "engine": "B",
+        "turns_logged": 25,
+        "time_seconds": 4872.4,
+        "sec_per_turn": 194.9,
+        "suspicious": false
+      },
+      "broad_policy_restricted_immigration": {
+        "engine": "B",
+        "turns_logged": 25,
+        "time_seconds": 4817.9,
+        "sec_per_turn": 192.72,
+        "suspicious": false
+      },
+      "broad_economic_oil_low": {
+        "engine": "B",
+        "turns_logged": 25,
+        "time_seconds": 4817.4,
+        "sec_per_turn": 192.69,
+        "suspicious": false
+      },
+      "broad_competitive_gcc_cooperation": {
+        "engine": "B",
+        "turns_logged": 25,
+        "time_seconds": 4806.6,
+        "sec_per_turn": 192.26,
+        "suspicious": false
+      },
+      "broad_economic_gdp_high": {
+        "engine": "B",
+        "turns_logged": 25,
+        "time_seconds": 4796.2,
+        "sec_per_turn": 191.85,
+        "suspicious": false
+      },
+      "broad_timing_phased_5yr": {
+        "engine": "B",
+        "turns_logged": 25,
+        "time_seconds": 4785.1,
+        "sec_per_turn": 191.4,
+        "suspicious": false
+      },
+      "broad_policy_fast_nationalization": {
+        "engine": "B",
+        "turns_logged": 25,
+        "time_seconds": 4739.9,
+        "sec_per_turn": 189.6,
+        "suspicious": false
+      },
+      "broad_timing_launch_2026": {
+        "engine": "B",
+        "turns_logged": 25,
+        "time_seconds": 4696.7,
+        "sec_per_turn": 187.87,
+        "suspicious": false
+      },
+      "broad_policy_high_subsidies": {
+        "engine": "B",
+        "turns_logged": 25,
+        "time_seconds": 4555.8,
+        "sec_per_turn": 182.23,
+        "suspicious": false
+      },
+      "broad_competitive_saudi_neom": {
+        "engine": "B",
+        "turns_logged": 25,
+        "time_seconds": 4508.7,
+        "sec_per_turn": 180.35,
+        "suspicious": false
+      },
+      "broad_competitive_uae_coalition": {
+        "engine": "B",
+        "turns_logged": 25,
+        "time_seconds": 4406.2,
+        "sec_per_turn": 176.25,
+        "suspicious": false
+      },
+      "broad_policy_slow_nationalization": {
+        "engine": "B",
+        "turns_logged": 25,
+        "time_seconds": 4181.7,
+        "sec_per_turn": 167.27,
+        "suspicious": false
+      },
+      "broad_policy_market_driven": {
+        "engine": "B",
+        "turns_logged": 25,
+        "time_seconds": 4175.4,
+        "sec_per_turn": 167.02,
+        "suspicious": false
+      },
+      "broad_economic_oil_mid": {
+        "engine": "B",
+        "turns_logged": 25,
+        "time_seconds": 4159.8,
+        "sec_per_turn": 166.39,
+        "suspicious": false
+      },
+      "broad_economic_gdp_low": {
+        "engine": "B",
+        "turns_logged": 25,
+        "time_seconds": 4061.8,
+        "sec_per_turn": 162.47,
+        "suspicious": false
+      },
+      "broad_economic_gdp_negative": {
+        "engine": "B",
+        "turns_logged": 25,
+        "time_seconds": 3701.5,
+        "sec_per_turn": 148.06,
+        "suspicious": false
+      },
+      "broad_timing_launch_2028": {
+        "engine": "B",
+        "turns_logged": 25,
+        "time_seconds": 3691.9,
+        "sec_per_turn": 147.67,
+        "suspicious": false
+      },
+      "broad_policy_open_immigration": {
+        "engine": "B",
+        "turns_logged": 25,
+        "time_seconds": 3638.4,
+        "sec_per_turn": 145.54,
+        "suspicious": false
+      },
+      "broad_economic_oil_high": {
+        "engine": "B",
+        "turns_logged": 25,
+        "time_seconds": 3599.7,
+        "sec_per_turn": 143.99,
+        "suspicious": false
+      },
+      "broad_competitive_singapore_entry": {
+        "engine": "B",
+        "turns_logged": 25,
+        "time_seconds": 3447.4,
+        "sec_per_turn": 137.9,
+        "suspicious": false
+      },
+      "broad_timing_phased_10yr": {
+        "engine": "B",
+        "turns_logged": 25,
+        "time_seconds": 2718.5,
+        "sec_per_turn": 108.74,
+        "suspicious": false
+      },
+      "broad_competitive_china_partnership": {
+        "engine": "B",
+        "turns_logged": 25,
+        "time_seconds": 2486.9,
+        "sec_per_turn": 99.47,
+        "suspicious": false
+      },
+      "broad_timing_big_bang": {
+        "engine": "B",
+        "turns_logged": 25,
+        "time_seconds": 2199.1,
+        "sec_per_turn": 87.96,
+        "suspicious": false
+      },
+      "broad_timing_launch_2030": {
+        "engine": "B",
+        "turns_logged": 25,
+        "time_seconds": 1739.7,
+        "sec_per_turn": 69.59,
+        "suspicious": false
+      }
+    },
+    "suspicious_scenarios": [],
+    "verification_passed": true
+  }
+}

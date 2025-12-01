@@ -164,9 +164,9 @@ class DeepVerifier:
     
     # Model configurations
     CROSS_ENCODER_MODEL = "cross-encoder/ms-marco-MiniLM-L-12-v2"
-    # Upgraded from nli-deberta-v3-base (86M, 88.1%) to large (304M, 91.3%)
-    # GPU 5 has 80GB capacity - using only ~1.2GB with large model
-    NLI_MODEL = "microsoft/deberta-v3-large-mnli"  # +3.2% accuracy over base model
+    # Using roberta-large-mnli - publicly available, no auth required
+    # High quality NLI model (90.2% accuracy on MNLI)
+    NLI_MODEL = "roberta-large-mnli"  # Public model, no HF auth needed
     
     # NLI label mapping
     NLI_LABELS = {0: "contradiction", 1: "neutral", 2: "entailment"}

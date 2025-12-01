@@ -153,7 +153,7 @@ def get_llm_config() -> LLMConfig:
     azure_api_version = os.getenv("AZURE_OPENAI_API_VERSION", "2024-08-01-preview")
     
     # Timeout and retries
-    timeout = min(int(os.getenv("QNWIS_LLM_TIMEOUT", "60")), 180)  # Allow up to 3 min for complex queries
+    timeout = int(os.getenv("QNWIS_LLM_TIMEOUT", "7200"))  # 2 hours for full E2E runs
     max_retries = max(0, int(os.getenv("QNWIS_LLM_MAX_RETRIES", "3")))
     
     return LLMConfig(

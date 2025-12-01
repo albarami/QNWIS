@@ -85,21 +85,42 @@ class DeepSeekResponse:
 @dataclass
 class DeepSeekConfig:
     """Configuration for DeepSeek client."""
-    # DeepSeek endpoints
-    # Instance 1: GPUs 2,3,6,7 on port 8001 (DEPLOYED - FULL 70B FP16)
-    # Note: Single instance uses all 4 GPUs for maximum quality
+    # DeepSeek endpoints - 8 ExLlamaV2 INSTANCES (one per GPU)
+    # GPU 0 -> Port 8001, GPU 1 -> Port 8002, etc.
+    # 24 scenarios ÷ 8 instances = 3 scenarios each
     vllm_base_urls: List[str] = field(default_factory=lambda: [
-        "http://localhost:8001",  # GPUs 2,3,6,7 - DEPLOYED (70B FP16)
+        "http://localhost:8001",  # Instance 1: GPU 0
+        "http://localhost:8002",  # Instance 2: GPU 1
+        "http://localhost:8003",  # Instance 3: GPU 2
+        "http://localhost:8004",  # Instance 4: GPU 3
+        "http://localhost:8005",  # Instance 5: GPU 4
+        "http://localhost:8006",  # Instance 6: GPU 5
+        "http://localhost:8007",  # Instance 7: GPU 6
+        "http://localhost:8008",  # Instance 8: GPU 7
     ])
     
     # Model settings
-    model_name: str = "deepseek-ai/DeepSeek-R1-Distill-Llama-70B"
+    model_name: str = "deepseek-exllama"  # ExLlamaV2 4-bit quantized model
     max_tokens: int = 4096
     temperature: float = 0.7
     top_p: float = 0.9
     
+    # FIX 1 (UPDATED): Stronger repetition penalty to prevent garbage output ({{{, ***, \\\)
+    # Increased from 1.15 to 1.25 after observing continued garbage in logs
+    repetition_penalty: float = 1.25
+    frequency_penalty: float = 0.4   # Penalize repeated tokens in output
+    presence_penalty: float = 0.2    # Encourage vocabulary diversity
+    stop_sequences: List[str] = field(default_factory=lambda: [
+        "###", 
+        "---END---", 
+        "```\n\n\n",
+        "\n\n\n\n\n",   # Stop on 5+ consecutive newlines
+        "****",         # Stop on repeated asterisks  
+        "{{{{",         # Stop on repeated braces
+    ])
+    
     # Timeout and retry
-    timeout_seconds: float = 300.0  # 5 minutes for long generations
+    timeout_seconds: float = 7200.0  # 2 hours for full E2E runs
     max_retries: int = 3
     retry_delay_seconds: float = 1.0
     
@@ -162,6 +183,46 @@ class DeepSeekClient:
         self._current_instance = (self._current_instance + 1) % len(self.config.vllm_base_urls)
         return instance
     
+    def _get_healthy_instance(self) -> int:
+        """
+        FIX 6: Get a healthy instance, avoiding known-bad ones.
+        
+        Tracks consecutive failures per GPU instance and skips
+        instances that have failed too many times recently.
+        
+        Returns:
+            Instance ID of a healthy (or least-bad) instance
+        """
+        MAX_CONSECUTIVE_FAILURES = 3
+        
+        # Try to find an instance with low error count
+        for _ in range(len(self.config.vllm_base_urls)):
+            instance_id = self._get_next_instance()
+            
+            if self._instance_errors[instance_id] < MAX_CONSECUTIVE_FAILURES:
+                return instance_id
+            else:
+                logger.warning(
+                    f"Skipping GPU instance {instance_id} with "
+                    f"{self._instance_errors[instance_id]} consecutive failures"
+                )
+        
+        # All instances have high errors - reset and try anyway
+        logger.warning("All GPU instances have high error counts, resetting counters")
+        self._instance_errors = [0] * len(self.config.vllm_base_urls)
+        return self._get_next_instance()
+    
+    def _record_instance_success(self, instance_id: int) -> None:
+        """Record successful request - reset error count for instance."""
+        self._instance_errors[instance_id] = 0
+    
+    def _record_instance_failure(self, instance_id: int) -> None:
+        """Record failed request - increment error count for instance."""
+        self._instance_errors[instance_id] += 1
+        logger.debug(
+            f"GPU instance {instance_id} failure count: {self._instance_errors[instance_id]}"
+        )
+    
     def _parse_thinking(self, content: str) -> Tuple[str, Optional[str]]:
         """
         Parse and extract <think>...</think> block from response.
@@ -179,6 +240,60 @@ class DeepSeekClient:
             return clean_content, thinking_content
         return content, None
     
+    def _validate_output(self, content: str) -> bool:
+        """
+        FIX 2: Validate output quality - reject degenerate/garbage output.
+        
+        Detects patterns like:
+        - Repeated characters: {{{{, ****, \\\\\\
+        - Empty or too-short responses
+        - Excessive symbol repetition
+        
+        Args:
+            content: Raw response content
+            
+        Returns:
+            True if output is valid, False if garbage detected
+        """
+        if not content or len(content) < 100:
+            logger.warning("Output too short: %d chars", len(content) if content else 0)
+            return False
+        
+        # Detect repeated characters (15+)
+        if re.search(r'(.)\1{15,}', content):
+            logger.warning("Repeated character pattern detected")
+            return False
+        
+        # Detect repeated symbols - garbage patterns from DeepSeek (tightened thresholds)
+        brace_count = content.count('{')
+        asterisk_count = content.count('*')
+        backslash_count = content.count('\\')
+        
+        if brace_count > 20 or asterisk_count > 40 or backslash_count > 20:
+            logger.warning("Excessive symbol repetition: { x%d, * x%d, \\ x%d",
+                          brace_count, asterisk_count, backslash_count)
+            return False
+        
+        # Additional: Check ratio of symbols to content (garbage has high ratio)
+        total_symbols = brace_count + asterisk_count + backslash_count
+        if len(content) > 0 and total_symbols / len(content) > 0.05:  # >5% symbols is garbage
+            logger.warning("High symbol ratio: %d symbols in %d chars (%.1f%%)",
+                          total_symbols, len(content), 100 * total_symbols / len(content))
+            return False
+        
+        # Detect repeated short patterns (e.g., "| { | { | {")
+        if re.search(r'(\|\s*\{\s*){5,}', content):
+            logger.warning("Repeated pipe-brace pattern detected")
+            return False
+        
+        # Must have reasonable word count
+        words = content.split()
+        if len(words) < 30:
+            logger.warning("Output has too few words: %d", len(words))
+            return False
+        
+        return True
+    
     async def _call_vllm_instance(
         self,
         instance_id: int,
@@ -195,6 +310,11 @@ class DeepSeekClient:
             "max_tokens": kwargs.get("max_tokens", self.config.max_tokens),
             "temperature": kwargs.get("temperature", self.config.temperature),
             "top_p": kwargs.get("top_p", self.config.top_p),
+            # FIX 1 (UPDATED): Stronger repetition control to prevent garbage output
+            "repetition_penalty": kwargs.get("repetition_penalty", self.config.repetition_penalty),
+            "frequency_penalty": kwargs.get("frequency_penalty", self.config.frequency_penalty),
+            "presence_penalty": kwargs.get("presence_penalty", self.config.presence_penalty),
+            "stop": kwargs.get("stop", self.config.stop_sequences),
         }
         
         start_time = time.time()
@@ -221,6 +341,10 @@ class DeepSeekClient:
         # Extract response
         choice = data["choices"][0]
         raw_content = choice["message"]["content"]
+        
+        # FIX 2: Validate output quality - reject garbage
+        if not self._validate_output(raw_content):
+            raise ValueError(f"Degenerate output detected: {raw_content[:100]}...")
         
         # Parse thinking block
         clean_content, thinking_content = self._parse_thinking(raw_content)
@@ -273,6 +397,7 @@ class DeepSeekClient:
     async def chat_async(
         self,
         messages: List[Dict[str, str]],
+        instance_id: int = None,
         **kwargs,
     ) -> DeepSeekResponse:
         """
@@ -280,6 +405,7 @@ class DeepSeekClient:
         
         Args:
             messages: List of message dicts with 'role' and 'content'
+            instance_id: Specific instance to use (0=port 8001, 1=port 8002). None=auto-select.
             **kwargs: Additional parameters (max_tokens, temperature, etc.)
             
         Returns:
@@ -289,7 +415,12 @@ class DeepSeekClient:
             return self._mock_response(messages, **kwargs)
         
         last_error = None
-        instance_id = self._get_next_instance()
+        # FIX 6: Use healthy instance selection instead of simple round-robin
+        if instance_id is None:
+            instance_id = self._get_healthy_instance()
+        elif instance_id >= len(self.config.vllm_base_urls):
+            logger.warning(f"Instance {instance_id} doesn't exist, using healthy instance")
+            instance_id = self._get_healthy_instance()
         
         for attempt in range(self.config.max_retries):
             try:
@@ -305,17 +436,21 @@ class DeepSeekClient:
                 self._total_time_ms += response.total_time_ms
                 self._instance_counts[instance_id] += 1
                 
+                # FIX 6: Record success - reset error count for this instance
+                self._record_instance_success(instance_id)
+                
                 return response
                 
             except Exception as e:
                 last_error = e
-                self._instance_errors[instance_id] += 1
+                # FIX 6: Record failure with helper method
+                self._record_instance_failure(instance_id)
                 logger.warning(
                     f"DeepSeek instance {instance_id} failed (attempt {attempt + 1}): {e}"
                 )
                 
-                # Try different instance on retry
-                instance_id = (instance_id + 1) % len(self.config.vllm_base_urls)
+                # FIX 6: Try to get a healthy instance instead of just incrementing
+                instance_id = self._get_healthy_instance()
                 
                 if attempt < self.config.max_retries - 1:
                     await asyncio.sleep(self.config.retry_delay_seconds)
@@ -430,7 +565,7 @@ class DeepSeekClient:
                 import requests
                 response = requests.get(
                     f"{url}/health",
-                    timeout=5.0,
+                    timeout=7200.0,  # 2 hours
                 )
                 instance_status["healthy"] = response.status_code == 200
             except Exception as e:

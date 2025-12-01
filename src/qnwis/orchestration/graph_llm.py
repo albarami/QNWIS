@@ -60,6 +60,9 @@ class WorkflowState(TypedDict):
     metadata: Dict[str, Any]
     reasoning_chain: list  # Step-by-step log of workflow actions
     event_callback: Optional[Any]  # For streaming events
+    on_turn_complete: Optional[Any]  # NSIC: Callback for live debate logging
+    scenario_id: Optional[str]  # NSIC: Scenario ID for logging
+    scenario_name: Optional[str]  # NSIC: Scenario name for logging
 
 
 class LLMWorkflow:
@@ -893,14 +896,14 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
                         start_time = datetime.now(timezone.utc)
                         debate_context = state.get("debate_context", "")
                         try:
-                            # Add timeout per agent (180 seconds) to prevent hanging
+                            # Add timeout per agent (2 hours) for full E2E runs
                             report = await asyncio.wait_for(
                                 self.agents[name].run(
                                     question,
                                     context,
                                     debate_context=debate_context
                                 ),
-                                timeout=180.0
+                                timeout=7200.0
                             )
                             report.agent = getattr(report, "agent", display_name) or display_name
                             latency_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
@@ -957,17 +960,17 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
 
                 task_names.append(agent_name)
 
-            # Execute agents with 30-minute timeout for PhD-level deep analysis
-            # Individual LLM calls have 3-minute timeout, so 30 minutes total allows for retries and parallel execution
+            # Execute agents with 2-hour timeout for full E2E runs
+            # Individual LLM calls have 2-hour timeout for complete analysis
             try:
                 results = await asyncio.wait_for(
                     asyncio.gather(*tasks, return_exceptions=True),
-                    timeout=1800  # 30 minutes total for all 12 agents in parallel
+                    timeout=7200  # 2 hours total for all 12 agents in parallel
                 )
             except asyncio.TimeoutError:
-                logger.error("Agent execution timed out after 10 minutes")
+                logger.error("Agent execution timed out after 2 hours")
                 if event_cb:
-                    await event_cb("agents", "error", {"error": "Agent execution timeout after 10 minutes - may indicate hung agent"})
+                    await event_cb("agents", "error", {"error": "Agent execution timeout after 2 hours"})
                 # Return partial results - treat all as failed
                 results = [Exception("Timeout") for _ in tasks]
 
@@ -1263,8 +1266,26 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
                         warnings_list.append(issue_str)
                         all_issues.append(issue)
 
-                # 2. Check citations in narrative
-                narrative = report.narrative if hasattr(report, 'narrative') else ""
+                # 2. Check citations in narrative - with null safety
+                narrative = None
+                if hasattr(report, 'narrative'):
+                    narrative = report.narrative
+                elif isinstance(report, dict):
+                    narrative = report.get('narrative') or report.get('content', '')
+                
+                # Convert to string if needed, default to empty string
+                if narrative is None:
+                    narrative = ""
+                elif not isinstance(narrative, str):
+                    try:
+                        narrative = str(narrative)
+                    except:
+                        narrative = ""
+                
+                # Skip citation check if no narrative
+                if not narrative or not narrative.strip():
+                    logger.warning(f"Empty narrative for {agent_name}, skipping citation check")
+                    continue
 
                 # Extract all numbers from narrative (integers, floats, percentages)
                 number_pattern = r'\b\d+\.?\d*%?\b'
@@ -1663,10 +1684,13 @@ OUTPUT FORMAT (JSON):
         # Import debate orchestrator
         from .legendary_debate_orchestrator import LegendaryDebateOrchestrator
         
-        # Create orchestrator with event callback
+        # Create orchestrator with event callback and NSIC live logging callback
         orchestrator = LegendaryDebateOrchestrator(
             emit_event_fn=state.get("event_callback"),
-            llm_client=self.llm_client
+            llm_client=self.llm_client,
+            on_turn_complete=state.get("on_turn_complete"),  # NSIC: Live debate logging
+            scenario_id=state.get("scenario_id", "engine_a"),
+            scenario_name=state.get("scenario_name", state.get("question", "")[:50]),
         )
         
         # Build agents map (both LLM and deterministic)
@@ -2141,12 +2165,21 @@ Synthesis:"""
                 "error": f"Synthesis error: {e}"
             }
     
-    async def run(self, question: str) -> Dict[str, Any]:
+    async def run(
+        self, 
+        question: str,
+        on_turn_complete: Optional[Any] = None,  # NSIC: Callback for live debate logging
+        scenario_id: str = "",  # NSIC: Scenario ID for logging
+        scenario_name: str = "",  # NSIC: Scenario name for logging
+    ) -> Dict[str, Any]:
         """
         Run workflow for a question.
         
         Args:
             question: User's question
+            on_turn_complete: Optional callback(engine, scenario_id, scenario_name, turn_num, agent_name, content, gpu_id)
+            scenario_id: Scenario ID for logging context
+            scenario_name: Scenario name for logging context
             
         Returns:
             Final workflow state
@@ -2168,13 +2201,21 @@ Synthesis:"""
                 "start_time": datetime.now(timezone.utc).isoformat()
             },
             "reasoning_chain": [],
-            "event_callback": None
+            "event_callback": None,
+            "on_turn_complete": on_turn_complete,  # NSIC: Live debate logging
+            "scenario_id": scenario_id,
+            "scenario_name": scenario_name or question[:50],
         }
         
         final_state = await self.graph.ainvoke(initial_state)
         
         # Add total latency
         start_time = datetime.fromisoformat(final_state["metadata"]["start_time"])
+        total_latency_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
+        final_state["metadata"]["total_latency_ms"] = total_latency_ms
+        
+        # FIX: CRITICAL - Actually return the final state!
+        return final_state
     
     async def run_stream(
         self, 
