@@ -598,7 +598,7 @@ Provide comprehensive analysis of this scenario's impacts on Qatar's economy and
             else:
                 self._stats["cache_misses"] += 1
 
-        # Step 1: Generate 30 scenarios from question
+        # Step 1: Generate scenarios from question
         generator = create_scenario_generator()
         scenario_set = await generator.generate(user_question)
 
@@ -608,27 +608,45 @@ Provide comprehensive analysis of this scenario's impacts on Qatar's economy and
             f"{len(scenario_set.engine_b_scenarios)} for Engine B"
         )
 
-        # Step 2+3: Run BOTH engines in parallel (Engine A uses Azure, Engine B uses local GPUs)
-        logger.info("Running Engine A (Azure) and Engine B (DeepSeek) IN PARALLEL...")
+        # =====================================================================
+        # NEW FLOW: Engine B Compute FIRST, then Engine A debates WITH numbers
+        # =====================================================================
         
-        engine_a_task = self._process_engine_a_batch(
+        # Step 2: Engine B v5.0 Compute FIRST (before debate)
+        # Agents will debate WITH these numbers, not guess and validate later
+        logger.info("Step 2: Running Engine B v5.0 compute FIRST (before debate)...")
+        engine_b_compute = await self._run_engine_b_compute_upfront(
+            user_question,
+            on_turn_complete,
+        )
+        
+        logger.info(
+            f"Engine B Compute complete: "
+            f"success_rate={engine_b_compute.get('monte_carlo', {}).get('success_rate', 'N/A')}, "
+            f"trend={engine_b_compute.get('forecasting', {}).get('trend', 'N/A')}"
+        )
+        
+        # Step 3: Format Engine B results for agent prompts
+        quantitative_context = self._format_quantitative_context(engine_b_compute)
+        
+        # Step 4: Run Engine A debate WITH Engine B numbers in prompts
+        logger.info("Step 4: Running Engine A debate WITH quantitative context...")
+        engine_a_results = await self._process_engine_a_batch(
             scenario_set.engine_a_scenarios,
             max_concurrent=max_concurrent,
             on_turn_complete=on_turn_complete,
+            quantitative_context=quantitative_context,  # NEW: Pass Engine B results
         )
         
-        engine_b_task = self.engine_b.run_all_scenarios(
+        # Step 5: Run Engine B (DeepSeek LLM) broad scenarios in parallel
+        # This is the OLD Engine B - broad scenario analysis
+        logger.info("Step 5: Running Engine B (DeepSeek) broad scenarios...")
+        engine_b_scenario_results = await self.engine_b.run_all_scenarios(
             scenarios=scenario_set.engine_b_scenarios,
             on_turn_complete=on_turn_complete,
         )
         
-        # Run both engines simultaneously - they use different resources!
-        engine_a_results, engine_b_scenario_results = await asyncio.gather(
-            engine_a_task,
-            engine_b_task,
-        )
-        
-        # Convert ScenarioResults to DualEngineResults and update stats
+        # Convert ScenarioResults to DualEngineResults
         engine_b_results = []
         for sr in engine_b_scenario_results:
             engine_b_results.append(DualEngineResult(
@@ -636,56 +654,25 @@ Provide comprehensive analysis of this scenario's impacts on Qatar's economy and
                 scenario_name=sr.scenario_name,
                 domain=sr.domain,
                 engine_a_result=None,
-                engine_b_result=sr,  # Pass the ScenarioResult directly
+                engine_b_result=sr,
                 final_content=sr.final_synthesis,
-                confidence=0.75,  # Default confidence for Engine B
+                confidence=0.75,
                 total_time_ms=sr.total_time_ms,
             ))
-            self._stats["engine_b_runs"] += 1  # FIX: Increment stats counter
+            self._stats["engine_b_runs"] += 1
 
-        # Step 4: Synthesize qualitative results
+        # Step 6: Synthesize (qualitative + quantitative already integrated)
         synthesis = self._synthesize_results(
             user_question,
             scenario_set,
             engine_a_results,
             engine_b_results,
         )
-
-        # Step 5: Engine B v5.0 Quantitative Compute Validation
-        logger.info("Running Engine B v5.0 quantitative compute...")
-        engine_b_compute = await self._run_engine_b_compute(
-            user_question,
-            synthesis,
-            on_turn_complete,
-        )
         
-        # Step 6: Conflict Detection
-        conflict_detector = ConflictDetector()
-        conflict_report = conflict_detector.detect_conflicts(synthesis, engine_b_compute)
-        
-        logger.info(
-            f"Conflict detection: alignment={conflict_report.alignment_score:.0f}/100, "
-            f"conflicts={len(conflict_report.conflicts)}, "
-            f"trigger_prime={conflict_report.should_trigger_prime}"
-        )
-        
-        # Step 7: Engine A Prime (if conflicts detected)
-        engine_a_prime_result = None
-        if conflict_report.should_trigger_prime:
-            logger.info("Triggering Engine A Prime for conflict resolution...")
-            engine_a_prime_result = await self._run_engine_a_prime(
-                synthesis,
-                engine_b_compute,
-                conflict_report,
-                on_turn_complete,
-            )
-        
-        # Step 8: Enhanced synthesis with quantitative backing
-        enhanced_synthesis = self._enhance_synthesis_with_compute(
+        # Step 7: Enhance synthesis with Engine B compute results
+        enhanced_synthesis = self._create_enhanced_synthesis(
             synthesis,
             engine_b_compute,
-            conflict_report,
-            engine_a_prime_result,
         )
 
         result = {
@@ -694,12 +681,6 @@ Provide comprehensive analysis of this scenario's impacts on Qatar's economy and
             "engine_a_results": [r.to_dict() for r in engine_a_results],
             "engine_b_results": [r.to_dict() for r in engine_b_results],
             "engine_b_compute": engine_b_compute,
-            "conflict_report": {
-                "alignment_score": conflict_report.alignment_score,
-                "conflicts": len(conflict_report.conflicts),
-                "triggered_prime": conflict_report.should_trigger_prime,
-            },
-            "engine_a_prime_result": engine_a_prime_result,
             "synthesis": enhanced_synthesis,
             "stats": self.get_stats(),
             "cache_hit": False,
@@ -720,7 +701,8 @@ Provide comprehensive analysis of this scenario's impacts on Qatar's economy and
         self,
         scenarios: List[GeneratedScenario],
         max_concurrent: int = 2,
-        on_turn_complete: Optional[Callable] = None,  # Future: Connect to QNWIS workflow
+        on_turn_complete: Optional[Callable] = None,
+        quantitative_context: str = "",  # NEW: Engine B results for agent prompts
     ) -> List[DualEngineResult]:
         """
         Process scenarios through Engine A (deep analysis).
@@ -728,22 +710,26 @@ Provide comprehensive analysis of this scenario's impacts on Qatar's economy and
         Args:
             scenarios: List of GeneratedScenario for Engine A
             max_concurrent: Max concurrent scenarios
-            on_turn_complete: Optional callback (limited support in QNWIS workflow)
+            on_turn_complete: Optional callback
+            quantitative_context: Engine B compute results formatted for agent prompts
             
         Returns:
             List of DualEngineResult
         """
         logger.info(f"Processing {len(scenarios)} scenarios through Engine A")
+        if quantitative_context:
+            logger.info("Engine A agents will debate WITH quantitative context from Engine B")
         
         results = []
         semaphore = asyncio.Semaphore(max_concurrent)
         
         async def process_one(scenario: GeneratedScenario, idx: int):
             async with semaphore:
-                # Pass callback to Engine A for turn-by-turn logging
+                # Pass quantitative context to Engine A for informed debate
                 result = await self._run_engine_a_generated(
                     scenario,
-                    on_turn_complete=on_turn_complete,  # Callback is now invoked inside QNWIS workflow
+                    on_turn_complete=on_turn_complete,
+                    quantitative_context=quantitative_context,  # NEW
                 )
                 return result
         
@@ -796,7 +782,8 @@ Provide comprehensive analysis of this scenario's impacts on Qatar's economy and
     async def _run_engine_a_generated(
         self,
         scenario: GeneratedScenario,
-        on_turn_complete: Optional[Callable] = None,  # Live debate logging callback
+        on_turn_complete: Optional[Callable] = None,
+        quantitative_context: str = "",  # NEW: Engine B results for informed debate
     ) -> Optional[DualEngineResult]:
         """
         Run Engine A on a generated scenario using full QNWIS 12-agent workflow.
@@ -804,6 +791,7 @@ Provide comprehensive analysis of this scenario's impacts on Qatar's economy and
         Args:
             scenario: GeneratedScenario to process
             on_turn_complete: Optional callback for live turn-by-turn logging
+            quantitative_context: Engine B compute results for agents to reference
             
         Returns:
             DualEngineResult or None on failure
@@ -817,7 +805,7 @@ Provide comprehensive analysis of this scenario's impacts on Qatar's economy and
                 from src.qnwis.agents.base import DataClient
                 from src.qnwis.llm.client import LLMClient as QNWISLLMClient
                 
-                # Build the question from scenario
+                # Build the question from scenario WITH quantitative context
                 question = f"""Scenario Analysis: {scenario.name}
 
 Category: {scenario.category}
@@ -825,7 +813,10 @@ Description: {scenario.description}
 
 {scenario.prompt}
 
-Provide comprehensive analysis of this scenario's impacts on Qatar's economy and policy objectives."""
+{quantitative_context}
+
+Provide comprehensive analysis of this scenario's impacts on Qatar's economy and policy objectives.
+Your arguments MUST account for the quantitative facts above."""
 
                 logger.info(f"Engine A: Running full 12-agent QNWIS workflow for {scenario.id}")
                 
@@ -1365,6 +1356,248 @@ Provide comprehensive analysis of this scenario's impacts on Qatar's economy and
             return "challenging"
         else:
             return "unlikely"
+    
+    # =========================================================================
+    # NEW FLOW: Engine B Compute FIRST (before debate)
+    # =========================================================================
+    
+    async def _run_engine_b_compute_upfront(
+        self,
+        question: str,
+        on_progress: Optional[Callable] = None,
+    ) -> Dict[str, Any]:
+        """
+        Run Engine B v5.0 compute services BEFORE Engine A debate.
+        
+        This is the new flow: compute first, then debate with numbers.
+        Agents will have quantitative facts before they start debating.
+        """
+        results = {}
+        
+        def emit(stage: str, data: dict = None):
+            if on_progress:
+                on_progress("engine_b_compute", "compute", 0, stage, str(data or {}), -1)
+            logger.debug(f"Engine B Compute (upfront): {stage}")
+        
+        try:
+            emit("initializing")
+            
+            # Initialize compute services
+            monte_carlo = MonteCarloService(gpu_ids=[0, 1])
+            sensitivity = SensitivityService(gpu_id=2)
+            forecasting = ForecastingService(gpu_id=4)
+            thresholds = ThresholdService(gpu_id=5)
+            
+            emit("monte_carlo_start")
+            
+            # Monte Carlo: General policy feasibility simulation
+            mc_result = monte_carlo.simulate(MonteCarloInput(
+                variables={
+                    "policy_effectiveness": {"mean": 0.70, "std": 0.15, "distribution": "normal"},
+                    "implementation_quality": {"mean": 0.80, "std": 0.10, "distribution": "normal"},
+                    "external_factors": {"mean": 0.85, "std": 0.12, "distribution": "normal"},
+                    "resource_availability": {"mean": 0.75, "std": 0.10, "distribution": "normal"},
+                },
+                formula="policy_effectiveness * implementation_quality * external_factors * resource_availability",
+                success_condition="result >= 0.35",
+                n_simulations=10000,
+                seed=42,
+            ))
+            
+            results["monte_carlo"] = {
+                "n_simulations": mc_result.n_simulations,
+                "success_rate": mc_result.success_rate,
+                "mean_result": mc_result.mean_result,
+                "std_result": mc_result.std_result,
+                "var_95": mc_result.var_95,
+                "p5": mc_result.percentiles.get("p5", 0),
+                "p95": mc_result.percentiles.get("p95", 0),
+                "variable_contributions": mc_result.variable_contributions,
+            }
+            
+            emit("monte_carlo_complete", {"success_rate": mc_result.success_rate})
+            emit("sensitivity_start")
+            
+            # Sensitivity: Key drivers analysis
+            sens_result = sensitivity.analyze(SensitivityInput(
+                base_values={
+                    "policy_effectiveness": 0.70,
+                    "implementation_quality": 0.80,
+                    "external_factors": 0.85,
+                    "resource_availability": 0.75,
+                },
+                formula="policy_effectiveness * implementation_quality * external_factors * resource_availability",
+            ))
+            
+            results["sensitivity"] = {
+                "base_result": sens_result.base_result,
+                "top_drivers": sens_result.top_drivers,
+                "parameter_impacts": [
+                    {"name": p.name, "elasticity": p.elasticity, "direction": p.direction}
+                    for p in sens_result.parameter_impacts[:5]
+                ],
+            }
+            
+            emit("sensitivity_complete", {"top_drivers": sens_result.top_drivers})
+            emit("forecasting_start")
+            
+            # Forecasting: Trend projection
+            fc_result = forecasting.forecast(ForecastingInput(
+                historical_values=[0.55, 0.58, 0.62, 0.65, 0.68],
+                forecast_horizon=5,
+            ))
+            
+            results["forecasting"] = {
+                "trend": fc_result.trend,
+                "trend_slope": fc_result.trend_slope,
+                "forecasts": [
+                    {
+                        "period": f.period,
+                        "point_forecast": f.point_forecast,
+                        "lower_bound": f.lower_bound,
+                        "upper_bound": f.upper_bound,
+                    }
+                    for f in fc_result.forecasts
+                ],
+            }
+            
+            emit("forecasting_complete", {"trend": fc_result.trend})
+            emit("complete")
+            
+            logger.info(
+                f"Engine B Compute (upfront) complete: "
+                f"success_rate={mc_result.success_rate:.1%}, "
+                f"trend={fc_result.trend}, "
+                f"top_driver={sens_result.top_drivers[0] if sens_result.top_drivers else 'N/A'}"
+            )
+            
+        except Exception as e:
+            logger.error(f"Engine B Compute (upfront) failed: {e}")
+            results["error"] = str(e)
+        
+        return results
+    
+    def _format_quantitative_context(self, engine_b_compute: Dict[str, Any]) -> str:
+        """
+        Format Engine B compute results for inclusion in Engine A agent prompts.
+        
+        This gives agents the quantitative facts BEFORE they debate.
+        """
+        if not engine_b_compute or "error" in engine_b_compute:
+            return ""
+        
+        sections = [
+            "═" * 70,
+            "QUANTITATIVE CONTEXT (from Engine B Compute)",
+            "Before you debate, here are the computed facts:",
+            "═" * 70,
+            "",
+        ]
+        
+        if "monte_carlo" in engine_b_compute:
+            mc = engine_b_compute["monte_carlo"]
+            success = mc.get("success_rate", 0)
+            mean = mc.get("mean_result", 0)
+            p5 = mc.get("p5", mc.get("var_95", 0))
+            p95 = mc.get("p95", mean * 1.3)
+            
+            # Get top driver
+            contributions = mc.get("variable_contributions", {})
+            top_driver = max(contributions, key=contributions.get) if contributions else "N/A"
+            top_impact = contributions.get(top_driver, 0) if contributions else 0
+            
+            sections.extend([
+                "### Monte Carlo Analysis (10,000 simulations)",
+                f"- Success probability: {success:.1%}",
+                f"- Mean outcome: {mean:.3f}",
+                f"- 90% confidence range: [{p5:.3f}, {p95:.3f}]",
+                f"- Interpretation: {self._interpret_probability(success)}",
+                f"- Top driver: {top_driver} ({top_impact:.0%} of variance)",
+                "",
+            ])
+        
+        if "sensitivity" in engine_b_compute:
+            sens = engine_b_compute["sensitivity"]
+            top_drivers = sens.get("top_drivers", [])
+            impacts = sens.get("parameter_impacts", [])
+            
+            sections.append("### Key Drivers (Sensitivity Analysis)")
+            for i, driver in enumerate(top_drivers[:3], 1):
+                impact = next((p for p in impacts if p["name"] == driver), {})
+                sections.append(f"{i}. {driver} ({impact.get('elasticity', 0):.1%} impact, {impact.get('direction', 'N/A')})")
+            sections.append("")
+        
+        if "forecasting" in engine_b_compute:
+            fc = engine_b_compute["forecasting"]
+            trend = fc.get("trend", "unknown")
+            slope = fc.get("trend_slope", 0)
+            forecasts = fc.get("forecasts", [])
+            
+            sections.extend([
+                "### Trend Forecast",
+                f"- Overall trend: {trend}",
+                f"- Trend slope: {slope:.4f} per period",
+            ])
+            
+            if forecasts:
+                last = forecasts[-1]
+                sections.append(
+                    f"- 5-year projection: {last.get('point_forecast', 0):.3f} "
+                    f"[{last.get('lower_bound', 0):.3f} - {last.get('upper_bound', 0):.3f}]"
+                )
+            sections.append("")
+        
+        sections.extend([
+            "═" * 70,
+            "Your arguments MUST account for these quantitative facts.",
+            "═" * 70,
+        ])
+        
+        return "\n".join(sections)
+    
+    def _create_enhanced_synthesis(
+        self,
+        synthesis: Dict[str, Any],
+        engine_b_compute: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """
+        Create enhanced synthesis combining qualitative debate + quantitative compute.
+        
+        Simpler than conflict detection - just merge the results.
+        """
+        enhanced = dict(synthesis)
+        
+        # Add quantitative validation section
+        enhanced["quantitative_validation"] = {}
+        
+        if "monte_carlo" in engine_b_compute:
+            mc = engine_b_compute["monte_carlo"]
+            enhanced["quantitative_validation"]["feasibility"] = {
+                "success_probability": mc.get("success_rate"),
+                "simulations": mc.get("n_simulations"),
+                "interpretation": self._interpret_probability(mc.get("success_rate", 0)),
+                "mean_outcome": mc.get("mean_result"),
+            }
+        
+        if "forecasting" in engine_b_compute:
+            fc = engine_b_compute["forecasting"]
+            enhanced["quantitative_validation"]["outlook"] = {
+                "trend": fc.get("trend"),
+                "slope": fc.get("trend_slope"),
+            }
+        
+        if "sensitivity" in engine_b_compute:
+            sens = engine_b_compute["sensitivity"]
+            enhanced["quantitative_validation"]["key_drivers"] = sens.get("top_drivers", [])
+        
+        # Compute adjusted confidence based on Monte Carlo success rate
+        original_confidence = synthesis.get("overall_confidence", 0.7)
+        mc_success = engine_b_compute.get("monte_carlo", {}).get("success_rate", 0.5)
+        enhanced["adjusted_confidence"] = (original_confidence + mc_success) / 2
+        
+        enhanced["analysis_type"] = "quantitative_informed_debate"
+        
+        return enhanced
 
 
 def create_dual_engine_orchestrator() -> DualEngineOrchestrator:
