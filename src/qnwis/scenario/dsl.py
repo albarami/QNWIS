@@ -173,17 +173,52 @@ def parse_scenario(source: str | dict[str, Any], format: Literal["yaml", "json",
                 cleaned_source = cleaned_source[:-3]
             cleaned_source = cleaned_source.strip()
             
+            # FIX ROOT CAUSE: Quote string values that contain colons
+            # YAML interprets "key: value with: colon" as nested mapping
+            # Fix by quoting values that have colons after the first one
+            import re
+            lines = []
+            for line in cleaned_source.split('\n'):
+                # Skip list items, comments, and empty lines
+                if line.strip().startswith('-') or line.strip().startswith('#') or not line.strip():
+                    lines.append(line)
+                    continue
+                
+                # Check if line has key: value format
+                if ':' in line:
+                    # Find first colon (the key separator)
+                    first_colon = line.index(':')
+                    key = line[:first_colon]
+                    value = line[first_colon + 1:].strip()
+                    
+                    # If value contains colon and isn't already quoted, quote it
+                    if ':' in value and value and not value.startswith('"') and not value.startswith("'"):
+                        # Quote the value
+                        value = f'"{value}"'
+                        line = f'{key}: {value}'
+                
+                lines.append(line)
+            
+            cleaned_source = '\n'.join(lines)
+            
             # Try to parse, with fallback for malformed YAML
             try:
                 data = yaml.safe_load(cleaned_source)
             except yaml.YAMLError as ye:
                 logger.warning(f"YAML parse failed, attempting recovery: {ye}")
-                # Return a minimal valid scenario
+                # Return a minimal valid scenario with required fields
                 data = {
                     "name": "Fallback Scenario",
+                    "description": "Fallback scenario due to YAML parse error - baseline projection",
                     "metric": "employment_total",
                     "horizon_months": 12,
-                    "transforms": []
+                    "transforms": [
+                        {
+                            "type": "multiplicative",
+                            "value": 0.0,  # No change from baseline
+                            "start_month": 0
+                        }
+                    ]
                 }
                 logger.info("Using fallback scenario due to YAML parse error")
         elif format == "json":
