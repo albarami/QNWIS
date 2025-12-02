@@ -355,6 +355,7 @@ async def check_feasibility_with_data(
     target = extract_target_from_query(query)
     
     feasibility_result = {
+        "checked": True,  # FIXED: Diagnostic expects this key
         "feasible": True,
         "feasibility_ratio": 1.0,
         "constraints": [],
@@ -508,7 +509,7 @@ async def feasibility_gate_node(state: IntelligenceState) -> IntelligenceState:
     # Initialize feasibility flags - default to feasible
     state["target_infeasible"] = False
     state["feasibility_check"] = {"verdict": "PENDING"}
-    state["feasibility_analysis"] = {"feasibility_ratio": 1.0}
+    state["feasibility_analysis"] = {"checked": False, "feasibility_ratio": 1.0, "data_used": {}}
     
     logger.info(f"🔢 FEASIBILITY GATE: Checking with {len(extracted_facts)} extracted facts")
     logger.info(f"🔢 Query: {query[:100]}...")
@@ -625,7 +626,7 @@ Analyze the feasibility of this query. Output ONLY valid JSON.
         reasoning_chain.append(f"⚠️ Feasibility check failed: {e}")
         # Don't block on errors - proceed with warning
         state["feasibility_check"] = {"verdict": "UNKNOWN", "error": str(e)}
-        state["feasibility_analysis"] = {"feasibility_ratio": 1.0, "error": str(e)}
+        state["feasibility_analysis"] = {"checked": True, "feasibility_ratio": 1.0, "data_used": {}, "error": str(e)}
     
     logger.info(f"✅ Feasibility gate returning state with keys: {list(state.keys())}")
     return state
