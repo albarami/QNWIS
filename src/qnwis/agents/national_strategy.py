@@ -104,11 +104,13 @@ class NationalStrategyAgent:
         # Fetch GCC unemployment data
         gcc_res = self.client.run("syn_unemployment_gcc_latest")
 
-        if len(gcc_res.rows) < min_countries:
+        # FIXED: Handle None rows to prevent NoneType error
+        row_count = len(gcc_res.rows) if gcc_res.rows is not None else 0
+        if row_count < min_countries:
             return AgentReport(
                 agent="NationalStrategy",
                 findings=[],
-                warnings=[f"Insufficient GCC data: {len(gcc_res.rows)} countries (need {min_countries})"],
+                warnings=[f"Insufficient GCC data: {row_count} countries (need {min_countries})"],
             )
 
         # Extract country unemployment rates

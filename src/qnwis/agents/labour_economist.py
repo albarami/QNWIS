@@ -325,6 +325,13 @@ class LabourEconomistAgent:
 
     def run(self) -> AgentReport:
         result = self.client.run(self.query_id)
+        # FIXED: Handle None rows to prevent NoneType error
+        if result.rows is None:
+            return AgentReport(
+                agent="LabourEconomist",
+                findings=[],
+                warnings=[f"No data available for query: {self.query_id}"],
+            )
         rows = self._sorted_rows(list(result.rows))
         metrics = self._build_metrics(rows)
         summary = self._summarize(rows, metrics)

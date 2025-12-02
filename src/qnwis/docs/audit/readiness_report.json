@@ -338,12 +338,12 @@
         },
         "missing": {}
       },
-      "duration_ms": 18.862247467041016,
+      "duration_ms": 16.577482223510742,
       "severity": "ERROR",
       "evidence_paths": [
         "docs/IMPLEMENTATION_ROADMAP.md"
       ],
-      "timestamp": "2025-12-02T08:05:30.885790"
+      "timestamp": "2025-12-02T08:20:10.240625"
     },
     {
       "name": "no_placeholders",
@@ -607,17 +607,17 @@
           }
         ]
       },
-      "duration_ms": 3235.0680828094482,
+      "duration_ms": 520.0624465942383,
       "severity": "ERROR",
       "evidence_paths": [
         "src/qnwis/scripts/qa/grep_rules.yml"
       ],
-      "timestamp": "2025-12-02T08:05:34.121428"
+      "timestamp": "2025-12-02T08:20:10.762691"
     }
   ],
   "overall_pass": false,
-  "execution_time_ms": 3264.5323276519775,
-  "timestamp": "2025-12-02T08:05:34.131461",
+  "execution_time_ms": 545.9799766540527,
+  "timestamp": "2025-12-02T08:20:10.770028",
   "summary": {
     "total_gates": 2,
     "total": 2,
@@ -627,8 +627,8 @@
   "artifacts": {
     "coverage.xml": "a983cdf5fa5911a848b72fb3c0e1873dc544bc88697bf45abf0d4bbfd5223104",
     "junit.xml": "1936cb6760d2944a3e93d625ce6d9911b24758cee616d5db7eb8eb0f3abf7270",
-    "src/qnwis/docs/audit/READINESS_REPORT_1_25.md": "f7052261953c061dae1724ec64a408f9cabfd206927851f60a5c58f242b14a71",
-    "src/qnwis/docs/audit/READINESS_SUMMARY.html": "c4e55380eb565dbeda6f7cf9ba6ec7994148be65f4ad69136734f1ae73d67164",
+    "src/qnwis/docs/audit/READINESS_REPORT_1_25.md": "05c6a3f1d6943d17668e54b59b35073b16265d0aa1f43d3573c551194cb7ed03",
+    "src/qnwis/docs/audit/READINESS_SUMMARY.html": "fdc7cc0f36962e1daa0ad12dcec28cd8fc4e1e0bc32033ea9bda5462e71fbb1d",
     "src/qnwis/docs/audit/badges/rg1_pass.svg": "9995f7f48c4cb371d7db73a0cb755b09a43f686d6f82bb85a81eb9d7b1b857d8",
     "ops_notify_report.json": "eeeb7a4be860d00f103c927d235181ddb91dc12b888dfe0f08284ff29cf686ce",
     "OPS_NOTIFY_SUMMARY.md": "292aa2e89f94f28714ca7fed8a86fc45c48d896c936d714c36b877f7c918673f",
@@ -646,9 +646,9 @@
     "docs/audit/rg7/DR_SUMMARY.md": "9ae905e6286676f0d3902004400824e35fadc37d8b4ed7047cb6d65491af0ac2",
     "docs/audit/rg7/sample_manifest.json": "d04382655812b537b43247d53653cc47421b2b4d0c0910ae482ed4c70df9be84",
     "src/qnwis/docs/audit/badges/rg7_pass.svg": "4b179dc9aa67e5dc0a76eac73c7c4c285662ee8fd575b9a6babf5413bd0a14af",
-    "docs/audit/rg8/rg8_report.json": "2b844794b1f1622f4c18155f4b4f2f5672c3cbbbc1bba584949afb50ef01551c",
+    "docs/audit/rg8/rg8_report.json": "c2d8d8ec253d131c970ff2986413ea479f0d09d43841e414da20ad8e29fd7681",
     "docs/audit/rg8/CONTINUITY_SUMMARY.md": "7baf3f961363b2dc79c05a02976bdd6fb2ca905e3747fe6de069603d66e942b5",
-    "docs/audit/rg8/sample_plan.yaml": "bdd53a14a4e4ba7830324538e242a1937524419e8ffd3e99b298179af27fc39b",
+    "docs/audit/rg8/sample_plan.yaml": "45057375ae3d5e80b7ee9a9a77ef2d64696b4a7e79683d56f9b737342b7fd05b",
     "src/qnwis/docs/audit/badges/rg8_pass.svg": "dd7d6c73ea33703864a5044faa10e6654ead7bedc00a14fe36774d78139926d6",
     "docs/audit/badges/rg8_pass.svg": "dd7d6c73ea33703864a5044faa10e6654ead7bedc00a14fe36774d78139926d6"
   },

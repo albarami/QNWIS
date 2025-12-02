@@ -932,6 +932,8 @@ async def run_workflow_stream(
                 "critique_results": critique_results,
                 # Classification
                 "complexity": accumulated_state.get("complexity", ""),
+                # FIXED: Add flag for diagnostic validation (feedback loop check)
+                "engine_a_had_quantitative_context": accumulated_state.get("engine_a_had_quantitative_context", False),
             },
         )
         return  # Exit early for langgraph workflow
