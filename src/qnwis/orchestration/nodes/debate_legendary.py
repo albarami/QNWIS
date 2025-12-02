@@ -197,13 +197,21 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
                 logger.info("✅ LabourEconomist (deterministic) initialized")
             except Exception as e:
                 logger.warning(f"⚠️ LabourEconomist failed: {e}")
+            
+            # Add ResearchSynthesizer - aggregates Semantic Scholar, RAG, Perplexity, Knowledge Graph
+            try:
+                from ...agents.research_synthesizer import ResearchSynthesizerAgent
+                agents_map["ResearchSynthesizer"] = ResearchSynthesizerAgent()
+                logger.info("✅ ResearchSynthesizer (deterministic) initialized")
+            except Exception as e:
+                logger.warning(f"⚠️ ResearchSynthesizer failed: {e}")
                 
         except ImportError as e:
             logger.warning(f"⚠️ Could not import deterministic agents: {e}")
         
         # Log final agent count - CRITICAL for legendary depth
         llm_agent_count = len([a for a in agents_map.keys() if a != "DataValidator"])
-        deterministic_count = len([a for a in agents_map.keys() if a in ["TimeMachine", "Predictor", "Scenario", "PatternMiner", "NationalStrategy", "AlertCenter", "PatternDetectiveAgent", "LabourEconomist"]])
+        deterministic_count = len([a for a in agents_map.keys() if a in ["TimeMachine", "Predictor", "Scenario", "PatternMiner", "NationalStrategy", "AlertCenter", "PatternDetectiveAgent", "LabourEconomist", "ResearchSynthesizer"]])
         logger.warning(f"🔥 DEBATE AGENTS LOADED: {llm_agent_count} total ({llm_agent_count - deterministic_count} LLM + {deterministic_count} deterministic)")
         logger.warning(f"🔥 AGENT LIST: {list(agents_map.keys())}")
         
@@ -215,6 +223,71 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
         import traceback
         logger.error(f"❌ Traceback: {traceback.format_exc()}")
         # Debate will be severely limited without agents!
+
+    # === RUN DETERMINISTIC AGENTS AND POPULATE REPORTS ===
+    # These agents need to be EXECUTED to generate analysis before the debate
+    extracted_facts = state.get("extracted_facts", [])
+    query = state.get("query", "")
+    
+    deterministic_agents_config = [
+        ("TimeMachine", "baseline_report", {"metric": "qatarization_rate"}),
+        ("Predictor", "forecast_baseline", {"metric": "private_sector_employment"}),
+        ("NationalStrategy", "gcc_benchmark", {}),
+        ("PatternMiner", "mine_patterns", {"metric": "sector_employment"}),
+        ("AlertCenter", "check_thresholds", {}),
+        ("LabourEconomist", "analyze", {}),
+        ("ResearchSynthesizer", "run", {"query": state.get("query", "Qatarization policy")}),
+    ]
+    
+    for agent_key, method_name, kwargs in deterministic_agents_config:
+        if agent_key in agents_map:
+            agent = agents_map[agent_key]
+            try:
+                # Try to call the agent's analysis method
+                if hasattr(agent, method_name):
+                    method = getattr(agent, method_name)
+                    result = method(**kwargs) if kwargs else method()
+                    
+                    # Extract narrative from result
+                    narrative = ""
+                    if hasattr(result, 'narrative'):
+                        narrative = result.narrative
+                    elif isinstance(result, dict):
+                        narrative = result.get('narrative', result.get('summary', str(result)[:500]))
+                    elif isinstance(result, str):
+                        narrative = result[:500]
+                    else:
+                        narrative = str(result)[:500]
+                    
+                    # Create report object for orchestrator
+                    agent_reports_map[agent_key] = type('AgentReport', (object,), {
+                        'narrative': narrative,
+                        'agent': agent_key,
+                        'findings': getattr(result, 'findings', []) if hasattr(result, 'findings') else [],
+                        'confidence': getattr(result, 'confidence', 0.7) if hasattr(result, 'confidence') else 0.7,
+                        'warnings': getattr(result, 'warnings', []) if hasattr(result, 'warnings') else [],
+                        'metadata': {'source': 'deterministic_agent', 'method': method_name}
+                    })()
+                    logger.info(f"✅ {agent_key} analysis executed: {len(narrative)} chars")
+                elif hasattr(agent, 'run'):
+                    # Fallback to generic run() method
+                    result = agent.run()
+                    narrative = getattr(result, 'narrative', str(result)[:500]) if hasattr(result, 'narrative') else str(result)[:500]
+                    agent_reports_map[agent_key] = type('AgentReport', (object,), {
+                        'narrative': narrative,
+                        'agent': agent_key,
+                        'findings': [],
+                        'confidence': 0.7,
+                        'warnings': [],
+                        'metadata': {'source': 'deterministic_agent', 'method': 'run'}
+                    })()
+                    logger.info(f"✅ {agent_key} run() executed: {len(narrative)} chars")
+                else:
+                    logger.warning(f"⚠️ {agent_key} has no {method_name} or run() method")
+            except Exception as e:
+                logger.warning(f"⚠️ {agent_key}.{method_name}() failed: {e}")
+    
+    logger.info(f"📊 Deterministic agent reports generated: {list(agent_reports_map.keys())}")
 
     # Conduct legendary debate
     # Get user-selected debate depth from state (default: legendary = 100-150 turns)
