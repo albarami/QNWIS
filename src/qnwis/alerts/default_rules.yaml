@@ -49,9 +49,10 @@ rules:
     enabled: true
     description: "Alert when sector employment drops >5% YoY"
 
-  # Nationalization/Qatarization alerts  
-  - rule_id: qatarization_decline
-    metric: qatarization
+  # Workforce nationalization/localization alerts (domain-agnostic)
+  # Works for Qatarization, Emiratization, Saudization, etc.
+  - rule_id: nationalization_decline
+    metric: nationalization  # Maps to country-specific metric (qatarization, emiratization, etc.)
     scope:
       level: sector
     window:
@@ -63,10 +64,10 @@ rules:
     horizon: 24
     severity: high
     enabled: true
-    description: "Alert on negative 12-month nationalization trend"
+    description: "Alert on negative 12-month workforce nationalization trend"
 
-  - rule_id: qatarization_target_miss
-    metric: qatarization
+  - rule_id: nationalization_target_miss
+    metric: nationalization  # Maps to country-specific metric
     scope:
       level: national
     window:
@@ -78,7 +79,7 @@ rules:
     horizon: 12
     severity: medium
     enabled: true
-    description: "Alert when overall nationalization falls below 20%"
+    description: "Alert when overall workforce nationalization falls below 20%"
 
   # Wage and compensation alerts
   - rule_id: wage_stagnation

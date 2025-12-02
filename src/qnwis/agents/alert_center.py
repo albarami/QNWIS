@@ -28,24 +28,47 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-# Metric whitelist for alert evaluation
+# Metric whitelist for alert evaluation (domain-agnostic)
 ALLOWED_METRICS = [
+    # Labor market metrics
     "retention",
-    "qatarization",
-    "salary",
     "employment",
+    "unemployment",
     "attrition",
     "turnover",
     "vacancy",
+    # Compensation metrics
+    "salary",
+    "wage_gap",
+    # Nationalization metrics (works for any country's localization program)
+    "nationalization",  # Generic term - maps to qatarization, emiratization, saudization, etc.
+    "qatarization",     # Qatar-specific (legacy support)
+    # Economic indicators
+    "gdp_growth",
+    "inflation",
+    "fdi_inflow",
+    "capacity_utilization",
 ]
 
-# Default query ID mapping
+# Default query ID mapping (domain-agnostic with fallbacks)
 DEFAULT_METRIC_QUERIES = {
+    # Labor market
     "retention": "LMIS_RETENTION_TS",
-    "qatarization": "LMIS_QATARIZATION_TS",
-    "salary": "LMIS_SALARY_TS",
     "employment": "LMIS_EMPLOYMENT_TS",
+    "unemployment": "LMIS_UNEMPLOYMENT_TS",
     "attrition": "syn_attrition_monthly",
+    "turnover": "LMIS_TURNOVER_TS",
+    # Compensation
+    "salary": "LMIS_SALARY_TS",
+    "wage_gap": "LMIS_WAGE_GAP_TS",
+    # Nationalization (generic + country-specific)
+    "nationalization": "LMIS_NATIONALIZATION_TS",  # Generic - system maps to country-specific
+    "qatarization": "LMIS_QATARIZATION_TS",        # Qatar-specific (legacy)
+    # Economic indicators
+    "gdp_growth": "MACRO_GDP_GROWTH_TS",
+    "inflation": "MACRO_INFLATION_TS",
+    "fdi_inflow": "MACRO_FDI_TS",
+    "capacity_utilization": "SECTOR_CAPACITY_TS",
 }
 
 
