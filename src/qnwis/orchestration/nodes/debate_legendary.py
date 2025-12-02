@@ -190,7 +190,7 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
             except Exception as e:
                 logger.warning(f"⚠️ AlertCenter failed: {e}")
             
-            # Add LabourEconomist - critical for Qatarization workforce analysis
+            # Add LabourEconomist - workforce and gender employment analysis
             try:
                 from ...agents.labour_economist import LabourEconomistAgent
                 agents_map["LabourEconomist"] = LabourEconomistAgent(data_client)
@@ -229,14 +229,24 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
     extracted_facts = state.get("extracted_facts", [])
     query = state.get("query", "")
     
+    # Domain-agnostic: Pass the actual query to agents, let them determine relevant metrics
+    query = state.get("query", "")
+    
     deterministic_agents_config = [
-        ("TimeMachine", "baseline_report", {"metric": "qatarization_rate"}),
-        ("Predictor", "forecast_baseline", {"metric": "private_sector_employment"}),
+        # TimeMachine: Historical trends - uses query context to find relevant time series
+        ("TimeMachine", "baseline_report", {}),
+        # Predictor: Forecasting - domain-agnostic forecasting capabilities
+        ("Predictor", "forecast_baseline", {}),
+        # NationalStrategy: GCC/regional benchmarking
         ("NationalStrategy", "gcc_benchmark", {}),
-        ("PatternMiner", "mine_patterns", {"metric": "sector_employment"}),
+        # PatternMiner: Statistical pattern detection
+        ("PatternMiner", "mine_patterns", {}),
+        # AlertCenter: Threshold monitoring across any KPIs
         ("AlertCenter", "check_thresholds", {}),
+        # LabourEconomist: Workforce statistics (applicable to any sector)
         ("LabourEconomist", "analyze", {}),
-        ("ResearchSynthesizer", "run", {"query": state.get("query", "Qatarization policy")}),
+        # ResearchSynthesizer: Academic research on ANY topic from user query
+        ("ResearchSynthesizer", "run", {"query": query}),
     ]
     
     for agent_key, method_name, kwargs in deterministic_agents_config:

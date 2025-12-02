@@ -100,7 +100,7 @@ class ResearchSynthesizerAgent:
         
         Args:
             query: The research question
-            focus_areas: Specific topics to prioritize (e.g., ["nationalization", "skills gap"])
+            focus_areas: Specific topics to prioritize (e.g., ["energy", "sustainability"] or ["healthcare", "costs"])
             max_papers: Maximum Semantic Scholar papers to retrieve
             max_rag_docs: Maximum RAG documents to retrieve
             include_perplexity: Whether to include real-time Perplexity results
@@ -169,8 +169,8 @@ class ResearchSynthesizerAgent:
         if focus_areas:
             search_query = f"{query} {' '.join(focus_areas)}"
         
-        # Add labor/policy focus for relevance
-        search_query = f"{search_query} labor market policy workforce"
+        # Keep query as-is without domain-specific additions
+        # The focus_areas parameter handles topic specificity
         
         try:
             # Semantic Scholar API
@@ -461,23 +461,75 @@ class ResearchSynthesizerAgent:
             methodology_note=f"Searched {sources_searched} sources. Ranked {len(findings)} findings by relevance. Top {len(top_findings)} used for synthesis.",
         )
     
-    def run(self, query: str = "Qatarization workforce policy effectiveness") -> ResearchSynthesis:
+    def run(self, query: str = "policy effectiveness analysis") -> ResearchSynthesis:
         """
         Execute research synthesis with default parameters.
         
         This is the standard entry point matching other deterministic agents.
+        Domain-agnostic - extracts focus areas from the query itself.
         
         Args:
-            query: Research question to investigate
+            query: Research question to investigate (any domain)
             
         Returns:
             ResearchSynthesis with aggregated findings
         """
+        # Extract focus areas dynamically from the query
+        focus_areas = self._extract_focus_areas(query)
+        
         return self.synthesize(
             query=query,
-            focus_areas=["nationalization", "workforce", "skills", "employment"],
+            focus_areas=focus_areas,
             max_papers=20,
             max_rag_docs=10,
             include_perplexity=True,
         )
+    
+    def _extract_focus_areas(self, query: str) -> List[str]:
+        """
+        Extract focus areas from query to guide research.
+        Domain-agnostic keyword extraction.
+        
+        Args:
+            query: User's research question
+            
+        Returns:
+            List of focus area keywords
+        """
+        # Common domain keywords to look for
+        domain_keywords = {
+            # Economy
+            "gdp", "inflation", "fiscal", "monetary", "trade", "investment", "fdi",
+            # Labor
+            "employment", "unemployment", "workforce", "labor", "jobs", "wages",
+            # Policy
+            "policy", "regulation", "reform", "quota", "mandate", "incentive",
+            # Sectors
+            "energy", "tourism", "finance", "construction", "healthcare", "education",
+            "technology", "manufacturing", "agriculture", "retail", "logistics",
+            # Demographics
+            "population", "migration", "expatriate", "national", "youth", "gender",
+            # Skills
+            "skills", "training", "education", "qualification", "competency",
+            # Sustainability
+            "sustainability", "environment", "carbon", "renewable", "green",
+            # Infrastructure
+            "infrastructure", "transport", "housing", "digital", "smart city",
+        }
+        
+        query_lower = query.lower()
+        found_areas = []
+        
+        for keyword in domain_keywords:
+            if keyword in query_lower:
+                found_areas.append(keyword)
+        
+        # If no specific keywords found, extract nouns from query
+        if not found_areas:
+            # Simple extraction: take significant words (>4 chars, not common)
+            common_words = {"should", "would", "could", "about", "their", "there", "which", "where", "what", "when", "this", "that", "from", "have", "with"}
+            words = query_lower.split()
+            found_areas = [w for w in words if len(w) > 4 and w not in common_words][:5]
+        
+        return found_areas[:5]  # Limit to 5 focus areas
 
