@@ -846,6 +846,28 @@ async def run_workflow_stream(
         engine_b_aggregate = accumulated_state.get("engine_b_aggregate", {}) or {}
         agent_reports = accumulated_state.get("agent_reports", []) or []
         
+        # FIXED: Extract feasibility from first scenario if not at top level
+        feasibility_analysis = accumulated_state.get("feasibility_analysis", {})
+        feasibility_check = accumulated_state.get("feasibility_check", {})
+        if not feasibility_analysis and scenario_results:
+            first_scenario = scenario_results[0] if isinstance(scenario_results[0], dict) else {}
+            feasibility_analysis = first_scenario.get("feasibility_analysis", {})
+            feasibility_check = first_scenario.get("feasibility_check", feasibility_check)
+        
+        # FIXED: Get cross_scenario_table from accumulated state
+        cross_scenario_table = accumulated_state.get("cross_scenario_table", "")
+        
+        # FIXED: Count Engine B scenarios properly from scenario_results
+        engine_b_computed = engine_b_aggregate.get("scenarios_with_compute", 0)
+        if engine_b_computed == 0 and scenario_results:
+            # Fallback: count scenarios that have Engine B result keys
+            engine_b_computed = sum(
+                1 for s in scenario_results
+                if isinstance(s, dict) and any(
+                    k in s for k in ["monte_carlo", "forecast", "sensitivity", "engine_b_results"]
+                )
+            )
+        
         yield WorkflowEvent(
             stage="done",
             status="complete",
@@ -867,7 +889,12 @@ async def run_workflow_stream(
                 "scenarios_count": len(scenarios) if scenarios else len(scenario_results),
                 # Engine B data
                 "engine_b_aggregate": engine_b_aggregate,
-                "engine_b_scenarios_computed": engine_b_aggregate.get("scenarios_with_compute", 0),
+                "engine_b_scenarios_computed": engine_b_computed,
+                # FIXED: Add cross-scenario table for feedback loop validation
+                "cross_scenario_table": cross_scenario_table,
+                # FIXED: Add feasibility data at top level for diagnostic
+                "feasibility_analysis": feasibility_analysis,
+                "feasibility_check": feasibility_check,
                 # Agent and debate data
                 "agent_reports": agent_reports,
                 "agents_count": len(set(ar.get("agent", "") for ar in agent_reports if isinstance(ar, dict))),
