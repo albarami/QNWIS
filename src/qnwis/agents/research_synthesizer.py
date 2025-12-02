@@ -164,13 +164,20 @@ class ResearchSynthesizerAgent:
         
         findings = []
         
-        # Build search query
-        search_query = query
+        # Build search query - use ONLY focus areas for Semantic Scholar
+        # Full question is too long and specific for academic search
         if focus_areas:
-            search_query = f"{query} {' '.join(focus_areas)}"
+            # Use focused keywords only - much more effective for academic search
+            search_query = ' '.join(focus_areas[:5])  # Max 5 keywords
+        else:
+            # Fallback: extract key terms from query
+            import re
+            words = re.findall(r'\b[A-Za-z]{4,}\b', query)
+            common_words = {"should", "would", "could", "about", "their", "there", "which", "where", "what", "when", "this", "that", "from", "have", "with", "into", "they", "more", "over", "such", "only", "other", "than", "then", "also", "after", "before", "most", "some", "must", "option", "target", "focus", "consider", "become", "between"}
+            keywords = [w for w in words if w.lower() not in common_words][:5]
+            search_query = ' '.join(keywords) if keywords else query[:50]
         
-        # Keep query as-is without domain-specific additions
-        # The focus_areas parameter handles topic specificity
+        logger.info(f"🔍 Semantic Scholar search query: '{search_query}'")
         
         try:
             # Semantic Scholar API
@@ -229,8 +236,10 @@ class ResearchSynthesizerAgent:
         
         if not self.rag_client:
             # RAG client must be injected via constructor
-            logger.debug("RAG client not configured - skipping RAG search")
+            logger.warning("⚠️ RAG client not configured - skipping RAG search")
             return findings
+        
+        logger.info(f"🔍 RAG search: query='{query[:50]}...' top_k={max_docs}")
         
         try:
             # Search RAG system
@@ -337,8 +346,10 @@ class ResearchSynthesizerAgent:
         
         if not self.kg_client:
             # Knowledge Graph client must be injected via constructor
-            logger.debug("Knowledge Graph client not configured - skipping KG search")
+            logger.warning("⚠️ Knowledge Graph client not configured - skipping KG search")
             return findings
+        
+        logger.info(f"🔍 KG search: focus_areas={focus_areas}")
         
         try:
             # Query for relevant relationships

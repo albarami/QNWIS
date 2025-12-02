@@ -210,13 +210,137 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
             # Add ResearchSynthesizer - aggregates Semantic Scholar, RAG, Perplexity, Knowledge Graph
             try:
                 from ...agents.research_synthesizer import ResearchSynthesizerAgent
-                # FIXED: Pass API keys from environment variables
+                
+                # Initialize RAG client wrapper
+                rag_client = None
+                try:
+                    from ...rag.retriever import DocumentStore, Document
+                    from ...rag.document_loader import load_source_documents
+                    from pathlib import Path
+                    
+                    # Create RAG wrapper that matches ResearchSynthesizerAgent interface
+                    class RAGClientWrapper:
+                        def __init__(self):
+                            self.store = DocumentStore()
+                            # Load documents from configured sources
+                            try:
+                                source_docs = load_source_documents()
+                                if source_docs:
+                                    # Convert to Document objects
+                                    docs = [
+                                        Document(
+                                            doc_id=f"doc_{i}",
+                                            text=d.get("text", ""),
+                                            source=d.get("source", "unknown"),
+                                            metadata={"title": d.get("source", f"Document {i}"), "year": d.get("year")},
+                                        )
+                                        for i, d in enumerate(source_docs[:1000])  # Limit to 1000 for perf
+                                    ]
+                                    self.store.add_documents(docs)
+                                    logger.info(f"📚 RAG: Loaded {len(docs)} documents from sources")
+                            except Exception as e:
+                                logger.warning(f"⚠️ RAG: Could not load documents: {e}")
+                        
+                        def search(self, query: str, top_k: int = 10, filters=None):
+                            results = self.store.search(query, top_k=top_k)
+                            # Convert to dict format expected by ResearchSynthesizerAgent
+                            return [
+                                {
+                                    "title": doc.metadata.get("title", doc.doc_id),
+                                    "content": doc.text[:500],  # Truncate for performance
+                                    "score": score,
+                                    "year": doc.metadata.get("year"),
+                                    "authors": doc.metadata.get("authors", []),
+                                    "methodology": doc.metadata.get("methodology"),
+                                    "metrics": doc.metadata.get("metrics", {}),
+                                }
+                                for doc, score in results
+                            ]
+                    
+                    rag_client = RAGClientWrapper()
+                    logger.info("✅ RAG client initialized for ResearchSynthesizer")
+                except Exception as e:
+                    logger.warning(f"⚠️ RAG client not available: {e}")
+                
+                # Initialize Knowledge Graph client wrapper
+                kg_client = None
+                try:
+                    from ...knowledge.graph_builder import QNWISKnowledgeGraph, EntityType, RelationType
+                    from pathlib import Path
+                    
+                    # Create KG wrapper that matches ResearchSynthesizerAgent interface
+                    class KGClientWrapper:
+                        def __init__(self):
+                            self.graph = QNWISKnowledgeGraph()
+                            # Load pre-built graph if available
+                            kg_path = Path(__file__).parent.parent.parent.parent.parent / "data" / "knowledge_graph.pkl"
+                            if kg_path.exists():
+                                try:
+                                    self.graph.load(kg_path)
+                                    logger.info(f"🕸️ KG: Loaded graph with {len(self.graph.graph.nodes)} nodes")
+                                except Exception as e:
+                                    logger.warning(f"⚠️ KG: Could not load from {kg_path}: {e}")
+                                    self._add_default_context()
+                            else:
+                                self._add_default_context()
+                        
+                        def _add_default_context(self):
+                            """Add default Qatar economic context to the graph."""
+                            # Add core sectors
+                            sectors = ["Energy", "Finance", "Healthcare", "Education", "Tourism", "Construction", "Technology"]
+                            for sector in sectors:
+                                self.graph.add_entity(sector, EntityType.SECTOR)
+                            
+                            # Add key policies
+                            self.graph.add_entity("Qatar Vision 2030", EntityType.POLICY)
+                            self.graph.add_entity("Qatarization", EntityType.POLICY)
+                            
+                            # Add relationships
+                            self.graph.add_relationship("Qatarization", EntityType.POLICY, "Employment", EntityType.METRIC, RelationType.TARGETS)
+                            self.graph.add_relationship("Qatar Vision 2030", EntityType.POLICY, "Economic Diversification", EntityType.METRIC, RelationType.TARGETS)
+                            
+                            logger.info(f"🕸️ KG: Initialized with {len(self.graph.graph.nodes)} default nodes")
+                        
+                        def query(self, query: str, focus=None):
+                            # Extract entities from query and find related relationships
+                            results = []
+                            search_terms = focus or []
+                            
+                            # Also search for known entities that match query terms
+                            query_lower = query.lower()
+                            for known in self.graph.KNOWN_SECTORS | self.graph.KNOWN_POLICIES | self.graph.KNOWN_METRICS:
+                                if known.lower() in query_lower:
+                                    search_terms.append(known)
+                            
+                            for term in search_terms[:5]:  # Limit search terms
+                                try:
+                                    related = self.graph.get_related_entities(term, max_hops=2)
+                                    for node_id, edge_data in related:
+                                        node_data = self.graph.graph.nodes.get(node_id, {})
+                                        results.append({
+                                            "subject": term,
+                                            "relation_type": edge_data.get("relation_type", "related_to"),
+                                            "object": node_data.get("name", node_id),
+                                            "description": f"{term} {edge_data.get('relation_type', 'relates to')} {node_data.get('name', node_id)}",
+                                            "confidence": edge_data.get("confidence", 0.6),
+                                        })
+                                except Exception:
+                                    pass  # Term not found in graph
+                            return results[:20]  # Limit to 20 relationships
+                    
+                    kg_client = KGClientWrapper()
+                    logger.info("✅ Knowledge Graph client initialized for ResearchSynthesizer")
+                except Exception as e:
+                    logger.warning(f"⚠️ Knowledge Graph client not available: {e}")
+                
+                # FIXED: Pass ALL clients to ResearchSynthesizerAgent
                 agents_map["ResearchSynthesizer"] = ResearchSynthesizerAgent(
                     semantic_scholar_api_key=os.getenv("SEMANTIC_SCHOLAR_API_KEY"),
                     perplexity_api_key=os.getenv("PERPLEXITY_API_KEY"),
-                    # RAG and KG clients will be added when available
+                    rag_client=rag_client,
+                    knowledge_graph_client=kg_client,
                 )
-                logger.info("✅ ResearchSynthesizer (deterministic) initialized with API keys")
+                logger.info("✅ ResearchSynthesizer (deterministic) initialized with ALL data sources")
             except Exception as e:
                 logger.warning(f"⚠️ ResearchSynthesizer failed: {e}")
                 

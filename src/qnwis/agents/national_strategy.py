@@ -123,7 +123,9 @@ class NationalStrategyAgent:
             rate = row.data.get("unemployment_rate")
             year = row.data.get("year")
 
-            if country and isinstance(rate, (int, float)):
+            # FIXED: Handle Decimal type from database using numbers.Number
+            from numbers import Number
+            if country and isinstance(rate, Number):
                 country_data.append({
                     "country": str(country),
                     "unemployment_rate": float(rate),
