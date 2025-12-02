@@ -247,7 +247,9 @@ class LabourEconomistAgent:
             return None
 
     def _sorted_rows(self, rows: List[Any]) -> List[Any]:
-        enumerated = list(enumerate(rows))
+        # FIXED: Filter out rows with None data first
+        valid_rows = [r for r in rows if r.data is not None]
+        enumerated = list(enumerate(valid_rows))
 
         def sort_key(item: tuple[int, Any]) -> tuple[int, int]:
             idx, row = item

@@ -116,6 +116,9 @@ class NationalStrategyAgent:
         # Extract country unemployment rates
         country_data = []
         for row in gcc_res.rows:
+            # FIXED: Handle None row.data
+            if row.data is None:
+                continue
             country = row.data.get("country")
             rate = row.data.get("unemployment_rate")
             year = row.data.get("year")
