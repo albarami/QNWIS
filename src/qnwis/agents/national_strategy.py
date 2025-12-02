@@ -104,7 +104,14 @@ class NationalStrategyAgent:
         # Fetch GCC unemployment data
         gcc_res = self.client.run("syn_unemployment_gcc_latest")
 
-        # FIXED: Handle None rows to prevent NoneType error
+        # FIXED: Handle None result or None rows to prevent NoneType error
+        if gcc_res is None:
+            return AgentReport(
+                agent="NationalStrategy",
+                findings=[],
+                warnings=["Query returned no result"],
+            )
+        
         row_count = len(gcc_res.rows) if gcc_res.rows is not None else 0
         if row_count < min_countries:
             return AgentReport(

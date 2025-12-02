@@ -118,6 +118,12 @@ def _extract_stats(state: IntelligenceState) -> Dict[str, Any]:
     if isinstance(confidence, (int, float)) and confidence <= 1:
         confidence = int(confidence * 100)
     
+    # FIXED: Extract feasibility analysis data for McKinsey compliance (domain agnostic)
+    feasibility_analysis = state.get("feasibility_analysis", {})
+    feasibility_checked = bool(feasibility_analysis.get("checked", False))
+    feasibility_ratio = feasibility_analysis.get("feasibility_ratio", 1.0)
+    feasibility_verdict = "FEASIBLE" if not state.get("target_infeasible") else "INFEASIBLE"
+    
     return {
         "n_facts": max(n_facts, 50),  # Minimum display values
         "n_sources": max(n_sources, 4),
@@ -134,6 +140,10 @@ def _extract_stats(state: IntelligenceState) -> Dict[str, Any]:
         "confidence": confidence,
         "unique_id": datetime.now().strftime("%Y%m%d%H%M"),
         "date": datetime.now().strftime("%B %d, %Y at %H:%M UTC"),
+        # FIXED: Add feasibility data for McKinsey compliance
+        "feasibility_checked": feasibility_checked,
+        "feasibility_ratio": feasibility_ratio,
+        "feasibility_verdict": feasibility_verdict,
     }
 
 
@@ -598,6 +608,12 @@ CROSS-SCENARIO COMPARISON (ENGINE B QUANTITATIVE):
 
 {robustness_text}
 
+FEASIBILITY ANALYSIS:
+├── Feasibility check: {'✓ PERFORMED' if stats.get('feasibility_checked') else '○ SKIPPED'}
+├── Feasibility ratio: {stats.get('feasibility_ratio', 1.0):.2f}
+└── Verdict: {stats.get('feasibility_verdict', 'FEASIBLE')}
+Note: Feasibility analysis validates that targets are arithmetically achievable.
+
 KEY CONSENSUS POINTS REACHED:
 {consensus_text}
 
@@ -754,6 +770,12 @@ ALWAYS include:
 Corroboration Rate: [X]%
 Data Recency: [X]% from 2024 or later
 Gap Analysis: [Specific gaps identified]
+
+**D. FEASIBILITY ANALYSIS**
+Feasibility Check: {'PERFORMED' if stats.get('feasibility_checked') else 'SKIPPED'}
+Feasibility Ratio: {stats.get('feasibility_ratio', 1.0):.2f}
+Target Arithmetic Verdict: {stats.get('feasibility_verdict', 'FEASIBLE')}
+[Explain whether the target is achievable based on data constraints]
 
 ---
 

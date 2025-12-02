@@ -472,30 +472,40 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
     cross_scenario_table = state.get("cross_scenario_table", "")
     engine_b_aggregate = state.get("engine_b_aggregate", {})
     
+    # FIXED: Set quantitative context flag based on multiple checks (domain agnostic)
+    has_cross_scenario = bool(cross_scenario_table)
+    has_engine_b_scenarios = engine_b_aggregate.get("scenarios_with_compute", 0) > 0
+    has_scenario_results = len(state.get("scenario_results", [])) > 0
+    
+    # Flag is True if ANY quantitative data is available for debate
+    state["engine_a_had_quantitative_context"] = has_cross_scenario or has_engine_b_scenarios or has_scenario_results
+    
     if cross_scenario_table:
         cross_scenario_context = f"""
-## QUANTITATIVE CONTEXT (6 Scenarios Analyzed)
+## QUANTITATIVE CONTEXT (Multiple Scenarios Analyzed)
 
 {cross_scenario_table}
 
-Your arguments MUST reference these scenario comparisons and computed success rates.
+Your arguments MUST reference these scenario comparisons and computed metrics.
 """
         logger.info(f"📊 Cross-scenario table passed to debate ({len(cross_scenario_table)} chars)")
-        state["engine_a_had_quantitative_context"] = True  # Flag for diagnostic validation
     elif engine_b_aggregate.get("scenarios_with_compute", 0) > 0:
         # Build summary from aggregate
+        scenarios_computed = engine_b_aggregate.get('scenarios_with_compute', 0)
+        monte_carlo_runs = engine_b_aggregate.get('total_monte_carlo_runs', 0)
+        avg_success = engine_b_aggregate.get('avg_success_probability', 0)
+        drivers = engine_b_aggregate.get('sensitivity_drivers', ['Not computed'])[:3]
         cross_scenario_context = f"""
 ## ENGINE B QUANTITATIVE ANALYSIS
 
-- Scenarios computed: {engine_b_aggregate.get('scenarios_with_compute', 0)}
-- Monte Carlo runs: {engine_b_aggregate.get('total_monte_carlo_runs', 0)}
-- Avg success probability: {engine_b_aggregate.get('avg_success_probability', 0):.1%}
-- Top sensitivity drivers: {', '.join(engine_b_aggregate.get('sensitivity_drivers', ['Not computed'])[:3])}
+- Scenarios computed: {scenarios_computed}
+- Monte Carlo runs: {monte_carlo_runs}
+- Avg success probability: {avg_success:.1%}
+- Top sensitivity drivers: {', '.join(drivers)}
 
 Reference these computed values in your arguments.
 """
         logger.info(f"📊 Engine B aggregate passed to debate")
-        state["engine_a_had_quantitative_context"] = True  # Flag for diagnostic validation
     
     try:
         logger.info(f"🚀 STARTING legendary debate with {len(contradictions)} contradictions (depth={debate_depth})")

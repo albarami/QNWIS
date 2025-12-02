@@ -247,8 +247,8 @@ class LabourEconomistAgent:
             return None
 
     def _sorted_rows(self, rows: List[Any]) -> List[Any]:
-        # FIXED: Filter out rows with None data first
-        valid_rows = [r for r in rows if r.data is not None]
+        # FIXED: Filter out rows with None data or no .data attribute
+        valid_rows = [r for r in rows if hasattr(r, 'data') and r.data is not None]
         enumerated = list(enumerate(valid_rows))
 
         def sort_key(item: tuple[int, Any]) -> tuple[int, int]:
@@ -327,7 +327,13 @@ class LabourEconomistAgent:
 
     def run(self) -> AgentReport:
         result = self.client.run(self.query_id)
-        # FIXED: Handle None rows to prevent NoneType error
+        # FIXED: Handle None result or None rows to prevent NoneType error
+        if result is None:
+            return AgentReport(
+                agent="LabourEconomist",
+                findings=[],
+                warnings=[f"Query returned no result: {self.query_id}"],
+            )
         if result.rows is None:
             return AgentReport(
                 agent="LabourEconomist",
