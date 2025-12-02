@@ -197,35 +197,36 @@ class LegendaryDebateOrchestrator:
     # CRITICAL: These values determine analytical depth!
     # Higher turns = more thorough analysis = better ministerial intelligence
     # Designed for 5 LLM agents: MicroEconomist, MacroEconomist, SkillsAgent, Nationalization, PatternDetective
+    # FIXED: Use standardized phase names for diagnostic detection
     DEBATE_CONFIGS = {
         "simple": {
             "max_turns": 40,
             "phases": {
-                "opening_statements": 10,   # 2 turns × 5 agents
-                "challenge_defense": 15,    # 3 rounds × 5 agents
-                "edge_cases": 8,
-                "risk_analysis": 5,
-                "consensus_building": 2
+                "opening": 10,       # 2 turns × 5 agents
+                "challenge": 15,     # 3 rounds × 5 agents
+                "edge_case": 8,
+                "risk": 5,
+                "consensus": 2
             }
         },
         "standard": {
             "max_turns": 80,
             "phases": {
-                "opening_statements": 12,
-                "challenge_defense": 35,    # 7 rounds × 5 agents
-                "edge_cases": 15,
-                "risk_analysis": 12,
-                "consensus_building": 6
+                "opening": 12,
+                "challenge": 35,     # 7 rounds × 5 agents
+                "edge_case": 15,
+                "risk": 12,
+                "consensus": 6
             }
         },
         "complex": {
             "max_turns": 150,  # FULL DEPTH for ministerial queries
             "phases": {
-                "opening_statements": 15,   # 3 turns × 5 agents
-                "challenge_defense": 60,    # 12 rounds × 5 agents
-                "edge_cases": 25,           # 5 cases × 5 agents
-                "risk_analysis": 25,        # 5 risks × 5 assessors
-                "consensus_building": 25    # 5 rounds × 5 agents
+                "opening": 15,       # 3 turns × 5 agents
+                "challenge": 60,     # 12 rounds × 5 agents
+                "edge_case": 25,     # 5 cases × 5 agents
+                "risk": 25,          # 5 risks × 5 assessors
+                "consensus": 25      # 5 rounds × 5 agents
             }
         }
     }
@@ -919,9 +920,10 @@ Responses without engagement will be REJECTED.
         agents_map: Dict[str, Any]
     ):
         """Phase 1: Each agent presents their key findings."""
-        self.current_phase = "opening_statements"
+        # FIXED: Use standard phase name for diagnostic detection
+        self.current_phase = "opening"
         await self._emit_phase(
-            "opening_statements",
+            "opening",
             f"All agents presenting positions"
         )
         
@@ -1073,9 +1075,10 @@ Your expert analysis:"""
         for legendary debates. Each agent challenges, defends, and weighs in
         multiple times to ensure thorough analysis.
         """
-        self.current_phase = "challenge_defense"
+        # FIXED: Use standard phase name for diagnostic detection
+        self.current_phase = "challenge"
         await self._emit_phase(
-            "challenge_defense",
+            "challenge",
             f"Multi-agent debate on policy question"
         )
         
@@ -1129,7 +1132,7 @@ Your expert analysis:"""
         
         # Calculate rounds dynamically from phase config
         # CRITICAL: Ensure we get enough rounds for legendary depth
-        phase_turns = self.MAX_TURNS_PER_PHASE.get("challenge_defense", 60)  # Default to 60 for legendary
+        phase_turns = self.MAX_TURNS_PER_PHASE.get("challenge", 60)  # Default to 60 for legendary
         num_agents = len(active_llm_agents) or 4
         # For legendary depth, ensure at least 12 rounds with all agents
         min_rounds = 12 if self.debate_complexity == "complex" else 6
@@ -1619,8 +1622,9 @@ Return as JSON array of 5 scenarios."""
         Phase 3: Explore edge cases.
         OPTIMIZED - Only relevant agents analyze each scenario.
         """
-        self.current_phase = "edge_cases"
-        await self._emit_phase("edge_cases", "Exploring edge case scenarios")
+        # FIXED: Use standard phase name for diagnostic detection
+        self.current_phase = "edge_case"
+        await self._emit_phase("edge_case", "Exploring edge case scenarios")
         
         for edge_case in edge_cases:
             if not self._can_emit_turn():
@@ -1745,8 +1749,9 @@ Return as JSON array of 5 scenarios."""
         
         CRITICAL FIX: Risks must be about the SPECIFIC QUESTION, not generic GCC risks.
         """
-        self.current_phase = "risk_analysis"
-        await self._emit_phase("risk_analysis", "Identifying risks for specific options")
+        # FIXED: Use standard phase name for diagnostic detection
+        self.current_phase = "risk"
+        await self._emit_phase("risk", "Identifying risks for specific options")
         
         risks_identified = []
         
@@ -1927,8 +1932,9 @@ What are 2-3 practical considerations to keep in mind?"""
         
         FIX 5: Now includes confidence validation - flags agents below 65% threshold.
         """
-        self.current_phase = "consensus_building"
-        await self._emit_phase("consensus_building", "Synthesizing final positions")
+        # FIXED: Use standard phase name for diagnostic detection
+        self.current_phase = "consensus"
+        await self._emit_phase("consensus", "Synthesizing final positions")
         
         # Only LLM agents state final positions (deterministic agents don't have opinions)
         final_positions = []
@@ -2109,7 +2115,9 @@ Include:
             "turn": self.turn_counter,
             "type": turn_type,
             "message": message,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
+            # FIXED: Include phase for diagnostic detection
+            "phase": self.current_phase or "unknown",
         }
         
         self.conversation_history.append(turn_data)

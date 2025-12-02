@@ -221,11 +221,29 @@ class NationalStrategyAgent:
         )
 
         # Fetch attrition data as proxy for competitive pressure
-        atr_res = self.client.run("syn_attrition_by_sector_latest")
+        try:
+            atr_res = self.client.run("syn_attrition_by_sector_latest")
+        except (ValueError, Exception) as e:
+            return AgentReport(
+                agent="NationalStrategy",
+                findings=[],
+                warnings=[f"Query failed: {e}"],
+            )
+
+        # FIXED: Handle None rows to prevent NoneType error
+        if atr_res.rows is None:
+            return AgentReport(
+                agent="NationalStrategy",
+                findings=[],
+                warnings=["No attrition data available for talent competition assessment"],
+            )
 
         # Extract sector attrition rates
         sector_data = []
         for row in atr_res.rows:
+            # FIXED: Handle None row.data
+            if row.data is None:
+                continue
             sector = row.data.get("sector")
             attrition = row.data.get("attrition_percent")
 
@@ -324,13 +342,31 @@ class NationalStrategyAgent:
         )
 
         # Fetch current qatarization data
-        qat_res = self.client.run("syn_qatarization_by_sector_latest")
+        try:
+            qat_res = self.client.run("syn_qatarization_by_sector_latest")
+        except (ValueError, Exception) as e:
+            return AgentReport(
+                agent="NationalStrategy",
+                findings=[],
+                warnings=[f"Query failed: {e}"],
+            )
+
+        # FIXED: Handle None rows to prevent NoneType error
+        if qat_res.rows is None:
+            return AgentReport(
+                agent="NationalStrategy",
+                findings=[],
+                warnings=["No qatarization data available for Vision 2030 assessment"],
+            )
 
         # Calculate overall qatarization rate
         total_qataris = 0
         total_employees = 0
 
         for row in qat_res.rows:
+            # FIXED: Handle None row.data
+            if row.data is None:
+                continue
             qataris = row.data.get("qataris")
             non_qataris = row.data.get("non_qataris")
 
