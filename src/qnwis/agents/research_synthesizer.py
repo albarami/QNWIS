@@ -192,8 +192,8 @@ class ResearchSynthesizerAgent:
                     
                     for paper in data.get("data", []):
                         # Calculate relevance based on citations and recency
-                        citations = paper.get("citationCount", 0)
-                        year = paper.get("year", 2020)
+                        citations = paper.get("citationCount") or 0
+                        year = paper.get("year") or 2020  # Handle None explicitly
                         recency_boost = max(0, (year - 2015) / 10)  # Boost recent papers
                         relevance = min(1.0, (citations / 1000) + recency_boost)
                         
