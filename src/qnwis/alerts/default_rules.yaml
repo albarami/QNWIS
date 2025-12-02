@@ -1,0 +1,192 @@
+# Default Alert Rules for QNWIS Alert Center
+# Domain-agnostic early-warning system
+
+rules:
+  # Economic indicator alerts
+  - rule_id: gdp_growth_decline
+    metric: gdp_growth
+    scope:
+      level: national
+    window:
+      months: 12
+    trigger:
+      type: threshold
+      op: lt
+      value: 1.0
+    horizon: 12
+    severity: high
+    enabled: true
+    description: "Alert when GDP growth falls below 1%"
+
+  # Labor market alerts
+  - rule_id: unemployment_spike
+    metric: unemployment
+    scope:
+      level: national
+    window:
+      months: 6
+    trigger:
+      type: yoy_delta_pct
+      op: gte
+      value: 2.0
+    horizon: 12
+    severity: critical
+    enabled: true
+    description: "Alert when unemployment increases by 2+ percentage points YoY"
+
+  - rule_id: employment_decline
+    metric: employment
+    scope:
+      level: sector
+    window:
+      months: 6
+    trigger:
+      type: yoy_delta_pct
+      op: lte
+      value: -5.0
+    horizon: 12
+    severity: high
+    enabled: true
+    description: "Alert when sector employment drops >5% YoY"
+
+  # Nationalization/Qatarization alerts  
+  - rule_id: qatarization_decline
+    metric: qatarization
+    scope:
+      level: sector
+    window:
+      months: 12
+    trigger:
+      type: slope_window
+      op: lt
+      value: -0.005
+    horizon: 24
+    severity: high
+    enabled: true
+    description: "Alert on negative 12-month nationalization trend"
+
+  - rule_id: qatarization_target_miss
+    metric: qatarization
+    scope:
+      level: national
+    window:
+      months: 6
+    trigger:
+      type: threshold
+      op: lt
+      value: 0.20
+    horizon: 12
+    severity: medium
+    enabled: true
+    description: "Alert when overall nationalization falls below 20%"
+
+  # Wage and compensation alerts
+  - rule_id: wage_stagnation
+    metric: salary
+    scope:
+      level: sector
+    window:
+      months: 24
+    trigger:
+      type: slope_window
+      op: lt
+      value: 0.0
+    horizon: 12
+    severity: medium
+    enabled: true
+    description: "Alert on wage stagnation (no growth over 24 months)"
+
+  - rule_id: wage_disparity_widening
+    metric: wage_gap
+    scope:
+      level: national
+    window:
+      months: 12
+    trigger:
+      type: yoy_delta_pct
+      op: gte
+      value: 10.0
+    horizon: 12
+    severity: high
+    enabled: true
+    description: "Alert when wage disparity increases by 10%+ YoY"
+
+  # Workforce retention alerts
+  - rule_id: retention_drop
+    metric: retention
+    scope:
+      level: sector
+    window:
+      months: 6
+    trigger:
+      type: yoy_delta_pct
+      op: lte
+      value: -5.0
+    horizon: 12
+    severity: high
+    enabled: true
+    description: "Alert when sector retention drops >5% YoY"
+
+  - rule_id: turnover_spike
+    metric: turnover
+    scope:
+      level: sector
+    window:
+      months: 6
+    trigger:
+      type: threshold
+      op: gte
+      value: 0.30
+    horizon: 6
+    severity: high
+    enabled: true
+    description: "Alert when sector turnover exceeds 30%"
+
+  # Investment and FDI alerts
+  - rule_id: fdi_decline
+    metric: fdi_inflow
+    scope:
+      level: national
+    window:
+      months: 12
+    trigger:
+      type: yoy_delta_pct
+      op: lte
+      value: -20.0
+    horizon: 12
+    severity: high
+    enabled: true
+    description: "Alert when FDI inflows decline by 20%+ YoY"
+
+  # Infrastructure and capacity alerts
+  - rule_id: capacity_utilization_high
+    metric: capacity_utilization
+    scope:
+      level: sector
+    window:
+      months: 6
+    trigger:
+      type: threshold
+      op: gte
+      value: 0.95
+    horizon: 6
+    severity: medium
+    enabled: true
+    description: "Alert when capacity utilization exceeds 95%"
+
+  # Inflation and cost alerts
+  - rule_id: inflation_spike
+    metric: inflation
+    scope:
+      level: national
+    window:
+      months: 6
+    trigger:
+      type: threshold
+      op: gte
+      value: 5.0
+    horizon: 6
+    severity: high
+    enabled: true
+    description: "Alert when inflation exceeds 5%"
+

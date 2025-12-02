@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 from typing import Any, Dict, List, Optional
 
 from ..state import IntelligenceState
@@ -185,8 +186,16 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
                 logger.warning(f"⚠️ NationalStrategy failed: {e}")
             
             try:
-                agents_map["AlertCenter"] = AlertCenterAgent(data_client)
-                logger.info("✅ AlertCenter (deterministic) initialized")
+                # FIXED: Load default alert rules for AlertCenter
+                from ...alerts.registry import AlertRegistry
+                from pathlib import Path
+                alert_registry = AlertRegistry()
+                default_rules_path = Path(__file__).parent.parent.parent / "alerts" / "default_rules.yaml"
+                if default_rules_path.exists():
+                    alert_registry.load_from_file(default_rules_path)
+                    logger.info(f"✅ Loaded {len(alert_registry)} default alert rules")
+                agents_map["AlertCenter"] = AlertCenterAgent(data_client, rule_registry=alert_registry)
+                logger.info("✅ AlertCenter (deterministic) initialized with default rules")
             except Exception as e:
                 logger.warning(f"⚠️ AlertCenter failed: {e}")
             
@@ -201,8 +210,13 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
             # Add ResearchSynthesizer - aggregates Semantic Scholar, RAG, Perplexity, Knowledge Graph
             try:
                 from ...agents.research_synthesizer import ResearchSynthesizerAgent
-                agents_map["ResearchSynthesizer"] = ResearchSynthesizerAgent()
-                logger.info("✅ ResearchSynthesizer (deterministic) initialized")
+                # FIXED: Pass API keys from environment variables
+                agents_map["ResearchSynthesizer"] = ResearchSynthesizerAgent(
+                    semantic_scholar_api_key=os.getenv("SEMANTIC_SCHOLAR_API_KEY"),
+                    perplexity_api_key=os.getenv("PERPLEXITY_API_KEY"),
+                    # RAG and KG clients will be added when available
+                )
+                logger.info("✅ ResearchSynthesizer (deterministic) initialized with API keys")
             except Exception as e:
                 logger.warning(f"⚠️ ResearchSynthesizer failed: {e}")
                 
@@ -259,15 +273,16 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
                     result = method(**kwargs) if kwargs else method()
                     
                     # Extract narrative from result
+                    # FIXED: Increased from 500 to 5000 chars to avoid truncating deterministic agent outputs
                     narrative = ""
                     if hasattr(result, 'narrative'):
                         narrative = result.narrative
                     elif isinstance(result, dict):
-                        narrative = result.get('narrative', result.get('summary', str(result)[:500]))
+                        narrative = result.get('narrative', result.get('summary', str(result)[:5000]))
                     elif isinstance(result, str):
-                        narrative = result[:500]
+                        narrative = result[:5000]
                     else:
-                        narrative = str(result)[:500]
+                        narrative = str(result)[:5000]
                     
                     # Create report object for orchestrator
                     agent_reports_map[agent_key] = type('AgentReport', (object,), {
@@ -282,7 +297,8 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
                 elif hasattr(agent, 'run'):
                     # Fallback to generic run() method
                     result = agent.run()
-                    narrative = getattr(result, 'narrative', str(result)[:500]) if hasattr(result, 'narrative') else str(result)[:500]
+                    # FIXED: Increased from 500 to 5000 chars
+                    narrative = getattr(result, 'narrative', str(result)[:5000]) if hasattr(result, 'narrative') else str(result)[:5000]
                     agent_reports_map[agent_key] = type('AgentReport', (object,), {
                         'narrative': narrative,
                         'agent': agent_key,
