@@ -139,17 +139,17 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
         # === DETERMINISTIC AGENTS ===
         # These provide data-backed analysis without LLM calls
         try:
-            from ...agents.time_machine import TimeMachine
-            from ...agents.predictor import Predictor
+            from ...agents.time_machine import TimeMachineAgent
+            from ...agents.predictor import PredictorAgent
             from ...agents.scenario_agent import ScenarioAgent
-            from ...agents.pattern_miner import PatternMiner
-            from ...agents.national_strategy import NationalStrategy
-            from ...agents.alert_center import AlertCenter
+            from ...agents.pattern_miner import PatternMinerAgent
+            from ...agents.national_strategy import NationalStrategyAgent
+            from ...agents.alert_center import AlertCenterAgent
             from ...agents.pattern_detective import PatternDetectiveAgent
             
             # Initialize deterministic agents
             try:
-                agents_map["TimeMachine"] = TimeMachine(data_client)
+                agents_map["TimeMachine"] = TimeMachineAgent(data_client)
                 logger.info("✅ TimeMachine (deterministic) initialized")
             except Exception as e:
                 logger.warning(f"⚠️ TimeMachine failed: {e}")
@@ -161,7 +161,7 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
                 logger.warning(f"⚠️ PatternDetectiveAgent failed: {e}")
             
             try:
-                agents_map["Predictor"] = Predictor(data_client)
+                agents_map["Predictor"] = PredictorAgent(data_client)
                 logger.info("✅ Predictor (deterministic) initialized")
             except Exception as e:
                 logger.warning(f"⚠️ Predictor failed: {e}")
@@ -173,29 +173,37 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
                 logger.warning(f"⚠️ Scenario failed: {e}")
             
             try:
-                agents_map["PatternMiner"] = PatternMiner(data_client)
+                agents_map["PatternMiner"] = PatternMinerAgent(data_client)
                 logger.info("✅ PatternMiner (deterministic) initialized")
             except Exception as e:
                 logger.warning(f"⚠️ PatternMiner failed: {e}")
             
             try:
-                agents_map["NationalStrategy"] = NationalStrategy(data_client)
+                agents_map["NationalStrategy"] = NationalStrategyAgent(data_client)
                 logger.info("✅ NationalStrategy (deterministic) initialized")
             except Exception as e:
                 logger.warning(f"⚠️ NationalStrategy failed: {e}")
             
             try:
-                agents_map["AlertCenter"] = AlertCenter(data_client)
+                agents_map["AlertCenter"] = AlertCenterAgent(data_client)
                 logger.info("✅ AlertCenter (deterministic) initialized")
             except Exception as e:
                 logger.warning(f"⚠️ AlertCenter failed: {e}")
+            
+            # Add LabourEconomist - critical for Qatarization workforce analysis
+            try:
+                from ...agents.labour_economist import LabourEconomistAgent
+                agents_map["LabourEconomist"] = LabourEconomistAgent(data_client)
+                logger.info("✅ LabourEconomist (deterministic) initialized")
+            except Exception as e:
+                logger.warning(f"⚠️ LabourEconomist failed: {e}")
                 
         except ImportError as e:
             logger.warning(f"⚠️ Could not import deterministic agents: {e}")
         
         # Log final agent count - CRITICAL for legendary depth
         llm_agent_count = len([a for a in agents_map.keys() if a != "DataValidator"])
-        deterministic_count = len([a for a in agents_map.keys() if a in ["TimeMachine", "Predictor", "Scenario", "PatternMiner", "NationalStrategy", "AlertCenter", "PatternDetectiveAgent"]])
+        deterministic_count = len([a for a in agents_map.keys() if a in ["TimeMachine", "Predictor", "Scenario", "PatternMiner", "NationalStrategy", "AlertCenter", "PatternDetectiveAgent", "LabourEconomist"]])
         logger.warning(f"🔥 DEBATE AGENTS LOADED: {llm_agent_count} total ({llm_agent_count - deterministic_count} LLM + {deterministic_count} deterministic)")
         logger.warning(f"🔥 AGENT LIST: {list(agents_map.keys())}")
         
