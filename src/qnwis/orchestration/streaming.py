@@ -861,12 +861,20 @@ async def run_workflow_stream(
         engine_b_results = accumulated_state.get("engine_b_results", {})
         
         # FIXED: Build engine_b_results from scenario_results if not present
+        # Engine B results are stored at ROOT level of each scenario (not nested under "engine_b_results")
         if not engine_b_results and scenario_results:
             engine_b_results = {}
             for s in scenario_results:
-                if isinstance(s, dict) and "engine_b_results" in s:
-                    scenario_name = s.get("scenario_name", f"scenario_{len(engine_b_results)}")
-                    engine_b_results[scenario_name] = s["engine_b_results"]
+                if isinstance(s, dict):
+                    # Check for Engine B results at root level (monte_carlo, forecasting, etc.)
+                    scenario_engine_b = {}
+                    for key in ["monte_carlo", "forecasting", "sensitivity", "thresholds"]:
+                        if key in s and s[key]:
+                            scenario_engine_b[key] = s[key]
+                    
+                    if scenario_engine_b:
+                        scenario_name = s.get("scenario_name", f"scenario_{len(engine_b_results)}")
+                        engine_b_results[scenario_name] = scenario_engine_b
         
         # FIXED: Count Engine B scenarios properly from scenario_results
         engine_b_computed = engine_b_aggregate.get("scenarios_with_compute", 0)
