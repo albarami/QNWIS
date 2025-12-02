@@ -1276,8 +1276,9 @@ class HybridFlowValidator:
         ))
         
         # Check cross-scenario comparison was generated
-        cross_scenario_table = state.get("cross_scenario_comparison") or state.get("scenario_comparison_table")
-        has_comparison = cross_scenario_table is not None
+        # FIXED: Check the actual key used by workflow.py
+        cross_scenario_table = state.get("cross_scenario_table") or state.get("cross_scenario_comparison") or state.get("scenario_comparison_table")
+        has_comparison = cross_scenario_table is not None and len(str(cross_scenario_table)) > 10
         
         result.add_check(CheckResult(
             name="cross_scenario_comparison",

@@ -226,6 +226,7 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
 Your arguments MUST reference these scenario comparisons and computed success rates.
 """
         logger.info(f"📊 Cross-scenario table passed to debate ({len(cross_scenario_table)} chars)")
+        state["engine_a_had_quantitative_context"] = True  # Flag for diagnostic validation
     elif engine_b_aggregate.get("scenarios_with_compute", 0) > 0:
         # Build summary from aggregate
         cross_scenario_context = f"""
@@ -239,6 +240,7 @@ Your arguments MUST reference these scenario comparisons and computed success ra
 Reference these computed values in your arguments.
 """
         logger.info(f"📊 Engine B aggregate passed to debate")
+        state["engine_a_had_quantitative_context"] = True  # Flag for diagnostic validation
     
     try:
         logger.info(f"🚀 STARTING legendary debate with {len(contradictions)} contradictions (depth={debate_depth})")
