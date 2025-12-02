@@ -196,30 +196,30 @@ If feasibility ratio < 0.5:
 OUTPUT FORMAT (JSON):
 
 ```json
-{
-  "target": {
+{{
+  "target": {{
     "description": "70% Qatarization in private sector",
     "required_quantity": 1400000,
     "unit": "Qatari workers",
     "timeline": "2028"
-  },
-  "binding_constraint": {
+  }},
+  "binding_constraint": {{
     "type": "demographic",
     "description": "Working-age Qatari population available for private sector",
     "available_quantity": 50000,
     "source": "Qatar Census / Demographics"
-  },
-  "arithmetic": {
+  }},
+  "arithmetic": {{
     "required": 1400000,
     "available": 50000,
     "gap": 1350000,
     "feasibility_ratio": 0.036
-  },
+  }},
   "verdict": "INFEASIBLE",
   "explanation": "Target requires 28x more Qataris than available. Qatar's entire working-age population (~200,000) is smaller than 10% of private sector jobs.",
   "feasible_alternative": "Sector-specific targets: 70% in banking (~35K jobs) or economy-wide ceiling of 5-8%",
   "proceed_to_analysis": false
-}
+}}
 ```
 """
 
