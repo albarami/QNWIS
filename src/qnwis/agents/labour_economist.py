@@ -337,7 +337,8 @@ class LabourEconomistAgent:
         rows = self._sorted_rows(list(result.rows))
         metrics = self._build_metrics(rows)
         summary = self._summarize(rows, metrics)
-        warnings = list(result.warnings)
+        # FIXED: Handle None warnings to prevent NoneType error
+        warnings = list(result.warnings) if result.warnings is not None else []
 
         finding = Insight(
             title="Gender employment share trend",

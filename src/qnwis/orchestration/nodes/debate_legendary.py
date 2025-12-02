@@ -273,7 +273,8 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
                         def __init__(self):
                             self.graph = QNWISKnowledgeGraph()
                             # Load pre-built graph if available
-                            kg_path = Path(__file__).parent.parent.parent.parent.parent / "data" / "knowledge_graph.pkl"
+                            # KG uses JSON format, not pickle
+                            kg_path = Path(__file__).parent.parent.parent.parent.parent / "data" / "knowledge_graph.json"
                             if kg_path.exists():
                                 try:
                                     self.graph.load(kg_path)
