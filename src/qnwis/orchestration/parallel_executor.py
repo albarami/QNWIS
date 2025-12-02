@@ -438,6 +438,68 @@ class ParallelDebateExecutor:
             except Exception as e:
                 logger.warning(f"Failed to emit {stage} event: {e}")
     
+    def apply_assumptions_to_facts(
+        self,
+        base_facts: List[Dict[str, Any]],
+        assumptions: Dict[str, float]
+    ) -> Dict[str, Any]:
+        """
+        Apply scenario assumption multipliers to base facts.
+        
+        Args:
+            base_facts: List of extracted facts
+            assumptions: Dict of multipliers (e.g., {"growth_rate": 0.5, "budget": 0.7})
+        
+        Returns:
+            Dict with adjusted values for use in Engine B
+        """
+        adjusted = {}
+        
+        # Extract numeric values from facts
+        for fact in base_facts:
+            if isinstance(fact, dict):
+                indicator = fact.get('indicator', fact.get('metric', '')).lower().replace(' ', '_')
+                value = fact.get('value', fact.get('data'))
+                
+                # Try to convert to numeric
+                try:
+                    if isinstance(value, (int, float)):
+                        numeric_value = float(value)
+                    elif isinstance(value, str):
+                        clean = value.replace(',', '').replace('%', '').replace(' ', '')
+                        if 'M' in clean or 'm' in clean:
+                            numeric_value = float(clean.replace('M', '').replace('m', '')) * 1_000_000
+                        elif 'K' in clean or 'k' in clean:
+                            numeric_value = float(clean.replace('K', '').replace('k', '')) * 1_000
+                        elif 'B' in clean or 'b' in clean:
+                            numeric_value = float(clean.replace('B', '').replace('b', '')) * 1_000_000_000
+                        else:
+                            numeric_value = float(clean)
+                    else:
+                        continue
+                    
+                    # Store with original and check for assumption multipliers
+                    adjusted[indicator] = numeric_value
+                    
+                    # Apply any matching assumptions
+                    for assumption_key, multiplier in assumptions.items():
+                        if assumption_key.lower() in indicator or indicator in assumption_key.lower():
+                            adjusted[indicator] = numeric_value * multiplier
+                            adjusted[f"{indicator}_original"] = numeric_value
+                            adjusted[f"{indicator}_multiplier"] = multiplier
+                            break
+                            
+                except (ValueError, AttributeError, TypeError):
+                    continue
+        
+        # Also apply assumptions that don't match existing facts
+        for key, multiplier in assumptions.items():
+            normalized_key = key.lower().replace(' ', '_')
+            if normalized_key not in adjusted:
+                adjusted[normalized_key] = multiplier  # Store as the value itself
+        
+        return adjusted
+    
     async def run_engine_b_for_scenario(
         self,
         scenario: Dict[str, Any],
@@ -446,24 +508,25 @@ class ParallelDebateExecutor:
         """
         Run Engine B compute services for a specific scenario.
         
-        This is called AFTER the debate to add quantitative backing:
-        - Monte Carlo simulation for uncertainty
-        - Sensitivity analysis for key drivers
-        - Forecasting for projections
-        - Threshold detection for breaking points
+        ENHANCED: Applies scenario assumption multipliers to base facts
+        before running computations.
         
         Args:
-            scenario: Scenario definition with assumptions
-            extracted_facts: Facts extracted for this scenario
+            scenario: Scenario definition with assumptions/modified_assumptions
+            extracted_facts: Facts extracted from LMIS
             
         Returns:
-            Engine B results for this scenario
+            Engine B results for this scenario with assumptions applied
         """
         scenario_name = scenario.get("name", "Unknown")
+        assumptions = scenario.get("assumptions", scenario.get("modified_assumptions", {}))
+        
         logger.info(f"🔢 Running Engine B compute for scenario: {scenario_name}")
+        logger.info(f"   Assumptions: {assumptions}")
         
         engine_b_results = {
             "scenario_name": scenario_name,
+            "assumptions_applied": assumptions,
             "monte_carlo": None,
             "sensitivity": None,
             "forecasting": None,
@@ -472,76 +535,133 @@ class ParallelDebateExecutor:
         }
         
         try:
+            # Apply scenario assumptions to facts
+            adjusted_facts = self.apply_assumptions_to_facts(extracted_facts, assumptions)
+            engine_b_results["adjusted_facts_sample"] = dict(list(adjusted_facts.items())[:5])
+            
             async with httpx.AsyncClient(timeout=30.0) as client:
-                # Extract key variables from scenario assumptions
-                assumptions = scenario.get("modified_assumptions", {})
+                
+                # Extract key values for computations with fallbacks
+                growth_rate = adjusted_facts.get("growth_rate", adjusted_facts.get("workforce_growth", 0.03))
+                base_value = adjusted_facts.get("base_value", adjusted_facts.get("qatari_workforce", 33300))
                 
                 # 1. Monte Carlo Simulation
                 try:
+                    # Apply assumption multipliers to distribution parameters
+                    growth_mean = growth_rate * assumptions.get("growth_multiplier", 1.0)
+                    value_mean = base_value * assumptions.get("value_multiplier", 1.0)
+                    
                     mc_payload = {
                         "variables": {
-                            "growth_rate": {"dist": "normal", "mean": 0.03, "std": 0.015},
-                            "base_value": {"dist": "uniform", "low": 80, "high": 120},
-                            "multiplier": {"dist": "triangular", "low": 0.8, "min": 1.0, "high": 1.3}
+                            "growth_rate": {
+                                "distribution": "normal", 
+                                "mean": growth_mean, 
+                                "std": abs(growth_mean) * 0.3  # 30% std deviation
+                            },
+                            "base_value": {
+                                "distribution": "normal", 
+                                "mean": value_mean, 
+                                "std": value_mean * 0.1
+                            },
                         },
-                        "formula": "base_value * (1 + growth_rate) * multiplier",
-                        "success_condition": "result > 100",
+                        "formula": "base_value * (1 + growth_rate) ** 5",
+                        "success_condition": f"outcome > {value_mean * 1.2}",  # 20% growth target
                         "n_simulations": 10000
                     }
                     resp = await client.post(f"{ENGINE_B_URL}/compute/monte_carlo", json=mc_payload)
                     if resp.status_code == 200:
                         engine_b_results["monte_carlo"] = resp.json()
                         logger.info(f"  ✓ Monte Carlo complete for {scenario_name}")
+                    else:
+                        logger.warning(f"  Monte Carlo returned {resp.status_code}: {resp.text[:200]}")
                 except Exception as e:
                     logger.warning(f"  Monte Carlo failed for {scenario_name}: {e}")
                 
                 # 2. Sensitivity Analysis
                 try:
+                    # Build base values from adjusted facts
+                    sens_base = {
+                        "growth_rate": growth_rate,
+                        "base_value": base_value,
+                        "multiplier": assumptions.get("policy_intensity", assumptions.get("growth_multiplier", 1.0))
+                    }
+                    
                     sens_payload = {
-                        "base_values": {"revenue": 1000000, "costs": 600000, "growth": 0.05},
-                        "output_formula": "revenue * (1 + growth) - costs",
-                        "variation_pct": 20.0
+                        "base_values": sens_base,
+                        "formula": "base_value * (1 + growth_rate) ** 5 * multiplier",
+                        "n_steps": 10
                     }
                     resp = await client.post(f"{ENGINE_B_URL}/compute/sensitivity", json=sens_payload)
                     if resp.status_code == 200:
                         engine_b_results["sensitivity"] = resp.json()
                         logger.info(f"  ✓ Sensitivity analysis complete for {scenario_name}")
+                    else:
+                        logger.warning(f"  Sensitivity returned {resp.status_code}: {resp.text[:200]}")
                 except Exception as e:
                     logger.warning(f"  Sensitivity failed for {scenario_name}: {e}")
                 
                 # 3. Forecasting
                 try:
-                    # Use extracted facts to build historical values if available
-                    historical = [100, 105, 110, 108, 115, 120, 125, 130, 128, 135]
+                    # Build historical series from facts if available
+                    historical = []
+                    for key in ["2019", "2020", "2021", "2022", "2023"]:
+                        if key in adjusted_facts:
+                            historical.append(adjusted_facts[key])
+                    
+                    if len(historical) < 5:
+                        # Generate synthetic historical based on base value and growth
+                        historical = [
+                            base_value * (1 + growth_rate) ** (i - 5)
+                            for i in range(5)
+                        ]
+                    
+                    # Apply scenario assumption to forecast
+                    forecast_growth = growth_rate * assumptions.get("growth_multiplier", 1.0)
+                    
                     forecast_payload = {
                         "historical_values": historical,
-                        "periods_ahead": 5,
-                        "confidence_level": 0.95,
-                        "method": "auto"
+                        "forecast_horizon": 7,
+                        "method": "auto",
+                        "confidence_level": 0.95
                     }
                     resp = await client.post(f"{ENGINE_B_URL}/compute/forecast", json=forecast_payload)
                     if resp.status_code == 200:
                         engine_b_results["forecasting"] = resp.json()
                         logger.info(f"  ✓ Forecasting complete for {scenario_name}")
+                    else:
+                        logger.warning(f"  Forecasting returned {resp.status_code}: {resp.text[:200]}")
                 except Exception as e:
                     logger.warning(f"  Forecasting failed for {scenario_name}: {e}")
                 
                 # 4. Threshold Analysis
                 try:
+                    # Apply scenario to threshold parameters
+                    target_value = adjusted_facts.get("target", base_value * 1.5)
+                    
                     threshold_payload = {
-                        "current_value": 100,
+                        "sweep_variable": "target_rate",
+                        "sweep_range": [0.05, 0.30],  # 5% to 30%
+                        "fixed_variables": {
+                            "available_supply": base_value * assumptions.get("supply_multiplier", 1.0),
+                            "total_demand": adjusted_facts.get("total_jobs", 1850000)
+                        },
                         "constraints": [
-                            {"name": "profitability", "operator": ">", "value": 0},
-                            {"name": "growth", "operator": ">=", "value": 0.02},
-                            {"name": "risk_limit", "operator": "<", "value": 0.3}
+                            {
+                                "expression": "available_supply < total_demand * target_rate",
+                                "threshold_type": "boundary",
+                                "target": 0.0,
+                                "description": "supply_constraint",
+                                "severity": "warning"
+                            }
                         ],
-                        "value_range": [50, 200],
-                        "formula": "(current_value - 80) / 100"
+                        "resolution": 100
                     }
                     resp = await client.post(f"{ENGINE_B_URL}/compute/thresholds", json=threshold_payload)
                     if resp.status_code == 200:
                         engine_b_results["thresholds"] = resp.json()
                         logger.info(f"  ✓ Threshold analysis complete for {scenario_name}")
+                    else:
+                        logger.warning(f"  Thresholds returned {resp.status_code}: {resp.text[:200]}")
                 except Exception as e:
                     logger.warning(f"  Thresholds failed for {scenario_name}: {e}")
                 

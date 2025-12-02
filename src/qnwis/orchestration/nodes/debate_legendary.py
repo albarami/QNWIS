@@ -211,6 +211,35 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
     # Conduct legendary debate
     # Get user-selected debate depth from state (default: legendary = 100-150 turns)
     debate_depth = state.get("debate_depth", "legendary")
+    
+    # FIXED: Build cross-scenario context for agents to reference
+    cross_scenario_context = ""
+    cross_scenario_table = state.get("cross_scenario_table", "")
+    engine_b_aggregate = state.get("engine_b_aggregate", {})
+    
+    if cross_scenario_table:
+        cross_scenario_context = f"""
+## QUANTITATIVE CONTEXT (6 Scenarios Analyzed)
+
+{cross_scenario_table}
+
+Your arguments MUST reference these scenario comparisons and computed success rates.
+"""
+        logger.info(f"📊 Cross-scenario table passed to debate ({len(cross_scenario_table)} chars)")
+    elif engine_b_aggregate.get("scenarios_with_compute", 0) > 0:
+        # Build summary from aggregate
+        cross_scenario_context = f"""
+## ENGINE B QUANTITATIVE ANALYSIS
+
+- Scenarios computed: {engine_b_aggregate.get('scenarios_with_compute', 0)}
+- Monte Carlo runs: {engine_b_aggregate.get('total_monte_carlo_runs', 0)}
+- Avg success probability: {engine_b_aggregate.get('avg_success_probability', 0):.1%}
+- Top sensitivity drivers: {', '.join(engine_b_aggregate.get('sensitivity_drivers', ['Not computed'])[:3])}
+
+Reference these computed values in your arguments.
+"""
+        logger.info(f"📊 Engine B aggregate passed to debate")
+    
     try:
         logger.info(f"🚀 STARTING legendary debate with {len(contradictions)} contradictions (depth={debate_depth})")
         debate_results = await orchestrator.conduct_legendary_debate(
@@ -220,7 +249,8 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
             agent_reports_map=agent_reports_map,
             llm_client=llm_client,
             extracted_facts=state.get("extracted_facts", []),
-            debate_depth=debate_depth  # Pass user-selected depth
+            debate_depth=debate_depth,  # Pass user-selected depth
+            cross_scenario_context=cross_scenario_context  # FIXED: Pass cross-scenario data
         )
         logger.info(f"✅ Legendary debate SUCCEEDED: {debate_results['total_turns']} turns")
 

@@ -550,6 +550,20 @@ Responses without engagement will be REJECTED.
             context_parts.append(self.calculation_warning)
             context_parts.append("")
         
+        # ==================================================================
+        # FIXED: Add cross-scenario context from Engine B
+        # ==================================================================
+        if hasattr(self, 'cross_scenario_context') and self.cross_scenario_context:
+            context_parts.append("=" * 60)
+            context_parts.append("CROSS-SCENARIO QUANTITATIVE ANALYSIS (6 SCENARIOS)")
+            context_parts.append("=" * 60)
+            context_parts.append("")
+            context_parts.append(self.cross_scenario_context)
+            context_parts.append("")
+            context_parts.append("⚠️ CRITICAL: Reference these computed scenario results in your arguments.")
+            context_parts.append("⚠️ DO NOT invent success rates - use the values from the table above.")
+            context_parts.append("")
+        
         # Add extracted facts if available
         if self.extracted_facts:
             context_parts.append("=" * 60)
@@ -756,8 +770,9 @@ Responses without engagement will be REJECTED.
         llm_client: LLMClient,
         extracted_facts: Optional[List[Dict[str, Any]]] = None,
         debate_depth: Optional[str] = None,  # User-selected: standard/deep/legendary
-        calculated_results: Optional[Dict[str, Any]] = None,  # NEW: McKinsey pipeline results
-        calculation_warning: Optional[str] = None  # NEW: Data confidence warning
+        calculated_results: Optional[Dict[str, Any]] = None,  # McKinsey pipeline results
+        calculation_warning: Optional[str] = None,  # Data confidence warning
+        cross_scenario_context: Optional[str] = None  # FIXED: Cross-scenario table from Engine B
     ) -> Dict:
         """
         Execute complete 6-phase legendary debate.
@@ -769,6 +784,7 @@ Responses without engagement will be REJECTED.
             agent_reports_map: Map of agent names to their reports
             llm_client: LLM client for debate operations
             debate_depth: User-selected depth override (standard/deep/legendary)
+            cross_scenario_context: Cross-scenario comparison table from Engine B
             
         Returns:
             Dictionary with debate results and conversation history
@@ -780,9 +796,14 @@ Responses without engagement will be REJECTED.
         self.resolutions = []
         self.agent_reports_map = agent_reports_map
         self.extracted_facts = extracted_facts or []
-        # NEW: Store calculated results for McKinsey-grade analysis
+        # Store calculated results for McKinsey-grade analysis
         self.calculated_results = calculated_results
         self.calculation_warning = calculation_warning
+        # FIXED: Store cross-scenario context for agents to reference
+        self.cross_scenario_context = cross_scenario_context or ""
+        
+        if self.cross_scenario_context:
+            logger.info(f"📊 Cross-scenario context loaded: {len(self.cross_scenario_context)} chars")
         
         # Reset phase turn counters to ensure clean state
         self.phase_turn_counters = defaultdict(int)

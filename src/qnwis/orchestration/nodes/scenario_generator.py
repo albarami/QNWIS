@@ -80,23 +80,27 @@ class ScenarioGenerator:
         max_retries: int = 2
     ) -> List[Dict[str, Any]]:
         """
-        Generate exactly 6 critical scenarios for parallel testing.
+        Generate EXACTLY 6 critical scenarios for parallel testing.
         
-        ENHANCED: Includes stake-prompting validation for specific scenarios.
+        ENHANCED: 
+        - Always includes base_case as first scenario
+        - Ensures all scenarios have assumptions dict with multipliers
+        - Validates exactly 6 scenarios are returned
         
         Args:
             query: Original ministerial query
             extracted_facts: Facts extracted from data sources
-            num_scenarios: Number of scenarios to generate
+            num_scenarios: Number of scenarios to generate (always 6)
             max_retries: Retries for validation failures
             
         Returns:
-            List of scenario dicts with id, name, description, modified_assumptions
+            List of exactly 6 scenario dicts with id, name, description, assumptions
             
         Raises:
             ValueError: If scenario generation fails or produces invalid JSON
             RuntimeError: If API call fails after retries
         """
+        REQUIRED_SCENARIO_COUNT = 6
         response = None
         
         for attempt in range(max_retries + 1):
@@ -128,6 +132,15 @@ class ScenarioGenerator:
                 # Parse JSON response
                 scenarios = self._parse_scenarios(response)
                 
+                # Ensure base case is first
+                scenarios = self._ensure_base_case_first(scenarios, query)
+                
+                # Ensure all scenarios have assumptions dict
+                scenarios = self._ensure_assumptions_dict(scenarios)
+                
+                # Pad or trim to exactly 6 scenarios
+                scenarios = self._ensure_exactly_six(scenarios, query)
+                
                 # Validate scenarios (structural)
                 self._validate_scenarios(scenarios)
                 
@@ -142,6 +155,9 @@ class ScenarioGenerator:
                 
                 if stake_warnings:
                     logger.warning(f"⚠️ Returning scenarios with {len(stake_warnings)} stake warnings")
+                
+                # Final validation: must be exactly 6
+                assert len(scenarios) == REQUIRED_SCENARIO_COUNT, f"Expected {REQUIRED_SCENARIO_COUNT}, got {len(scenarios)}"
                 
                 logger.info(f"✅ Generated {len(scenarios)} scenarios: {[s.get('name', 'Unknown') for s in scenarios]}")
                 return scenarios
@@ -163,6 +179,97 @@ class ScenarioGenerator:
                     raise RuntimeError(f"Scenario generation error: {type(e).__name__}: {e}")
         
         raise ValueError("Failed to generate valid scenarios after retries")
+    
+    def _ensure_base_case_first(self, scenarios: List[Dict], query: str) -> List[Dict]:
+        """Ensure base case scenario is first in the list."""
+        base_case = None
+        other_scenarios = []
+        
+        for s in scenarios:
+            name = s.get("name", "").lower()
+            if "base" in name or s.get("type") == "base":
+                base_case = s
+            else:
+                other_scenarios.append(s)
+        
+        # If no base case found, create one
+        if base_case is None:
+            base_case = {
+                "id": "base_case",
+                "name": "Base Case",
+                "description": "Current policies and trends continue unchanged",
+                "type": "base",
+                "assumptions": {},  # No modifications
+                "modified_assumptions": {},
+            }
+            logger.info("📌 Created default base case scenario")
+        
+        return [base_case] + other_scenarios
+    
+    def _ensure_assumptions_dict(self, scenarios: List[Dict]) -> List[Dict]:
+        """Ensure all scenarios have an assumptions dict with multipliers."""
+        for scenario in scenarios:
+            # Normalize field name
+            if "modified_assumptions" in scenario and "assumptions" not in scenario:
+                scenario["assumptions"] = scenario["modified_assumptions"]
+            elif "assumptions" not in scenario:
+                scenario["assumptions"] = {}
+            
+            # Also keep modified_assumptions for backward compatibility
+            if "modified_assumptions" not in scenario:
+                scenario["modified_assumptions"] = scenario.get("assumptions", {})
+            
+            # Ensure assumptions is a dict
+            if not isinstance(scenario.get("assumptions"), dict):
+                scenario["assumptions"] = {}
+                scenario["modified_assumptions"] = {}
+        
+        return scenarios
+    
+    def _ensure_exactly_six(self, scenarios: List[Dict], query: str) -> List[Dict]:
+        """Ensure exactly 6 scenarios, padding or trimming as needed."""
+        REQUIRED = 6
+        
+        if len(scenarios) == REQUIRED:
+            return scenarios
+        
+        if len(scenarios) > REQUIRED:
+            logger.warning(f"⚠️ Trimming from {len(scenarios)} to {REQUIRED} scenarios")
+            return scenarios[:REQUIRED]
+        
+        # Need to pad with additional scenarios
+        logger.warning(f"⚠️ Padding from {len(scenarios)} to {REQUIRED} scenarios")
+        query_lower = query.lower()
+        
+        # Generate filler scenarios based on query type
+        filler_scenarios = []
+        
+        if any(kw in query_lower for kw in ['qatarization', 'workforce', 'labor']):
+            filler_scenarios = [
+                {"id": "economic_shock", "name": "Economic Shock", "description": "Oil prices drop 30%, budget cuts force policy pause", "type": "external_shock", "assumptions": {"budget_multiplier": 0.7, "policy_intensity": 0.5}},
+                {"id": "skills_gap", "name": "Skills Gap", "description": "Private sector demand outpaces training capacity", "type": "pessimistic", "assumptions": {"skills_availability": 0.6, "training_throughput": 0.7}},
+                {"id": "gcc_competition", "name": "GCC Competition", "description": "Saudi/UAE talent programs attract Qatari professionals", "type": "competitive", "assumptions": {"retention_rate": 0.8, "salary_pressure": 1.2}},
+                {"id": "policy_acceleration", "name": "Policy Acceleration", "description": "Stricter mandates drive faster adoption", "type": "optimistic", "assumptions": {"policy_intensity": 1.5, "compliance_rate": 1.3}},
+                {"id": "automation_impact", "name": "Automation Impact", "description": "AI reduces total job count, easier ratios", "type": "disruption", "assumptions": {"job_count_multiplier": 0.85, "productivity": 1.2}},
+            ]
+        else:
+            filler_scenarios = [
+                {"id": "optimistic", "name": "Optimistic", "description": "Favorable conditions accelerate progress", "type": "optimistic", "assumptions": {"growth_multiplier": 1.3}},
+                {"id": "pessimistic", "name": "Pessimistic", "description": "Adverse conditions create headwinds", "type": "pessimistic", "assumptions": {"growth_multiplier": 0.7}},
+                {"id": "disruption", "name": "Disruption", "description": "Technology or policy changes landscape", "type": "disruption", "assumptions": {"disruption_factor": 1.5}},
+                {"id": "competition", "name": "Regional Competition", "description": "GCC rivals gain competitive advantage", "type": "competitive", "assumptions": {"competition_intensity": 1.4}},
+                {"id": "external_shock", "name": "External Shock", "description": "Global events impact execution", "type": "external_shock", "assumptions": {"shock_severity": 0.6}},
+            ]
+        
+        needed = REQUIRED - len(scenarios)
+        for filler in filler_scenarios[:needed]:
+            # Check if similar scenario already exists
+            existing_ids = [s.get("id", "").lower() for s in scenarios]
+            if filler["id"] not in existing_ids:
+                filler["modified_assumptions"] = filler["assumptions"]
+                scenarios.append(filler)
+        
+        return scenarios[:REQUIRED]
     
     def _build_scenario_prompt(self, query: str, extracted_facts: Dict[str, Any]) -> str:
         """

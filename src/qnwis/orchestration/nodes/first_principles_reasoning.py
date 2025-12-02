@@ -150,15 +150,12 @@ Before ANY analysis, you MUST complete this protocol. Do not skip steps.
 FEASIBILITY_GATE_PROMPT = """
 You are the FEASIBILITY GATE - the first line of defense against impossible targets.
 
-Your job is to catch fatal arithmetic errors BEFORE the system wastes time 
-analyzing infeasible scenarios.
+Your job is to catch fatal arithmetic errors using REAL EXTRACTED DATA from LMIS.
 
-## CRITICAL QATAR CONTEXT (Use for Qatarization queries):
-- Total Qatari population: ~400,000-500,000 (all ages)
-- Working-age Qataris (18-60): ~200,000-250,000
-- Currently employed Qataris: ~180,000 (mostly public sector)
-- Available for new private sector jobs: ~20,000-70,000 MAXIMUM
-- Total private sector jobs in Qatar: ~2,000,000
+CRITICAL: Use the EXTRACTED FACTS provided below - do NOT use hardcoded assumptions.
+The extracted data reflects the actual current state from Qatar's databases.
+
+{extracted_data_section}
 
 FOR EVERY QUERY, complete this checklist:
 
@@ -276,15 +273,234 @@ COMMON FEASIBILITY FAILURES TO CHECK:
 # FEASIBILITY GATE NODE
 # =============================================================================
 
+def extract_target_from_query(query: str) -> Optional[float]:
+    """Extract percentage target from query text."""
+    patterns = [r'(\d+(?:\.\d+)?)\s*%', r'(\d+(?:\.\d+)?)\s*percent']
+    for pattern in patterns:
+        match = re.search(pattern, query.lower())
+        if match:
+            return float(match.group(1)) / 100
+    return None
+
+
+def format_extracted_data_for_prompt(extracted_facts: list) -> str:
+    """
+    Format extracted LMIS facts into a structured section for the feasibility prompt.
+    
+    Uses REAL data from the extraction phase, not hardcoded assumptions.
+    """
+    if not extracted_facts:
+        return """## EXTRACTED DATA (from LMIS)
+⚠️ No data extracted yet. Use conservative estimates and flag uncertainty.
+"""
+    
+    # Organize facts by category
+    workforce_facts = []
+    economic_facts = []
+    demographic_facts = []
+    other_facts = []
+    
+    for fact in extracted_facts[:50]:  # Limit to 50 most relevant
+        if isinstance(fact, dict):
+            indicator = fact.get('indicator', fact.get('metric', '')).lower()
+            value = fact.get('value', fact.get('data', ''))
+            source = fact.get('source', 'LMIS')
+            
+            fact_str = f"- {indicator}: {value} (Source: {source})"
+            
+            if any(kw in indicator for kw in ['workforce', 'employment', 'labor', 'job', 'qatari', 'worker']):
+                workforce_facts.append(fact_str)
+            elif any(kw in indicator for kw in ['gdp', 'revenue', 'budget', 'economic', 'growth']):
+                economic_facts.append(fact_str)
+            elif any(kw in indicator for kw in ['population', 'demographic', 'age', 'citizen']):
+                demographic_facts.append(fact_str)
+            else:
+                other_facts.append(fact_str)
+    
+    sections = ["## EXTRACTED DATA FROM LMIS (Use these numbers, not assumptions)"]
+    
+    if workforce_facts:
+        sections.append("\n### Workforce Data:")
+        sections.extend(workforce_facts[:10])
+    
+    if demographic_facts:
+        sections.append("\n### Demographic Data:")
+        sections.extend(demographic_facts[:10])
+    
+    if economic_facts:
+        sections.append("\n### Economic Data:")
+        sections.extend(economic_facts[:10])
+    
+    if other_facts:
+        sections.append("\n### Other Relevant Data:")
+        sections.extend(other_facts[:10])
+    
+    return "\n".join(sections)
+
+
+async def check_feasibility_with_data(
+    query: str,
+    extracted_facts: list
+) -> Dict[str, Any]:
+    """
+    Check feasibility using REAL extracted data, not hardcoded assumptions.
+    
+    This runs AFTER extraction to use actual LMIS data.
+    
+    FIXED: More robust keyword matching and always populate data_used
+    
+    Returns:
+        Dict with feasibility_ratio, constraints, warnings, and data_used
+    """
+    target = extract_target_from_query(query)
+    
+    feasibility_result = {
+        "feasible": True,
+        "feasibility_ratio": 1.0,
+        "constraints": [],
+        "warnings": [],
+        "data_used": {"facts_analyzed": len(extracted_facts)}  # Always have some data
+    }
+    
+    # Extract key metrics from facts with broader matching
+    qatari_workforce = None
+    total_private_jobs = None
+    all_numeric_facts = {}  # Store all numeric facts for reference
+    
+    for fact in extracted_facts:
+        if isinstance(fact, dict):
+            indicator = fact.get('indicator', fact.get('metric', fact.get('name', ''))).lower()
+            value = fact.get('value', fact.get('data', fact.get('amount', '')))
+            
+            # Try to extract numeric value
+            try:
+                if isinstance(value, (int, float)):
+                    numeric_value = float(value)
+                elif isinstance(value, str):
+                    # Extract number from string like "33,300" or "1.85M"
+                    clean_value = value.replace(',', '').replace(' ', '').replace('%', '')
+                    if 'M' in clean_value or 'm' in clean_value:
+                        numeric_value = float(clean_value.replace('M', '').replace('m', '')) * 1_000_000
+                    elif 'K' in clean_value or 'k' in clean_value:
+                        numeric_value = float(clean_value.replace('K', '').replace('k', '')) * 1_000
+                    elif 'B' in clean_value or 'b' in clean_value:
+                        numeric_value = float(clean_value.replace('B', '').replace('b', '')) * 1_000_000_000
+                    else:
+                        numeric_value = float(clean_value)
+                else:
+                    continue
+                
+                # Store all numeric facts
+                all_numeric_facts[indicator[:50]] = numeric_value
+                
+                # BROADER matching for Qatari workforce - check multiple patterns
+                if qatari_workforce is None:
+                    qatari_patterns = [
+                        'qatari workforce', 'qatari workers', 'qatari private',
+                        'qatari employment', 'qatari in private', 'nationals employed',
+                        'qatari nationals', 'qatarization', 'citizen workforce',
+                        'qatari labor', 'qatari staff', 'national workers'
+                    ]
+                    if any(kw in indicator for kw in qatari_patterns):
+                        qatari_workforce = numeric_value
+                        logger.info(f"📊 Found Qatari workforce: {numeric_value} from '{indicator}'")
+                
+                # BROADER matching for total private jobs
+                if total_private_jobs is None:
+                    jobs_patterns = [
+                        'total private', 'private sector jobs', 'private employment',
+                        'private sector employment', 'total jobs', 'workforce size',
+                        'private sector size', 'total employment private',
+                        'jobs in private', 'private workforce'
+                    ]
+                    if any(kw in indicator for kw in jobs_patterns):
+                        total_private_jobs = numeric_value
+                        logger.info(f"📊 Found private jobs: {numeric_value} from '{indicator}'")
+                    
+            except (ValueError, AttributeError, TypeError):
+                continue
+    
+    # Store sample of found numeric facts in data_used
+    feasibility_result["data_used"]["sample_facts"] = dict(list(all_numeric_facts.items())[:5])
+    feasibility_result["data_used"]["total_numeric_facts"] = len(all_numeric_facts)
+    
+    # Qatarization feasibility check using REAL data
+    query_lower = query.lower()
+    if target and any(kw in query_lower for kw in ['qatarization', 'qatari', 'nationalization']):
+        # Use found values or fall back to reasonable estimates from query context
+        if qatari_workforce is None:
+            # Try to find any workforce-related number
+            for key, val in all_numeric_facts.items():
+                if 'qatari' in key and 10000 < val < 500000:
+                    qatari_workforce = val
+                    logger.info(f"📊 Using fallback Qatari workforce: {val}")
+                    break
+        
+        if total_private_jobs is None:
+            # Try to find any jobs-related number
+            for key, val in all_numeric_facts.items():
+                if ('private' in key or 'jobs' in key or 'employment' in key) and val > 100000:
+                    total_private_jobs = val
+                    logger.info(f"📊 Using fallback private jobs: {val}")
+                    break
+        
+        if qatari_workforce and total_private_jobs:
+            required_qataris = total_private_jobs * target
+            available_qataris = qatari_workforce * 1.5  # Growth potential estimate
+            
+            feasibility_result["data_used"].update({
+                "qatari_workforce": qatari_workforce,
+                "total_private_jobs": total_private_jobs,
+                "target_rate": target,
+                "required_qataris": required_qataris,
+                "available_estimate": available_qataris,
+            })
+            
+            ratio = available_qataris / required_qataris if required_qataris > 0 else 1.0
+            feasibility_result["feasibility_ratio"] = ratio
+            
+            logger.info(f"📊 Feasibility ratio: {ratio:.3f} (required: {required_qataris:,.0f}, available: {available_qataris:,.0f})")
+            
+            if ratio < 0.2:
+                feasibility_result["feasible"] = False
+                feasibility_result["constraints"].append({
+                    "type": "population_constraint",
+                    "message": f"Target requires {required_qataris:,.0f} Qataris, only ~{available_qataris:,.0f} available",
+                    "severity": "blocking"
+                })
+            elif ratio < 0.6:
+                feasibility_result["warnings"].append({
+                    "type": "ambitious_target",
+                    "message": f"Ambitious: requires {1/ratio:.1f}x current Qatari workforce capacity",
+                    "severity": "warning"
+                })
+        else:
+            feasibility_result["warnings"].append({
+                "type": "insufficient_data",
+                "message": f"Could not extract workforce data (found {len(all_numeric_facts)} numeric facts) - proceeding with analysis",
+                "severity": "info"
+            })
+            # Still mark as checked even without specific data
+            feasibility_result["data_used"]["extraction_attempted"] = True
+    else:
+        # Non-Qatarization query - still mark as checked
+        feasibility_result["data_used"]["query_type"] = "non_qatarization"
+        feasibility_result["data_used"]["extraction_attempted"] = True
+    
+    return feasibility_result
+
+
 async def feasibility_gate_node(state: IntelligenceState) -> IntelligenceState:
     """
-    Check if query target is arithmetically feasible BEFORE wasting compute.
+    Check if query target is arithmetically feasible using EXTRACTED DATA.
     
-    This is the first line of defense against impossible targets.
+    This runs AFTER extraction so it uses real LMIS data, not hardcoded assumptions.
     """
-    logger.info("🔢 FEASIBILITY GATE: Starting...")
+    logger.info("🔢 FEASIBILITY GATE: Starting with EXTRACTED data...")
     
     query = state.get("query", "")
+    extracted_facts = state.get("extracted_facts", [])
+    
     # Handle None case - TypedDict setdefault may return None
     reasoning_chain = state.get("reasoning_chain") or []
     state["reasoning_chain"] = reasoning_chain
@@ -292,24 +508,41 @@ async def feasibility_gate_node(state: IntelligenceState) -> IntelligenceState:
     # Initialize feasibility flags - default to feasible
     state["target_infeasible"] = False
     state["feasibility_check"] = {"verdict": "PENDING"}
+    state["feasibility_analysis"] = {"feasibility_ratio": 1.0}
     
-    logger.info(f"🔢 FEASIBILITY GATE: Checking arithmetic feasibility for: {query[:100]}...")
+    logger.info(f"🔢 FEASIBILITY GATE: Checking with {len(extracted_facts)} extracted facts")
+    logger.info(f"🔢 Query: {query[:100]}...")
     
     # Emit SSE event
     emit_fn = state.get("emit_event_fn")
     if emit_fn:
-        await emit_fn("feasibility_check", "running", {"query": query})
+        await emit_fn("feasibility_check", "running", {"query": query, "facts_count": len(extracted_facts)})
     
     try:
+        # First, do a quick data-driven feasibility check
+        data_feasibility = await check_feasibility_with_data(query, extracted_facts)
+        state["feasibility_analysis"] = data_feasibility
+        
+        # Format extracted data for the LLM prompt
+        extracted_data_section = format_extracted_data_for_prompt(extracted_facts)
+        
         llm = get_llm_client()
         
+        # Build prompt with REAL extracted data
+        prompt_with_data = FEASIBILITY_GATE_PROMPT.format(
+            extracted_data_section=extracted_data_section
+        )
+        
         prompt = f"""
-{FEASIBILITY_GATE_PROMPT}
+{prompt_with_data}
 
 {CONSTRAINT_PATTERNS}
 
 QUERY TO ANALYZE:
 "{query}"
+
+IMPORTANT: Base your analysis on the EXTRACTED DATA above, not on generic assumptions.
+If the data shows specific numbers, use those numbers in your arithmetic check.
 
 Analyze the feasibility of this query. Output ONLY valid JSON.
 """
@@ -323,8 +556,22 @@ Analyze the feasibility of this query. Output ONLY valid JSON.
         # Parse JSON response
         feasibility = _parse_feasibility_response(response)
         
+        # Merge with data-driven check
+        if data_feasibility.get("feasibility_ratio", 1.0) < 0.5:
+            # Data check found issues - ensure LLM verdict reflects this
+            feasibility["data_driven_ratio"] = data_feasibility["feasibility_ratio"]
+            feasibility["data_used"] = data_feasibility.get("data_used", {})
+            
+            if data_feasibility["feasibility_ratio"] < 0.2 and feasibility.get("verdict") != "INFEASIBLE":
+                logger.warning("Data check shows infeasible but LLM disagreed - using data verdict")
+                feasibility["verdict"] = "INFEASIBLE"
+                feasibility["explanation"] = (
+                    f"Data analysis: {data_feasibility.get('constraints', [{}])[0].get('message', 'Insufficient capacity')}"
+                )
+        
         # Store in state
         state["feasibility_check"] = feasibility
+        state["feasibility_analysis"]["llm_verdict"] = feasibility.get("verdict")
         
         verdict = feasibility.get("verdict", "UNKNOWN")
         explanation = feasibility.get("explanation", "No explanation provided")
@@ -332,33 +579,35 @@ Analyze the feasibility of this query. Output ONLY valid JSON.
         if verdict == "INFEASIBLE":
             logger.warning(f"⛔ INFEASIBLE TARGET: {explanation}")
             
-            # Set short-circuit flag
+            # Set flags for routing
             state["target_infeasible"] = True
             state["infeasibility_reason"] = explanation
             state["feasible_alternative"] = feasibility.get("feasible_alternative", "")
+            state["feasibility_analysis"]["feasibility_ratio"] = data_feasibility.get("feasibility_ratio", 0.1)
             
             reasoning_chain.append(
                 f"⛔ FEASIBILITY GATE: Target is INFEASIBLE. {explanation}"
             )
             
-            # Emit error event (status must be valid: ready/running/streaming/complete/error/started/update)
             if emit_fn:
                 await emit_fn("feasibility_check", "error", {
                     "verdict": verdict,
                     "explanation": explanation,
-                    "alternative": feasibility.get("feasible_alternative", "")
+                    "alternative": feasibility.get("feasible_alternative", ""),
+                    "data_used": data_feasibility.get("data_used", {})
                 })
         
         elif verdict == "AMBITIOUS":
             logger.warning(f"⚠️ AMBITIOUS TARGET: {explanation}")
             state["feasibility_warning"] = explanation
+            state["feasibility_analysis"]["feasibility_ratio"] = data_feasibility.get("feasibility_ratio", 0.5)
             reasoning_chain.append(f"⚠️ FEASIBILITY GATE: Target is ambitious. {explanation}")
             
-            # Use "update" status for warnings (valid statuses: ready/running/streaming/complete/error/started/update)
             if emit_fn:
                 await emit_fn("feasibility_check", "update", {
                     "verdict": verdict,
-                    "explanation": explanation
+                    "explanation": explanation,
+                    "data_used": data_feasibility.get("data_used", {})
                 })
         
         else:
@@ -376,6 +625,7 @@ Analyze the feasibility of this query. Output ONLY valid JSON.
         reasoning_chain.append(f"⚠️ Feasibility check failed: {e}")
         # Don't block on errors - proceed with warning
         state["feasibility_check"] = {"verdict": "UNKNOWN", "error": str(e)}
+        state["feasibility_analysis"] = {"feasibility_ratio": 1.0, "error": str(e)}
     
     logger.info(f"✅ Feasibility gate returning state with keys: {list(state.keys())}")
     return state

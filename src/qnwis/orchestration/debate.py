@@ -3,16 +3,24 @@ Multi-agent debate orchestration helpers.
 
 The orchestration workflow uses these utilities to run a bounded turn-based
 debate and to detect when the conversation has converged.
+
+ENHANCED: Now includes cross-scenario quantitative context from Engine B
+so agents reference actual computed numbers in their arguments.
 """
 
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 
 from ..config.settings import DEBATE_CONFIGS
+from .cross_scenario import (
+    generate_cross_scenario_table,
+    extract_robustness_summary,
+    build_quantitative_context_for_agents,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -75,20 +83,81 @@ def _build_debate_prompt(
     debate_history: List[Dict[str, Any]],
     turn: int,
 ) -> str:
-    """Construct a deterministic prompt for the given turn."""
-    topic = state.get("question", "the policy question at hand")
+    """
+    Construct a deterministic prompt for the given turn.
+    
+    ENHANCED: Includes cross-scenario quantitative context from Engine B
+    so agents must reference actual computed numbers.
+    """
+    topic = state.get("question", state.get("query", "the policy question at hand"))
     history_snippet = "\n".join(
         f"Turn {idx + 1}: {entry['content'][:400]}"
         for idx, entry in enumerate(debate_history[-4:])
     )
+    
+    # Get quantitative context from Engine B results
+    quantitative_context = ""
+    engine_b_results = state.get("engine_b_results", {})
+    engine_b_aggregate = state.get("engine_b_aggregate", {})
+    cross_scenario_table = state.get("cross_scenario_table", "")
+    
+    if cross_scenario_table:
+        quantitative_context = f"""
+## QUANTITATIVE CONTEXT (from Engine B)
+{cross_scenario_table}
+
+**You MUST reference these numbers in your arguments.**
+"""
+    elif engine_b_results or engine_b_aggregate:
+        # Build context from aggregate results
+        quantitative_context = build_quantitative_context_for_debate(engine_b_results or engine_b_aggregate)
+    
     return (
-        "You are moderating a ministerial debate.\n"
-        f"Question: {topic}\n"
-        "Summarize the strongest remaining argument and cite concrete data.\n"
-        f"Recent turns:\n{history_snippet}\n"
-        f"Respond for turn {turn} with:\n"
-        "1. Position\n2. Evidence (with citations)\n3. Counterpoint you are addressing\n"
+        "You are participating in a ministerial debate.\n\n"
+        f"**Question:** {topic}\n\n"
+        f"{quantitative_context}\n"
+        "Summarize the strongest remaining argument and cite concrete data.\n\n"
+        f"**Recent turns:**\n{history_snippet}\n\n"
+        f"**Respond for turn {turn} with:**\n"
+        "1. Position (with specific numbers from the data above)\n"
+        "2. Evidence (with citations to computed results)\n"
+        "3. Counterpoint you are addressing\n"
     )
+
+
+def build_quantitative_context_for_debate(engine_b_results: Dict[str, Any]) -> str:
+    """
+    Build quantitative context string for debate prompts.
+    
+    Args:
+        engine_b_results: Engine B results (either per-scenario or aggregate)
+    
+    Returns:
+        Formatted context string with cross-scenario data
+    """
+    if not engine_b_results:
+        return ""
+    
+    try:
+        # Try to build cross-scenario table
+        cross_table = generate_cross_scenario_table(engine_b_results)
+        robustness = extract_robustness_summary(engine_b_results)
+        
+        context = f"""
+## QUANTITATIVE CONTEXT (Engine B Computed Results)
+
+{cross_table}
+
+### Key Metrics:
+- **Robustness:** {robustness.get('robustness_ratio', 'N/A')} scenarios pass
+- **Top Policy Levers:** {', '.join(robustness.get('top_drivers', ['Not computed']))}
+
+**Your arguments MUST reference these computed numbers, not estimates.**
+"""
+        return context
+    except Exception as e:
+        logger.warning(f"Could not build quantitative context: {e}")
+        return ""
 
 
 def detect_debate_convergence(debate_history: List[Dict[str, Any]]) -> Dict[str, Any]:

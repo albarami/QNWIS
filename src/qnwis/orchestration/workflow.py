@@ -25,6 +25,8 @@ from .nodes import (
     feasibility_gate_node,
     arithmetic_validator_node,
 )
+from .nodes.infeasible_analysis import infeasible_analysis_node
+from .cross_scenario import generate_cross_scenario_table
 # Import legendary debate node instead of simplified debate
 from .nodes.debate_legendary import legendary_debate_node
 # Import legendary synthesis for consultant-killing output
@@ -59,6 +61,31 @@ def route_by_complexity(state: IntelligenceState) -> Literal["simple", "medium",
         return complexity  # type: ignore
     
     return "medium"
+
+
+def route_by_feasibility(state: IntelligenceState) -> Literal["infeasible", "ambitious", "feasible"]:
+    """
+    Route based on feasibility analysis using EXTRACTED data.
+    
+    This runs AFTER extraction so it uses real LMIS data, not hardcoded assumptions.
+    
+    Returns:
+        "infeasible": Target is mathematically impossible (ratio < 0.2)
+        "ambitious": Target is achievable but very challenging (ratio 0.2-0.6)
+        "feasible": Target is reasonably achievable (ratio >= 0.6)
+    """
+    feasibility = state.get("feasibility_analysis", {})
+    ratio = feasibility.get("feasibility_ratio", 1.0)
+    
+    if ratio < 0.2:  # Truly impossible
+        logger.warning(f"⛔ INFEASIBLE: Feasibility ratio {ratio:.2f} < 0.2")
+        return "infeasible"
+    elif ratio < 0.6:  # Ambitious but analyzable
+        logger.warning(f"⚠️ AMBITIOUS: Feasibility ratio {ratio:.2f} in range 0.2-0.6")
+        return "ambitious"
+    else:
+        logger.info(f"✅ FEASIBLE: Feasibility ratio {ratio:.2f} >= 0.6")
+        return "feasible"
 
 
 async def scenario_generation_node(state: IntelligenceState) -> IntelligenceState:
@@ -351,33 +378,63 @@ async def aggregate_scenarios_for_debate_node(state: IntelligenceState) -> Intel
         'threshold_warnings': [],
     }
     
+    # Build engine_b_results dict keyed by scenario name for cross-scenario analysis
+    engine_b_results_by_scenario = {}
+    
     success_probs = []
     for result in scenario_results:
         engine_b = result.get('engine_b_results', {})
-        if engine_b and engine_b.get('status') == 'complete':
+        scenario_name = result.get('scenario_name', 'Unknown')
+        
+        # FIXED: Check for Engine B results more broadly - any non-empty result counts
+        # Don't require status == 'complete' since it may be partial success
+        has_engine_b = False
+        if engine_b:
+            # Check if any compute service returned results
+            has_monte_carlo = engine_b.get('monte_carlo') is not None
+            has_forecast = engine_b.get('forecasting') is not None
+            has_sensitivity = engine_b.get('sensitivity') is not None
+            has_thresholds = engine_b.get('thresholds') is not None
+            has_engine_b = has_monte_carlo or has_forecast or has_sensitivity or has_thresholds
+            
+            # Also check status if present
+            if engine_b.get('status') == 'complete':
+                has_engine_b = True
+        
+        if has_engine_b:
             engine_b_aggregate['scenarios_with_compute'] += 1
+            
+            # Store for cross-scenario table
+            engine_b_results_by_scenario[scenario_name] = engine_b
             
             # Monte Carlo results
             mc = engine_b.get('monte_carlo', {})
             if mc:
                 engine_b_aggregate['total_monte_carlo_runs'] += 1
-                if mc.get('success_probability'):
-                    success_probs.append(mc.get('success_probability', 0))
+                sr = mc.get('success_probability') or mc.get('success_rate')
+                if sr:
+                    success_probs.append(sr)
             
             # Sensitivity results
             sens = engine_b.get('sensitivity', {})
-            if sens and sens.get('sensitivities'):
-                for s in sens.get('sensitivities', [])[:2]:
-                    driver = s.get('variable', '')
-                    if driver and driver not in engine_b_aggregate['sensitivity_drivers']:
-                        engine_b_aggregate['sensitivity_drivers'].append(driver)
+            if sens:
+                # Handle different field names
+                drivers = sens.get('sensitivities', sens.get('parameter_impacts', sens.get('top_drivers', [])))
+                if isinstance(drivers, list):
+                    for s in drivers[:2]:
+                        if isinstance(s, dict):
+                            driver = s.get('variable', s.get('name', ''))
+                        else:
+                            driver = str(s)
+                        if driver and driver not in engine_b_aggregate['sensitivity_drivers']:
+                            engine_b_aggregate['sensitivity_drivers'].append(driver)
             
             # Forecasting results
             fc = engine_b.get('forecasting', {})
             if fc:
                 trend = fc.get('trend', 'unknown')
                 engine_b_aggregate['forecast_trends'].append({
-                    'scenario': result.get('scenario_name', 'Unknown'),
+                    'scenario': scenario_name,
                     'trend': trend
                 })
             
@@ -386,7 +443,7 @@ async def aggregate_scenarios_for_debate_node(state: IntelligenceState) -> Intel
             if th and th.get('warnings'):
                 for w in th.get('warnings', []):
                     engine_b_aggregate['threshold_warnings'].append({
-                        'scenario': result.get('scenario_name', 'Unknown'),
+                        'scenario': scenario_name,
                         'warning': w
                     })
     
@@ -394,6 +451,18 @@ async def aggregate_scenarios_for_debate_node(state: IntelligenceState) -> Intel
         engine_b_aggregate['avg_success_probability'] = sum(success_probs) / len(success_probs)
     
     state['engine_b_aggregate'] = engine_b_aggregate
+    state['engine_b_results'] = engine_b_results_by_scenario
+    
+    # Generate cross-scenario comparison table for agents
+    try:
+        cross_scenario_table = generate_cross_scenario_table(engine_b_results_by_scenario)
+        state['cross_scenario_table'] = cross_scenario_table
+        state['engine_b_scenarios_computed'] = len(engine_b_results_by_scenario)
+        logger.info(f"📊 Generated cross-scenario table for {len(engine_b_results_by_scenario)} scenarios")
+    except Exception as e:
+        logger.warning(f"Could not generate cross-scenario table: {e}")
+        state['cross_scenario_table'] = ""
+        state['engine_b_scenarios_computed'] = 0
     
     state['reasoning_chain'].append(
         f"✅ Aggregated {len(scenario_results)} scenarios: {len(agent_reports)} agent reports, "
@@ -519,8 +588,9 @@ def create_intelligence_graph() -> StateGraph:
 
     # === Core nodes ===
     workflow.add_node("classifier", classify_query_node)
-    workflow.add_node("feasibility_gate", feasibility_gate_node)  # FIRST-PRINCIPLES CHECK
     workflow.add_node("extraction", data_extraction_node)
+    workflow.add_node("feasibility_check", feasibility_gate_node)  # RUNS AFTER EXTRACTION WITH REAL DATA
+    workflow.add_node("infeasible_analysis", infeasible_analysis_node)  # For impossible targets
     workflow.add_node("scenario_gen", scenario_generation_node)
     
     # === Parallel path nodes ===
@@ -542,23 +612,23 @@ def create_intelligence_graph() -> StateGraph:
     # === Entry point ===
     workflow.set_entry_point("classifier")
     
-    # === Main flow with FEASIBILITY GATE ===
-    workflow.add_edge("classifier", "feasibility_gate")  # Check arithmetic FIRST
+    # === FIXED FLOW: Extract data FIRST, then check feasibility with REAL data ===
+    workflow.add_edge("classifier", "extraction")  # ALWAYS extract data first
+    workflow.add_edge("extraction", "feasibility_check")  # Then check feasibility with extracted data
     
-    # Route based on feasibility: infeasible targets go straight to synthesis with explanation
+    # Route based on feasibility using EXTRACTED data (not hardcoded assumptions)
     workflow.add_conditional_edges(
-        "feasibility_gate",
-        lambda state: "infeasible" if state.get("target_infeasible") else "feasible",
+        "feasibility_check",
+        route_by_feasibility,
         {
-            "infeasible": "synthesis",  # Short-circuit: explain why impossible
-            "feasible": "extraction"     # Continue normal flow
+            "infeasible": "infeasible_analysis",  # Provide useful analysis even for impossible targets
+            "ambitious": "scenario_gen",          # Proceed with warning
+            "feasible": "scenario_gen",           # Normal flow
         }
     )
     
-    # === MINISTER-GRADE: ALL QUERIES GET FULL ANALYSIS ===
-    # NO SHORTCUTS - Every query goes through scenario generation and agents
-    # The "simple" path is REMOVED - ministers expect thorough analysis
-    workflow.add_edge("extraction", "scenario_gen")  # Direct edge - no conditions
+    # Infeasible analysis goes to synthesis with explanation
+    workflow.add_edge("infeasible_analysis", "synthesis")
     
     # === Conditional routing after scenario generation ===
     # If scenarios generated → parallel path

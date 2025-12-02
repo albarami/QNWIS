@@ -37,6 +37,7 @@ from .first_principles_reasoning import (
     enhance_agent_prompt_with_first_principles,
     FIRST_PRINCIPLES_PROTOCOL,
 )
+from .infeasible_analysis import infeasible_analysis_node
 from .structure_data import structure_data_node, convert_structured_to_model_input
 from .calculate import calculate_node, get_calculated_summary, format_comparison_table
 
@@ -70,6 +71,8 @@ __all__ = [
     "arithmetic_validator_node",
     "enhance_agent_prompt_with_first_principles",
     "FIRST_PRINCIPLES_PROTOCOL",
+    # Infeasible target analysis
+    "infeasible_analysis_node",
     # Financial calculation nodes
     "structure_data_node",
     "convert_structured_to_model_input",

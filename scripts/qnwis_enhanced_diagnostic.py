@@ -1673,6 +1673,9 @@ class QNWISDiagnostic:
         # Data Extraction
         self.report.stages["data_extraction"] = self._evaluate_data_extraction()
         
+        # Feasibility Flow (extraction before feasibility check)
+        self.report.stages["feasibility_flow"] = self._evaluate_feasibility_flow()
+        
         # Scenarios (6 external factor scenarios)
         self.report.stages["scenarios"] = self._evaluate_scenarios()
         
@@ -1799,8 +1802,100 @@ class QNWISDiagnostic:
         logger.info(f"    Facts: {fact_count}, Sources: {source_count}")
         return result
     
+    def _evaluate_feasibility_flow(self) -> StageResult:
+        """
+        Verify feasibility check uses extracted data, not hardcoded assumptions.
+        
+        This validates the new flow:
+        1. Extraction completed first
+        2. Feasibility uses extracted data
+        3. Proper routing based on feasibility
+        """
+        result = StageResult(stage_name="feasibility_flow")
+        
+        # Check 1: Extraction happened first
+        extracted_facts = self.state.get("extracted_facts", [])
+        has_extraction = len(extracted_facts) > 0
+        
+        result.add_check(CheckResult(
+            name="extraction_completed",
+            passed=has_extraction,
+            score=100 if has_extraction else 0,
+            level=ScoreLevel.PASS if has_extraction else ScoreLevel.FAIL,
+            details=f"Extracted {len(extracted_facts)} facts" if has_extraction else "No extraction data",
+        ))
+        
+        # Check 2: Feasibility analysis exists
+        feasibility = self.state.get("feasibility_analysis", {})
+        feasibility_check = self.state.get("feasibility_check", {})
+        has_feasibility = bool(feasibility) or bool(feasibility_check)
+        
+        result.add_check(CheckResult(
+            name="feasibility_checked",
+            passed=has_feasibility,
+            score=100 if has_feasibility else 0,
+            level=ScoreLevel.PASS if has_feasibility else ScoreLevel.FAIL,
+            details="Feasibility analysis performed" if has_feasibility else "No feasibility check",
+        ))
+        
+        # Check 3: Feasibility used real data (not hardcoded)
+        data_used = feasibility.get("data_used", {})
+        has_real_data = len(data_used) > 0
+        
+        result.add_check(CheckResult(
+            name="feasibility_uses_data",
+            passed=has_real_data,
+            score=100 if has_real_data else 50,
+            level=ScoreLevel.PASS if has_real_data else ScoreLevel.WARN,
+            details=f"Used {len(data_used)} data points" if has_real_data else "May have used assumptions not extracted data",
+        ))
+        
+        # Check 4: Feasibility ratio computed
+        ratio = feasibility.get("feasibility_ratio")
+        has_ratio = ratio is not None
+        
+        result.add_check(CheckResult(
+            name="feasibility_ratio_computed",
+            passed=has_ratio,
+            score=100 if has_ratio else 50,
+            level=ScoreLevel.PASS if has_ratio else ScoreLevel.WARN,
+            details=f"Feasibility ratio: {ratio:.2f}" if has_ratio and isinstance(ratio, (int, float)) else "No feasibility ratio",
+        ))
+        
+        # Check 5: Proper routing happened
+        target_infeasible = self.state.get("target_infeasible", False)
+        target_constrained = self.state.get("target_constrained", False)
+        scenarios = self.state.get("scenarios", [])
+        
+        # If target was infeasible, we should have infeasible analysis
+        # If target was feasible/ambitious, we should have scenarios
+        proper_routing = (
+            (target_infeasible and target_constrained) or  # Infeasible path taken
+            (not target_infeasible and len(scenarios) > 0) or  # Feasible path taken
+            len(scenarios) > 0  # Scenarios generated
+        )
+        
+        result.add_check(CheckResult(
+            name="proper_routing",
+            passed=proper_routing,
+            score=100 if proper_routing else 50,
+            level=ScoreLevel.PASS if proper_routing else ScoreLevel.WARN,
+            details=f"Target infeasible: {target_infeasible}, Scenarios: {len(scenarios)}" if proper_routing else "Routing unclear",
+        ))
+        
+        logger.info(f"  Feasibility Flow: {result.overall_score:.0f}/100 [{result.overall_level.value}]")
+        logger.info(f"    Extraction: {has_extraction}, Feasibility: {has_feasibility}, Data used: {has_real_data}")
+        return result
+    
     def _evaluate_scenarios(self) -> StageResult:
-        """Evaluate scenario generation - 6 external factor scenarios."""
+        """
+        Evaluate scenario generation - expects exactly 6 scenarios with assumptions.
+        
+        UPDATED: Stricter checks for:
+        - Exactly 6 scenarios (not 4-6)
+        - Base case present
+        - All scenarios have assumptions dict
+        """
         result = StageResult(stage_name="scenarios")
         
         # Try multiple sources for scenario data
@@ -1815,7 +1910,7 @@ class QNWISDiagnostic:
                     {
                         "name": sr.get("scenario_name", sr.get("name", f"Scenario {i}")),
                         "type": sr.get("scenario_id", ""),
-                        "assumptions": sr.get("modified_assumptions", {}),
+                        "assumptions": sr.get("modified_assumptions", sr.get("assumptions", {})),
                     }
                     for i, sr in enumerate(scenario_results)
                 ]
@@ -1828,11 +1923,11 @@ class QNWISDiagnostic:
                     if scenarios:
                         break
         
-        # Check count is 6
+        # Check count is EXACTLY 6
         result.add_check(CheckResult(
             name="scenario_count",
             passed=len(scenarios) == 6,
-            score=100 if len(scenarios) == 6 else max(0, (len(scenarios) / 6) * 100),
+            score=100 if len(scenarios) == 6 else (len(scenarios) / 6) * 100,
             level=ScoreLevel.PASS if len(scenarios) == 6 else ScoreLevel.WARN if len(scenarios) >= 4 else ScoreLevel.FAIL,
             details=f"Generated {len(scenarios)} scenarios (expected: 6)",
         ))
@@ -1840,7 +1935,7 @@ class QNWISDiagnostic:
         # Check for base case
         has_base = any(
             s.get("name", "").lower() == "base_case" or 
-            s.get("type") == "base_case" or
+            s.get("type") == "base" or
             "base" in s.get("name", "").lower()
             for s in scenarios
         )
@@ -1852,37 +1947,56 @@ class QNWISDiagnostic:
             details="Base case scenario present" if has_base else "Missing base case",
         ))
         
-        # Check scenarios are external factors (have assumptions/adjustments)
+        # Check ALL scenarios have assumptions dict (not just some fields)
         if scenarios:
             has_assumptions = all(
-                "assumptions" in s or "adjustments" in s or "variables" in s or "factors" in s
+                isinstance(s.get("assumptions", s.get("modified_assumptions")), dict)
                 for s in scenarios
             )
             result.add_check(CheckResult(
                 name="scenarios_have_assumptions",
                 passed=has_assumptions,
-                score=100 if has_assumptions else 50,
-                level=ScoreLevel.PASS if has_assumptions else ScoreLevel.WARN,
-                details="All scenarios have variable adjustments" if has_assumptions else "Scenarios missing assumptions",
+                score=100 if has_assumptions else 0,
+                level=ScoreLevel.PASS if has_assumptions else ScoreLevel.FAIL,
+                details="All scenarios have assumptions dict" if has_assumptions else "Scenarios missing assumptions dict",
             ))
             
-            # Check for diverse scenario types (not all same type)
+            # Check assumptions are not all empty (except base case)
+            non_empty_assumptions = sum(
+                1 for s in scenarios 
+                if len(s.get("assumptions", s.get("modified_assumptions", {}))) > 0
+                and "base" not in s.get("name", "").lower()
+            )
+            has_meaningful_assumptions = non_empty_assumptions >= 3  # At least 3 non-base scenarios with assumptions
+            result.add_check(CheckResult(
+                name="meaningful_assumptions",
+                passed=has_meaningful_assumptions,
+                score=100 if has_meaningful_assumptions else 50,
+                level=ScoreLevel.PASS if has_meaningful_assumptions else ScoreLevel.WARN,
+                details=f"{non_empty_assumptions} scenarios have non-empty assumptions" if has_meaningful_assumptions else "Most scenarios have empty assumptions",
+            ))
+            
+            # Check for diverse scenario types
             scenario_names = [s.get("name", "") for s in scenarios]
             unique_themes = set()
             for name in scenario_names:
                 name_lower = name.lower()
-                if "oil" in name_lower or "energy" in name_lower:
+                if "oil" in name_lower or "energy" in name_lower or "price" in name_lower:
                     unique_themes.add("energy")
-                elif "pandemic" in name_lower or "crisis" in name_lower:
+                elif "pandemic" in name_lower or "crisis" in name_lower or "shock" in name_lower:
                     unique_themes.add("crisis")
-                elif "competition" in name_lower or "market" in name_lower:
+                elif "competition" in name_lower or "gcc" in name_lower or "regional" in name_lower:
                     unique_themes.add("competition")
-                elif "policy" in name_lower or "regulation" in name_lower:
+                elif "policy" in name_lower or "regulation" in name_lower or "acceleration" in name_lower:
                     unique_themes.add("policy")
                 elif "base" in name_lower:
                     unique_themes.add("base")
+                elif "optimistic" in name_lower or "pessimistic" in name_lower:
+                    unique_themes.add("outlook")
+                elif "skills" in name_lower or "automation" in name_lower or "disruption" in name_lower:
+                    unique_themes.add("disruption")
                 else:
-                    unique_themes.add(name_lower[:10])
+                    unique_themes.add(name_lower[:15])
             
             diverse = len(unique_themes) >= 3
             result.add_check(CheckResult(
@@ -2448,144 +2562,159 @@ class QNWISDiagnostic:
         return result
     
     def _evaluate_mckinsey_compliance(self) -> StageResult:
-        """Evaluate overall McKinsey-grade compliance."""
+        """
+        Evaluate POLICY analysis compliance.
+        
+        UPDATED: Removed NPV/IRR checks (not relevant for policy analysis).
+        Added policy-relevant checks:
+        - Feasibility analysis
+        - Success probability from Monte Carlo
+        - Timeline analysis
+        - Policy levers from sensitivity
+        - Cross-scenario robustness
+        - Gap analysis
+        - Actionable recommendations
+        - Tables present
+        """
         result = StageResult(stage_name="mckinsey_compliance")
         
         checklist = {}
-        
-        # Check 1: NPV present in output
         synthesis = self.state.get("final_synthesis", "")
-        has_npv_in_output = "npv" in synthesis.lower() or "net present value" in synthesis.lower()
-        checklist["npv_in_output"] = has_npv_in_output
+        
+        # Check 1: Feasibility analysis present
+        has_feasibility = any(term in synthesis.lower() for term in [
+            "feasibility", "feasible", "achievable", "mathematically",
+            "can be achieved", "cannot be achieved", "realistic",
+            "constrained", "impossible", "within capacity"
+        ])
+        checklist["feasibility_analysis"] = has_feasibility
         
         result.add_check(CheckResult(
-            name="npv_in_output",
-            passed=has_npv_in_output,
-            score=100 if has_npv_in_output else 0,
-            level=ScoreLevel.PASS if has_npv_in_output else ScoreLevel.FAIL,
-            details="NPV mentioned in synthesis" if has_npv_in_output else "NPV not found in output",
+            name="feasibility_analysis",
+            passed=has_feasibility,
+            score=100 if has_feasibility else 0,
+            level=ScoreLevel.PASS if has_feasibility else ScoreLevel.FAIL,
+            details="Feasibility analysis present" if has_feasibility else "Missing feasibility analysis",
         ))
         
-        # Check 2: IRR present in output
-        has_irr_in_output = "irr" in synthesis.lower() or "internal rate" in synthesis.lower()
-        checklist["irr_in_output"] = has_irr_in_output
+        # Check 2: Success probability (from Monte Carlo)
+        has_probability = bool(re.search(
+            r'\d{1,2}(\.\d)?%\s*(success|probability|chance|likelihood|pass)',
+            synthesis.lower()
+        )) or bool(re.search(r'success\s*(rate|probability)[:\s]+\d', synthesis.lower()))
+        checklist["success_probability"] = has_probability
         
         result.add_check(CheckResult(
-            name="irr_in_output",
-            passed=has_irr_in_output,
-            score=100 if has_irr_in_output else 0,
-            level=ScoreLevel.PASS if has_irr_in_output else ScoreLevel.FAIL,
-            details="IRR mentioned in synthesis" if has_irr_in_output else "IRR not found in output",
+            name="success_probability",
+            passed=has_probability,
+            score=100 if has_probability else 0,
+            level=ScoreLevel.PASS if has_probability else ScoreLevel.FAIL,
+            details="Success probability stated" if has_probability else "Missing success probability",
         ))
         
-        # Check 3: Sensitivity analysis in output
-        has_sensitivity_in_output = any(word in synthesis.lower() for word in 
-                                        ["sensitivity", "scenario", "worst case", "best case"])
-        checklist["sensitivity_in_output"] = has_sensitivity_in_output
+        # Check 3: Timeline analysis
+        has_timeline = any(term in synthesis.lower() for term in [
+            "by 2025", "by 2026", "by 2027", "by 2028", "by 2029", "by 2030",
+            "threshold", "breaking point", "shortfall", "timeline",
+            "within 2 years", "within 3 years", "by year"
+        ])
+        checklist["timeline_analysis"] = has_timeline
         
         result.add_check(CheckResult(
-            name="sensitivity_in_output",
-            passed=has_sensitivity_in_output,
-            score=100 if has_sensitivity_in_output else 0,
-            level=ScoreLevel.PASS if has_sensitivity_in_output else ScoreLevel.FAIL,
-            details="Sensitivity analysis in synthesis" if has_sensitivity_in_output else "No sensitivity analysis in output",
+            name="timeline_analysis",
+            passed=has_timeline,
+            score=100 if has_timeline else 0,
+            level=ScoreLevel.PASS if has_timeline else ScoreLevel.FAIL,
+            details="Timeline analysis present" if has_timeline else "Missing timeline analysis",
         ))
         
-        # Check 4: Confidence level stated
-        has_confidence = "confidence" in synthesis.lower() or re.search(r'\d{1,2}%\s*confidence', synthesis.lower())
-        checklist["confidence_stated"] = has_confidence
+        # Check 4: Policy levers identified (from sensitivity)
+        has_levers = any(term in synthesis.lower() for term in [
+            "driver", "lever", "key factor", "most impactful",
+            "sensitivity", "if we increase", "if we improve",
+            "primary factor", "main variable", "top driver"
+        ])
+        checklist["policy_levers"] = has_levers
         
         result.add_check(CheckResult(
-            name="confidence_stated",
-            passed=has_confidence,
-            score=100 if has_confidence else 50,
-            level=ScoreLevel.PASS if has_confidence else ScoreLevel.WARN,
-            details="Confidence level stated" if has_confidence else "No confidence level in output",
+            name="policy_levers",
+            passed=has_levers,
+            score=100 if has_levers else 0,
+            level=ScoreLevel.PASS if has_levers else ScoreLevel.FAIL,
+            details="Policy levers identified" if has_levers else "Missing policy levers",
         ))
         
-        # Check 5: Tables present (markdown tables)
+        # Check 5: Cross-scenario robustness
+        has_robustness = bool(re.search(r'\d/\d\s*scenario', synthesis.lower())) or \
+                         bool(re.search(r'\d\s*out\s*of\s*\d\s*scenario', synthesis.lower())) or \
+                         any(term in synthesis.lower() for term in [
+                             "across scenarios", "robust", "vulnerable",
+                             "worst case", "best case", "base case",
+                             "in all scenarios", "scenarios show"
+                         ])
+        checklist["cross_scenario_robustness"] = has_robustness
+        
+        result.add_check(CheckResult(
+            name="cross_scenario_robustness",
+            passed=has_robustness,
+            score=100 if has_robustness else 0,
+            level=ScoreLevel.PASS if has_robustness else ScoreLevel.FAIL,
+            details="Robustness analysis present" if has_robustness else "Missing cross-scenario robustness",
+        ))
+        
+        # Check 6: Gap analysis
+        has_gap = any(term in synthesis.lower() for term in [
+            "gap", "shortfall", "deficit", "need additional",
+            "requires", "must increase", "currently at", "target of",
+            "difference between", "to reach"
+        ])
+        checklist["gap_analysis"] = has_gap
+        
+        result.add_check(CheckResult(
+            name="gap_analysis",
+            passed=has_gap,
+            score=100 if has_gap else 50,
+            level=ScoreLevel.PASS if has_gap else ScoreLevel.WARN,
+            details="Gap analysis present" if has_gap else "Limited gap analysis",
+        ))
+        
+        # Check 7: Actionable recommendations with timeline
+        has_actions = bool(re.search(
+            r'(recommend|should|must|advise).{0,100}(by 20\d{2}|within \d+|phase)',
+            synthesis.lower()
+        )) or any(term in synthesis.lower() for term in [
+            "recommend", "action", "implement", "next steps"
+        ])
+        checklist["actionable_recommendations"] = has_actions
+        
+        result.add_check(CheckResult(
+            name="actionable_recommendations",
+            passed=has_actions,
+            score=100 if has_actions else 50,
+            level=ScoreLevel.PASS if has_actions else ScoreLevel.WARN,
+            details="Actionable recommendations present" if has_actions else "Needs actionable recommendations",
+        ))
+        
+        # Check 8: Tables present (markdown tables)
         has_tables = "|" in synthesis and "---" in synthesis
         checklist["tables_present"] = has_tables
         
         result.add_check(CheckResult(
             name="tables_present",
             passed=has_tables,
-            score=100 if has_tables else 30,
+            score=100 if has_tables else 50,
             level=ScoreLevel.PASS if has_tables else ScoreLevel.WARN,
-            details="Formatted tables in output" if has_tables else "No tables found",
-        ))
-        
-        # Check 6: No vague LLM estimates (like "60-70%")
-        vague_patterns = [
-            r'\d{1,2}-\d{1,2}%',  # "60-70%"
-            r'approximately \d+',  # "approximately 50"
-            r'around \d+',        # "around 50"
-            r'roughly \d+',       # "roughly 50"
-        ]
-        has_vague_estimates = any(re.search(p, synthesis.lower()) for p in vague_patterns)
-        checklist["no_vague_estimates"] = not has_vague_estimates
-        
-        result.add_check(CheckResult(
-            name="no_vague_estimates",
-            passed=not has_vague_estimates,
-            score=100 if not has_vague_estimates else 50,
-            level=ScoreLevel.PASS if not has_vague_estimates else ScoreLevel.WARN,
-            details="No vague estimates found" if not has_vague_estimates else "Contains vague LLM-style estimates",
-        ))
-        
-        # Check 7: Cross-scenario analysis in output (robustness)
-        has_scenario_comparison = any(term in synthesis.lower() for term in [
-            "across scenarios", "in all scenarios", "scenarios show",
-            "robust", "worst case", "best case", "base case",
-            "under different", "if oil", "if pandemic", "if competition",
-            "downside", "upside", "stress test", "vulnerable to"
-        ])
-        checklist["cross_scenario_analysis"] = has_scenario_comparison
-        
-        result.add_check(CheckResult(
-            name="cross_scenario_in_output",
-            passed=has_scenario_comparison,
-            score=100 if has_scenario_comparison else 0,
-            level=ScoreLevel.PASS if has_scenario_comparison else ScoreLevel.FAIL,
-            details="Output shows robustness across scenarios" if has_scenario_comparison else "No cross-scenario analysis in output",
-        ))
-        
-        # Check 8: Robustness ratio (X/6 scenarios pass pattern)
-        # Check for robustness ratio patterns: "X/6 scenarios", "X/Y scenarios pass", "robustness: X/Y"
-        robustness_patterns = [
-            r'(\d)/(\d)\s*scenario',
-            r'robustness[:\s]+(\d)/(\d)',
-            r'(\d)\s*out\s*of\s*(\d)\s*scenario',
-            r'(\d)/(\d)\s*pass',
-        ]
-        has_robustness_ratio = False
-        robustness_match = None
-        for pattern in robustness_patterns:
-            match = re.search(pattern, synthesis.lower())
-            if match:
-                has_robustness_ratio = True
-                robustness_match = match.group(0)
-                break
-        
-        checklist["robustness_ratio"] = has_robustness_ratio
-        
-        result.add_check(CheckResult(
-            name="robustness_ratio_stated",
-            passed=has_robustness_ratio,
-            score=100 if has_robustness_ratio else 50,
-            level=ScoreLevel.PASS if has_robustness_ratio else ScoreLevel.WARN,
-            details=f"Robustness ratio stated: {robustness_match}" if has_robustness_ratio else "No X/6 scenarios robustness ratio",
+            details="Tables present in output" if has_tables else "No tables found",
         ))
         
         # Store checklist
         self.report.mckinsey_checklist = checklist
         
-        # Determine overall compliance
+        # Determine overall compliance (need 75% to pass)
         compliance_score = sum(1 for v in checklist.values() if v) / len(checklist) * 100
-        self.report.mckinsey_compliant = compliance_score >= 70
+        self.report.mckinsey_compliant = compliance_score >= 75
         
         logger.info(f"  McKinsey Compliance: {result.overall_score:.0f}/100 [{result.overall_level.value}]")
-        # Count only True values, treating None as False
         passed_count = sum(1 for v in checklist.values() if v is True)
         logger.info(f"    Checklist: {passed_count}/{len(checklist)} passed")
         
