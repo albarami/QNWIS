@@ -228,13 +228,9 @@ class ResearchSynthesizerAgent:
         findings = []
         
         if not self.rag_client:
-            # Fallback: Try to import and use the RAG system
-            try:
-                from ..data.rag import RAGClient
-                self.rag_client = RAGClient()
-            except ImportError:
-                logger.warning("RAG client not available")
-                return findings
+            # RAG client must be injected via constructor
+            logger.debug("RAG client not configured - skipping RAG search")
+            return findings
         
         try:
             # Search RAG system
@@ -337,13 +333,9 @@ class ResearchSynthesizerAgent:
         findings = []
         
         if not self.kg_client:
-            # Fallback: Try to import knowledge graph client
-            try:
-                from ..data.knowledge_graph import KnowledgeGraphClient
-                self.kg_client = KnowledgeGraphClient()
-            except ImportError:
-                logger.warning("Knowledge Graph client not available")
-                return findings
+            # Knowledge Graph client must be injected via constructor
+            logger.debug("Knowledge Graph client not configured - skipping KG search")
+            return findings
         
         try:
             # Query for relevant relationships
