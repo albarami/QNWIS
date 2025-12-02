@@ -2841,14 +2841,14 @@ class QNWISDiagnostic:
         
         print(f"\nOVERALL SCORE: {self.report.overall_score:.1f}/100")
         print(f"EXECUTION TIME: {self.report.duration_seconds:.1f}s")
-        print(f"ENGINE B HEALTHY: {'✅ YES' if self.report.engine_b_healthy else '❌ NO'}")
-        print(f"HYBRID FLOW WORKING: {'✅ YES' if self.report.hybrid_flow_working else '❌ NO'}")
-        print(f"FEEDBACK LOOP WORKING: {'✅ YES' if self.report.feedback_loop_working else '❌ NO'}")
-        print(f"MCKINSEY COMPLIANT: {'✅ YES' if self.report.mckinsey_compliant else '❌ NO'}")
+        print(f"ENGINE B HEALTHY: {'[YES]' if self.report.engine_b_healthy else '[NO]'}")
+        print(f"HYBRID FLOW WORKING: {'[YES]' if self.report.hybrid_flow_working else '[NO]'}")
+        print(f"FEEDBACK LOOP WORKING: {'[YES]' if self.report.feedback_loop_working else '[NO]'}")
+        print(f"MCKINSEY COMPLIANT: {'[YES]' if self.report.mckinsey_compliant else '[NO]'}")
         
         print("\n--- Stage Scores ---")
         for stage_name, stage_result in self.report.stages.items():
-            icon = "✓" if stage_result.overall_level == ScoreLevel.PASS else "⚠" if stage_result.overall_level == ScoreLevel.WARN else "✗"
+            icon = "+" if stage_result.overall_level == ScoreLevel.PASS else "!" if stage_result.overall_level == ScoreLevel.WARN else "x"
             print(f"  [{icon}] {stage_name}: {stage_result.overall_score:.0f}/100 [{stage_result.overall_level.value}]")
             
             # Show failed/warning checks
@@ -2858,7 +2858,7 @@ class QNWISDiagnostic:
         
         print("\n--- McKinsey Checklist ---")
         for item, passed in self.report.mckinsey_checklist.items():
-            icon = "✓" if passed else "✗"
+            icon = "[+]" if passed else "[x]"
             print(f"  [{icon}] {item.replace('_', ' ').title()}")
         
         if self.report.recommendations:
@@ -2877,15 +2877,15 @@ class QNWISDiagnostic:
         if score >= 90 and self.report.mckinsey_compliant and self.report.hybrid_flow_working:
             return "🏆 LEGENDARY: Hybrid system fully operational - McKinsey-grade!"
         elif score >= 80 and self.report.hybrid_flow_working:
-            return "✅ EXCELLENT: System performing at high level with hybrid flow"
+            return "[EXCELLENT] System performing at high level with hybrid flow"
         elif score >= 80:
-            return "✅ EXCELLENT: System performing at high level"
+            return "[EXCELLENT] System performing at high level"
         elif score >= 70:
             return "👍 GOOD: Core functionality working, some improvements needed"
         elif score >= 50:
-            return "⚠️ FAIR: Significant gaps identified, see recommendations"
+            return "[FAIR] Significant gaps identified, see recommendations"
         else:
-            return "❌ NEEDS WORK: Major issues to address"
+            return "[NEEDS WORK] Major issues to address"
     
     def _report_to_dict(self) -> Dict:
         """Convert report to dictionary for JSON serialization."""
@@ -3017,8 +3017,8 @@ def print_batch_summary(results: Dict[str, DiagnosticReport]):
         if report.mckinsey_compliant:
             mckinsey_compliant += 1
         
-        status = "✓ PASS" if report.overall_score >= 70 else "⚠ WARN" if report.overall_score >= 50 else "✗ FAIL"
-        mckinsey = "✓ YES" if report.mckinsey_compliant else "✗ NO"
+        status = "[PASS]" if report.overall_score >= 70 else "[WARN]" if report.overall_score >= 50 else "[FAIL]"
+        mckinsey = "[YES]" if report.mckinsey_compliant else "[NO]"
         
         print(f"{query_key:<25} {report.overall_score:>6.1f}    {mckinsey:<12} {report.duration_seconds:>7.1f}   {status:<10}")
     
@@ -3050,13 +3050,13 @@ def print_batch_summary(results: Dict[str, DiagnosticReport]):
         if avg_score >= 90 and mckinsey_compliant == successful:
             print("🏆 LEGENDARY: System performs at McKinsey-grade across all domains!")
         elif avg_score >= 80:
-            print("✅ EXCELLENT: System performs consistently well across domains")
+            print("[EXCELLENT] System performs consistently well across domains")
         elif avg_score >= 70:
             print("👍 GOOD: System works across domains with minor gaps")
         elif avg_score >= 50:
-            print("⚠️ FAIR: Performance varies by domain, improvements needed")
+            print("[FAIR] Performance varies by domain, improvements needed")
         else:
-            print("❌ NEEDS WORK: Significant issues across multiple domains")
+            print("[NEEDS WORK] Significant issues across multiple domains")
     
     print("=" * 80)
 
@@ -3143,11 +3143,11 @@ async def test_engine_b_only(config: DiagnosticConfig) -> Dict[str, StageResult]
     print(f"\nOverall Engine B Score: {total_score:.1f}/100")
     
     for name, result in results.items():
-        icon = "✓" if result.overall_level == ScoreLevel.PASS else "⚠" if result.overall_level == ScoreLevel.WARN else "✗"
+        icon = "+" if result.overall_level == ScoreLevel.PASS else "!" if result.overall_level == ScoreLevel.WARN else "x"
         print(f"  [{icon}] {name}: {result.overall_score:.0f}/100")
         for check in result.checks:
             if not check.passed:
-                print(f"      ❌ {check.name}: {check.details}")
+                print(f"      [FAIL] {check.name}: {check.details}")
     
     return results
 
