@@ -1,5 +1,8 @@
 # Default Alert Rules for QNWIS Alert Center
 # Domain-agnostic early-warning system
+#
+# NOTE: Rules are DISABLED until matching query definitions exist in data/queries/
+# To enable a rule, create the corresponding YAML query file first.
 
 rules:
   # Economic indicator alerts
@@ -15,7 +18,7 @@ rules:
       value: 1.0
     horizon: 12
     severity: high
-    enabled: true
+    enabled: false  # DISABLED: Query MACRO_GDP_GROWTH_TS not defined yet
     description: "Alert when GDP growth falls below 1%"
 
   # Labor market alerts
@@ -31,7 +34,7 @@ rules:
       value: 2.0
     horizon: 12
     severity: critical
-    enabled: true
+    enabled: false  # DISABLED: Query not defined
     description: "Alert when unemployment increases by 2+ percentage points YoY"
 
   - rule_id: employment_decline
@@ -46,7 +49,7 @@ rules:
       value: -5.0
     horizon: 12
     severity: high
-    enabled: true
+    enabled: false  # DISABLED: Query not defined
     description: "Alert when sector employment drops >5% YoY"
 
   # Workforce nationalization/localization alerts (domain-agnostic)
@@ -63,7 +66,7 @@ rules:
       value: -0.005
     horizon: 24
     severity: high
-    enabled: true
+    enabled: false  # DISABLED: Query not defined
     description: "Alert on negative 12-month workforce nationalization trend"
 
   - rule_id: nationalization_target_miss
@@ -78,7 +81,7 @@ rules:
       value: 0.20
     horizon: 12
     severity: medium
-    enabled: true
+    enabled: false  # DISABLED: Query not defined
     description: "Alert when overall workforce nationalization falls below 20%"
 
   # Wage and compensation alerts
@@ -94,7 +97,7 @@ rules:
       value: 0.0
     horizon: 12
     severity: medium
-    enabled: true
+    enabled: false  # DISABLED: Query not defined
     description: "Alert on wage stagnation (no growth over 24 months)"
 
   - rule_id: wage_disparity_widening
@@ -109,7 +112,7 @@ rules:
       value: 10.0
     horizon: 12
     severity: high
-    enabled: true
+    enabled: false  # DISABLED: Query not defined
     description: "Alert when wage disparity increases by 10%+ YoY"
 
   # Workforce retention alerts
@@ -125,7 +128,7 @@ rules:
       value: -5.0
     horizon: 12
     severity: high
-    enabled: true
+    enabled: false  # DISABLED: Query not defined
     description: "Alert when sector retention drops >5% YoY"
 
   - rule_id: turnover_spike
@@ -140,7 +143,7 @@ rules:
       value: 0.30
     horizon: 6
     severity: high
-    enabled: true
+    enabled: false  # DISABLED: Query not defined
     description: "Alert when sector turnover exceeds 30%"
 
   # Investment and FDI alerts
@@ -156,7 +159,7 @@ rules:
       value: -20.0
     horizon: 12
     severity: high
-    enabled: true
+    enabled: false  # DISABLED: Query not defined
     description: "Alert when FDI inflows decline by 20%+ YoY"
 
   # Infrastructure and capacity alerts
@@ -172,7 +175,7 @@ rules:
       value: 0.95
     horizon: 6
     severity: medium
-    enabled: true
+    enabled: false  # DISABLED: Query not defined
     description: "Alert when capacity utilization exceeds 95%"
 
   # Inflation and cost alerts
@@ -188,6 +191,6 @@ rules:
       value: 5.0
     horizon: 6
     severity: high
-    enabled: true
+    enabled: false  # DISABLED: Query not defined
     description: "Alert when inflation exceeds 5%"
 
