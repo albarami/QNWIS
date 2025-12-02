@@ -1,0 +1,560 @@
+{
+  "timestamp": "2025-12-01T17:40:54.173818",
+  "duration_seconds": 2401.290241,
+  "overall_score": 76.26721763085398,
+  "mckinsey_compliant": true,
+  "mckinsey_checklist": {
+    "npv_in_output": false,
+    "irr_in_output": false,
+    "sensitivity_in_output": true,
+    "confidence_stated": true,
+    "tables_present": true,
+    "no_vague_estimates": true,
+    "cross_scenario_analysis": true,
+    "robustness_ratio": true
+  },
+  "stages": {
+    "engine_b_health": {
+      "score": 100.0,
+      "level": "PASS",
+      "checks": [
+        {
+          "name": "api_reachable",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Engine B API responding at http://localhost:8001"
+        },
+        {
+          "name": "service_monte_carlo",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "monte_carlo: {'service': 'monte_carlo', 'status': 'healthy', 'gpu_available': True, 'gpu_ids': [0, 1]}"
+        },
+        {
+          "name": "service_forecast",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "forecast: {'service': 'forecasting', 'status': 'healthy', 'statsmodels_available': False, 'gpu_id': 4, 'gpu_available': True}"
+        },
+        {
+          "name": "service_thresholds",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "thresholds: {'service': 'thresholds', 'status': 'healthy', 'gpu_available': True, 'gpu_id': 5}"
+        },
+        {
+          "name": "service_sensitivity",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "sensitivity: {'service': 'sensitivity', 'status': 'healthy', 'gpu_available': True, 'gpu_id': 2}"
+        },
+        {
+          "name": "service_benchmark",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "benchmark: {'service': 'benchmarking', 'status': 'healthy', 'gpu_id': 6, 'gpu_available': True}"
+        },
+        {
+          "name": "service_correlation",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "correlation: {'service': 'correlation', 'status': 'healthy', 'gpu_available': True, 'gpu_id': 7}"
+        },
+        {
+          "name": "service_optimization",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "optimization: {'service': 'optimization', 'status': 'healthy', 'cvxpy_available': False, 'gpu_id': 3, 'gpu_available': True}"
+        }
+      ]
+    },
+    "monte_carlo": {
+      "score": 84.0,
+      "level": "PASS",
+      "checks": [
+        {
+          "name": "simulations_run",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Ran 10,000 simulations"
+        },
+        {
+          "name": "mean_accuracy",
+          "passed": true,
+          "score": 70,
+          "level": "WARN",
+          "details": "Mean not computed, but other results present"
+        },
+        {
+          "name": "success_rate_calculated",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "No success rate"
+        },
+        {
+          "name": "sensitivity_calculated",
+          "passed": false,
+          "score": 50,
+          "level": "WARN",
+          "details": "No sensitivity (optional)"
+        },
+        {
+          "name": "performance",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Completed in 0.00s"
+        }
+      ]
+    },
+    "forecasting": {
+      "score": 100.0,
+      "level": "PASS",
+      "checks": [
+        {
+          "name": "forecasts_generated",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Generated 7 forecast periods"
+        },
+        {
+          "name": "trend_detected",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Trend: increasing"
+        },
+        {
+          "name": "confidence_bands",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Confidence bands present"
+        },
+        {
+          "name": "bands_widen",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Band width: 258,355 \u2192 369,662"
+        }
+      ]
+    },
+    "thresholds": {
+      "score": 100.0,
+      "level": "PASS",
+      "checks": [
+        {
+          "name": "thresholds_found",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Found 1 threshold(s)"
+        },
+        {
+          "name": "safe_range",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Safe range: [0.1, 0.3]"
+        },
+        {
+          "name": "risk_assessed",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Risk level: safe"
+        }
+      ]
+    },
+    "sensitivity": {
+      "score": 100.0,
+      "level": "PASS",
+      "checks": [
+        {
+          "name": "sensitivity_calculated",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Analyzed 4 parameters"
+        },
+        {
+          "name": "top_driver_identified",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Top drivers: ['total_jobs', 'qatari_workforce', 'job_growth']"
+        },
+        {
+          "name": "impact_quantified",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Tornado chart data available"
+        }
+      ]
+    },
+    "benchmarking": {
+      "score": 100.0,
+      "level": "PASS",
+      "checks": [
+        {
+          "name": "ranking_calculated",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Qatar rank: 9"
+        },
+        {
+          "name": "percentile_calculated",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Percentile: 17%"
+        },
+        {
+          "name": "gaps_calculated",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Improvement areas: 1"
+        }
+      ]
+    },
+    "classification": {
+      "score": 100.0,
+      "level": "PASS",
+      "checks": [
+        {
+          "name": "complexity_detected",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Complexity: complex"
+        },
+        {
+          "name": "correct_classification",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Correctly classified as complex strategic decision"
+        }
+      ]
+    },
+    "data_extraction": {
+      "score": 70.0,
+      "level": "WARN",
+      "checks": [
+        {
+          "name": "fact_count",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Extracted 5446 facts (minimum: 100)"
+        },
+        {
+          "name": "source_diversity",
+          "passed": false,
+          "score": 40.0,
+          "level": "FAIL",
+          "details": "Used 2 distinct sources"
+        }
+      ]
+    },
+    "scenarios": {
+      "score": 87.5,
+      "level": "PASS",
+      "checks": [
+        {
+          "name": "scenario_count",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Generated 6 scenarios (expected: 6)"
+        },
+        {
+          "name": "has_base_case",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Base case scenario present"
+        },
+        {
+          "name": "scenarios_have_assumptions",
+          "passed": false,
+          "score": 50,
+          "level": "WARN",
+          "details": "Scenarios missing assumptions"
+        },
+        {
+          "name": "scenario_diversity",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Scenario themes: {'energy', 'black swan', 'policy', 'base', 'competitiv', 'automation'}"
+        }
+      ]
+    },
+    "engine_b_coverage": {
+      "score": 100.0,
+      "level": "PASS",
+      "checks": [
+        {
+          "name": "run_once_services",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Engine B services ran via parallel executor"
+        },
+        {
+          "name": "all_scenarios_computed",
+          "passed": true,
+          "score": 100.0,
+          "level": "PASS",
+          "details": "Engine B computed 6/6 scenarios"
+        }
+      ]
+    },
+    "agents": {
+      "score": 100.0,
+      "level": "PASS",
+      "checks": [
+        {
+          "name": "agent_participation",
+          "passed": true,
+          "score": 100.0,
+          "level": "PASS",
+          "details": "Found 5/5 expected agents (agent_reports: 54, agents_count: 34)"
+        }
+      ]
+    },
+    "debate": {
+      "score": 33.333333333333336,
+      "level": "FAIL",
+      "checks": [
+        {
+          "name": "debate_turns",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "101 turns (target: 50 for standard)"
+        },
+        {
+          "name": "debate_phases",
+          "passed": false,
+          "score": 0.0,
+          "level": "WARN",
+          "details": "Phases found: set()"
+        },
+        {
+          "name": "debate_relevance",
+          "passed": false,
+          "score": 0.0,
+          "level": "WARN",
+          "details": "0/20 sampled turns discuss the options"
+        }
+      ]
+    },
+    "critique": {
+      "score": 100.0,
+      "level": "PASS",
+      "checks": [
+        {
+          "name": "critique_count",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "12 critiques generated"
+        },
+        {
+          "name": "red_flags",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "4 red flags identified"
+        }
+      ]
+    },
+    "verification": {
+      "score": 100.0,
+      "level": "PASS",
+      "checks": [
+        {
+          "name": "no_fabrication",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "No fabrication detected"
+        }
+      ]
+    },
+    "synthesis": {
+      "score": 100.0,
+      "level": "PASS",
+      "checks": [
+        {
+          "name": "synthesis_length",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "8097 characters (minimum: 3000)"
+        },
+        {
+          "name": "has_recommendation",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Contains clear recommendation"
+        },
+        {
+          "name": "quantitative_content",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Found 95 numeric values in synthesis"
+        }
+      ]
+    },
+    "data_structuring": {
+      "score": 0.0,
+      "level": "FAIL",
+      "checks": [
+        {
+          "name": "structured_inputs_exist",
+          "passed": false,
+          "score": 0,
+          "level": "FAIL",
+          "details": "No structured inputs found - data structuring node not implemented yet"
+        }
+      ]
+    },
+    "calculations": {
+      "score": 0.0,
+      "level": "FAIL",
+      "checks": [
+        {
+          "name": "calculations_exist",
+          "passed": false,
+          "score": 0,
+          "level": "FAIL",
+          "details": "No calculated results found - calculation engine not implemented yet"
+        }
+      ]
+    },
+    "mckinsey_compliance": {
+      "score": 75.0,
+      "level": "WARN",
+      "checks": [
+        {
+          "name": "npv_in_output",
+          "passed": false,
+          "score": 0,
+          "level": "FAIL",
+          "details": "NPV not found in output"
+        },
+        {
+          "name": "irr_in_output",
+          "passed": false,
+          "score": 0,
+          "level": "FAIL",
+          "details": "IRR not found in output"
+        },
+        {
+          "name": "sensitivity_in_output",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Sensitivity analysis in synthesis"
+        },
+        {
+          "name": "confidence_stated",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Confidence level stated"
+        },
+        {
+          "name": "tables_present",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Formatted tables in output"
+        },
+        {
+          "name": "no_vague_estimates",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "No vague estimates found"
+        },
+        {
+          "name": "cross_scenario_in_output",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Output shows robustness across scenarios"
+        },
+        {
+          "name": "robustness_ratio_stated",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Robustness ratio stated: 0/6\u202fscenario"
+        }
+      ]
+    },
+    "feedback_loop": {
+      "score": 25.0,
+      "level": "FAIL",
+      "checks": [
+        {
+          "name": "engine_b_multi_scenario",
+          "passed": false,
+          "score": 0.0,
+          "level": "FAIL",
+          "details": "Engine B computed 0 scenarios"
+        },
+        {
+          "name": "cross_scenario_comparison",
+          "passed": false,
+          "score": 0,
+          "level": "FAIL",
+          "details": "No cross-scenario comparison"
+        },
+        {
+          "name": "engine_a_saw_all_scenarios",
+          "passed": false,
+          "score": 0,
+          "level": "FAIL",
+          "details": "Engine A only saw single scenario"
+        },
+        {
+          "name": "quant_in_synthesis",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Quantitative findings cited in synthesis"
+        }
+      ]
+    }
+  },
+  "recommendations": [
+    "HIGH: Feedback loop not working - Engine B results not flowing to synthesis",
+    "CRITICAL: Implement calculation engine (financial_engine.py) for NPV/IRR/sensitivity analysis",
+    "CRITICAL: Add structure_data_node to convert extracted facts to calculation inputs",
+    "CRITICAL: Add calculate_node to run deterministic financial calculations",
+    "MEDIUM: Increase debate depth or ensure all phases complete",
+    "LOW: Expand data sources for richer fact extraction"
+  ]
+}

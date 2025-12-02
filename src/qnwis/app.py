@@ -9,6 +9,12 @@ exercise the stack without API keys.
 from __future__ import annotations
 
 import os
+from pathlib import Path
+
+# CRITICAL: Load .env BEFORE any other imports to ensure DATABASE_URL is available
+from dotenv import load_dotenv
+_env_path = Path(__file__).resolve().parents[2] / ".env"
+load_dotenv(_env_path)
 
 from fastapi.staticfiles import StaticFiles
 

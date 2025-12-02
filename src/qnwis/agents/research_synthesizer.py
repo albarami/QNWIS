@@ -283,8 +283,9 @@ class ResearchSynthesizerAgent:
                 "Authorization": f"Bearer {self.perplexity_key}",
                 "Content-Type": "application/json",
             }
+            # FIXED: Use correct Perplexity model name (sonar-pro or sonar)
             payload = {
-                "model": "llama-3.1-sonar-small-128k-online",
+                "model": "sonar",  # Updated model name for Perplexity API
                 "messages": [
                     {
                         "role": "system",
@@ -295,11 +296,13 @@ class ResearchSynthesizerAgent:
                         "content": research_query
                     }
                 ],
-                "return_citations": True,
             }
             
             with httpx.Client(timeout=60) as client:
                 response = client.post(url, json=payload, headers=headers)
+                
+                if response.status_code != 200:
+                    logger.warning(f"⚠️ Perplexity API returned {response.status_code}: {response.text[:200]}")
                 
                 if response.status_code == 200:
                     data = response.json()

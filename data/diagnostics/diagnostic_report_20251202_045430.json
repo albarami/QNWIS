@@ -1,0 +1,474 @@
+{
+  "timestamp": "2025-12-02T04:17:58.911420",
+  "duration_seconds": 2191.645627,
+  "overall_score": 53.24074074074074,
+  "mckinsey_compliant": true,
+  "mckinsey_checklist": {
+    "feasibility_analysis": false,
+    "success_probability": false,
+    "timeline_analysis": true,
+    "policy_levers": true,
+    "cross_scenario_robustness": true,
+    "gap_analysis": true,
+    "actionable_recommendations": true,
+    "tables_present": true
+  },
+  "stages": {
+    "engine_b_health": {
+      "score": 0.0,
+      "level": "FAIL",
+      "checks": [
+        {
+          "name": "api_reachable",
+          "passed": false,
+          "score": 0,
+          "level": "FAIL",
+          "details": "Engine B not reachable: All connection attempts failed"
+        }
+      ]
+    },
+    "monte_carlo": {
+      "score": 0.0,
+      "level": "FAIL",
+      "checks": [
+        {
+          "name": "monte_carlo_test",
+          "passed": false,
+          "score": 0,
+          "level": "FAIL",
+          "details": "Monte Carlo test failed: All connection attempts failed"
+        }
+      ]
+    },
+    "forecasting": {
+      "score": 0.0,
+      "level": "FAIL",
+      "checks": [
+        {
+          "name": "forecast_test",
+          "passed": false,
+          "score": 0,
+          "level": "FAIL",
+          "details": "Forecast test failed: All connection attempts failed"
+        }
+      ]
+    },
+    "thresholds": {
+      "score": 0.0,
+      "level": "FAIL",
+      "checks": [
+        {
+          "name": "threshold_test",
+          "passed": false,
+          "score": 0,
+          "level": "FAIL",
+          "details": "Threshold test failed: All connection attempts failed"
+        }
+      ]
+    },
+    "sensitivity": {
+      "score": 0.0,
+      "level": "FAIL",
+      "checks": [
+        {
+          "name": "sensitivity_test",
+          "passed": false,
+          "score": 0,
+          "level": "FAIL",
+          "details": "Sensitivity test failed: All connection attempts failed"
+        }
+      ]
+    },
+    "benchmarking": {
+      "score": 0.0,
+      "level": "FAIL",
+      "checks": [
+        {
+          "name": "benchmark_test",
+          "passed": false,
+          "score": 0,
+          "level": "FAIL",
+          "details": "Benchmark test failed: All connection attempts failed"
+        }
+      ]
+    },
+    "classification": {
+      "score": 100.0,
+      "level": "PASS",
+      "checks": [
+        {
+          "name": "complexity_detected",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Complexity: complex"
+        },
+        {
+          "name": "correct_classification",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Correctly classified as complex strategic decision"
+        }
+      ]
+    },
+    "data_extraction": {
+      "score": 70.0,
+      "level": "WARN",
+      "checks": [
+        {
+          "name": "fact_count",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Extracted 5467 facts (minimum: 100)"
+        },
+        {
+          "name": "source_diversity",
+          "passed": false,
+          "score": 40.0,
+          "level": "FAIL",
+          "details": "Used 2 distinct sources"
+        }
+      ]
+    },
+    "feasibility_flow": {
+      "score": 60.0,
+      "level": "WARN",
+      "checks": [
+        {
+          "name": "extraction_completed",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Extracted 5467 facts"
+        },
+        {
+          "name": "feasibility_checked",
+          "passed": false,
+          "score": 0,
+          "level": "FAIL",
+          "details": "No feasibility check"
+        },
+        {
+          "name": "feasibility_uses_data",
+          "passed": false,
+          "score": 50,
+          "level": "WARN",
+          "details": "May have used assumptions not extracted data"
+        },
+        {
+          "name": "feasibility_ratio_computed",
+          "passed": false,
+          "score": 50,
+          "level": "WARN",
+          "details": "No feasibility ratio"
+        },
+        {
+          "name": "proper_routing",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Target infeasible: False, Scenarios: 6"
+        }
+      ]
+    },
+    "scenarios": {
+      "score": 100.0,
+      "level": "PASS",
+      "checks": [
+        {
+          "name": "scenario_count",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Generated 6 scenarios (expected: 6)"
+        },
+        {
+          "name": "has_base_case",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Base case scenario present"
+        },
+        {
+          "name": "scenarios_have_assumptions",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "All scenarios have assumptions dict"
+        },
+        {
+          "name": "meaningful_assumptions",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "5 scenarios have non-empty assumptions"
+        },
+        {
+          "name": "scenario_diversity",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Scenario themes: {'crisis', 'energy', 'outlook', 'base', 'disruption', 'policy'}"
+        }
+      ]
+    },
+    "engine_b_coverage": {
+      "score": 100.0,
+      "level": "PASS",
+      "checks": [
+        {
+          "name": "run_once_services",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Engine B services ran via parallel executor"
+        },
+        {
+          "name": "all_scenarios_computed",
+          "passed": true,
+          "score": 100.0,
+          "level": "PASS",
+          "details": "Engine B computed 6/6 scenarios"
+        }
+      ]
+    },
+    "agents": {
+      "score": 100.0,
+      "level": "PASS",
+      "checks": [
+        {
+          "name": "agent_participation",
+          "passed": true,
+          "score": 100.0,
+          "level": "PASS",
+          "details": "Found 5/5 expected agents (agent_reports: 54, agents_count: 34)"
+        }
+      ]
+    },
+    "debate": {
+      "score": 33.333333333333336,
+      "level": "FAIL",
+      "checks": [
+        {
+          "name": "debate_turns",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "107 turns (target: 50 for standard)"
+        },
+        {
+          "name": "debate_phases",
+          "passed": false,
+          "score": 0.0,
+          "level": "WARN",
+          "details": "Phases found: set()"
+        },
+        {
+          "name": "debate_relevance",
+          "passed": false,
+          "score": 0.0,
+          "level": "WARN",
+          "details": "0/20 sampled turns discuss the options"
+        }
+      ]
+    },
+    "critique": {
+      "score": 100.0,
+      "level": "PASS",
+      "checks": [
+        {
+          "name": "critique_count",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "12 critiques generated"
+        },
+        {
+          "name": "red_flags",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "5 red flags identified"
+        }
+      ]
+    },
+    "verification": {
+      "score": 100.0,
+      "level": "PASS",
+      "checks": [
+        {
+          "name": "no_fabrication",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "No fabrication detected"
+        }
+      ]
+    },
+    "synthesis": {
+      "score": 100.0,
+      "level": "PASS",
+      "checks": [
+        {
+          "name": "synthesis_length",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "8526 characters (minimum: 3000)"
+        },
+        {
+          "name": "has_recommendation",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Contains clear recommendation"
+        },
+        {
+          "name": "quantitative_content",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Found 130 numeric values in synthesis"
+        }
+      ]
+    },
+    "data_structuring": {
+      "score": 0.0,
+      "level": "FAIL",
+      "checks": [
+        {
+          "name": "structured_inputs_exist",
+          "passed": false,
+          "score": 0,
+          "level": "FAIL",
+          "details": "No structured inputs found - data structuring node not implemented yet"
+        }
+      ]
+    },
+    "calculations": {
+      "score": 0.0,
+      "level": "FAIL",
+      "checks": [
+        {
+          "name": "calculations_exist",
+          "passed": false,
+          "score": 0,
+          "level": "FAIL",
+          "details": "No calculated results found - calculation engine not implemented yet"
+        }
+      ]
+    },
+    "mckinsey_compliance": {
+      "score": 75.0,
+      "level": "WARN",
+      "checks": [
+        {
+          "name": "feasibility_analysis",
+          "passed": false,
+          "score": 0,
+          "level": "FAIL",
+          "details": "Missing feasibility analysis"
+        },
+        {
+          "name": "success_probability",
+          "passed": false,
+          "score": 0,
+          "level": "FAIL",
+          "details": "Missing success probability"
+        },
+        {
+          "name": "timeline_analysis",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Timeline analysis present"
+        },
+        {
+          "name": "policy_levers",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Policy levers identified"
+        },
+        {
+          "name": "cross_scenario_robustness",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Robustness analysis present"
+        },
+        {
+          "name": "gap_analysis",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Gap analysis present"
+        },
+        {
+          "name": "actionable_recommendations",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Actionable recommendations present"
+        },
+        {
+          "name": "tables_present",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Tables present in output"
+        }
+      ]
+    },
+    "feedback_loop": {
+      "score": 25.0,
+      "level": "FAIL",
+      "checks": [
+        {
+          "name": "engine_b_multi_scenario",
+          "passed": false,
+          "score": 0.0,
+          "level": "FAIL",
+          "details": "Engine B computed 0 scenarios"
+        },
+        {
+          "name": "cross_scenario_comparison",
+          "passed": false,
+          "score": 0,
+          "level": "FAIL",
+          "details": "No cross-scenario comparison"
+        },
+        {
+          "name": "engine_a_saw_all_scenarios",
+          "passed": false,
+          "score": 0,
+          "level": "FAIL",
+          "details": "Engine A only saw single scenario"
+        },
+        {
+          "name": "quant_in_synthesis",
+          "passed": true,
+          "score": 100,
+          "level": "PASS",
+          "details": "Quantitative findings cited in synthesis"
+        }
+      ]
+    }
+  },
+  "recommendations": [
+    "CRITICAL: Engine B API not healthy - check service is running at http://localhost:8001",
+    "HIGH: Fix monte_carlo service - score 0/100",
+    "HIGH: Fix forecasting service - score 0/100",
+    "HIGH: Fix thresholds service - score 0/100",
+    "HIGH: Fix sensitivity service - score 0/100",
+    "HIGH: Fix benchmarking service - score 0/100",
+    "HIGH: Feedback loop not working - Engine B results not flowing to synthesis",
+    "CRITICAL: Implement calculation engine (financial_engine.py) for NPV/IRR/sensitivity analysis",
+    "CRITICAL: Add structure_data_node to convert extracted facts to calculation inputs",
+    "CRITICAL: Add calculate_node to run deterministic financial calculations",
+    "MEDIUM: Increase debate depth or ensure all phases complete",
+    "LOW: Expand data sources for richer fact extraction"
+  ]
+}

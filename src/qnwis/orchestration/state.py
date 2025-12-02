@@ -127,3 +127,12 @@ class IntelligenceState(TypedDict, total=False):
     scenario_metadata: Annotated[Optional[Dict[str, Any]], take_last]
     scenario_assumptions: Annotated[Optional[Dict[str, Any]], take_last]
 
+    # Engine B Results (Cross-Scenario Quantitative Analysis)
+    engine_b_results: Annotated[Optional[Dict[str, Any]], take_last]  # Per-scenario Engine B results
+    engine_b_aggregate: Annotated[Optional[Dict[str, Any]], take_last]  # Aggregate stats across scenarios
+    engine_b_scenarios_computed: Annotated[int, take_last]  # Number of scenarios with Engine B results
+    cross_scenario_table: Annotated[Optional[str], take_last]  # Markdown table comparing all scenarios
+
+    # Feasibility Analysis
+    feasibility_analysis: Annotated[Optional[Dict[str, Any]], take_last]  # Detailed feasibility check result
+

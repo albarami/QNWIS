@@ -861,31 +861,35 @@ async def run_workflow_stream(
         engine_b_results = accumulated_state.get("engine_b_results", {})
         
         # FIXED: Build engine_b_results from scenario_results if not present
-        # Engine B results are stored at ROOT level of each scenario (not nested under "engine_b_results")
+        # Engine B results are NESTED inside "engine_b_results" key in each scenario
         if not engine_b_results and scenario_results:
             engine_b_results = {}
             for s in scenario_results:
                 if isinstance(s, dict):
-                    # Check for Engine B results at root level (monte_carlo, forecasting, etc.)
-                    scenario_engine_b = {}
-                    for key in ["monte_carlo", "forecasting", "sensitivity", "thresholds"]:
-                        if key in s and s[key]:
-                            scenario_engine_b[key] = s[key]
-                    
-                    if scenario_engine_b:
-                        scenario_name = s.get("scenario_name", f"scenario_{len(engine_b_results)}")
-                        engine_b_results[scenario_name] = scenario_engine_b
+                    # Check if scenario has engine_b_results nested dict
+                    nested_eb = s.get("engine_b_results", {})
+                    if nested_eb and isinstance(nested_eb, dict):
+                        # Get scenario name from nested or parent
+                        scenario_name = nested_eb.get("scenario_name", s.get("scenario_name", f"scenario_{len(engine_b_results)}"))
+                        # Extract the Engine B compute results
+                        scenario_engine_b = {}
+                        for key in ["monte_carlo", "forecasting", "sensitivity", "thresholds"]:
+                            if key in nested_eb and nested_eb[key]:
+                                scenario_engine_b[key] = nested_eb[key]
+                        if scenario_engine_b:
+                            engine_b_results[scenario_name] = scenario_engine_b
         
         # FIXED: Count Engine B scenarios properly from scenario_results
         engine_b_computed = engine_b_aggregate.get("scenarios_with_compute", 0)
         if engine_b_computed == 0:
             engine_b_computed = len(engine_b_results)
         if engine_b_computed == 0 and scenario_results:
-            # Last fallback: count scenarios that have Engine B result keys
+            # Last fallback: count scenarios that have engine_b_results dict with compute keys
             engine_b_computed = sum(
                 1 for s in scenario_results
-                if isinstance(s, dict) and any(
-                    k in s for k in ["monte_carlo", "forecast", "sensitivity", "engine_b_results"]
+                if isinstance(s, dict) and (
+                    "engine_b_results" in s and isinstance(s.get("engine_b_results"), dict) and
+                    any(k in s["engine_b_results"] for k in ["monte_carlo", "forecasting", "sensitivity", "thresholds"])
                 )
             )
         

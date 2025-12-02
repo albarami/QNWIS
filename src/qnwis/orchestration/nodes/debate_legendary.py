@@ -192,7 +192,7 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
                 alert_registry = AlertRegistry()
                 default_rules_path = Path(__file__).parent.parent.parent / "alerts" / "default_rules.yaml"
                 if default_rules_path.exists():
-                    alert_registry.load_from_file(default_rules_path)
+                    alert_registry.load_file(default_rules_path)  # Correct method name
                     logger.info(f"✅ Loaded {len(alert_registry)} default alert rules")
                 agents_map["AlertCenter"] = AlertCenterAgent(data_client, rule_registry=alert_registry)
                 logger.info("✅ AlertCenter (deterministic) initialized with default rules")
@@ -243,22 +243,36 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
     extracted_facts = state.get("extracted_facts", [])
     query = state.get("query", "")
     
-    # Domain-agnostic: Pass the actual query to agents, let them determine relevant metrics
-    query = state.get("query", "")
+    # Get date range for forecasting (default: last 2 years to now, forecast 6 months)
+    from datetime import date, timedelta
+    end_date = date.today()
+    start_date = end_date - timedelta(days=730)  # 2 years back
     
+    # FIXED: Provide required arguments for each deterministic agent
+    # Use domain-agnostic default metrics that work across any economic domain
     deterministic_agents_config = [
-        # TimeMachine: Historical trends - uses query context to find relevant time series
-        ("TimeMachine", "baseline_report", {}),
-        # Predictor: Forecasting - domain-agnostic forecasting capabilities
-        ("Predictor", "forecast_baseline", {}),
-        # NationalStrategy: GCC/regional benchmarking
-        ("NationalStrategy", "gcc_benchmark", {}),
-        # PatternMiner: Statistical pattern detection
-        ("PatternMiner", "mine_patterns", {}),
-        # AlertCenter: Threshold monitoring across any KPIs
-        ("AlertCenter", "check_thresholds", {}),
-        # LabourEconomist: Workforce statistics (applicable to any sector)
-        ("LabourEconomist", "analyze", {}),
+        # TimeMachine: Historical trends - employment is universal metric
+        ("TimeMachine", "baseline_report", {"metric": "employment"}),
+        # Predictor: Forecasting with required args
+        ("Predictor", "forecast_baseline", {
+            "metric": "employment",
+            "sector": None,  # All sectors
+            "start": start_date,
+            "end": end_date,
+            "horizon_months": 6
+        }),
+        # NationalStrategy: GCC/regional benchmarking (no required args)
+        ("NationalStrategy", "gcc_benchmark", {"min_countries": 3}),
+        # PatternMiner: Use stable_relations for correlation analysis
+        ("PatternMiner", "stable_relations", {
+            "outcome": "employment",
+            "drivers": ["gdp", "population", "inflation"],
+            "window": 12
+        }),
+        # AlertCenter: Use run() with no args (evaluates all enabled rules)
+        ("AlertCenter", "run", {}),
+        # LabourEconomist: Use run() method  
+        ("LabourEconomist", "run", {}),
         # ResearchSynthesizer: Academic research on ANY topic from user query
         ("ResearchSynthesizer", "run", {"query": query}),
     ]
