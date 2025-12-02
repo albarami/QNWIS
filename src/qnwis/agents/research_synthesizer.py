@@ -449,6 +449,21 @@ class ResearchSynthesizerAgent:
 {chr(10).join(f'• {gap}' for gap in gaps) if gaps else '• No significant gaps identified.'}
 """
         
+        # Generate LLM summary for debate agents (GPT-5 synthesis)
+        debate_ready_summary = self._generate_llm_summary(query, top_findings, confidence)
+        
+        # Combine raw narrative with LLM-synthesized summary
+        if debate_ready_summary:
+            narrative = f"""## AI-SYNTHESIZED RESEARCH SUMMARY (GPT-5)
+
+{debate_ready_summary}
+
+---
+
+## RAW DATA SOURCES
+
+{narrative}"""
+        
         return ResearchSynthesis(
             query=query,
             total_sources_searched=sources_searched,
@@ -458,8 +473,84 @@ class ResearchSynthesizerAgent:
             evidence_gaps=gaps,
             confidence_level=confidence,
             narrative=narrative,
-            methodology_note=f"Searched {sources_searched} sources. Ranked {len(findings)} findings by relevance. Top {len(top_findings)} used for synthesis.",
+            methodology_note=f"Searched {sources_searched} sources. Ranked {len(findings)} findings by relevance. Top {len(top_findings)} used for synthesis. LLM summary generated.",
         )
+    
+    def _generate_llm_summary(
+        self,
+        query: str,
+        findings: List[ResearchFinding],
+        confidence: str,
+    ) -> Optional[str]:
+        """
+        Generate an LLM-synthesized summary of research findings.
+        This makes the findings DEBATE-READY for the LLM agents.
+        
+        Args:
+            query: The research question
+            findings: Top research findings to summarize
+            confidence: Evidence confidence level
+            
+        Returns:
+            GPT-5 generated executive summary, or None if LLM unavailable
+        """
+        import httpx
+        
+        endpoint = os.getenv("AZURE_OPENAI_ENDPOINT", "").rstrip("/")
+        api_key = os.getenv("AZURE_OPENAI_API_KEY")
+        deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-4")
+        
+        if not endpoint or not api_key or not findings:
+            return None
+        
+        # Format findings for the prompt
+        findings_text = "\n\n".join([
+            f"**{i+1}. {f.title}** (Source: {f.source}, Relevance: {f.relevance_score:.2f})\n{f.summary[:300]}"
+            for i, f in enumerate(findings[:7])
+        ])
+        
+        prompt = f"""You are a senior research analyst. Synthesize these research findings into an EXECUTIVE SUMMARY for policy debate.
+
+RESEARCH QUESTION: {query}
+
+FINDINGS FROM MULTIPLE SOURCES:
+{findings_text}
+
+EVIDENCE CONFIDENCE: {confidence.upper()}
+
+Create a DEBATE-READY summary that:
+1. States the CONSENSUS VIEW - what most research agrees on
+2. Identifies KEY DATA POINTS with specific numbers (cite sources)
+3. Notes any CONTRADICTIONS or dissenting views
+4. Highlights EVIDENCE GAPS - what we don't know
+5. Provides IMPLICATIONS for policy decision-making
+
+Format as a clear, structured summary (~300 words). Include specific citations like [Semantic Scholar, 2023] or [RAG: Internal Report].
+
+IMPORTANT: This summary will be used by AI debate agents. Make it factual, citation-heavy, and actionable."""
+
+        try:
+            url = f"{endpoint}/openai/deployments/{deployment}/chat/completions?api-version=2024-02-01"
+            headers = {"api-key": api_key, "Content-Type": "application/json"}
+            payload = {
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.4,
+                "max_tokens": 800,
+            }
+            
+            with httpx.Client(timeout=60) as client:
+                response = client.post(url, json=payload, headers=headers)
+                
+                if response.status_code == 200:
+                    summary = response.json()["choices"][0]["message"]["content"]
+                    logger.info(f"🧠 LLM research summary generated: {len(summary)} chars")
+                    return summary
+                else:
+                    logger.warning(f"LLM summary generation failed: {response.status_code}")
+        except Exception as e:
+            logger.warning(f"LLM summary generation error: {e}")
+        
+        return None
     
     def run(self, query: str = "policy effectiveness analysis") -> ResearchSynthesis:
         """
@@ -487,8 +578,8 @@ class ResearchSynthesizerAgent:
     
     def _extract_focus_areas(self, query: str) -> List[str]:
         """
-        Extract focus areas from query to guide research.
-        Domain-agnostic keyword extraction.
+        Extract focus areas from query using LLM semantic understanding.
+        Falls back to keyword matching if LLM unavailable.
         
         Args:
             query: User's research question
@@ -496,7 +587,86 @@ class ResearchSynthesizerAgent:
         Returns:
             List of focus area keywords
         """
-        # Common domain keywords to look for
+        # Try LLM-based semantic extraction first
+        try:
+            focus_areas = self._extract_focus_areas_with_llm(query)
+            if focus_areas:
+                logger.info(f"🧠 LLM-extracted focus areas: {focus_areas}")
+                return focus_areas
+        except Exception as e:
+            logger.warning(f"⚠️ LLM focus extraction failed, using fallback: {e}")
+        
+        # Fallback to keyword matching
+        return self._extract_focus_areas_keyword(query)
+    
+    def _extract_focus_areas_with_llm(self, query: str) -> List[str]:
+        """
+        Use LLM to semantically understand query domain and extract focus areas.
+        This is SMART - it understands context, not just keywords.
+        """
+        import httpx
+        import json
+        
+        endpoint = os.getenv("AZURE_OPENAI_ENDPOINT", "").rstrip("/")
+        api_key = os.getenv("AZURE_OPENAI_API_KEY")
+        deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-4")
+        
+        if not endpoint or not api_key:
+            return []
+        
+        prompt = f"""Analyze this query and extract the key research domains/topics.
+
+QUERY: {query}
+
+Return a JSON object with:
+{{
+    "primary_domain": "main domain (e.g., energy, healthcare, labor, finance, tourism)",
+    "focus_areas": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"],
+    "intent": "brief description of what research is needed"
+}}
+
+Focus areas should be specific enough to find relevant academic papers.
+Do NOT just extract words from the query - understand the SEMANTIC MEANING.
+
+Example:
+- Query: "Can Qatar compete with Dubai for tourists?"
+- primary_domain: "tourism"
+- focus_areas: ["tourism competitiveness", "GCC tourism", "destination marketing", "hospitality sector", "visitor attractions"]
+
+Return ONLY valid JSON, no explanation."""
+
+        try:
+            url = f"{endpoint}/openai/deployments/{deployment}/chat/completions?api-version=2024-02-01"
+            headers = {"api-key": api_key, "Content-Type": "application/json"}
+            payload = {
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.3,
+                "max_tokens": 200,
+            }
+            
+            with httpx.Client(timeout=30) as client:
+                response = client.post(url, json=payload, headers=headers)
+                
+                if response.status_code == 200:
+                    content = response.json()["choices"][0]["message"]["content"]
+                    # Parse JSON from response
+                    content = content.strip()
+                    if content.startswith("```"):
+                        content = content.split("```")[1]
+                        if content.startswith("json"):
+                            content = content[4:]
+                    
+                    result = json.loads(content)
+                    return result.get("focus_areas", [])[:5]
+        except Exception as e:
+            logger.debug(f"LLM focus extraction error: {e}")
+        
+        return []
+    
+    def _extract_focus_areas_keyword(self, query: str) -> List[str]:
+        """
+        Fallback keyword-based extraction when LLM unavailable.
+        """
         domain_keywords = {
             # Economy
             "gdp", "inflation", "fiscal", "monetary", "trade", "investment", "fdi",
@@ -524,12 +694,10 @@ class ResearchSynthesizerAgent:
             if keyword in query_lower:
                 found_areas.append(keyword)
         
-        # If no specific keywords found, extract nouns from query
         if not found_areas:
-            # Simple extraction: take significant words (>4 chars, not common)
             common_words = {"should", "would", "could", "about", "their", "there", "which", "where", "what", "when", "this", "that", "from", "have", "with"}
             words = query_lower.split()
             found_areas = [w for w in words if len(w) > 4 and w not in common_words][:5]
         
-        return found_areas[:5]  # Limit to 5 focus areas
+        return found_areas[:5]
 
