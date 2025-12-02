@@ -679,7 +679,7 @@ class DiagnosticReport:
             "sensitivity": 0.05,
             "benchmarking": 0.05,
             
-            # Hybrid integration (cross-scenario → Engine A)
+            # Hybrid integration (cross-scenario -> Engine A)
             "feedback_loop": 0.08,
             
             # Final output
@@ -971,7 +971,7 @@ class EngineBHealthCheck:
                                 passed=bands_widen,
                                 score=100 if bands_widen else 70,
                                 level=ScoreLevel.PASS if bands_widen else ScoreLevel.WARN,
-                                details=f"Band width: {first_width:,.0f} → {last_width:,.0f}",
+                                details=f"Band width: {first_width:,.0f} -> {last_width:,.0f}",
                             ))
                         except (KeyError, TypeError):
                             pass  # Skip if can't compute
@@ -1260,7 +1260,7 @@ class HybridFlowValidator:
         self.state = {}
     
     async def validate_feedback_loop(self, state: Dict) -> StageResult:
-        """Validate Engine B → Engine A flow with cross-scenario data."""
+        """Validate Engine B -> Engine A flow with cross-scenario data."""
         result = StageResult(stage_name="feedback_loop")
         
         # Check Engine B ran for all scenarios
@@ -2795,7 +2795,7 @@ class QNWISDiagnostic:
         self.report.recommendations = recommendations
         
         for rec in recommendations:
-            logger.info(f"  → {rec}")
+            logger.info(f"  - {rec}")
     
     # ========================================================================
     # OUTPUT
@@ -2864,7 +2864,7 @@ class QNWISDiagnostic:
         if self.report.recommendations:
             print("\n--- Recommendations ---")
             for rec in self.report.recommendations:
-                print(f"  → {rec}")
+                print(f"  - {rec}")
         
         print("\n" + "=" * 80)
         grade = self._get_grade()
@@ -2875,13 +2875,13 @@ class QNWISDiagnostic:
         """Get overall grade based on score."""
         score = self.report.overall_score
         if score >= 90 and self.report.mckinsey_compliant and self.report.hybrid_flow_working:
-            return "🏆 LEGENDARY: Hybrid system fully operational - McKinsey-grade!"
+            return "[LEGENDARY] Hybrid system fully operational - McKinsey-grade!"
         elif score >= 80 and self.report.hybrid_flow_working:
             return "[EXCELLENT] System performing at high level with hybrid flow"
         elif score >= 80:
             return "[EXCELLENT] System performing at high level"
         elif score >= 70:
-            return "👍 GOOD: Core functionality working, some improvements needed"
+            return "[GOOD] Core functionality working, some improvements needed"
         elif score >= 50:
             return "[FAIR] Significant gaps identified, see recommendations"
         else:
@@ -3039,8 +3039,8 @@ def print_batch_summary(results: Dict[str, DiagnosticReport]):
         weakest = sorted_results[0]
         strongest = sorted_results[-1]
         
-        print(f"\n📉 Weakest Domain: {weakest[0]} ({weakest[1].overall_score:.1f}/100)")
-        print(f"📈 Strongest Domain: {strongest[0]} ({strongest[1].overall_score:.1f}/100)")
+        print(f"\nWeakest Domain: {weakest[0]} ({weakest[1].overall_score:.1f}/100)")
+        print(f"Strongest Domain: {strongest[0]} ({strongest[1].overall_score:.1f}/100)")
     
     print("\n" + "=" * 80)
     
@@ -3048,11 +3048,11 @@ def print_batch_summary(results: Dict[str, DiagnosticReport]):
     if successful > 0:
         avg_score = total_score / successful
         if avg_score >= 90 and mckinsey_compliant == successful:
-            print("🏆 LEGENDARY: System performs at McKinsey-grade across all domains!")
+            print("[LEGENDARY] System performs at McKinsey-grade across all domains!")
         elif avg_score >= 80:
             print("[EXCELLENT] System performs consistently well across domains")
         elif avg_score >= 70:
-            print("👍 GOOD: System works across domains with minor gaps")
+            print("[GOOD] System works across domains with minor gaps")
         elif avg_score >= 50:
             print("[FAIR] Performance varies by domain, improvements needed")
         else:
@@ -3252,7 +3252,7 @@ Examples:
         import random
         query_keys = list(DiagnosticConfig.TEST_QUERIES.keys())
         query_key = random.choice(query_keys)
-        print(f"\n🎲 Randomly selected: {query_key}\n")
+        print(f"\nRandomly selected: {query_key}\n")
         report = await run_single_diagnostic(query_key, quick_mode=args.quick)
         return report
     
