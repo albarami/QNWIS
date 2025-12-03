@@ -21,4 +21,4 @@ Write-Host "=" * 60
 Write-Host ""
 
 # Start the frontend
-npm run dev
+npm run dev --host

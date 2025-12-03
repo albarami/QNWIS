@@ -319,12 +319,15 @@ def execute_cached(
     cache_value = _encode_for_cache(res)
     ttl_for_storage = normalized_ttl
 
+    # FIXED: Handle None rows to prevent "object of type 'NoneType' has no len()"
+    row_count = len(res.rows) if res.rows is not None else 0
+    
     if adaptive_ttl and _ADAPTIVE_CACHE_ENABLED and normalized_ttl is not None:
         spec_id = spec.query_id if isinstance(spec, QueryDefinition) else spec.id
         ttl_for_storage = _compute_adaptive_ttl(
             spec_id,
             normalized_ttl,
-            len(res.rows),
+            row_count,
             exec_duration_ms,
         )
 
@@ -342,7 +345,7 @@ def execute_cached(
     total_duration_ms = (time.perf_counter() - start_time) * 1000
     logger.info(
         f"Query {query_id} executed in {exec_duration_ms:.2f}ms "
-        f"(total: {total_duration_ms:.2f}ms, rows: {len(res.rows)})"
+        f"(total: {total_duration_ms:.2f}ms, rows: {row_count})"
     )
     return res
 

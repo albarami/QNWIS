@@ -643,21 +643,24 @@ Before we proceed further, let me stress-test the emerging positions.
 
 **CHALLENGES FOR THE PANEL:**
 
-1. **Assumption Check**: What key assumptions are you making that could be wrong? Name them explicitly.
+1. **BINARY COMPARISON (MANDATORY)**: If the question asks "A or B?", you MUST state:
+   - Option A success probability: X%
+   - Option B success probability: X%
+   - WINNER: Option A or Option B (pick one!)
+   Do NOT skip this with a hybrid - answer the binary first.
 
-2. **Counter-Evidence**: What data or evidence would CONTRADICT your current recommendation? Does such evidence exist?
+2. **Assumption Check**: What key assumptions are you making that could be wrong?
 
-3. **Worst-Case Scenario**: If this recommendation fails, what's the damage? Have you underestimated the downside?
+3. **Counter-Evidence**: What data would CONTRADICT your recommendation?
 
-4. **Alternative View**: The opposing view argues the exact opposite - can you steelman that position before dismissing it?
-
-5. **Topic Relevance**: Are your arguments DIRECTLY answering the original question above? If not, refocus.
+4. **Topic Relevance**: Are you DIRECTLY answering "A or B?" If not, refocus NOW.
 
 **REQUIREMENT**: The next 3 speakers must:
-- Directly address the ORIGINAL QUESTION
-- Address at least ONE of the challenges above with specific evidence
+- DIRECTLY COMPARE Option A vs Option B with success percentages
+- Pick a winner between the two options
+- Only AFTER picking a winner may you suggest modifications
 
-Do NOT continue with tangential discussions. Stay focused on the policy decision."""
+Do NOT continue with methodology discussions. Answer the question: Which option is better?"""
 
         await self._emit_turn(
             "Moderator",
@@ -2198,18 +2201,32 @@ What are 2-3 practical considerations to keep in mind?"""
 These recommendations require additional data validation before ministerial action.
 """
         
+        # FIXED: Force binary comparison before any hybrid recommendation
         synthesis_prompt = f"""After {self.turn_counter} turns of debate, synthesize the final consensus.
+
+CRITICAL REQUIREMENT: The original question asks for a choice between OPTIONS.
+You MUST provide a DIRECT COMPARISON before any recommendation:
 
 Final positions from all agents:
 {positions_text}
 {confidence_warning}
-Provide:
-1. Areas of strong consensus
-2. Remaining disagreements  
-3. Confidence-weighted recommendation
-4. Go/No-Go decision with contingencies
 
-Format as structured JSON."""
+REQUIRED OUTPUT FORMAT:
+1. BINARY COMPARISON TABLE (mandatory):
+   - Option A success probability: X%
+   - Option B success probability: X%
+   - Option A risk level: HIGH/MEDIUM/LOW
+   - Option B risk level: HIGH/MEDIUM/LOW
+   - Direct winner: Option A or Option B
+
+2. Areas of strong consensus
+3. Remaining disagreements  
+4. Confidence-weighted recommendation
+   - If recommending a hybrid, FIRST state which original option scores higher
+   - Explain why hybrid is better than the winning option alone
+5. Go/No-Go decision with contingencies
+
+Format as structured JSON with "binary_comparison" as first key."""
         
         consensus = await llm_client.generate_with_routing(
             prompt=synthesis_prompt,
@@ -2252,16 +2269,23 @@ Format as structured JSON."""
         # Summarize the debate history for the final report
         full_history_text = self._format_history(conversation_history)
         
+        # FIXED: Force binary comparison in final synthesis
         prompt = f"""Generate a comprehensive executive summary of the debate.
         
 Debate History ({len(conversation_history)} turns):
 {full_history_text[:50000]}
 
+CRITICAL: If the original question asks "A or B?", you MUST:
+1. Provide a DIRECT ANSWER (A or B) with success probability for each
+2. Create a comparison table showing quantified metrics for both options
+3. Only AFTER answering the binary choice, may you suggest modifications
+
 The report should rival a top-tier consulting firm's output.
 Include:
-- Executive Summary
+- Executive Summary with CLEAR VERDICT on the original question
+- Binary Option Comparison Table (Option A vs Option B with success rates)
 - Key Findings from Debate
-- Strategic Recommendations
+- Strategic Recommendations (answer the original question first)
 - Risk Assessment
 - Confidence Level
 - Go/No-Go Decision"""

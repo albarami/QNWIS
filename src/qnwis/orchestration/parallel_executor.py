@@ -624,16 +624,23 @@ class ParallelDebateExecutor:
                 
                 # 2. Sensitivity Analysis
                 try:
-                    # Build base values from adjusted facts
+                    # FIXED: Use meaningful policy driver names instead of generic "base_value"
+                    # Extract relevant policy drivers from scenario assumptions
+                    policy_intensity = assumptions.get("policy_intensity", assumptions.get("growth_multiplier", 1.0))
+                    investment_efficiency = assumptions.get("investment_efficiency", 0.85)
+                    workforce_retention = adjusted_facts.get("retention_rate", 0.80)
+                    
                     sens_base = {
-                        "growth_rate": growth_rate,
-                        "base_value": base_value,
-                        "multiplier": assumptions.get("policy_intensity", assumptions.get("growth_multiplier", 1.0))
+                        "economic_growth_rate": growth_rate,
+                        "initial_investment": base_value,
+                        "policy_effectiveness": policy_intensity,
+                        "workforce_retention": workforce_retention,
+                        "investment_efficiency": investment_efficiency,
                     }
                     
                     sens_payload = {
                         "base_values": sens_base,
-                        "formula": "base_value * (1 + growth_rate) ** 5 * multiplier",
+                        "formula": "initial_investment * (1 + economic_growth_rate) ** 5 * policy_effectiveness * investment_efficiency",
                         "n_steps": 10
                     }
                     resp = await client.post(f"{ENGINE_B_URL}/compute/sensitivity", json=sens_payload)
