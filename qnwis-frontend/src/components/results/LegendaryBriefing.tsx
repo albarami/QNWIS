@@ -443,48 +443,61 @@ export function LegendaryBriefing({ synthesis, confidence = 0.75, stats }: Legen
       
       {/* Sections */}
       <div className="border-x border-b border-amber-500/30 rounded-b-2xl bg-slate-900/80 divide-y divide-slate-700/50">
-        {sections.map(section => (
-          <div key={section.id} className="transition-all">
-            {/* Section Header */}
-            <button
-              onClick={() => toggleSection(section.id)}
-              className="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-800/30 transition-colors group"
-            >
-              <div className="flex items-center gap-4">
-                <span className="text-2xl group-hover:scale-110 transition-transform">{section.icon}</span>
-                <div className="text-left">
-                  <span className="font-bold text-white text-lg">{section.title}</span>
-                  {section.id === 'verdict' && verdict && (
-                    <span className={`ml-3 px-2 py-0.5 text-xs font-bold rounded ${
-                      ['APPROVE', 'ACCELERATE', 'INCREASE'].includes(verdict) ? 'bg-green-500/20 text-green-300' :
-                      ['REJECT', 'DECREASE'].includes(verdict) ? 'bg-red-500/20 text-red-300' :
-                      'bg-amber-500/20 text-amber-300'
-                    }`}>
-                      {verdict}
-                    </span>
-                  )}
-                </div>
-              </div>
-              <svg 
-                className={`w-5 h-5 text-slate-400 transition-transform duration-300 ${
-                  expandedSections.has(section.id) ? 'rotate-180' : ''
-                }`}
-                fill="none" stroke="currentColor" viewBox="0 0 24 24"
+        {sections.length > 0 ? (
+          sections.map(section => (
+            <div key={section.id} className="transition-all">
+              {/* Section Header */}
+              <button
+                onClick={() => toggleSection(section.id)}
+                className="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-800/30 transition-colors group"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-            
-            {/* Section Content */}
-            {expandedSections.has(section.id) && (
-              <div className="px-6 pb-6 animate-fadeIn">
-                <div className="bg-slate-800/30 rounded-xl p-5 border border-slate-700/50">
-                  <FormatContent content={section.content} sectionId={section.id} />
+                <div className="flex items-center gap-4">
+                  <span className="text-2xl group-hover:scale-110 transition-transform">{section.icon}</span>
+                  <div className="text-left">
+                    <span className="font-bold text-white text-lg">{section.title}</span>
+                    {section.id === 'verdict' && verdict && (
+                      <span className={`ml-3 px-2 py-0.5 text-xs font-bold rounded ${
+                        ['APPROVE', 'ACCELERATE', 'INCREASE'].includes(verdict) ? 'bg-green-500/20 text-green-300' :
+                        ['REJECT', 'DECREASE'].includes(verdict) ? 'bg-red-500/20 text-red-300' :
+                        'bg-amber-500/20 text-amber-300'
+                      }`}>
+                        {verdict}
+                      </span>
+                    )}
+                  </div>
                 </div>
+                <svg 
+                  className={`w-5 h-5 text-slate-400 transition-transform duration-300 ${
+                    expandedSections.has(section.id) ? 'rotate-180' : ''
+                  }`}
+                  fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              
+              {/* Section Content */}
+              {expandedSections.has(section.id) && (
+                <div className="px-6 pb-6 animate-fadeIn">
+                  <div className="bg-slate-800/30 rounded-xl p-5 border border-slate-700/50">
+                    <FormatContent content={section.content} sectionId={section.id} />
+                  </div>
+                </div>
+              )}
+            </div>
+          ))
+        ) : (
+          /* FALLBACK: Show raw synthesis when no sections detected */
+          <div className="p-6">
+            <div className="bg-slate-800/30 rounded-xl p-5 border border-slate-700/50">
+              <div className="prose prose-invert prose-sm max-w-none">
+                <pre className="whitespace-pre-wrap text-sm text-slate-300 font-sans leading-relaxed">
+                  {synthesis}
+                </pre>
               </div>
-            )}
+            </div>
           </div>
-        ))}
+        )}
       </div>
       
       {/* Footer */}

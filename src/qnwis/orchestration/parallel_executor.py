@@ -645,8 +645,24 @@ class ParallelDebateExecutor:
                     }
                     resp = await client.post(f"{ENGINE_B_URL}/compute/sensitivity", json=sens_payload)
                     if resp.status_code == 200:
-                        engine_b_results["sensitivity"] = resp.json()
-                        logger.info(f"  ✓ Sensitivity analysis complete for {scenario_name}")
+                        raw_sens = resp.json()
+                        # Transform Engine B format to frontend format
+                        # Frontend expects: [{driver, label, contribution, direction}]
+                        transformed_sensitivity = []
+                        if raw_sens.get("parameter_impacts"):
+                            total_swing = sum(p.get("swing", 0) for p in raw_sens["parameter_impacts"])
+                            for param in raw_sens["parameter_impacts"]:
+                                contribution = param.get("swing", 0) / total_swing if total_swing > 0 else 0
+                                # Create human-readable label
+                                label = param.get("name", "").replace("_", " ").title()
+                                transformed_sensitivity.append({
+                                    "driver": param.get("name", ""),
+                                    "label": label,
+                                    "contribution": contribution,
+                                    "direction": param.get("direction", "positive")
+                                })
+                        engine_b_results["sensitivity"] = transformed_sensitivity
+                        logger.info(f"  ✓ Sensitivity analysis complete for {scenario_name} ({len(transformed_sensitivity)} drivers)")
                     else:
                         logger.warning(f"  Sensitivity returned {resp.status_code}: {resp.text[:200]}")
                 except Exception as e:

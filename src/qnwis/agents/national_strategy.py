@@ -492,14 +492,19 @@ class NationalStrategyAgent:
         gcc = self.client.run(queries[1])
         metrics = {}
         if emp.rows:
-            latest = emp.rows[-1].data
-            for k in ("male_percent", "female_percent", "total_percent"):
-                v = latest.get(k)
-                if isinstance(v, (int, float)):
-                    metrics[f"employment_{k}"] = float(v)
+            latest = emp.rows[-1]
+            # FIXED: Check if row.data is None before accessing
+            if latest is not None and latest.data is not None:
+                for k in ("male_percent", "female_percent", "total_percent"):
+                    v = latest.data.get(k)
+                    if isinstance(v, (int, float)):
+                        metrics[f"employment_{k}"] = float(v)
         # GCC: record simple aggregates if possible
         vals = []
         for r in gcc.rows:
+            # FIXED: Check if row.data is None before accessing
+            if r.data is None:
+                continue
             # Skip non-unemployment fields like country code and year
             for k, v in r.data.items():
                 if isinstance(v, (int, float)) and k not in ("year", "country"):

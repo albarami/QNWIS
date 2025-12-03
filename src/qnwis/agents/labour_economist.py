@@ -269,6 +269,10 @@ class LabourEconomistAgent:
         latest = rows[-1]
         previous = rows[-2] if len(rows) >= 2 else None
 
+        # FIXED: Check if latest.data is None before accessing
+        if latest is None or latest.data is None:
+            return metrics
+
         for key in ("male_percent", "female_percent", "total_percent"):
             val = self._numeric(latest.data.get(key))
             if val is not None:
@@ -278,7 +282,8 @@ class LabourEconomistAgent:
         if latest_year is not None:
             metrics["latest_year"] = float(latest_year)
 
-        if previous is not None:
+        # FIXED: Check if previous.data is None before accessing
+        if previous is not None and previous.data is not None:
             latest_female = self._numeric(latest.data.get("female_percent"))
             prev_female = self._numeric(previous.data.get("female_percent"))
             if latest_female is not None and prev_female is not None:
@@ -291,6 +296,10 @@ class LabourEconomistAgent:
             return "No employment share data is available for labour analysis."
 
         latest = rows[-1]
+        # FIXED: Check if latest.data is None before accessing
+        if latest is None or latest.data is None:
+            return "No valid employment data available for analysis."
+            
         latest_year = self._year(latest.data.get("year"))
         male = self._numeric(latest.data.get("male_percent"))
         female = self._numeric(latest.data.get("female_percent"))
@@ -311,7 +320,9 @@ class LabourEconomistAgent:
 
         yoy = metrics.get("yoy_percent")
         if yoy is not None and len(rows) >= 2:
-            prev_year = self._year(rows[-2].data.get("year"))
+            prev_row = rows[-2]
+            # FIXED: Check if prev_row.data is None before accessing
+            prev_year = self._year(prev_row.data.get("year")) if prev_row and prev_row.data else None
             direction = "increased" if yoy >= 0 else "fell"
             change = abs(yoy)
             if prev_year is not None:

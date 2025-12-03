@@ -465,6 +465,35 @@ function reduceEvent(state: AppState, event: WorkflowEvent): AppState {
       const resultCount = next.scenarioResults.length
       console.log(`🏁 Got ${resultCount} scenario results`)
       
+      // FIXED: Extract Engine B sensitivity from scenario results immediately
+      const allSensitivity: any[] = []
+      next.scenarioResults.forEach((result: any) => {
+        const engineB = result.engine_b_results || result.engineBResults || {}
+        const sensitivity = engineB.sensitivity || result.sensitivity
+        if (sensitivity && Array.isArray(sensitivity)) {
+          allSensitivity.push(...sensitivity)
+        }
+      })
+      if (allSensitivity.length > 0) {
+        console.log(`📊 Extracted ${allSensitivity.length} sensitivity drivers from scenario results`)
+        // Aggregate drivers
+        const driverMap = new Map<string, any>()
+        allSensitivity.forEach(d => {
+          if (d.driver) {
+            const existing = driverMap.get(d.driver)
+            if (existing) {
+              existing.contribution = (existing.contribution + d.contribution) / 2
+            } else {
+              driverMap.set(d.driver, { ...d })
+            }
+          }
+        })
+        next.engineBSensitivity = Array.from(driverMap.values())
+          .sort((a, b) => b.contribution - a.contribution)
+          .slice(0, 5)
+        console.log(`📊 Set engineBSensitivity with ${next.engineBSensitivity.length} drivers`)
+      }
+      
       // Update totals
       if (resultCount > 0) {
         next.totalScenarios = Math.max(next.totalScenarios, resultCount)

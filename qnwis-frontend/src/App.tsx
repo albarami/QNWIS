@@ -102,19 +102,33 @@ function App() {
     const scenarioCount = state.scenarioResults.length
     const completedScenarios = state.scenariosCompleted || 0
     
-    // Calculate success rate ONLY from real scenario results
-    const rates = state.scenarioResults
-      .filter((r: any) => typeof r.confidence === 'number')
-      .map((r: any) => r.confidence)
+    // FIXED: Use Engine B Monte Carlo success_rate, not the generic confidence field
+    const rates: number[] = []
+    state.scenarioResults.forEach((r: any) => {
+      // Try to get success_rate from Engine B monte_carlo results
+      const engineB = r.engine_b_results || r.engineBResults || {}
+      const monteCarlo = engineB.monte_carlo || r.monteCarlo || r.monte_carlo
+      
+      if (monteCarlo?.success_rate != null) {
+        rates.push(monteCarlo.success_rate)
+      } else if (typeof r.confidence === 'number' && r.confidence <= 1) {
+        // Fallback to confidence only if Engine B not available
+        rates.push(r.confidence)
+      }
+    })
     
     if (rates.length === 0) return null // No real data yet
     
-    const avgSuccessRate = Math.round((rates.reduce((a: number, b: number) => a + b, 0) / rates.length) * 100)
+    const avgSuccessRate = Math.round((rates.reduce((a, b) => a + b, 0) / rates.length) * 100)
     
-    // Count vulnerabilities (scenarios below 50%)
+    // Count vulnerabilities (scenarios with success rate below 40%)
     const vulnerabilities: string[] = []
     state.scenarioResults.forEach((r: any) => {
-      if (typeof r.confidence === 'number' && r.confidence < 0.5) {
+      const engineB = r.engine_b_results || r.engineBResults || {}
+      const monteCarlo = engineB.monte_carlo || r.monteCarlo || r.monte_carlo
+      const successRate = monteCarlo?.success_rate ?? r.confidence
+      
+      if (typeof successRate === 'number' && successRate < 0.4) {
         vulnerabilities.push(r.scenario?.name || r.scenario_name || 'Unknown Scenario')
       }
     })
@@ -127,6 +141,11 @@ function App() {
       ? `${topDriverFromEngineB.label} (${Math.round(topDriverFromEngineB.contribution * 100)}%)`
       : null
     
+    // FIXED: Confidence should reflect actual Engine B confidence, not be 100%
+    const finalConfidence = state.completedStages.has('done') 
+      ? Math.round(Math.min(robustnessScore * 100, avgSuccessRate + 15))  // Cap at success rate + 15%
+      : Math.min(30 + completedScenarios * 10, 70)
+    
     return {
       question: state.question || question,
       verdict: determineVerdict(avgSuccessRate, robustnessScore),
@@ -136,8 +155,8 @@ function App() {
         total: scenarioCount,
         vulnerabilities: vulnerabilities.slice(0, 3),
       },
-      confidence: state.completedStages.has('done') ? Math.round(robustnessScore * 100) : Math.min(30 + completedScenarios * 10, 70),
-      riskLevel: avgSuccessRate >= 60 ? 'medium' : 'high',
+      confidence: finalConfidence,
+      riskLevel: avgSuccessRate >= 60 ? 'medium' : avgSuccessRate >= 40 ? 'high' : 'critical',
       trend: state.engineBTrend || 'stable',
       topDriver: topDriverLabel,
       recommendation: state.engineBRecommendation,
