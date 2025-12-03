@@ -150,11 +150,14 @@ function App() {
     
     // Show ALL scenarios from backend - Engine B data is optional
     const scenarios: EngineBScenarioResult[] = state.scenarioResults.map((result: any, idx: number) => {
-      // Engine B confidence - may not be available yet
-      const successRate = typeof result.confidence === 'number' ? result.confidence : null
-      const monteCarlo = result.monteCarlo || result.monte_carlo
-      const sensitivity = result.sensitivity || result.sensitivityAnalysis
-      const forecast = result.forecast
+      // FIXED: Engine B results are nested in engine_b_results
+      const engineB = result.engine_b_results || result.engineBResults || {}
+      const monteCarlo = engineB.monte_carlo || result.monteCarlo || result.monte_carlo
+      const sensitivity = engineB.sensitivity || result.sensitivity || result.sensitivityAnalysis
+      const forecast = engineB.forecasting || result.forecast
+      
+      // Engine B confidence - use Monte Carlo success_rate
+      const successRate = monteCarlo?.success_rate ?? (typeof result.confidence === 'number' ? result.confidence : null)
       
       return {
         scenarioId: result.scenario_id || `scenario_${idx}`,
