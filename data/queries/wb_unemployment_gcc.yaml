@@ -1,0 +1,10 @@
+id: wb_unemployment_gcc
+title: GCC Unemployment Rates
+description: GCC unemployment rates from World Bank (real API data)
+source: world_bank
+params:
+  indicator: SL.UEM.TOTL.ZS
+  countries: ['QAT', 'SAU', 'ARE', 'KWT', 'BHR', 'OMN']
+  start_year: 2015
+  end_year: 2024
+expected_unit: percent

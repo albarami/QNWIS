@@ -5,12 +5,16 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from data.apis.world_bank import UDCGlobalDataIntegrator  # type: ignore[import-not-found]
+    from src.data.apis.world_bank import UDCGlobalDataIntegrator  # type: ignore[import-not-found]
 else:
     try:
-        from data.apis.world_bank import UDCGlobalDataIntegrator  # type: ignore[import-not-found]
+        from src.data.apis.world_bank import UDCGlobalDataIntegrator  # type: ignore[import-not-found]
     except ImportError:
-        UDCGlobalDataIntegrator = None  # type: ignore[misc,assignment]
+        try:
+            # Fallback import path
+            from data.apis.world_bank import UDCGlobalDataIntegrator  # type: ignore[import-not-found]
+        except ImportError:
+            UDCGlobalDataIntegrator = None  # type: ignore[misc,assignment]
 
 from ..deterministic.models import Freshness, Provenance, QueryResult, QuerySpec, Row
 

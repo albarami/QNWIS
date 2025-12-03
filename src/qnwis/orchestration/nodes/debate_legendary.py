@@ -11,6 +11,11 @@ import asyncio
 import logging
 import os
 from typing import Any, Dict, List, Optional
+from pathlib import Path
+
+# CRITICAL: Load .env to ensure DATABASE_URL is available for deterministic agents
+from dotenv import load_dotenv
+load_dotenv(Path(__file__).parent.parent.parent.parent.parent / ".env")
 
 from ..state import IntelligenceState
 
@@ -411,6 +416,24 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
                     method = getattr(agent, method_name)
                     result = method(**kwargs) if kwargs else method()
                     
+                    # Check if result indicates data unavailability
+                    result_str = str(result) if result else ""
+                    if any(phrase in result_str.lower() for phrase in [
+                        "insufficient data", "no data returned", "no driver time series",
+                        "need at least", "need ≥", "no rules to evaluate"
+                    ]):
+                        logger.warning(f"⚠️ {agent_key}: Data unavailable - {result_str[:100]}")
+                        # Create a graceful fallback report
+                        agent_reports_map[agent_key] = type('AgentReport', (object,), {
+                            'narrative': f"[{agent_key}] Data currently unavailable for this analysis. The agent requires historical time-series data that is not yet populated in the database.",
+                            'agent': agent_key,
+                            'findings': [],
+                            'confidence': 0.3,
+                            'warnings': [f"Data unavailable: {result_str[:200]}"],
+                            'metadata': {'source': 'deterministic_agent', 'method': method_name, 'data_available': False}
+                        })()
+                        continue
+                    
                     # Extract narrative from result
                     # FIXED: Increased from 500 to 5000 chars to avoid truncating deterministic agent outputs
                     narrative = ""
@@ -469,13 +492,15 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
     
     # FIXED: Build cross-scenario context for agents to reference
     cross_scenario_context = ""
-    cross_scenario_table = state.get("cross_scenario_table", "")
-    engine_b_aggregate = state.get("engine_b_aggregate", {})
+    cross_scenario_table = state.get("cross_scenario_table") or ""
+    engine_b_aggregate = state.get("engine_b_aggregate") or {}
     
     # FIXED: Set quantitative context flag based on multiple checks (domain agnostic)
+    # Use `or []` to handle None values explicitly
     has_cross_scenario = bool(cross_scenario_table)
     has_engine_b_scenarios = engine_b_aggregate.get("scenarios_with_compute", 0) > 0
-    has_scenario_results = len(state.get("scenario_results", [])) > 0
+    scenario_results = state.get("scenario_results") or []
+    has_scenario_results = len(scenario_results) > 0
     
     # Flag is True if ANY quantitative data is available for debate
     state["engine_a_had_quantitative_context"] = has_cross_scenario or has_engine_b_scenarios or has_scenario_results

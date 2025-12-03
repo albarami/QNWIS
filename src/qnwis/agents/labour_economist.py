@@ -326,7 +326,16 @@ class LabourEconomistAgent:
         return " ".join(parts)
 
     def run(self) -> AgentReport:
-        result = self.client.run(self.query_id)
+        # FIXED: Wrap query execution in try-except
+        try:
+            result = self.client.run(self.query_id)
+        except Exception as e:
+            return AgentReport(
+                agent="LabourEconomist",
+                findings=[],
+                warnings=[f"Query execution failed: {self.query_id} - {e}"],
+            )
+            
         # FIXED: Handle None result or None rows to prevent NoneType error
         if result is None:
             return AgentReport(
@@ -334,13 +343,21 @@ class LabourEconomistAgent:
                 findings=[],
                 warnings=[f"Query returned no result: {self.query_id}"],
             )
-        if result.rows is None:
+        
+        # FIXED: Robust row handling - handle None, non-iterable, or missing rows attribute
+        try:
+            rows_list = list(result.rows) if result.rows is not None else []
+        except (TypeError, AttributeError):
+            rows_list = []
+            
+        if not rows_list:
             return AgentReport(
                 agent="LabourEconomist",
                 findings=[],
                 warnings=[f"No data available for query: {self.query_id}"],
             )
-        rows = self._sorted_rows(list(result.rows))
+            
+        rows = self._sorted_rows(rows_list)
         metrics = self._build_metrics(rows)
         summary = self._summarize(rows, metrics)
         # FIXED: Handle None warnings to prevent NoneType error

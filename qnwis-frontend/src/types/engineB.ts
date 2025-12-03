@@ -37,16 +37,16 @@ export interface EngineBScenarioResult {
   scenarioId: string
   scenarioName: string
   scenarioIcon: string          // e.g., "📉", "🏆", "🦠"
-  description: string
-  assumptions: ScenarioAssumptions
+  description: string | null
+  assumptions: ScenarioAssumptions | null
   
-  monteCarlo: MonteCarloResult
-  sensitivity: SensitivityDriver[]
-  forecast: ForecastResult
+  monteCarlo: MonteCarloResult | null  // null until Engine B provides data
+  sensitivity: SensitivityDriver[] | null
+  forecast: ForecastResult | null
   
-  riskLevel: RiskLevel
+  riskLevel: RiskLevel | null
   isVulnerable: boolean         // successRate < 0.5
-  isRecommended: boolean        // base case or best performing
+  isRecommended: boolean | null // base case or best performing
 }
 
 export interface CrossScenarioAnalysis {
@@ -67,21 +67,21 @@ export interface CrossScenarioAnalysis {
   
   bestCase: {
     scenarioName: string
-    successRate: number
+    successRate: number | null
     icon: string
-  }
+  } | null
   
   worstCase: {
     scenarioName: string
-    successRate: number
+    successRate: number | null
     icon: string
-  }
+  } | null
   
   overallSuccessRate: number    // weighted average across scenarios
-  overallConfidence: number     // 0-1
-  overallTrend: 'increasing' | 'stable' | 'decreasing'
+  overallConfidence: number | null  // 0-1, null until Engine B provides
+  overallTrend: 'increasing' | 'stable' | 'decreasing' | null
   
-  topDrivers: SensitivityDriver[]  // aggregated across scenarios
+  topDrivers: SensitivityDriver[] | null  // null until Engine B provides
 }
 
 export type VerdictType = 'APPROVE' | 'PROCEED_WITH_CAUTION' | 'RECONSIDER' | 'REJECT'
@@ -98,8 +98,8 @@ export interface VerdictData {
   confidence: number            // 0-100
   riskLevel: RiskLevel
   trend: 'increasing' | 'stable' | 'decreasing'
-  topDriver: string             // e.g., "Training pipeline (38%)"
-  recommendation: string        // one-line recommendation
+  topDriver: string | null      // null until Engine B provides, e.g., "Training pipeline (38%)"
+  recommendation: string | null // null until Engine B provides
 }
 
 export interface DebateSummary {

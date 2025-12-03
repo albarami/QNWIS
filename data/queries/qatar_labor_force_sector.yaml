@@ -1,0 +1,8 @@
+id: qatar_labor_force_sector
+title: Qatar Labor Force by Sector
+description: Qatar labor force by economic sector from Qatar Open Data Portal
+source: qatar_api
+params:
+  dataset_id: number-of-labor-force-by-sector
+  limit: 1000
+expected_unit: count

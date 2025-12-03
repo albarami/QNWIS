@@ -1,0 +1,10 @@
+id: wb_labor_force_participation
+title: GCC Labor Force Participation
+description: GCC labor force participation rates from World Bank (real API data)
+source: world_bank
+params:
+  indicator: SL.TLF.CACT.ZS
+  countries: ['QAT', 'SAU', 'ARE', 'KWT', 'BHR', 'OMN']
+  start_year: 2015
+  end_year: 2024
+expected_unit: percent

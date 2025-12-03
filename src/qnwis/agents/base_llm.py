@@ -306,7 +306,7 @@ Your expert analysis:"""
             prompt=prompt,
             system=f"You are {self.agent_name}, providing expert analysis with deep knowledge of all available data sources.",
             temperature=0.3,
-            max_tokens=500
+            max_tokens=1500  # Increased from 500 to prevent truncation
         )
 
     async def challenge_position(
@@ -410,7 +410,7 @@ Your challenge:"""
             prompt=prompt,
             system=f"You are {self.agent_name}, engaging in structured debate with evidence-based challenges.",
             temperature=0.4,
-            max_tokens=500
+            max_tokens=1500  # Increased from 500 to prevent truncation
         )
 
     async def respond_to_challenge(
@@ -509,7 +509,7 @@ Your response:"""
             prompt=prompt,
             system=f"You are {self.agent_name}, engaging constructively in debate to reach synthesis.",
             temperature=0.3,
-            max_tokens=500
+            max_tokens=1500  # Increased from 500 to prevent truncation
         )
 
     async def contribute_to_discussion(

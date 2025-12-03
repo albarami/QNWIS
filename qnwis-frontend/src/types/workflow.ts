@@ -296,6 +296,16 @@ export interface AppState {
   targetInfeasible: boolean
   infeasibilityReason: string | null
   feasibleAlternative: string | null
+  // Engine B computational results (no hardcoded fallbacks)
+  engineBSensitivity: Array<{
+    driver: string
+    label: string
+    contribution: number
+    direction: 'positive' | 'negative' | 'mixed'
+  }> | null
+  engineBTrend: 'increasing' | 'decreasing' | 'stable' | null
+  engineBConfidence: number | null
+  engineBRecommendation: string | null
 }
 
 export const ALL_STAGES: WorkflowStage[] = [

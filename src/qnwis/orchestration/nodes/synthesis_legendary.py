@@ -995,6 +995,16 @@ Do NOT proceed with policy analysis for this target. Instead:
     stats["avg_success_probability"] = engine_b_aggregate.get("avg_success_probability", 0) * 100
     stats["sensitivity_drivers"] = engine_b_aggregate.get("sensitivity_drivers", [])
     
+    # ENTERPRISE LOGGING: Track Engine B data flow for debugging
+    logger.info(f"📊 Engine B Stats for Synthesis:")
+    logger.info(f"   - Scenarios with compute: {stats['engine_b_scenarios']}")
+    logger.info(f"   - Avg success probability: {stats['avg_success_probability']:.1f}%")
+    logger.info(f"   - Sensitivity drivers: {stats['sensitivity_drivers'][:3] if stats['sensitivity_drivers'] else 'None'}")
+    
+    if stats["engine_b_scenarios"] == 0:
+        logger.warning("⚠️ NO ENGINE B DATA AVAILABLE FOR SYNTHESIS - Monte Carlo results will be missing!")
+        logger.warning("   Possible causes: 1) Parallel scenarios failed, 2) Engine B service down, 3) State not propagated")
+    
     # Calculate robustness ratio
     robustness = _calculate_robustness_ratio(scenario_summaries)
     stats["robustness_ratio"] = robustness["ratio_str"]

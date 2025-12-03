@@ -177,7 +177,9 @@ def _load_from_database(
         
         documents = []
         
-        with engine.connect() as conn:
+        # FIXED: Use autocommit to prevent transaction abort cascading
+        # When one table fails, don't abort subsequent queries
+        with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
             for table in tables:
                 try:
                     # Get sample rows from table
@@ -187,10 +189,10 @@ def _load_from_database(
                     for row in result:
                         # Convert row to text representation
                         row_dict = dict(row._mapping)
-                        text = str(row_dict)
+                        text_content = str(row_dict)
                         
                         documents.append({
-                            'text': text,
+                            'text': text_content,
                             'source': f"{source_name}/{table}",
                             'date': 'database_record',
                             'priority': priority,
@@ -198,7 +200,11 @@ def _load_from_database(
                             'table': table
                         })
                 except Exception as e:
-                    logger.warning(f"Failed to query table {table}: {e}")
+                    # FIXED: Log only debug for missing tables (expected in dev)
+                    if "does not exist" in str(e).lower() or "relation" in str(e).lower():
+                        logger.debug(f"Table {table} not found (OK in dev): {e}")
+                    else:
+                        logger.warning(f"Failed to query table {table}: {e}")
                     continue
         
         logger.info(f"  Loaded {len(documents):,} documents from database")

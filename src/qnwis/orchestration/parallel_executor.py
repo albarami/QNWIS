@@ -28,23 +28,36 @@ ENGINE_B_URL = os.getenv("ENGINE_B_URL", "http://localhost:8001")
 
 class ParallelDebateExecutor:
     """
-    Execute multiple debates in parallel.
+    Execute multiple debates in parallel with enterprise-grade rate limiting.
     
     If GPUs are available, distributes scenarios across GPUs 0-5.
     Otherwise, runs all scenarios on CPU using asyncio concurrency.
-    Rate limiting is handled at the individual LLM call level.
+    
+    ENTERPRISE STABILITY FIX: Uses semaphore to limit concurrent scenarios.
+    This prevents Azure OpenAI rate limit errors (429 Too Many Requests).
+    Running 6 scenarios × 4 agents = 24 concurrent calls overwhelms rate limits.
+    With max_concurrent_scenarios=2, we limit to 8 concurrent calls maximum.
     """
     
-    def __init__(self, num_parallel: int = 6, event_callback=None):
+    # Enterprise rate limiting config
+    MAX_CONCURRENT_SCENARIOS = 2  # Run at most 2 scenarios simultaneously
+    SCENARIO_DELAY_SECONDS = 1.0  # Small delay between scenario starts
+    
+    def __init__(self, num_parallel: int = 6, event_callback=None, max_concurrent: int = None):
         """
-        Initialize parallel executor.
+        Initialize parallel executor with rate limiting.
         
         Args:
-            num_parallel: Number of scenarios to run simultaneously (default 6)
+            num_parallel: Total number of scenarios to run (default 6)
             event_callback: Optional async callback for emitting events to frontend
+            max_concurrent: Max scenarios running simultaneously (default 2 for enterprise stability)
         """
         self.num_parallel = num_parallel
         self.event_callback = event_callback
+        self.max_concurrent = max_concurrent or self.MAX_CONCURRENT_SCENARIOS
+        
+        # Enterprise rate limiting semaphore
+        self._semaphore = asyncio.Semaphore(self.max_concurrent)
         
         # Check GPU availability
         self.gpu_available = torch.cuda.is_available()
@@ -52,7 +65,8 @@ class ParallelDebateExecutor:
         
         if self.gpu_available:
             logger.info(f"✅ Parallel executor initialized with {self.gpu_count} GPUs")
-            logger.info(f"   Will run {num_parallel} scenarios simultaneously")
+            logger.info(f"   Total scenarios: {num_parallel}")
+            logger.info(f"   Max concurrent: {self.max_concurrent} (enterprise rate limiting)")
             logger.info(f"   GPU distribution: Scenarios across GPUs 0-5")
             
             # Log GPU details
@@ -65,6 +79,7 @@ class ParallelDebateExecutor:
                     logger.warning(f"   GPU {i}: Could not get info - {e}")
         else:
             logger.warning("⚠️ No GPUs detected - parallel execution will use CPU")
+            logger.info(f"   Max concurrent scenarios: {self.max_concurrent} (prevents API rate limits)")
     
     async def execute_scenarios(
         self, 
@@ -106,24 +121,43 @@ class ParallelDebateExecutor:
                 payload={"agent": agent_name, "parallel_execution": True}
             )
         
-        # Create tasks for each scenario
-        tasks = []
-        for i, scenario in enumerate(scenarios):
-            # Distribute across GPUs 0-5
-            gpu_id = i % 6 if self.gpu_available else None
-            
-            task = self._run_scenario(
-                scenario=scenario,
-                workflow=base_workflow,
-                base_state=initial_state,
-                gpu_id=gpu_id,
-                scenario_index=i,
-                total_scenarios=len(scenarios)
-            )
-            tasks.append(task)
+        # ENTERPRISE STABILITY: Rate-limited scenario execution
+        # Uses semaphore to limit concurrent scenarios and prevent API rate limit errors
+        logger.info(
+            f"🚦 Starting rate-limited execution: {len(scenarios)} scenarios, "
+            f"max {self.max_concurrent} concurrent (prevents Azure rate limits)"
+        )
         
-        # Execute all scenarios concurrently
-        logger.info(f"Launching {len(tasks)} concurrent scenario executions...")
+        async def run_with_rate_limit(scenario, index):
+            """Run a single scenario with semaphore-based rate limiting."""
+            async with self._semaphore:
+                # Small staggered delay to prevent burst
+                if index > 0:
+                    await asyncio.sleep(self.SCENARIO_DELAY_SECONDS * (index % self.max_concurrent))
+                
+                gpu_id = index % 6 if self.gpu_available else None
+                logger.info(f"🚀 Scenario {index+1}/{len(scenarios)} starting (slot acquired)")
+                
+                result = await self._run_scenario(
+                    scenario=scenario,
+                    workflow=base_workflow,
+                    base_state=initial_state,
+                    gpu_id=gpu_id,
+                    scenario_index=index,
+                    total_scenarios=len(scenarios)
+                )
+                
+                logger.info(f"✅ Scenario {index+1}/{len(scenarios)} completed (slot released)")
+                return result
+        
+        # Create tasks with rate limiting wrapper
+        tasks = [
+            run_with_rate_limit(scenario, i)
+            for i, scenario in enumerate(scenarios)
+        ]
+        
+        # Execute with controlled concurrency
+        logger.info(f"🚦 Launching {len(tasks)} scenarios with {self.max_concurrent} concurrent limit...")
         results = await asyncio.gather(*tasks, return_exceptions=True)
         
         # Separate successful and failed results
@@ -299,6 +333,13 @@ class ParallelDebateExecutor:
             )
             
             # Emit scenario complete event
+            # NOTE: Base workflow now ends at 'research', so final_synthesis/debate_results may be None
+            # The single debate and synthesis happen AFTER all scenarios are aggregated
+            synthesis = result.get('final_synthesis')
+            synthesis_length = len(synthesis) if synthesis else 0
+            debate_results = result.get('debate_results')
+            debate_turns = debate_results.get('total_turns', 0) if debate_results else 0
+            
             await self._emit_event(
                 stage=f"scenario:{scenario_id}",
                 status="complete",
@@ -307,8 +348,8 @@ class ParallelDebateExecutor:
                     "scenario_name": scenario_name,
                     "gpu_id": gpu_id,
                     "duration_seconds": elapsed,
-                    "synthesis_length": len(result.get('final_synthesis', '')),
-                    "debate_turns": result.get('debate_results', {}).get('total_turns', 0) if result.get('debate_results') else 0,
+                    "synthesis_length": synthesis_length,
+                    "debate_turns": debate_turns,
                     "confidence_score": result.get('confidence_score', 0)
                 }
             )
@@ -551,6 +592,10 @@ class ParallelDebateExecutor:
                     growth_mean = growth_rate * assumptions.get("growth_multiplier", 1.0)
                     value_mean = base_value * assumptions.get("value_multiplier", 1.0)
                     
+                    # FIXED: success_condition must use 'result' not 'outcome'
+                    # The Monte Carlo service evaluates: eval("result > threshold", {"result": simulated_values})
+                    success_threshold = value_mean * 1.2  # 20% growth target
+                    
                     mc_payload = {
                         "variables": {
                             "growth_rate": {
@@ -565,7 +610,7 @@ class ParallelDebateExecutor:
                             },
                         },
                         "formula": "base_value * (1 + growth_rate) ** 5",
-                        "success_condition": f"outcome > {value_mean * 1.2}",  # 20% growth target
+                        "success_condition": f"result > {success_threshold}",  # FIXED: Use 'result' not 'outcome'
                         "n_simulations": 10000
                     }
                     resp = await client.post(f"{ENGINE_B_URL}/compute/monte_carlo", json=mc_payload)

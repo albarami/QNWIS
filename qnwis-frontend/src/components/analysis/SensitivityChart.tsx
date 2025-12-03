@@ -2,7 +2,7 @@ import React from 'react'
 import { SensitivityDriver } from '../../types/engineB'
 
 interface SensitivityChartProps {
-  drivers: SensitivityDriver[]
+  drivers: SensitivityDriver[] | null  // null until Engine B provides data
   title?: string
   showInsight?: boolean
 }
@@ -57,11 +57,24 @@ export const SensitivityChart: React.FC<SensitivityChartProps> = ({
   title = "What Drives Success?",
   showInsight = true,
 }) => {
+  // Show waiting state until Engine B provides real data - NO FAKE DATA
   if (!drivers || drivers.length === 0) {
     return (
-      <div className="rounded-xl bg-slate-900/50 border border-slate-700 p-6 text-center">
-        <span className="text-3xl mb-2 block">📈</span>
-        <p className="text-slate-400">Sensitivity analysis will appear here</p>
+      <div className="rounded-xl bg-slate-900/50 border border-slate-700 p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <span className="text-2xl">📈</span>
+          <div>
+            <h3 className="font-semibold text-white">{title}</h3>
+            <p className="text-sm text-slate-500">Sensitivity Analysis</p>
+          </div>
+        </div>
+        <div className="flex items-center justify-center py-8">
+          <div className="text-center">
+            <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+            <p className="text-slate-400 text-sm">Waiting for Engine B analysis...</p>
+            <p className="text-slate-500 text-xs mt-1">Monte Carlo simulations in progress</p>
+          </div>
+        </div>
       </div>
     )
   }

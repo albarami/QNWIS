@@ -275,8 +275,10 @@ def execute_cached(
     
     source_spec = spec_override or registry.get(query_id)
     spec = source_spec.model_copy(deep=True)
-    if spec.query_id != query_id:
-        raise ValueError(f"Spec ID mismatch: expected {query_id}, got {spec.query_id}")
+    # Handle both QuerySpec (id) and QueryDefinition (query_id)
+    spec_id = spec.query_id if isinstance(spec, QueryDefinition) else spec.id
+    if spec_id != query_id:
+        raise ValueError(f"Spec ID mismatch: expected {query_id}, got {spec_id}")
 
     key = _key_for(spec)
     cache: CacheBackend = get_cache_backend()

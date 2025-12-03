@@ -1,0 +1,10 @@
+id: wb_employment_ratio
+title: GCC Employment to Population Ratio
+description: Employment to population ratio from World Bank (real API data)
+source: world_bank
+params:
+  indicator: SL.EMP.TOTL.SP.ZS
+  countries: ['QAT', 'SAU', 'ARE', 'KWT', 'BHR', 'OMN']
+  start_year: 2015
+  end_year: 2024
+expected_unit: percent

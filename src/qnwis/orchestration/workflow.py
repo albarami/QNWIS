@@ -542,33 +542,32 @@ def build_base_workflow() -> StateGraph:
     Build base workflow for individual scenario execution.
     
     This is the single-scenario workflow used by the parallel executor.
-    Does not include scenario generation/parallel execution nodes.
+    Does NOT include debate/critique/verification/synthesis - those happen
+    ONCE after all scenarios are aggregated in the main workflow.
+    
+    CRITICAL FIX: Previously each scenario ran its own 100-150 turn debate,
+    meaning 6 scenarios × 150 turns = 900 LLM calls just for debates!
+    Now each scenario only runs quick analysis (4 agent calls), and the
+    single debate happens after aggregation.
     
     Returns:
-        Compiled StateGraph for single scenario
+        Compiled StateGraph for single scenario (quick analysis only)
     """
     workflow = StateGraph(IntelligenceState)
     
-    # Add single-scenario nodes
+    # Add single-scenario nodes - QUICK ANALYSIS ONLY, NO DEBATE
+    # Debate happens ONCE after all scenarios are aggregated
     workflow.add_node("financial", financial_agent_node)
     workflow.add_node("market", market_agent_node)
     workflow.add_node("operations", operations_agent_node)
     workflow.add_node("research", research_agent_node)
-    workflow.add_node("debate", legendary_debate_node)
-    workflow.add_node("critique", critique_node)
-    workflow.add_node("verification", verification_node)
-    workflow.add_node("synthesis", legendary_synthesis_node)
     
-    # Wire nodes in sequence
+    # Wire nodes in sequence - ends at research (no debate per scenario)
     workflow.set_entry_point("financial")
     workflow.add_edge("financial", "market")
     workflow.add_edge("market", "operations")
     workflow.add_edge("operations", "research")
-    workflow.add_edge("research", "debate")
-    workflow.add_edge("debate", "critique")
-    workflow.add_edge("critique", "verification")
-    workflow.add_edge("verification", "synthesis")
-    workflow.add_edge("synthesis", END)
+    workflow.add_edge("research", END)  # Stop here - debate happens after aggregation
     
     return workflow.compile()
 

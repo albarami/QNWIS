@@ -86,6 +86,10 @@ from enum import Enum
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
+# CRITICAL: Load .env file BEFORE importing any modules that need DATABASE_URL
+from dotenv import load_dotenv
+load_dotenv(PROJECT_ROOT / ".env")
+
 # Set DATABASE_URL if not already set (required for data extraction)
 if "DATABASE_URL" not in os.environ:
     os.environ["DATABASE_URL"] = "postgresql://postgres:1234@localhost:5432/qnwis"

@@ -38,6 +38,11 @@ export function createInitialState(): AppState {
     targetInfeasible: false,
     infeasibilityReason: null,
     feasibleAlternative: null,
+    // Engine B computational results (null until real data arrives)
+    engineBSensitivity: null,
+    engineBTrend: null,
+    engineBConfidence: null,
+    engineBRecommendation: null,
   }
 }
 

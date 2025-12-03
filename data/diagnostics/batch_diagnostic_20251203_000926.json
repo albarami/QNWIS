@@ -1,0 +1,293 @@
+{
+  "timestamp": "2025-12-03T00:09:26.575594",
+  "queries_run": 11,
+  "successful": 11,
+  "results": {
+    "qatarization": {
+      "status": "SUCCESS",
+      "overall_score": 71.42195767195767,
+      "mckinsey_compliant": false,
+      "engine_b_healthy": true,
+      "hybrid_flow_working": false,
+      "duration_seconds": 1630.195881,
+      "mckinsey_checklist": {
+        "feasibility_analysis": true,
+        "success_probability": false,
+        "timeline_analysis": true,
+        "policy_levers": false,
+        "cross_scenario_robustness": false,
+        "gap_analysis": true,
+        "actionable_recommendations": true,
+        "tables_present": true
+      },
+      "recommendations": [
+        "HIGH: Feedback loop not working - Engine B results not flowing to synthesis",
+        "CRITICAL: Implement calculation engine (financial_engine.py) for NPV/IRR/sensitivity analysis",
+        "CRITICAL: Add structure_data_node to convert extracted facts to calculation inputs",
+        "CRITICAL: Add calculate_node to run deterministic financial calculations",
+        "MEDIUM: Increase debate depth or ensure all phases complete",
+        "LOW: Expand data sources for richer fact extraction"
+      ]
+    },
+    "economic_diversification": {
+      "status": "SUCCESS",
+      "overall_score": 72.7116402116402,
+      "mckinsey_compliant": true,
+      "engine_b_healthy": true,
+      "hybrid_flow_working": false,
+      "duration_seconds": 1625.588182,
+      "mckinsey_checklist": {
+        "feasibility_analysis": true,
+        "success_probability": false,
+        "timeline_analysis": false,
+        "policy_levers": true,
+        "cross_scenario_robustness": true,
+        "gap_analysis": true,
+        "actionable_recommendations": true,
+        "tables_present": true
+      },
+      "recommendations": [
+        "HIGH: Feedback loop not working - Engine B results not flowing to synthesis",
+        "CRITICAL: Implement calculation engine (financial_engine.py) for NPV/IRR/sensitivity analysis",
+        "CRITICAL: Add structure_data_node to convert extracted facts to calculation inputs",
+        "CRITICAL: Add calculate_node to run deterministic financial calculations",
+        "MEDIUM: Increase debate depth or ensure all phases complete",
+        "LOW: Expand data sources for richer fact extraction"
+      ]
+    },
+    "healthcare": {
+      "status": "SUCCESS",
+      "overall_score": 71.60052910052909,
+      "mckinsey_compliant": true,
+      "engine_b_healthy": true,
+      "hybrid_flow_working": false,
+      "duration_seconds": 1531.764109,
+      "mckinsey_checklist": {
+        "feasibility_analysis": true,
+        "success_probability": false,
+        "timeline_analysis": false,
+        "policy_levers": true,
+        "cross_scenario_robustness": true,
+        "gap_analysis": true,
+        "actionable_recommendations": true,
+        "tables_present": true
+      },
+      "recommendations": [
+        "HIGH: Feedback loop not working - Engine B results not flowing to synthesis",
+        "CRITICAL: Implement calculation engine (financial_engine.py) for NPV/IRR/sensitivity analysis",
+        "CRITICAL: Add structure_data_node to convert extracted facts to calculation inputs",
+        "CRITICAL: Add calculate_node to run deterministic financial calculations",
+        "MEDIUM: Increase debate depth or ensure all phases complete",
+        "LOW: Expand data sources for richer fact extraction"
+      ]
+    },
+    "education": {
+      "status": "SUCCESS",
+      "overall_score": 71.10449735449734,
+      "mckinsey_compliant": false,
+      "engine_b_healthy": true,
+      "hybrid_flow_working": false,
+      "duration_seconds": 1291.515878,
+      "mckinsey_checklist": {
+        "feasibility_analysis": true,
+        "success_probability": false,
+        "timeline_analysis": false,
+        "policy_levers": false,
+        "cross_scenario_robustness": true,
+        "gap_analysis": true,
+        "actionable_recommendations": true,
+        "tables_present": true
+      },
+      "recommendations": [
+        "HIGH: Feedback loop not working - Engine B results not flowing to synthesis",
+        "CRITICAL: Implement calculation engine (financial_engine.py) for NPV/IRR/sensitivity analysis",
+        "CRITICAL: Add structure_data_node to convert extracted facts to calculation inputs",
+        "CRITICAL: Add calculate_node to run deterministic financial calculations",
+        "MEDIUM: Increase debate depth or ensure all phases complete",
+        "LOW: Expand data sources for richer fact extraction"
+      ]
+    },
+    "energy": {
+      "status": "SUCCESS",
+      "overall_score": 71.10449735449734,
+      "mckinsey_compliant": false,
+      "engine_b_healthy": true,
+      "hybrid_flow_working": false,
+      "duration_seconds": 1420.986715,
+      "mckinsey_checklist": {
+        "feasibility_analysis": false,
+        "success_probability": false,
+        "timeline_analysis": false,
+        "policy_levers": true,
+        "cross_scenario_robustness": true,
+        "gap_analysis": true,
+        "actionable_recommendations": true,
+        "tables_present": true
+      },
+      "recommendations": [
+        "HIGH: Feedback loop not working - Engine B results not flowing to synthesis",
+        "CRITICAL: Implement calculation engine (financial_engine.py) for NPV/IRR/sensitivity analysis",
+        "CRITICAL: Add structure_data_node to convert extracted facts to calculation inputs",
+        "CRITICAL: Add calculate_node to run deterministic financial calculations",
+        "MEDIUM: Increase debate depth or ensure all phases complete",
+        "LOW: Expand data sources for richer fact extraction"
+      ]
+    },
+    "housing": {
+      "status": "SUCCESS",
+      "overall_score": 72.41402116402115,
+      "mckinsey_compliant": true,
+      "engine_b_healthy": true,
+      "hybrid_flow_working": false,
+      "duration_seconds": 1244.268347,
+      "mckinsey_checklist": {
+        "feasibility_analysis": true,
+        "success_probability": false,
+        "timeline_analysis": true,
+        "policy_levers": true,
+        "cross_scenario_robustness": true,
+        "gap_analysis": true,
+        "actionable_recommendations": true,
+        "tables_present": true
+      },
+      "recommendations": [
+        "HIGH: Feedback loop not working - Engine B results not flowing to synthesis",
+        "CRITICAL: Implement calculation engine (financial_engine.py) for NPV/IRR/sensitivity analysis",
+        "CRITICAL: Add structure_data_node to convert extracted facts to calculation inputs",
+        "CRITICAL: Add calculate_node to run deterministic financial calculations",
+        "MEDIUM: Increase debate depth or ensure all phases complete",
+        "LOW: Expand data sources for richer fact extraction"
+      ]
+    },
+    "food_security": {
+      "status": "SUCCESS",
+      "overall_score": 70.42989417989418,
+      "mckinsey_compliant": false,
+      "engine_b_healthy": true,
+      "hybrid_flow_working": false,
+      "duration_seconds": 1293.880648,
+      "mckinsey_checklist": {
+        "feasibility_analysis": true,
+        "success_probability": false,
+        "timeline_analysis": false,
+        "policy_levers": true,
+        "cross_scenario_robustness": false,
+        "gap_analysis": true,
+        "actionable_recommendations": true,
+        "tables_present": true
+      },
+      "recommendations": [
+        "HIGH: Feedback loop not working - Engine B results not flowing to synthesis",
+        "CRITICAL: Implement calculation engine (financial_engine.py) for NPV/IRR/sensitivity analysis",
+        "CRITICAL: Add structure_data_node to convert extracted facts to calculation inputs",
+        "CRITICAL: Add calculate_node to run deterministic financial calculations",
+        "MEDIUM: Increase debate depth or ensure all phases complete",
+        "LOW: Expand data sources for richer fact extraction"
+      ]
+    },
+    "tourism": {
+      "status": "SUCCESS",
+      "overall_score": 71.60052910052909,
+      "mckinsey_compliant": true,
+      "engine_b_healthy": true,
+      "hybrid_flow_working": false,
+      "duration_seconds": 1170.208047,
+      "mckinsey_checklist": {
+        "feasibility_analysis": false,
+        "success_probability": false,
+        "timeline_analysis": true,
+        "policy_levers": true,
+        "cross_scenario_robustness": true,
+        "gap_analysis": true,
+        "actionable_recommendations": true,
+        "tables_present": true
+      },
+      "recommendations": [
+        "HIGH: Feedback loop not working - Engine B results not flowing to synthesis",
+        "CRITICAL: Implement calculation engine (financial_engine.py) for NPV/IRR/sensitivity analysis",
+        "CRITICAL: Add structure_data_node to convert extracted facts to calculation inputs",
+        "CRITICAL: Add calculate_node to run deterministic financial calculations",
+        "MEDIUM: Increase debate depth or ensure all phases complete",
+        "LOW: Expand data sources for richer fact extraction"
+      ]
+    },
+    "labor": {
+      "status": "SUCCESS",
+      "overall_score": 72.21560846560845,
+      "mckinsey_compliant": false,
+      "engine_b_healthy": true,
+      "hybrid_flow_working": false,
+      "duration_seconds": 1266.526471,
+      "mckinsey_checklist": {
+        "feasibility_analysis": true,
+        "success_probability": false,
+        "timeline_analysis": false,
+        "policy_levers": true,
+        "cross_scenario_robustness": false,
+        "gap_analysis": true,
+        "actionable_recommendations": true,
+        "tables_present": true
+      },
+      "recommendations": [
+        "HIGH: Feedback loop not working - Engine B results not flowing to synthesis",
+        "CRITICAL: Implement calculation engine (financial_engine.py) for NPV/IRR/sensitivity analysis",
+        "CRITICAL: Add structure_data_node to convert extracted facts to calculation inputs",
+        "CRITICAL: Add calculate_node to run deterministic financial calculations",
+        "MEDIUM: Increase debate depth or ensure all phases complete",
+        "LOW: Expand data sources for richer fact extraction"
+      ]
+    },
+    "simple_revenue": {
+      "status": "SUCCESS",
+      "overall_score": 73.20767195767195,
+      "mckinsey_compliant": true,
+      "engine_b_healthy": true,
+      "hybrid_flow_working": false,
+      "duration_seconds": 1183.941306,
+      "mckinsey_checklist": {
+        "feasibility_analysis": true,
+        "success_probability": false,
+        "timeline_analysis": true,
+        "policy_levers": true,
+        "cross_scenario_robustness": true,
+        "gap_analysis": true,
+        "actionable_recommendations": true,
+        "tables_present": true
+      },
+      "recommendations": [
+        "HIGH: Feedback loop not working - Engine B results not flowing to synthesis",
+        "CRITICAL: Implement calculation engine (financial_engine.py) for NPV/IRR/sensitivity analysis",
+        "CRITICAL: Add structure_data_node to convert extracted facts to calculation inputs",
+        "CRITICAL: Add calculate_node to run deterministic financial calculations",
+        "MEDIUM: Increase debate depth or ensure all phases complete",
+        "LOW: Expand data sources for richer fact extraction"
+      ]
+    },
+    "medium_analysis": {
+      "status": "SUCCESS",
+      "overall_score": 72.41402116402115,
+      "mckinsey_compliant": true,
+      "engine_b_healthy": true,
+      "hybrid_flow_working": false,
+      "duration_seconds": 1142.299377,
+      "mckinsey_checklist": {
+        "feasibility_analysis": true,
+        "success_probability": false,
+        "timeline_analysis": true,
+        "policy_levers": true,
+        "cross_scenario_robustness": true,
+        "gap_analysis": true,
+        "actionable_recommendations": true,
+        "tables_present": true
+      },
+      "recommendations": [
+        "HIGH: Feedback loop not working - Engine B results not flowing to synthesis",
+        "CRITICAL: Implement calculation engine (financial_engine.py) for NPV/IRR/sensitivity analysis",
+        "CRITICAL: Add structure_data_node to convert extracted facts to calculation inputs",
+        "CRITICAL: Add calculate_node to run deterministic financial calculations",
+        "MEDIUM: Increase debate depth or ensure all phases complete",
+        "LOW: Expand data sources for richer fact extraction"
+      ]
+    }
+  }
+}

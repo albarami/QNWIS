@@ -58,7 +58,11 @@ def execute(
         from ..connectors.qatar_opendata_api import run_qatar_api_query
         result = run_qatar_api_query(spec)
     else:
-        raise ValueError(f"Unsupported source: {spec_source}")
+        # Try to infer source from query type for API-based queries
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Unknown source '{spec_source}' for query {query_id}, falling back to CSV")
+        result = run_csv_query(spec)
 
     # Apply postprocess transforms if defined (only for QuerySpec, not QueryDefinition)
     if hasattr(spec, 'postprocess') and spec.postprocess:

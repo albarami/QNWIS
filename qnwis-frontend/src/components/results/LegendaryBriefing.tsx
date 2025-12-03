@@ -17,6 +17,26 @@ interface LegendaryBriefingProps {
 const parseLegendaryBriefing = (text: string) => {
   if (!text) return { sections: [], verdict: '', ministerCard: '' }
   
+  // CRITICAL FIX: Strip LLM preambles like "Certainly." or "Below is..."
+  // LLMs often add conversational text before the actual structured content
+  let cleanText = text
+  
+  // Common LLM preamble patterns to strip
+  const preamblePatterns = [
+    /^(Certainly|Sure|Absolutely|Of course|Here is|Below is)[^═#]*?(?=═|##?\s*I\.)/is,
+    /^[^═#]*?(?=═{10,})/s,  // Strip everything before the first separator line
+  ]
+  
+  for (const pattern of preamblePatterns) {
+    const match = cleanText.match(pattern)
+    if (match && match[0].length < 500) {  // Don't strip too much
+      cleanText = cleanText.slice(match[0].length).trim()
+      break
+    }
+  }
+  
+  text = cleanText
+  
   const sections: { id: string; title: string; icon: string; content: string; priority: number }[] = []
   
   // Extract Minister's Briefing Card (special handling)

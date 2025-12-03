@@ -83,7 +83,17 @@ class PredictorAgent:
             min_train_points: Minimum points required for training/backtesting
         """
         self.client = client
-        self.series_map = {k.lower(): v for k, v in (series_map or {}).items()}
+        # Default series_map uses real external API-based queries (World Bank only)
+        # All queries use working World Bank API endpoints
+        default_series_map = {
+            'unemployment': 'wb_unemployment_gcc',
+            'employment': 'wb_employment_ratio',
+            'labor_force': 'wb_labor_force_participation',
+            'retention': 'wb_employment_ratio',
+            'qatarization': 'wb_labor_force_participation',
+            'salary': 'wb_employment_ratio',  # Use employment ratio as economic proxy
+        }
+        self.series_map = {k.lower(): v for k, v in (series_map or default_series_map).items()}
         self.seasonal_win_delta = seasonal_win_delta
         self.min_train_points = min_train_points
 

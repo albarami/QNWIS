@@ -228,6 +228,20 @@ class LegendaryDebateOrchestrator:
                 "risk": 25,          # 5 risks × 5 assessors
                 "consensus": 25      # 5 rounds × 5 agents
             }
+        },
+        # ENTERPRISE FIX: Comparative debate config for A vs B questions
+        # Ensures both options are thoroughly analyzed and compared
+        "comparative": {
+            "max_turns": 150,
+            "phases": {
+                "opening": 10,           # Initial positions
+                "option_a_advocacy": 20, # NEW: Make case FOR option A
+                "option_b_advocacy": 20, # NEW: Make case FOR option B
+                "challenge": 30,         # Challenge BOTH options
+                "cross_examination": 20, # NEW: Direct A vs B comparison
+                "risk": 20,              # Risks for each option
+                "consensus": 30          # Final verdict
+            }
         }
     }
     
@@ -474,6 +488,185 @@ Responses without engagement will be REJECTED.
         # Default to 50% if no explicit confidence found
         return 0.5
     
+    def _check_topic_relevance(self, turn_content: str) -> tuple[bool, str]:
+        """
+        ENTERPRISE FIX: Prevent topic drift by checking turn relevance.
+        
+        Detects when agents drift into generic academic theory instead of
+        addressing the actual policy question. Returns (is_relevant, reason).
+        
+        For Option A vs B questions:
+        - Turns MUST mention at least one option or comparison
+        - Pure methodology discussions without application are flagged
+        
+        Args:
+            turn_content: The agent's response text
+            
+        Returns:
+            Tuple of (is_relevant: bool, reason: str)
+        """
+        if not turn_content or not hasattr(self, 'question'):
+            return (True, "")
+        
+        content_lower = turn_content.lower()
+        question_lower = self.question.lower() if self.question else ""
+        
+        # Extract key concepts from the original question
+        # These are domain-specific terms that SHOULD appear in relevant responses
+        key_concepts = []
+        
+        # Common policy concepts
+        for concept in ["ai", "technology", "tourism", "hub", "investment", 
+                       "qatarization", "vision 2030", "gdp", "employment",
+                       "diversification", "sustainable", "sector", "strategy"]:
+            if concept in question_lower:
+                key_concepts.append(concept)
+        
+        # Check if this is an A vs B comparison question
+        is_comparison_query = (
+            " or " in question_lower or
+            " versus " in question_lower or
+            " vs " in question_lower or
+            "option a" in question_lower or
+            "option b" in question_lower or
+            "which " in question_lower
+        )
+        
+        # Forbidden academic tangent patterns
+        # These indicate pure methodology discussion without practical application
+        tangent_patterns = [
+            ("input-output table", 3),  # OK to mention once, not repeatedly
+            ("leontief", 2),
+            ("i-o coefficient", 2),
+            ("sectoral multiplier", 3),
+            ("econometric estimation", 2),
+            ("cobb-douglas", 2),
+            ("neoclassical", 2),
+            ("theoretical framework", 2),
+            ("methodological", 3),
+        ]
+        
+        # Check for excessive academic tangents
+        for pattern, max_count in tangent_patterns:
+            if content_lower.count(pattern) > max_count:
+                return (False, f"Excessive focus on '{pattern}' - redirect to practical analysis")
+        
+        # For comparison queries, check if turn addresses the comparison
+        if is_comparison_query:
+            # Must mention at least some key concepts from the question
+            concept_matches = sum(1 for c in key_concepts if c in content_lower)
+            
+            # Also check for comparison language
+            comparison_indicators = [
+                "option a", "option b", "first option", "second option",
+                "compared to", "versus", "alternatively", "on one hand",
+                "on the other hand", "between the two", "either", "or",
+                "ai hub", "technology hub", "tourism", "sustainable"
+            ]
+            has_comparison = any(ind in content_lower for ind in comparison_indicators)
+            
+            if concept_matches < 2 and not has_comparison:
+                return (False, "Response doesn't address the A vs B comparison")
+        
+        return (True, "")
+    
+    async def _emit_moderator_redirect(self, reason: str):
+        """
+        ENTERPRISE FIX: Emit Moderator redirect when debate drifts off-topic.
+        
+        Args:
+            reason: Why the redirect is needed
+        """
+        redirect_message = f"""⚠️ MODERATOR REDIRECT: {reason}
+
+REFOCUS REQUIRED: The discussion has drifted from the core policy question.
+
+ORIGINAL QUESTION: {self.question[:500] if hasattr(self, 'question') else 'Unknown'}
+
+REQUIREMENTS FOR NEXT SPEAKER:
+1. Directly address the specific options/alternatives in the question
+2. Provide quantitative comparison where possible
+3. Reference Qatar-specific data and context
+4. Give a clear recommendation with reasoning
+
+Do NOT continue discussing general methodology without application to the question."""
+
+        await self._emit_turn(
+            "Moderator",
+            "redirect",
+            redirect_message
+        )
+        
+        # Track redirects to prevent infinite loops
+        if not hasattr(self, '_redirect_count'):
+            self._redirect_count = 0
+        self._redirect_count += 1
+    
+    async def _emit_devils_advocate_challenge(self):
+        """
+        DEVIL'S ADVOCATE INTERVENTION: Moderator challenges the emerging consensus.
+        
+        This forces agents to defend their positions and prevents premature agreement.
+        Runs every ~15 turns during the challenge phase.
+        """
+        # Analyze recent turns to find the emerging consensus
+        recent_turns = self.conversation_history[-10:]
+        
+        # Extract key positions being discussed
+        positions_summary = []
+        for turn in recent_turns:
+            agent = turn.get("agent", "")
+            message = turn.get("message", "")[:300]
+            if agent and agent not in ["Moderator", "DataValidator"]:
+                positions_summary.append(f"- {agent}: {message[:150]}...")
+        
+        positions_text = "\n".join(positions_summary[-5:])  # Last 5 positions
+        
+        # Build the Devil's Advocate challenge
+        # NOTE: Using "Critical Review" instead of "Devil's Advocate" to avoid Azure content filter
+        # ALSO: Anchors debate to original question to prevent topic drift
+        
+        # Truncate question for display
+        question_display = self.question[:300] if len(self.question) > 300 else self.question
+        
+        challenge_message = f"""⚖️ **CRITICAL REVIEW INTERVENTION** (Turn {self.turn_counter})
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📌 **ORIGINAL QUESTION (STAY ON TOPIC):**
+{question_display}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Before we proceed further, let me stress-test the emerging positions.
+
+**Recent positions under review:**
+{positions_text}
+
+**CHALLENGES FOR THE PANEL:**
+
+1. **Assumption Check**: What key assumptions are you making that could be wrong? Name them explicitly.
+
+2. **Counter-Evidence**: What data or evidence would CONTRADICT your current recommendation? Does such evidence exist?
+
+3. **Worst-Case Scenario**: If this recommendation fails, what's the damage? Have you underestimated the downside?
+
+4. **Alternative View**: The opposing view argues the exact opposite - can you steelman that position before dismissing it?
+
+5. **Topic Relevance**: Are your arguments DIRECTLY answering the original question above? If not, refocus.
+
+**REQUIREMENT**: The next 3 speakers must:
+- Directly address the ORIGINAL QUESTION
+- Address at least ONE of the challenges above with specific evidence
+
+Do NOT continue with tangential discussions. Stay focused on the policy decision."""
+
+        await self._emit_turn(
+            "Moderator",
+            "devils_advocate",
+            challenge_message
+        )
+        
+        logger.info(f"⚖️ Devil's Advocate challenge issued at turn {self.turn_counter}")
+    
     def _check_low_confidence_agents(
         self, 
         agent_positions: Dict[str, str],
@@ -693,8 +886,17 @@ Responses without engagement will be REJECTED.
             complex_signals += 2
         
         # Signal 2: Comparative/competitive framing
-        if any(w in question_lower for w in ["vs", "versus", "compared", "match", "compete", "against", "relative to"]):
+        # ENTERPRISE FIX: Detect A vs B questions for comparative debate structure
+        comparative_patterns = ["vs", "versus", " or ", "compared to", "match", "compete", 
+                               "against", "relative to", "option a", "option b", "either"]
+        is_comparative = any(w in question_lower for w in comparative_patterns)
+        if is_comparative:
             complex_signals += 2
+            # Check if this is explicitly an A vs B comparison
+            if (" or " in question_lower and any(w in question_lower for w in 
+                ["billion", "million", "invest", "fund", "allocat", "strategic"])):
+                logger.warning(f"🆚 Query detected as A vs B COMPARISON - using COMPARATIVE debate config")
+                return "comparative"  # Special case: use comparative debate structure
         
         # Signal 3: Resource allocation (budget, invest, allocate, spend)
         if any(w in question_lower for w in ["billion", "million", "budget", "invest", "allocat", "spend", "fund"]):
@@ -1142,8 +1344,16 @@ Your expert analysis:"""
         meta_debate_count = 0
         
         turns_emitted_this_phase = 0
+        last_devils_advocate_turn = 0  # Track when we last did Devil's Advocate
+        
         for round_num in range(1, max_debate_rounds + 1):
             logger.info(f"📢 Debate Round {round_num}/{max_debate_rounds} (total turns so far: {self.turn_counter})")
+            
+            # === DEVIL'S ADVOCATE INTERVENTION ===
+            # Every 15 turns, Moderator challenges the emerging consensus
+            if self.turn_counter - last_devils_advocate_turn >= 15 and self.turn_counter >= 15:
+                await self._emit_devils_advocate_challenge()
+                last_devils_advocate_turn = self.turn_counter
             
             # Get balanced agent order - agents with fewer turns go first
             balanced_agents = self._get_balanced_agent_order(active_llm_agents)
@@ -1869,7 +2079,7 @@ What are 2-3 practical considerations to keep in mind?"""
             return await agent.llm.generate(
                 prompt=simple_prompt,
                 temperature=0.3,
-                max_tokens=400
+                max_tokens=1200  # Increased from 400 to prevent truncation
             )
         except Exception as e:
             logger.error(f"Fallback also failed for {agent_name}: {e}")

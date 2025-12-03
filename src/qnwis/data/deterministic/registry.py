@@ -141,11 +141,16 @@ class QueryRegistry:
         self._version = _digest_paths(all_files) if all_files else "empty"
         logger.info(f"Registry loaded: {len(self._items)} DB queries, {len(self._csv_specs)} CSV queries")
 
-    def get(self, query_id: str) -> QueryDefinition:
-        """Retrieve a query definition by ID."""
-        if query_id not in self._items:
-            raise KeyError(f"Query not found: {query_id}")
-        return self._items[query_id]
+    def get(self, query_id: str) -> QueryDefinition | QuerySpec:
+        """Retrieve a query definition or spec by ID.
+        
+        Checks both database queries (_items) and CSV/API queries (_csv_specs).
+        """
+        if query_id in self._items:
+            return self._items[query_id]
+        if query_id in self._csv_specs:
+            return self._csv_specs[query_id]
+        raise KeyError(f"Query not found: {query_id}")
 
     def all_ids(self) -> list[str]:
         """Return all registered query identifiers (both DB and CSV queries)."""

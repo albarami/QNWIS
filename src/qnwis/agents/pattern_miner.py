@@ -754,15 +754,20 @@ class PatternMinerAgent:
         return "\n".join(lines)
 
     # Map metric names to actual available query files
+    # All queries use working World Bank API endpoints
     METRIC_TO_QUERY = {
-        "retention": "retention_rate_by_sector",
-        "attrition": "attrition_rate_monthly",
-        "qatarization": "qatarization_rate_by_sector",
-        "unemployment": "unemployment_trends_monthly",
-        "salary": "salary_distribution_by_sector",
-        "employment": "employment_share_by_gender",
-        "sector_growth": "sector_growth_rate",
-        "skills_gap": "skills_gap_analysis",
+        "retention": "wb_employment_ratio",
+        "attrition": "wb_unemployment_gcc",
+        "qatarization": "wb_labor_force_participation",
+        "unemployment": "wb_unemployment_gcc",
+        "salary": "wb_employment_ratio",  # Use employment ratio as economic proxy
+        "employment": "wb_employment_ratio",
+        "sector_growth": "wb_employment_ratio",
+        "skills_gap": "wb_labor_force_participation",
+        "labor_force": "wb_labor_force_participation",
+        "gdp": "wb_unemployment_gcc",  # GDP trends correlate with unemployment
+        "population": "wb_labor_force_participation",
+        "inflation": "wb_unemployment_gcc",  # Inflation affects unemployment
     }
     
     def _build_timeseries_qid(

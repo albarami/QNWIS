@@ -425,17 +425,26 @@ function reduceEvent(state: AppState, event: WorkflowEvent): AppState {
         next.totalScenarios = payload.scenarios.length
         console.log(`🚀 Initializing ${payload.scenarios.length} scenarios from parallel_exec`)
         
-        payload.scenarios.forEach((scenario: any, idx: number) => {
-          // Use UNDERSCORE format (scenario_0) to match backend
-          const scenarioId = scenario.id || `scenario_${idx}`
-          console.log(`🚀 Setting up scenario: ${scenarioId} - ${scenario.name}`)
-          next.scenarioProgress.set(scenarioId, {
-            scenarioId,
-            name: scenario.name || `Scenario ${idx + 1}`,
-            status: 'running',
-            progress: 15, // Starting
+        // FIX: If scenarios already exist from SCENARIO_GEN, just mark them as running
+        // Don't create duplicates with different IDs
+        if (next.scenarioProgress.size >= payload.scenarios.length) {
+          console.log(`🚀 Scenarios already exist (${next.scenarioProgress.size}), marking as running`)
+          next.scenarioProgress.forEach((sp, id) => {
+            next.scenarioProgress.set(id, { ...sp, status: 'running', progress: 15 })
           })
-        })
+        } else {
+          payload.scenarios.forEach((scenario: any, idx: number) => {
+            // Use UNDERSCORE format (scenario_0) to match backend
+            const scenarioId = scenario.id || `scenario_${idx}`
+            console.log(`🚀 Setting up scenario: ${scenarioId} - ${scenario.name}`)
+            next.scenarioProgress.set(scenarioId, {
+              scenarioId,
+              name: scenario.name || `Scenario ${idx + 1}`,
+              status: 'running',
+              progress: 15, // Starting
+            })
+          })
+        }
       } else if (next.scenarioProgress.size > 0) {
         // Mark existing scenarios as running with incremental progress
         console.log(`🚀 Marking ${next.scenarioProgress.size} existing scenarios as running`)
@@ -575,6 +584,41 @@ function reduceEvent(state: AppState, event: WorkflowEvent): AppState {
     // Capture stats for LegendaryBriefing (fallback if synthesize event didn't have them)
     if (payload?.stats && !next.synthesisStats) {
       next.synthesisStats = payload.stats
+    }
+    
+    // FIXED: Extract Engine B data from done event for sensitivity chart
+    if (payload?.engine_b_results) {
+      console.log('📊 Engine B results received in done event:', Object.keys(payload.engine_b_results))
+      // Extract sensitivity drivers from Engine B results
+      const allSensitivity: any[] = []
+      for (const [scenarioName, scenarioEB] of Object.entries(payload.engine_b_results)) {
+        const eb = scenarioEB as any
+        if (eb?.sensitivity && Array.isArray(eb.sensitivity)) {
+          allSensitivity.push(...eb.sensitivity)
+        }
+      }
+      if (allSensitivity.length > 0) {
+        // Aggregate sensitivity drivers across scenarios
+        const driverMap = new Map<string, any>()
+        allSensitivity.forEach(d => {
+          if (d.driver) {
+            const existing = driverMap.get(d.driver)
+            if (existing) {
+              existing.contribution = (existing.contribution + (d.contribution || 0)) / 2
+            } else {
+              driverMap.set(d.driver, { ...d })
+            }
+          }
+        })
+        next.engineBSensitivity = Array.from(driverMap.values())
+        console.log('📊 Extracted sensitivity drivers:', next.engineBSensitivity?.length)
+      }
+    }
+    
+    // FIXED: Extract scenario results from done event
+    if (payload?.scenario_results && !next.scenarioResults?.length) {
+      next.scenarioResults = payload.scenario_results
+      console.log('📊 Extracted scenario results:', next.scenarioResults?.length)
     }
     
     // Mark done stage as complete

@@ -292,6 +292,7 @@ export const LiveDebatePanel: React.FC<LiveDebatePanelProps> = ({
   summary,
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null)
+  const latestMessageRef = useRef<HTMLDivElement>(null)
   const [autoScroll, setAutoScroll] = useState(true)
   const [showSummary, setShowSummary] = useState(false)
   const [newMessageCount, setNewMessageCount] = useState(0)
@@ -323,17 +324,20 @@ export const LiveDebatePanel: React.FC<LiveDebatePanelProps> = ({
     }
   }, [turns.length, autoScroll, lastSeenIndex])
 
-  // Auto-scroll with delay for readability
+  // Auto-scroll with delay for readability - scrolls to START of new message
   useEffect(() => {
-    if (autoScroll && scrollRef.current && turns.length > 0) {
+    if (autoScroll && turns.length > 0) {
       setHighlightedIndex(turns.length - 1)
       
+      // Scroll to the START of the new message (not the bottom)
       const scrollDelay = setTimeout(() => {
-        scrollRef.current?.scrollTo({
-          top: scrollRef.current.scrollHeight,
-          behavior: 'smooth'
-        })
-      }, 1500)
+        if (latestMessageRef.current) {
+          latestMessageRef.current.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start', // Show start of message, not end
+          })
+        }
+      }, 500) // Reduced delay for better UX
       
       const highlightDelay = setTimeout(() => {
         setHighlightedIndex(null)
@@ -352,10 +356,13 @@ export const LiveDebatePanel: React.FC<LiveDebatePanelProps> = ({
     setAutoScroll(true)
     setNewMessageCount(0)
     setLastSeenIndex(turns.length)
-    scrollRef.current?.scrollTo({
-      top: scrollRef.current.scrollHeight,
-      behavior: 'smooth'
-    })
+    // Scroll to START of latest message
+    if (latestMessageRef.current) {
+      latestMessageRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      })
+    }
   }
 
   // Get participating experts
@@ -458,11 +465,15 @@ export const LiveDebatePanel: React.FC<LiveDebatePanelProps> = ({
           style={{ maxHeight: '700px', minHeight: '500px' }}
         >
           {turns.map((turn, index) => (
-            <DebateMessage 
+            <div 
               key={`${turn.agent}-${turn.turn}-${index}`}
-              turn={turn}
-              isNew={highlightedIndex === index}
-            />
+              ref={index === turns.length - 1 ? latestMessageRef : null}
+            >
+              <DebateMessage 
+                turn={turn}
+                isNew={highlightedIndex === index}
+              />
+            </div>
           ))}
 
           {/* Typing indicator */}

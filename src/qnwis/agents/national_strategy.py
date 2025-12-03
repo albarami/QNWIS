@@ -102,7 +102,14 @@ class NationalStrategyAgent:
         )
 
         # Fetch GCC unemployment data
-        gcc_res = self.client.run("syn_unemployment_gcc_latest")
+        try:
+            gcc_res = self.client.run("syn_unemployment_gcc_latest")
+        except Exception as e:
+            return AgentReport(
+                agent="NationalStrategy",
+                findings=[],
+                warnings=[f"Query execution failed: {e}"],
+            )
 
         # FIXED: Handle None result or None rows to prevent NoneType error
         if gcc_res is None:
@@ -112,7 +119,14 @@ class NationalStrategyAgent:
                 warnings=["Query returned no result"],
             )
         
-        row_count = len(gcc_res.rows) if gcc_res.rows is not None else 0
+        # FIXED: Robust row counting - handle None, non-iterable, or missing rows attribute
+        try:
+            rows_list = list(gcc_res.rows) if gcc_res.rows is not None else []
+            row_count = len(rows_list)
+        except (TypeError, AttributeError):
+            rows_list = []
+            row_count = 0
+            
         if row_count < min_countries:
             return AgentReport(
                 agent="NationalStrategy",
@@ -121,17 +135,22 @@ class NationalStrategyAgent:
             )
 
         # Extract country unemployment rates
+        from numbers import Number
         country_data = []
-        for row in gcc_res.rows:
-            # FIXED: Handle None row.data
-            if row.data is None:
+        for row in rows_list:
+            # FIXED: Handle missing .data attribute or None row.data
+            if not hasattr(row, 'data') or row.data is None:
                 continue
-            country = row.data.get("country")
-            rate = row.data.get("unemployment_rate")
-            year = row.data.get("year")
+            
+            # FIXED: Handle dict-like access safely
+            try:
+                country = row.data.get("country") if hasattr(row.data, 'get') else None
+                rate = row.data.get("unemployment_rate") if hasattr(row.data, 'get') else None
+                year = row.data.get("year") if hasattr(row.data, 'get') else None
+            except (AttributeError, TypeError):
+                continue
 
             # FIXED: Handle Decimal type from database using numbers.Number
-            from numbers import Number
             if country and isinstance(rate, Number):
                 country_data.append({
                     "country": str(country),

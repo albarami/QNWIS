@@ -1,0 +1,8 @@
+id: qatar_employment_compensation
+title: Qatar Employment and Compensation by Sector
+description: Qatar employment and compensation by sector from Qatar Open Data Portal
+source: qatar_api
+params:
+  dataset_id: number-of-employees-and-compensation-of-employees-by-economic-activity
+  limit: 1000
+expected_unit: count

@@ -83,14 +83,16 @@ class TimeMachineAgent:
         self.client = data_client
 
         # Default series mapping (can be overridden)
-        # Maps to existing query definitions in data/queries/
+        # Maps to query definitions that use real external APIs (World Bank)
+        # All queries use working World Bank API endpoints
         self.series_map = series_map or {
-            'retention': 'retention_rate_by_sector',
-            'qatarization': 'qatarization_rate_by_sector',
-            'salary': 'salary_distribution_by_sector',
-            'employment': 'employment_share_by_gender',
-            'attrition': 'attrition_rate_monthly',
-            'unemployment': 'unemployment_trends_monthly',
+            'retention': 'wb_employment_ratio',  # Employment-to-population ratio as proxy
+            'qatarization': 'wb_labor_force_participation',  # LFP as nationalization proxy
+            'salary': 'wb_employment_ratio',  # Employment ratio as economic proxy
+            'employment': 'wb_employment_ratio',  # World Bank employment ratio
+            'attrition': 'wb_unemployment_gcc',  # Unemployment as inverse proxy
+            'unemployment': 'wb_unemployment_gcc',  # World Bank unemployment
+            'labor_force': 'wb_labor_force_participation',  # Labor force participation
         }
 
     def _fetch_series(

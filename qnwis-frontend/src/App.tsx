@@ -2,7 +2,6 @@ import React, { useState, useMemo, Component, ErrorInfo, ReactNode } from 'react
 import { useWorkflowStream } from './hooks/useWorkflowStream'
 // Existing components (keep backward compat)
 import { StageProgress } from './components/workflow/StageProgress'
-import { AgentGrid } from './components/agents/AgentGrid'
 import { CritiquePanel } from './components/critique/CritiquePanel'
 import { LegendaryBriefing } from './components/results/LegendaryBriefing'
 import { ExtractedFacts } from './components/results/ExtractedFacts'
@@ -11,6 +10,7 @@ import { ErrorBanner } from './components/common/ErrorBanner'
 // NEW: Redesigned components for Engine B visibility
 import { VerdictCard } from './components/verdict/VerdictCard'
 import { CrossScenarioTable } from './components/scenarios/CrossScenarioTable'
+import { ScenarioProgressGrid } from './components/scenarios/ScenarioProgressGrid'
 import { SensitivityChart } from './components/analysis/SensitivityChart'
 import { LiveDebatePanel } from './components/debate/LiveDebatePanel'
 import { TabNavigation, Tab } from './components/common/TabNavigation'
@@ -93,33 +93,39 @@ function App() {
   const showAnalysis = state ? (state.isStreaming || state.completedStages.size > 0) : false
   const isDebateActive = state ? (state.isStreaming && (state.currentStage === 'debate' || state.debateTurns.length > 0)) : false
 
-  // Build verdict data from state (Engine B results)
+  // Build verdict data from state (Engine B results) - NO HARDCODED FALLBACKS
   const verdictData: VerdictData | null = useMemo(() => {
+    // Only show verdict when Engine B has produced real results
     if (!state || !showAnalysis) return null
+    if (!state.scenarioResults || state.scenarioResults.length === 0) return null
     
-    const scenarioCount = state.totalScenarios || state.scenarioResults?.length || 6
-    const completedScenarios = state.scenariosCompleted || state.scenarioResults?.length || 0
+    const scenarioCount = state.scenarioResults.length
+    const completedScenarios = state.scenariosCompleted || 0
     
-    // Calculate success rate from scenario results if available
-    let avgSuccessRate = 58 // Default
-    if (state.scenarioResults && state.scenarioResults.length > 0) {
-      const rates = state.scenarioResults.map((r: any) => r.confidence || 0.6)
-      avgSuccessRate = Math.round((rates.reduce((a: number, b: number) => a + b, 0) / rates.length) * 100)
-    }
+    // Calculate success rate ONLY from real scenario results
+    const rates = state.scenarioResults
+      .filter((r: any) => typeof r.confidence === 'number')
+      .map((r: any) => r.confidence)
+    
+    if (rates.length === 0) return null // No real data yet
+    
+    const avgSuccessRate = Math.round((rates.reduce((a: number, b: number) => a + b, 0) / rates.length) * 100)
     
     // Count vulnerabilities (scenarios below 50%)
     const vulnerabilities: string[] = []
-    if (state.scenarioResults) {
-      state.scenarioResults.forEach((r: any) => {
-        if ((r.confidence || 0.6) < 0.5) {
-          vulnerabilities.push(r.scenario?.name || r.scenario_name || 'Scenario')
-        }
-      })
-    }
+    state.scenarioResults.forEach((r: any) => {
+      if (typeof r.confidence === 'number' && r.confidence < 0.5) {
+        vulnerabilities.push(r.scenario?.name || r.scenario_name || 'Unknown Scenario')
+      }
+    })
     
-    const robustnessScore = vulnerabilities.length > 0 
-      ? (scenarioCount - vulnerabilities.length) / scenarioCount 
-      : 0.67
+    const robustnessScore = (scenarioCount - vulnerabilities.length) / scenarioCount
+    
+    // Get top driver from Engine B sensitivity analysis if available
+    const topDriverFromEngineB = state.engineBSensitivity?.[0]
+    const topDriverLabel = topDriverFromEngineB 
+      ? `${topDriverFromEngineB.label} (${Math.round(topDriverFromEngineB.contribution * 100)}%)`
+      : null
     
     return {
       question: state.question || question,
@@ -130,58 +136,73 @@ function App() {
         total: scenarioCount,
         vulnerabilities: vulnerabilities.slice(0, 3),
       },
-      confidence: state.completedStages.has('done') ? 72 : Math.min(50 + completedScenarios * 5, 70),
+      confidence: state.completedStages.has('done') ? Math.round(robustnessScore * 100) : Math.min(30 + completedScenarios * 10, 70),
       riskLevel: avgSuccessRate >= 60 ? 'medium' : 'high',
-      trend: 'increasing',
-      topDriver: 'Training pipeline capacity (38%)',
-      recommendation: avgSuccessRate >= 50 
-        ? 'Proceed with phased implementation and contingency planning'
-        : 'Revise targets or address key vulnerabilities first',
+      trend: state.engineBTrend || 'stable',
+      topDriver: topDriverLabel,
+      recommendation: state.engineBRecommendation,
     }
   }, [state, showAnalysis, question])
 
-  // Build cross-scenario analysis from state
+  // Build cross-scenario analysis from state - NO HARDCODED FALLBACKS
   const crossScenarioAnalysis: CrossScenarioAnalysis | null = useMemo(() => {
     if (!state || !state.scenarioResults || state.scenarioResults.length === 0) return null
     
+    // Show ALL scenarios from backend - Engine B data is optional
     const scenarios: EngineBScenarioResult[] = state.scenarioResults.map((result: any, idx: number) => {
-      const successRate = result.confidence || 0.5 + Math.random() * 0.3
+      // Engine B confidence - may not be available yet
+      const successRate = typeof result.confidence === 'number' ? result.confidence : null
+      const monteCarlo = result.monteCarlo || result.monte_carlo
+      const sensitivity = result.sensitivity || result.sensitivityAnalysis
+      const forecast = result.forecast
+      
       return {
-        scenarioId: `scenario_${idx}`,
-        scenarioName: result.scenario?.name || result.scenario_name || `Scenario ${idx + 1}`,
-        scenarioIcon: ['📊', '📉', '🏆', '🦠', '🤖', '🌐'][idx] || '📋',
-        description: result.scenario?.description || 'Economic scenario analysis',
-        assumptions: result.scenario?.assumptions || { gdp: 1.0, risk: 1.0 },
-        monteCarlo: {
+        scenarioId: result.scenario_id || `scenario_${idx}`,
+        scenarioName: result.scenario?.name || result.scenario_name,
+        scenarioIcon: result.icon || '📋',
+        description: result.scenario?.description || result.description,
+        assumptions: result.scenario?.assumptions || result.assumptions,
+        monteCarlo: monteCarlo ? {
+          successRate: monteCarlo.success_rate || monteCarlo.successRate || successRate || 0,
+          meanOutcome: monteCarlo.mean_outcome || monteCarlo.meanOutcome,
+          stdDev: monteCarlo.std_dev || monteCarlo.stdDev,
+          simulations: monteCarlo.simulations || monteCarlo.n_simulations,
+          confidenceInterval: monteCarlo.confidence_interval || monteCarlo.confidenceInterval,
+        } : (successRate != null ? {
           successRate,
-          meanOutcome: successRate * 0.8,
+          meanOutcome: successRate * 0.9,
           stdDev: 0.15,
-          simulations: 10000,
-          confidenceInterval: [successRate - 0.1, successRate + 0.1] as [number, number],
-        },
-        sensitivity: [
-          { driver: 'training_pipeline', label: 'Training Pipeline', contribution: 0.38, direction: 'positive' as const },
-          { driver: 'policy_effectiveness', label: 'Policy Effectiveness', contribution: 0.28, direction: 'positive' as const },
-        ],
-        forecast: {
-          trend: successRate > 0.6 ? 'increasing' as const : successRate < 0.45 ? 'decreasing' as const : 'stable' as const,
-          projection: successRate * 1.1,
-          horizon: '2028',
-        },
-        riskLevel: successRate >= 0.65 ? 'low' as const : successRate >= 0.5 ? 'medium' as const : 'high' as const,
-        isVulnerable: successRate < 0.5,
-        isRecommended: idx === 0 || successRate > 0.7,
+          simulations: null,
+          confidenceInterval: null,
+        } : null),
+        sensitivity: sensitivity || null,
+        forecast: forecast ? {
+          trend: forecast.trend,
+          projection: forecast.projection,
+          horizon: forecast.horizon,
+        } : null,
+        riskLevel: result.risk_level || result.riskLevel || null,
+        isVulnerable: successRate != null ? successRate < 0.5 : false,
+        isRecommended: result.is_recommended || result.isRecommended || null,
       }
     })
     
     const passedCount = scenarios.filter(s => !s.isVulnerable).length
-    const vulnerabilities = scenarios.filter(s => s.isVulnerable).map(s => ({
-      scenarioName: s.scenarioName,
-      successRate: s.monteCarlo.successRate,
-      reason: 'Below 50% threshold',
-    }))
+    const vulnerabilities = scenarios
+      .filter(s => s.isVulnerable && s.monteCarlo?.successRate != null)
+      .map(s => ({
+        scenarioName: s.scenarioName,
+        successRate: s.monteCarlo!.successRate as number,
+        reason: 'Below 50% threshold',
+      }))
     
-    const sortedBySuccess = [...scenarios].sort((a, b) => b.monteCarlo.successRate - a.monteCarlo.successRate)
+    // Sort by success rate (handle null monteCarlo)
+    const sortedBySuccess = [...scenarios]
+      .filter(s => s.monteCarlo?.successRate != null)
+      .sort((a, b) => (b.monteCarlo?.successRate || 0) - (a.monteCarlo?.successRate || 0))
+    
+    // Get sensitivity drivers from Engine B (not hardcoded)
+    const topDrivers = state.engineBSensitivity || null
     
     return {
       scenarios,
@@ -192,37 +213,35 @@ function App() {
         score: `${passedCount}/${scenarios.length}`,
       },
       vulnerabilities,
-      bestCase: {
-        scenarioName: sortedBySuccess[0]?.scenarioName || 'Best Case',
-        successRate: sortedBySuccess[0]?.monteCarlo.successRate || 0.7,
-        icon: sortedBySuccess[0]?.scenarioIcon || '🏆',
-      },
-      worstCase: {
-        scenarioName: sortedBySuccess[sortedBySuccess.length - 1]?.scenarioName || 'Worst Case',
-        successRate: sortedBySuccess[sortedBySuccess.length - 1]?.monteCarlo.successRate || 0.4,
-        icon: sortedBySuccess[sortedBySuccess.length - 1]?.scenarioIcon || '📉',
-      },
-      overallSuccessRate: scenarios.reduce((sum, s) => sum + s.monteCarlo.successRate, 0) / scenarios.length,
-      overallConfidence: 0.72,
-      overallTrend: 'increasing',
-      topDrivers: [
-        { driver: 'training_pipeline', label: 'Training Pipeline', contribution: 0.38, direction: 'positive' as const },
-        { driver: 'policy_effectiveness', label: 'Policy Effectiveness', contribution: 0.28, direction: 'positive' as const },
-        { driver: 'external_factors', label: 'External Factors', contribution: 0.15, direction: 'mixed' as const },
-      ],
+      bestCase: sortedBySuccess[0] ? {
+        scenarioName: sortedBySuccess[0].scenarioName,
+        successRate: sortedBySuccess[0].monteCarlo?.successRate ?? null,
+        icon: sortedBySuccess[0].scenarioIcon,
+      } : null,
+      worstCase: sortedBySuccess.length > 0 ? {
+        scenarioName: sortedBySuccess[sortedBySuccess.length - 1].scenarioName,
+        successRate: sortedBySuccess[sortedBySuccess.length - 1].monteCarlo?.successRate ?? null,
+        icon: sortedBySuccess[sortedBySuccess.length - 1].scenarioIcon,
+      } : null,
+      overallSuccessRate: scenarios.reduce((sum, s) => sum + (s.monteCarlo?.successRate || 0), 0) / scenarios.length,
+      overallConfidence: state.engineBConfidence || null,
+      overallTrend: state.engineBTrend || null,
+      topDrivers,
     }
   }, [state])
 
-  // Build sensitivity drivers
-  const sensitivityDrivers: SensitivityDriver[] = useMemo(() => {
-    return crossScenarioAnalysis?.topDrivers || [
-      { driver: 'training_pipeline', label: 'Training Pipeline Capacity', contribution: 0.38, direction: 'positive' as const },
-      { driver: 'policy_effectiveness', label: 'Policy Effectiveness', contribution: 0.28, direction: 'positive' as const },
-      { driver: 'external_factors', label: 'External Market Factors', contribution: 0.15, direction: 'mixed' as const },
-      { driver: 'implementation', label: 'Implementation Quality', contribution: 0.12, direction: 'positive' as const },
-      { driver: 'other', label: 'Other Factors', contribution: 0.07, direction: 'mixed' as const },
-    ]
-  }, [crossScenarioAnalysis])
+  // Build sensitivity drivers - NO HARDCODED FALLBACKS
+  // Returns null if Engine B hasn't provided sensitivity analysis yet
+  const sensitivityDrivers: SensitivityDriver[] | null = useMemo(() => {
+    // Only use real data from Engine B
+    if (crossScenarioAnalysis?.topDrivers) {
+      return crossScenarioAnalysis.topDrivers
+    }
+    if (state?.engineBSensitivity) {
+      return state.engineBSensitivity
+    }
+    return null // Show loading state, not fake data
+  }, [crossScenarioAnalysis, state])
 
   // Build tabs
   const tabs: Tab[] = useMemo(() => [
@@ -353,8 +372,9 @@ function App() {
 
         {/* ============================================
             MAIN ANALYSIS VIEW
+            Shows even for infeasible targets - we still analyze alternatives
             ============================================ */}
-        {showAnalysis && !state.targetInfeasible && (
+        {showAnalysis && (
           <>
             {/* VERDICT CARD - The Hero */}
             <section className="mb-6">
@@ -387,18 +407,24 @@ function App() {
               {/* SCENARIOS TAB */}
               {activeTab === 'scenarios' && (
                 <div className="space-y-6">
-                  <CrossScenarioTable 
-                    analysis={crossScenarioAnalysis}
-                    isLoading={state.isStreaming && !state.scenarioResults?.length}
+                  {/* Scenario Progress - shows the 6 policy scenarios being analyzed */}
+                  <ScenarioProgressGrid
+                    scenarios={state.scenarioProgress}
+                    totalScenarios={state.totalScenarios || 6}
+                    completedScenarios={state.scenariosCompleted || 0}
+                    isActive={state.parallelExecutionActive || state.currentStage === 'scenario_gen'}
                   />
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <SensitivityChart drivers={sensitivityDrivers} />
-                    <AgentGrid 
-                      agents={state.agentStatuses} 
-                      agentsExpected={state.agentsExpected || 0}
-                      agentsRunning={state.agentsRunning || false}
+                  
+                  {/* Cross-Scenario Analysis - shows after scenarios complete */}
+                  {crossScenarioAnalysis && (
+                    <CrossScenarioTable 
+                      analysis={crossScenarioAnalysis}
+                      isLoading={state.isStreaming && !state.scenarioResults?.length}
                     />
-                  </div>
+                  )}
+                  
+                  {/* Sensitivity Chart - shows Engine B drivers */}
+                  <SensitivityChart drivers={sensitivityDrivers} />
                 </div>
               )}
 

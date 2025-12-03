@@ -13,7 +13,8 @@ interface CrossScenarioTableProps {
 }
 
 // Risk level indicator dots
-const RiskDots: React.FC<{ level: RiskLevel }> = ({ level }) => {
+const RiskDots: React.FC<{ level: RiskLevel | null }> = ({ level }) => {
+  if (!level) return <span className="text-slate-500 text-xs">—</span>
   const levels = { low: 1, medium: 2, high: 3, critical: 4 }
   const count = levels[level]
   const colors = {
@@ -60,11 +61,11 @@ const SuccessBar: React.FC<{ rate: number }> = ({ rate }) => {
 }
 
 // Status badge
-const StatusBadge: React.FC<{ isVulnerable: boolean; isRecommended: boolean }> = ({
+const StatusBadge: React.FC<{ isVulnerable: boolean; isRecommended: boolean | null }> = ({
   isVulnerable,
   isRecommended,
 }) => {
-  if (isRecommended) {
+  if (isRecommended === true) {
     return (
       <span className="px-2 py-0.5 text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded">
         ✓ BEST
@@ -113,24 +114,32 @@ const ScenarioRow: React.FC<{
 
         {/* Success Rate */}
         <div className="col-span-3 flex items-center">
-          <SuccessBar rate={scenario.monteCarlo.successRate * 100} />
+          {scenario.monteCarlo ? (
+            <SuccessBar rate={scenario.monteCarlo.successRate * 100} />
+          ) : (
+            <span className="text-slate-500 text-sm">Awaiting Engine B...</span>
+          )}
         </div>
 
         {/* Risk Level */}
         <div className="col-span-2 flex items-center gap-2">
           <RiskDots level={scenario.riskLevel} />
-          <span className="text-xs text-slate-400 uppercase">{scenario.riskLevel}</span>
+          <span className="text-xs text-slate-400 uppercase">{scenario.riskLevel || '—'}</span>
         </div>
 
         {/* Trend */}
         <div className="col-span-1 flex items-center justify-center">
-          <span className={`text-xl ${
-            scenario.forecast.trend === 'increasing' ? 'text-emerald-400' :
-            scenario.forecast.trend === 'decreasing' ? 'text-red-400' :
-            'text-slate-400'
-          }`}>
-            {getTrendIcon(scenario.forecast.trend)}
-          </span>
+          {scenario.forecast ? (
+            <span className={`text-xl ${
+              scenario.forecast.trend === 'increasing' ? 'text-emerald-400' :
+              scenario.forecast.trend === 'decreasing' ? 'text-red-400' :
+              'text-slate-400'
+            }`}>
+              {getTrendIcon(scenario.forecast.trend)}
+            </span>
+          ) : (
+            <span className="text-slate-500">—</span>
+          )}
         </div>
 
         {/* Status */}
@@ -149,37 +158,47 @@ const ScenarioRow: React.FC<{
             {/* Assumptions */}
             <div className="bg-slate-900/50 rounded-lg p-3 border border-slate-700/50">
               <p className="text-xs uppercase tracking-wider text-slate-400 mb-2">Assumptions</p>
-              <div className="space-y-1">
-                {Object.entries(scenario.assumptions).slice(0, 3).map(([key, value]) => (
-                  <div key={key} className="flex justify-between text-sm">
-                    <span className="text-slate-400">{key.replace(/_/g, ' ')}</span>
-                    <span className="text-white font-mono">{(value as number).toFixed(1)}×</span>
-                  </div>
-                ))}
-              </div>
+              {scenario.assumptions ? (
+                <div className="space-y-1">
+                  {Object.entries(scenario.assumptions).slice(0, 3).map(([key, value]) => (
+                    <div key={key} className="flex justify-between text-sm">
+                      <span className="text-slate-400">{key.replace(/_/g, ' ')}</span>
+                      <span className="text-white font-mono">{(value as number).toFixed(1)}×</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-slate-500 text-sm">Awaiting data...</p>
+              )}
             </div>
 
             {/* Monte Carlo */}
             <div className="bg-slate-900/50 rounded-lg p-3 border border-slate-700/50">
               <p className="text-xs uppercase tracking-wider text-slate-400 mb-2">Monte Carlo</p>
-              <div className="space-y-1 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Simulations</span>
-                  <span className="text-white">{scenario.monteCarlo.simulations.toLocaleString()}</span>
+              {scenario.monteCarlo ? (
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Simulations</span>
+                    <span className="text-white">{scenario.monteCarlo.simulations?.toLocaleString() || '—'}</span>
+                  </div>
+                  {scenario.monteCarlo.confidenceInterval && (
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">95% CI</span>
+                      <span className="text-white">
+                        {(scenario.monteCarlo.confidenceInterval[0] * 100).toFixed(0)}% - {(scenario.monteCarlo.confidenceInterval[1] * 100).toFixed(0)}%
+                      </span>
+                    </div>
+                  )}
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">95% CI</span>
-                  <span className="text-white">
-                    {(scenario.monteCarlo.confidenceInterval[0] * 100).toFixed(0)}% - {(scenario.monteCarlo.confidenceInterval[1] * 100).toFixed(0)}%
-                  </span>
-                </div>
-              </div>
+              ) : (
+                <p className="text-slate-500 text-sm">Awaiting Engine B...</p>
+              )}
             </div>
 
             {/* Top Drivers */}
             <div className="bg-slate-900/50 rounded-lg p-3 border border-slate-700/50">
               <p className="text-xs uppercase tracking-wider text-slate-400 mb-2">Top Driver</p>
-              {scenario.sensitivity[0] && (
+              {scenario.sensitivity && scenario.sensitivity[0] ? (
                 <div className="space-y-1">
                   <p className="text-sm text-white">{scenario.sensitivity[0].label}</p>
                   <div className="flex items-center gap-2">
@@ -194,6 +213,8 @@ const ScenarioRow: React.FC<{
                     </span>
                   </div>
                 </div>
+              ) : (
+                <p className="text-slate-500 text-sm">Awaiting sensitivity analysis...</p>
               )}
             </div>
           </div>
@@ -236,20 +257,24 @@ const RobustnessSummary: React.FC<{ analysis: CrossScenarioAnalysis }> = ({ anal
 
         <div className="flex items-center gap-6">
           {/* Best case */}
-          <div className="text-right">
-            <p className="text-xs text-slate-400">Best Case</p>
-            <p className="text-sm text-emerald-400 font-semibold">
-              {bestCase.icon} {bestCase.scenarioName} ({(bestCase.successRate * 100).toFixed(0)}%)
-            </p>
-          </div>
+          {bestCase && (
+            <div className="text-right">
+              <p className="text-xs text-slate-400">Best Case</p>
+              <p className="text-sm text-emerald-400 font-semibold">
+                {bestCase.icon} {bestCase.scenarioName} {bestCase.successRate != null ? `(${(bestCase.successRate * 100).toFixed(0)}%)` : ''}
+              </p>
+            </div>
+          )}
 
           {/* Worst case */}
-          <div className="text-right">
-            <p className="text-xs text-slate-400">Worst Case</p>
-            <p className="text-sm text-red-400 font-semibold">
-              {worstCase.icon} {worstCase.scenarioName} ({(worstCase.successRate * 100).toFixed(0)}%)
-            </p>
-          </div>
+          {worstCase && (
+            <div className="text-right">
+              <p className="text-xs text-slate-400">Worst Case</p>
+              <p className="text-sm text-red-400 font-semibold">
+                {worstCase.icon} {worstCase.scenarioName} {worstCase.successRate != null ? `(${(worstCase.successRate * 100).toFixed(0)}%)` : ''}
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>
