@@ -541,6 +541,76 @@ class ParallelDebateExecutor:
         
         return adjusted
     
+    def _find_growth_rate(self, facts: Dict[str, Any]) -> float:
+        """
+        Dynamically find a growth rate from extracted facts.
+        Searches for any key containing 'growth', 'rate', 'increase', etc.
+        Returns actual extracted value or sensible default.
+        """
+        # Priority order for growth-related keys
+        growth_patterns = [
+            'growth_rate', 'annual_growth', 'gdp_growth', 'population_growth',
+            'employment_growth', 'wage_growth', 'economic_growth', 'growth',
+            'increase_rate', 'expansion_rate', 'appreciation_rate'
+        ]
+        
+        for pattern in growth_patterns:
+            for key, value in facts.items():
+                if pattern in key.lower() and isinstance(value, (int, float)):
+                    # Ensure it's a reasonable rate (0-1 or percentage)
+                    if 0 < abs(value) < 1:
+                        logger.info(f"   Found growth_rate from '{key}': {value}")
+                        return float(value)
+                    elif 0 < abs(value) < 100:
+                        # Likely a percentage, convert
+                        logger.info(f"   Found growth_rate from '{key}': {value}% → {value/100}")
+                        return float(value) / 100
+        
+        # Fallback: look for any small positive value that could be a rate
+        for key, value in facts.items():
+            if isinstance(value, (int, float)) and 0 < value < 0.5:
+                if any(word in key.lower() for word in ['rate', 'percent', 'ratio', 'share']):
+                    logger.info(f"   Found growth_rate from '{key}': {value}")
+                    return float(value)
+        
+        logger.warning("   No growth rate found in facts, using default 0.03")
+        return 0.03  # Default 3% growth
+    
+    def _find_base_value(self, facts: Dict[str, Any]) -> float:
+        """
+        Dynamically find a base/initial value from extracted facts.
+        Searches for monetary values, counts, totals, etc.
+        Returns actual extracted value or sensible default.
+        """
+        # Priority order for base value keys
+        value_patterns = [
+            'base_value', 'initial_value', 'total_value', 'budget', 'investment',
+            'gdp', 'gdp_per_capita', 'total_employment', 'workforce', 'population',
+            'revenue', 'income', 'capital', 'spending', 'expenditure', 'amount'
+        ]
+        
+        for pattern in value_patterns:
+            for key, value in facts.items():
+                if pattern in key.lower() and isinstance(value, (int, float)):
+                    if value > 1000:  # Reasonable base value (not a rate)
+                        logger.info(f"   Found base_value from '{key}': {value}")
+                        return float(value)
+        
+        # Fallback: find the largest reasonable numeric value
+        max_value = 0
+        max_key = None
+        for key, value in facts.items():
+            if isinstance(value, (int, float)) and value > 1000 and value > max_value:
+                max_value = value
+                max_key = key
+        
+        if max_value > 0:
+            logger.info(f"   Found base_value from largest value '{max_key}': {max_value}")
+            return float(max_value)
+        
+        logger.warning("   No base value found in facts, using default 100000")
+        return 100000  # Default
+    
     async def run_engine_b_for_scenario(
         self,
         scenario: Dict[str, Any],
@@ -582,9 +652,12 @@ class ParallelDebateExecutor:
             
             async with httpx.AsyncClient(timeout=30.0) as client:
                 
-                # Extract key values for computations with fallbacks (domain agnostic)
-                growth_rate = adjusted_facts.get("growth_rate", adjusted_facts.get("annual_growth", 0.03))
-                base_value = adjusted_facts.get("base_value", adjusted_facts.get("initial_value", 100000))
+                # FIXED: Dynamic variable mapping - use ACTUAL extracted data!
+                # Map common fact patterns to formula variables
+                growth_rate = self._find_growth_rate(adjusted_facts)
+                base_value = self._find_base_value(adjusted_facts)
+                
+                logger.info(f"   Dynamic mapping: growth_rate={growth_rate}, base_value={base_value}")
                 
                 # 1. Monte Carlo Simulation
                 try:
