@@ -415,15 +415,22 @@ async def aggregate_scenarios_for_debate_node(state: IntelligenceState) -> Intel
                 if sr:
                     success_probs.append(sr)
             
-            # Sensitivity results
-            sens = engine_b.get('sensitivity', {})
+            # Sensitivity results - FIXED: Handle list (new format) or dict (old format)
+            sens = engine_b.get('sensitivity', [])
             if sens:
-                # Handle different field names
-                drivers = sens.get('sensitivities', sens.get('parameter_impacts', sens.get('top_drivers', [])))
+                # New format: sensitivity is a list of driver dicts
+                if isinstance(sens, list):
+                    drivers = sens
+                # Old format: sensitivity is a dict with nested list
+                elif isinstance(sens, dict):
+                    drivers = sens.get('sensitivities', sens.get('parameter_impacts', sens.get('top_drivers', [])))
+                else:
+                    drivers = []
+                
                 if isinstance(drivers, list):
                     for s in drivers[:2]:
                         if isinstance(s, dict):
-                            driver = s.get('variable', s.get('name', ''))
+                            driver = s.get('driver', s.get('variable', s.get('label', s.get('name', ''))))
                         else:
                             driver = str(s)
                         if driver and driver not in engine_b_aggregate['sensitivity_drivers']:

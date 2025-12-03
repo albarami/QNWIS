@@ -267,8 +267,17 @@ def _extract_scenario_summaries(state: IntelligenceState) -> List[Dict[str, Any]
         # Extract Engine B quantitative results
         engine_b = result.get("engine_b_results", {}) if result else {}
         monte_carlo = engine_b.get("monte_carlo", {})
-        sensitivity = engine_b.get("sensitivity", {})
+        sensitivity = engine_b.get("sensitivity", [])  # Now a list
         forecasting = engine_b.get("forecasting", {})
+        
+        # FIXED: Handle sensitivity as list (new format) or dict (old format)
+        if isinstance(sensitivity, list):
+            key_drivers = [d.get("driver", d.get("variable", d.get("label", ""))) for d in sensitivity[:3] if isinstance(d, dict)]
+        elif isinstance(sensitivity, dict):
+            sens_list = sensitivity.get("sensitivities", sensitivity.get("parameter_impacts", []))
+            key_drivers = [d.get("variable", "") for d in sens_list[:3] if isinstance(d, dict)]
+        else:
+            key_drivers = []
         
         summaries.append({
             "name": scenario.get("name", f"Scenario {i+1}"),
@@ -280,7 +289,7 @@ def _extract_scenario_summaries(state: IntelligenceState) -> List[Dict[str, Any]
             "success_probability": monte_carlo.get("success_probability", 0) if monte_carlo else 0,
             "monte_carlo_mean": monte_carlo.get("mean", 0) if monte_carlo else 0,
             "monte_carlo_std": monte_carlo.get("std", 0) if monte_carlo else 0,
-            "key_drivers": [d.get("variable", "") for d in sensitivity.get("sensitivities", [])[:3]] if sensitivity else [],
+            "key_drivers": key_drivers,
             "forecast_trend": forecasting.get("trend", "stable") if forecasting else "unknown",
             "engine_b_status": engine_b.get("status", "not_run"),
         })
