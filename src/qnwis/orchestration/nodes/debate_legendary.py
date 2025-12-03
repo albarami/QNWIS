@@ -216,46 +216,60 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
             try:
                 from ...agents.research_synthesizer import ResearchSynthesizerAgent
                 
-                # Initialize RAG client wrapper
+                # Initialize RAG client wrapper using PRE-BUILT RAG store
                 rag_client = None
                 try:
-                    from ...rag.retriever import DocumentStore, Document
-                    from ...rag.document_loader import load_source_documents
+                    from ...rag.retriever import DocumentStore
                     from pathlib import Path
+                    import json
                     
-                    # Create RAG wrapper that matches ResearchSynthesizerAgent interface
+                    # Create RAG wrapper that uses the existing rag_store.json (1965 documents including R&D papers)
                     class RAGClientWrapper:
                         def __init__(self):
                             self.store = DocumentStore()
-                            # Load documents from configured sources
-                            try:
-                                source_docs = load_source_documents()
-                                if source_docs:
-                                    # Convert to Document objects
-                                    docs = [
-                                        Document(
-                                            doc_id=f"doc_{i}",
-                                            text=d.get("text", ""),
-                                            source=d.get("source", "unknown"),
-                                            metadata={"title": d.get("source", f"Document {i}"), "year": d.get("year")},
-                                        )
-                                        for i, d in enumerate(source_docs[:1000])  # Limit to 1000 for perf
-                                    ]
-                                    self.store.add_documents(docs)
-                                    logger.info(f"📚 RAG: Loaded {len(docs)} documents from sources")
-                            except Exception as e:
-                                logger.warning(f"⚠️ RAG: Could not load documents: {e}")
+                            self.docs_loaded = 0
+                            
+                            # Load from PRE-BUILT store (has 55+ R&D research reports, World Bank, ILO, etc.)
+                            rag_store_path = Path(__file__).parent.parent.parent.parent.parent / "data" / "rag_store.json"
+                            
+                            if rag_store_path.exists():
+                                try:
+                                    with open(rag_store_path, "r", encoding="utf-8") as f:
+                                        store_data = json.load(f)
+                                    
+                                    docs = store_data.get("documents", [])
+                                    if docs:
+                                        from ...rag.retriever import Document
+                                        for d in docs[:2000]:  # Load up to 2000 docs
+                                            doc = Document(
+                                                doc_id=d.get("doc_id", f"doc_{self.docs_loaded}"),
+                                                text=d.get("text", ""),
+                                                source=d.get("source", "unknown"),
+                                                metadata=d.get("metadata", {}),
+                                            )
+                                            self.store.add_document(doc)
+                                            self.docs_loaded += 1
+                                        
+                                        logger.info(f"📚 RAG: Loaded {self.docs_loaded} documents from pre-built store")
+                                        logger.info(f"   Including 55+ R&D research reports, World Bank, ILO, Qatar MOL data")
+                                except Exception as e:
+                                    logger.warning(f"⚠️ RAG: Could not load pre-built store: {e}")
+                            else:
+                                logger.warning(f"⚠️ RAG: Pre-built store not found at {rag_store_path}")
                         
                         def search(self, query: str, top_k: int = 10, filters=None):
+                            if self.docs_loaded == 0:
+                                return []
+                            
                             results = self.store.search(query, top_k=top_k)
                             # Convert to dict format expected by ResearchSynthesizerAgent
                             return [
                                 {
-                                    "title": doc.metadata.get("title", doc.doc_id),
-                                    "content": doc.text[:500],  # Truncate for performance
+                                    "title": doc.source if "R&D Report" in doc.source else doc.metadata.get("title", doc.doc_id),
+                                    "content": doc.text[:800],  # More content for R&D papers
                                     "score": score,
-                                    "year": doc.metadata.get("year"),
-                                    "authors": doc.metadata.get("authors", []),
+                                    "year": doc.metadata.get("year", 2024),
+                                    "authors": doc.metadata.get("authors", ["NSIC R&D Team"]),
                                     "methodology": doc.metadata.get("methodology"),
                                     "metrics": doc.metadata.get("metrics", {}),
                                 }
@@ -263,7 +277,8 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
                             ]
                     
                     rag_client = RAGClientWrapper()
-                    logger.info("✅ RAG client initialized for ResearchSynthesizer")
+                    if rag_client.docs_loaded > 0:
+                        logger.info(f"✅ RAG client initialized with {rag_client.docs_loaded} R&D documents")
                 except Exception as e:
                     logger.warning(f"⚠️ RAG client not available: {e}")
                 
@@ -495,32 +510,52 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
     cross_scenario_table = state.get("cross_scenario_table") or ""
     engine_b_aggregate = state.get("engine_b_aggregate") or {}
     
+    # PhD-level research synthesis (ran in parallel with Engine B)
+    research_for_debate = state.get("research_for_debate", "")
+    research_synthesis = state.get("research_synthesis", {})
+    
     # FIXED: Set quantitative context flag based on multiple checks (domain agnostic)
     # Use `or []` to handle None values explicitly
     has_cross_scenario = bool(cross_scenario_table)
     has_engine_b_scenarios = engine_b_aggregate.get("scenarios_with_compute", 0) > 0
     scenario_results = state.get("scenario_results") or []
     has_scenario_results = len(scenario_results) > 0
+    has_research = bool(research_for_debate)
     
     # Flag is True if ANY quantitative data is available for debate
     state["engine_a_had_quantitative_context"] = has_cross_scenario or has_engine_b_scenarios or has_scenario_results
     
+    # Build the full context for debate agents
+    context_parts = []
+    
+    # 1. Add PhD-level research synthesis FIRST (academic foundation)
+    if research_for_debate:
+        context_parts.append(research_for_debate)
+        logger.info(f"📚 Research synthesis injected into debate ({len(research_for_debate)} chars)")
+        
+        # Log research sources
+        if research_synthesis:
+            sources = research_synthesis.get("sources_summary", {})
+            logger.info(f"   Sources: {sources}")
+    
+    # 2. Add quantitative scenario context
     if cross_scenario_table:
-        cross_scenario_context = f"""
+        context_parts.append(f"""
 ## QUANTITATIVE CONTEXT (Multiple Scenarios Analyzed)
 
 {cross_scenario_table}
 
 Your arguments MUST reference these scenario comparisons and computed metrics.
-"""
+""")
         logger.info(f"📊 Cross-scenario table passed to debate ({len(cross_scenario_table)} chars)")
-    elif engine_b_aggregate.get("scenarios_with_compute", 0) > 0:
-        # Build summary from aggregate
+    
+    # 3. Add Engine B aggregate if no cross_scenario_table
+    if not cross_scenario_table and engine_b_aggregate.get("scenarios_with_compute", 0) > 0:
         scenarios_computed = engine_b_aggregate.get('scenarios_with_compute', 0)
         monte_carlo_runs = engine_b_aggregate.get('total_monte_carlo_runs', 0)
         avg_success = engine_b_aggregate.get('avg_success_probability', 0)
         drivers = engine_b_aggregate.get('sensitivity_drivers', ['Not computed'])[:3]
-        cross_scenario_context = f"""
+        context_parts.append(f"""
 ## ENGINE B QUANTITATIVE ANALYSIS
 
 - Scenarios computed: {scenarios_computed}
@@ -529,8 +564,13 @@ Your arguments MUST reference these scenario comparisons and computed metrics.
 - Top sensitivity drivers: {', '.join(drivers)}
 
 Reference these computed values in your arguments.
-"""
+""")
         logger.info(f"📊 Engine B aggregate passed to debate")
+    
+    # Combine all context
+    if context_parts:
+        cross_scenario_context = "\n\n---\n\n".join(context_parts)
+        logger.info(f"📊 Total context for debate: {len(cross_scenario_context)} chars")
     
     try:
         logger.info(f"🚀 STARTING legendary debate with {len(contradictions)} contradictions (depth={debate_depth})")

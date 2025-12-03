@@ -90,6 +90,9 @@ class ParallelDebateExecutor:
         """
         Execute multiple scenarios in parallel.
         
+        ENHANCED: Also runs ResearchSynthesizer in parallel to produce a
+        PhD-level literature review that will be injected into the debate.
+        
         Args:
             scenarios: List of scenario definitions from ScenarioGenerator
             base_workflow: Compiled LangGraph workflow to run for each scenario
@@ -100,6 +103,12 @@ class ParallelDebateExecutor:
         """
         logger.info(f"Starting parallel execution of {len(scenarios)} scenarios")
         start_time = datetime.now()
+        
+        # Start ResearchSynthesizer in parallel - runs while scenarios execute
+        research_task = asyncio.create_task(
+            self._run_research_synthesizer(initial_state.get("query", "policy analysis"))
+        )
+        logger.info("📚 ResearchSynthesizer started in parallel (PhD literature review)")
         
         # Emit parallel execution start event
         await self._emit_event(
@@ -212,6 +221,26 @@ class ParallelDebateExecutor:
                 }
             )
         
+        # Collect ResearchSynthesizer results (ran in parallel with scenarios)
+        research_synthesis = None
+        try:
+            research_synthesis = await asyncio.wait_for(research_task, timeout=120)  # Max 2 min
+            if research_synthesis:
+                logger.info(f"📚 ResearchSynthesizer completed: {len(research_synthesis.get('narrative', ''))} chars")
+                await self._emit_event(
+                    stage="research_synthesis",
+                    status="complete",
+                    payload={
+                        "sources": research_synthesis.get("sources_summary", {}),
+                        "confidence": research_synthesis.get("confidence", "unknown"),
+                        "findings_count": research_synthesis.get("findings_count", 0),
+                    }
+                )
+        except asyncio.TimeoutError:
+            logger.warning("⚠️ ResearchSynthesizer timed out - continuing without research synthesis")
+        except Exception as e:
+            logger.warning(f"⚠️ ResearchSynthesizer failed: {e}")
+        
         # Log summary
         elapsed = (datetime.now() - start_time).total_seconds()
         logger.info(
@@ -230,11 +259,101 @@ class ParallelDebateExecutor:
                 "scenarios_failed": failed_count,
                 "total_scenarios": len(scenarios),
                 "total_duration_seconds": elapsed,
-                "scenario_results": successful_results
+                "scenario_results": successful_results,
+                "research_synthesis_available": research_synthesis is not None,
             }
         )
         
-        return successful_results
+        # Attach research synthesis to results for debate injection
+        return {
+            "scenario_results": successful_results,
+            "research_synthesis": research_synthesis,
+        }
+    
+    async def _run_research_synthesizer(self, query: str) -> Optional[Dict[str, Any]]:
+        """
+        Run ResearchSynthesizer in parallel to produce PhD-level literature review.
+        
+        This runs concurrently with scenario execution and produces a comprehensive
+        academic synthesis that will be injected into the debate at the right moment.
+        
+        Sources:
+        - Semantic Scholar (peer-reviewed academic papers)
+        - Perplexity AI (real-time research synthesis)
+        - RAG System (1965 internal R&D documents)
+        - Knowledge Graph (entity relationships)
+        
+        Args:
+            query: The research question to investigate
+            
+        Returns:
+            Dict containing narrative, findings, and metadata for debate injection
+        """
+        try:
+            from ..agents.research_synthesizer import ResearchSynthesizerAgent
+            
+            logger.info(f"📚 ResearchSynthesizer starting literature review for: {query[:50]}...")
+            
+            # Emit start event
+            await self._emit_event(
+                stage="research_synthesis",
+                status="running",
+                payload={"query": query[:100], "sources": ["semantic_scholar", "perplexity", "rag", "knowledge_graph"]}
+            )
+            
+            # Initialize agent (auto-loads RAG with 1965 docs and KG)
+            agent = ResearchSynthesizerAgent()
+            
+            # Run synthesis - this is the computationally expensive part
+            # It queries multiple APIs and produces a 1000+ word academic review
+            synthesis = await asyncio.get_event_loop().run_in_executor(
+                None,  # Use default executor
+                lambda: agent.run(query=query)
+            )
+            
+            # Collect source statistics
+            sources_summary = {}
+            if synthesis.findings:
+                for finding in synthesis.findings:
+                    source = finding.source
+                    sources_summary[source] = sources_summary.get(source, 0) + 1
+            
+            logger.info(f"📚 ResearchSynthesizer completed:")
+            logger.info(f"   - Narrative: {len(synthesis.narrative)} chars (~{len(synthesis.narrative.split())} words)")
+            logger.info(f"   - Findings: {len(synthesis.findings)} total")
+            logger.info(f"   - Sources: {sources_summary}")
+            logger.info(f"   - Confidence: {synthesis.confidence_level}")
+            
+            return {
+                "narrative": synthesis.narrative,
+                "findings_count": len(synthesis.findings),
+                "confidence": synthesis.confidence_level,
+                "sources_summary": sources_summary,
+                "consensus_view": synthesis.consensus_view,
+                "evidence_gaps": synthesis.evidence_gaps,
+                "methodology_note": synthesis.methodology_note,
+                # For debate injection
+                "debate_ready": True,
+                "for_debate": f"""
+## ACADEMIC LITERATURE REVIEW
+### Prepared by Dr. Research (PhD-Level Synthesis)
+
+{synthesis.narrative}
+
+### CITATION GUIDANCE FOR DEBATE AGENTS
+Use these findings to support your arguments. Always cite sources.
+Evidence confidence: {synthesis.confidence_level.upper()}
+""",
+            }
+            
+        except ImportError as e:
+            logger.warning(f"⚠️ ResearchSynthesizer not available: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"❌ ResearchSynthesizer failed: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            return None
     
     async def _run_scenario(
         self,

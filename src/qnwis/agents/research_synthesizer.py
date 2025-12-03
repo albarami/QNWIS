@@ -84,15 +84,191 @@ class ResearchSynthesizerAgent:
         Args:
             semantic_scholar_api_key: API key for Semantic Scholar
             perplexity_api_key: API key for Perplexity
-            rag_client: Client for RAG document retrieval
-            knowledge_graph_client: Client for knowledge graph queries
+            rag_client: Client for RAG document retrieval (auto-initialized if None)
+            knowledge_graph_client: Client for knowledge graph queries (auto-initialized if None)
         """
         self.semantic_scholar_key = semantic_scholar_api_key or os.getenv("SEMANTIC_SCHOLAR_API_KEY")
         self.perplexity_key = perplexity_api_key or os.getenv("PERPLEXITY_API_KEY")
-        self.rag_client = rag_client
-        self.kg_client = knowledge_graph_client
         
-        logger.info("✅ ResearchSynthesizerAgent initialized")
+        # Auto-initialize RAG if not provided - uses 1965 pre-indexed R&D documents
+        if rag_client is not None:
+            self.rag_client = rag_client
+        else:
+            self.rag_client = self._init_default_rag_client()
+        
+        # Auto-initialize Knowledge Graph if not provided
+        if knowledge_graph_client is not None:
+            self.kg_client = knowledge_graph_client
+        else:
+            self.kg_client = self._init_default_kg_client()
+        
+        # Log what's available
+        sources = []
+        if self.semantic_scholar_key:
+            sources.append("Semantic Scholar")
+        if self.perplexity_key:
+            sources.append("Perplexity")
+        if self.rag_client:
+            sources.append("RAG (R&D Papers)")
+        if self.kg_client:
+            sources.append("Knowledge Graph")
+        
+        logger.info(f"✅ ResearchSynthesizerAgent initialized with: {', '.join(sources) or 'No sources'}")
+    
+    def _init_default_rag_client(self) -> Optional[Any]:
+        """Initialize default RAG client from pre-built store (1965 documents)."""
+        try:
+            from pathlib import Path
+            import json
+            
+            # Find RAG store - check multiple possible locations
+            possible_paths = [
+                Path(__file__).parent.parent.parent.parent / "data" / "rag_store.json",
+                Path(__file__).parent.parent.parent.parent.parent / "data" / "rag_store.json",
+                Path("data/rag_store.json"),
+            ]
+            
+            rag_store_path = None
+            for p in possible_paths:
+                if p.exists():
+                    rag_store_path = p
+                    break
+            
+            if not rag_store_path:
+                logger.warning("⚠️ RAG store not found - R&D papers will not be available")
+                return None
+            
+            # Load documents
+            with open(rag_store_path, "r", encoding="utf-8") as f:
+                store_data = json.load(f)
+            
+            docs = store_data.get("documents", [])
+            if not docs:
+                logger.warning("⚠️ RAG store is empty")
+                return None
+            
+            # Create simple wrapper
+            class DefaultRAGClient:
+                def __init__(self, documents):
+                    self.documents = documents
+                    logger.info(f"📚 RAG: Loaded {len(documents)} documents (R&D papers, World Bank, ILO)")
+                
+                def search(self, query: str, top_k: int = 10, filters=None) -> List[Dict]:
+                    """Simple keyword-based search with relevance scoring."""
+                    query_lower = query.lower()
+                    query_terms = set(query_lower.split())
+                    
+                    # Score each document by term overlap
+                    scored = []
+                    for doc in self.documents:
+                        text = doc.get("text", "").lower()
+                        source = doc.get("source", "").lower()
+                        
+                        # Count matching terms
+                        matches = sum(1 for term in query_terms if term in text or term in source)
+                        if matches > 0:
+                            score = matches / len(query_terms)
+                            scored.append((doc, score))
+                    
+                    # Sort by score and return top_k
+                    scored.sort(key=lambda x: x[1], reverse=True)
+                    
+                    results = []
+                    for doc, score in scored[:top_k]:
+                        results.append({
+                            "title": doc.get("source", "Unknown Document"),
+                            "content": doc.get("text", "")[:1000],  # 1000 chars for better context
+                            "score": score,
+                            "year": doc.get("metadata", {}).get("year", 2024),
+                            "authors": ["NSIC R&D Team"],
+                            "methodology": doc.get("metadata", {}).get("methodology"),
+                            "metrics": doc.get("metadata", {}).get("metrics", {}),
+                        })
+                    
+                    return results
+            
+            return DefaultRAGClient(docs)
+            
+        except Exception as e:
+            logger.warning(f"⚠️ Failed to initialize RAG client: {e}")
+            return None
+    
+    def _init_default_kg_client(self) -> Optional[Any]:
+        """Initialize default Knowledge Graph client."""
+        try:
+            from pathlib import Path
+            import json
+            
+            # Find KG store
+            possible_paths = [
+                Path(__file__).parent.parent.parent.parent / "data" / "knowledge_graph.json",
+                Path(__file__).parent.parent.parent.parent.parent / "data" / "knowledge_graph.json",
+                Path("data/knowledge_graph.json"),
+            ]
+            
+            kg_path = None
+            for p in possible_paths:
+                if p.exists():
+                    kg_path = p
+                    break
+            
+            if not kg_path:
+                logger.warning("⚠️ Knowledge Graph not found")
+                return None
+            
+            # Load graph - handle nested structure
+            with open(kg_path, "r", encoding="utf-8") as f:
+                kg_data = json.load(f)
+            
+            # KG can be nested under 'graph' key
+            if "graph" in kg_data and isinstance(kg_data["graph"], dict):
+                graph_data = kg_data["graph"]
+                nodes = graph_data.get("nodes", [])
+                edges = graph_data.get("links", graph_data.get("edges", []))
+            else:
+                nodes = kg_data.get("nodes", [])
+                edges = kg_data.get("links", kg_data.get("edges", []))
+            
+            if not nodes:
+                logger.warning("⚠️ Knowledge Graph is empty")
+                return None
+            
+            class DefaultKGClient:
+                def __init__(self, nodes, edges):
+                    self.nodes = {n.get("id", n.get("name", "")): n for n in nodes}
+                    self.edges = edges
+                    logger.info(f"🕸️ KG: Loaded {len(nodes)} nodes, {len(edges)} edges")
+                
+                def query(self, query: str, focus=None) -> List[Dict]:
+                    """Find related entities based on query terms."""
+                    query_lower = query.lower()
+                    results = []
+                    
+                    # Find matching nodes
+                    for node_id, node in self.nodes.items():
+                        node_name = node.get("name", node_id).lower()
+                        if any(term in node_name for term in query_lower.split()):
+                            # Find edges for this node
+                            for edge in self.edges:
+                                if edge.get("source") == node_id or edge.get("target") == node_id:
+                                    other_id = edge.get("target") if edge.get("source") == node_id else edge.get("source")
+                                    other_node = self.nodes.get(other_id, {})
+                                    
+                                    results.append({
+                                        "subject": node.get("name", node_id),
+                                        "relation_type": edge.get("relation", "related_to"),
+                                        "object": other_node.get("name", other_id),
+                                        "description": f"{node.get('name', node_id)} {edge.get('relation', 'relates to')} {other_node.get('name', other_id)}",
+                                        "confidence": edge.get("weight", 0.7),
+                                    })
+                    
+                    return results[:20]  # Limit results
+            
+            return DefaultKGClient(nodes, edges)
+            
+        except Exception as e:
+            logger.warning(f"⚠️ Failed to initialize KG client: {e}")
+            return None
     
     def synthesize(
         self,
@@ -166,8 +342,13 @@ class ResearchSynthesizerAgent:
         focus_areas: Optional[List[str]],
         max_papers: int,
     ) -> List[ResearchFinding]:
-        """Search Semantic Scholar for academic papers."""
+        """Search Semantic Scholar for academic papers.
+        
+        RATE LIMIT: Semantic Scholar allows 1 request per second.
+        We add a 1.1 second delay between calls to be safe.
+        """
         import httpx
+        import time
         
         findings = []
         
@@ -175,7 +356,7 @@ class ResearchSynthesizerAgent:
         # Full question is too long and specific for academic search
         if focus_areas:
             # Use focused keywords only - much more effective for academic search
-            search_query = ' '.join(focus_areas[:5])  # Max 5 keywords
+            search_query = ' '.join(focus_areas[:3])  # Use top 3 terms for better results
         else:
             # Fallback: extract key terms from query
             import re
@@ -184,9 +365,20 @@ class ResearchSynthesizerAgent:
             keywords = [w for w in words if w.lower() not in common_words][:5]
             search_query = ' '.join(keywords) if keywords else query[:50]
         
-        logger.info(f"🔍 Semantic Scholar search query: '{search_query}'")
+        logger.info(f"📚 Semantic Scholar search: '{search_query}'")
         
         try:
+            # RATE LIMIT: Wait 1.1 seconds to respect Semantic Scholar's 1 req/sec limit
+            # Check if we have a last request timestamp
+            if not hasattr(self, '_last_ss_request'):
+                self._last_ss_request = 0
+            
+            elapsed = time.time() - self._last_ss_request
+            if elapsed < 1.1:
+                wait_time = 1.1 - elapsed
+                logger.debug(f"Rate limiting: waiting {wait_time:.2f}s before Semantic Scholar call")
+                time.sleep(wait_time)
+            
             # Semantic Scholar API
             url = "https://api.semanticscholar.org/graph/v1/paper/search"
             params = {
@@ -197,6 +389,8 @@ class ResearchSynthesizerAgent:
             headers = {}
             if self.semantic_scholar_key:
                 headers["x-api-key"] = self.semantic_scholar_key
+            
+            self._last_ss_request = time.time()  # Update timestamp before request
             
             with httpx.Client(timeout=30) as client:
                 response = client.get(url, params=params, headers=headers)
@@ -637,12 +831,12 @@ This synthesis will be used by other PhD-level debate agents. Be rigorous."""
                 "messages": [
                     {
                         "role": "system", 
-                        "content": "You are Dr. Research, a PhD academic specializing in systematic literature reviews and evidence synthesis. You write in rigorous academic style with proper citations."
+                        "content": "You are Dr. Research, a PhD academic specializing in systematic literature reviews and evidence synthesis. You write in rigorous academic style with proper citations. Your output should be detailed enough (1000+ words) to provide substantial value for policy debate."
                     },
                     {"role": "user", "content": prompt}
                 ],
                 "temperature": 0.3,  # Lower temperature for more precise academic output
-                "max_tokens": 1500,  # More tokens for comprehensive review
+                "max_tokens": 3000,  # Extended for 1000+ word detailed synthesis
             }
             
             with httpx.Client(timeout=60) as client:
@@ -710,6 +904,9 @@ This synthesis will be used by other PhD-level debate agents. Be rigorous."""
         """
         Use LLM to semantically understand query domain and extract focus areas.
         This is SMART - it understands context, not just keywords.
+        
+        CRITICAL: This enables DOMAIN-AGNOSTIC research - the LLM understands
+        what academic topics to search for, even if the query uses different terms.
         """
         import httpx
         import json
@@ -719,54 +916,95 @@ This synthesis will be used by other PhD-level debate agents. Be rigorous."""
         deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-4")
         
         if not endpoint or not api_key:
+            logger.warning("⚠️ Azure OpenAI not configured - cannot use LLM focus extraction")
             return []
         
-        prompt = f"""Analyze this query and extract the key research domains/topics.
+        # PhD-level prompt for semantic understanding
+        prompt = f"""You are an expert academic librarian helping a PhD researcher find relevant literature.
 
-QUERY: {query}
+RESEARCH QUESTION:
+{query}
 
-Return a JSON object with:
-{{
-    "primary_domain": "main domain (e.g., energy, healthcare, labor, finance, tourism)",
-    "focus_areas": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"],
-    "intent": "brief description of what research is needed"
-}}
+Your task: Extract 5 ACADEMIC SEARCH TERMS that would find relevant peer-reviewed papers on Semantic Scholar.
 
-Focus areas should be specific enough to find relevant academic papers.
-Do NOT just extract words from the query - understand the SEMANTIC MEANING.
+REQUIREMENTS:
+1. Think about the UNDERLYING ACADEMIC DISCIPLINES (economics, public policy, engineering, medicine, etc.)
+2. Use STANDARD ACADEMIC TERMINOLOGY (how researchers would title their papers)
+3. Include both SPECIFIC terms (the exact topic) and BROADER terms (the field)
+4. Consider RELATED CONCEPTS that researchers study together
+5. DO NOT just extract words from the query - TRANSLATE to academic language
 
-Example:
-- Query: "Can Qatar compete with Dubai for tourists?"
-- primary_domain: "tourism"
-- focus_areas: ["tourism competitiveness", "GCC tourism", "destination marketing", "hospitality sector", "visitor attractions"]
+EXAMPLES:
+- Query: "Should we build solar farms or hydrogen plants?"
+  Academic terms: ["renewable energy economics", "solar photovoltaic deployment", "green hydrogen production", "energy transition policy", "levelized cost of energy"]
 
-Return ONLY valid JSON, no explanation."""
+- Query: "Can AI diagnose cancer better than doctors?"
+  Academic terms: ["artificial intelligence diagnostics", "machine learning oncology", "medical image analysis", "clinical decision support systems", "diagnostic accuracy comparison"]
+
+- Query: "How do mega events affect small economies?"  
+  Academic terms: ["mega event economic impact", "sports tourism economics", "host city legacy effects", "event-led development", "tourism multiplier effects"]
+
+Return ONLY a JSON object:
+{{"focus_areas": ["term1", "term2", "term3", "term4", "term5"]}}"""
 
         try:
             url = f"{endpoint}/openai/deployments/{deployment}/chat/completions?api-version=2024-02-01"
             headers = {"api-key": api_key, "Content-Type": "application/json"}
             payload = {
-                "messages": [{"role": "user", "content": prompt}],
-                "temperature": 0.3,
-                "max_tokens": 200,
+                "messages": [
+                    {"role": "system", "content": "You are an expert academic librarian. Return ONLY valid JSON."},
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": 0.2,  # Very low for consistent academic terms
+                "max_tokens": 150,
             }
+            
+            logger.info(f"🔍 Extracting focus areas via LLM for: {query[:50]}...")
             
             with httpx.Client(timeout=30) as client:
                 response = client.post(url, json=payload, headers=headers)
                 
                 if response.status_code == 200:
                     content = response.json()["choices"][0]["message"]["content"]
-                    # Parse JSON from response
+                    logger.debug(f"LLM response: {content}")
+                    
+                    # Parse JSON from response - handle various formats
                     content = content.strip()
-                    if content.startswith("```"):
-                        content = content.split("```")[1]
-                        if content.startswith("json"):
-                            content = content[4:]
+                    
+                    # Remove markdown code blocks if present
+                    if "```" in content:
+                        # Extract content between backticks
+                        parts = content.split("```")
+                        for part in parts:
+                            if "{" in part and "}" in part:
+                                content = part
+                                break
+                    
+                    # Remove "json" prefix if present
+                    if content.startswith("json"):
+                        content = content[4:].strip()
+                    
+                    # Find the JSON object
+                    start = content.find("{")
+                    end = content.rfind("}") + 1
+                    if start >= 0 and end > start:
+                        content = content[start:end]
                     
                     result = json.loads(content)
-                    return result.get("focus_areas", [])[:5]
+                    focus_areas = result.get("focus_areas", [])[:5]
+                    
+                    if focus_areas:
+                        logger.info(f"✅ LLM extracted academic terms: {focus_areas}")
+                        return focus_areas
+                    else:
+                        logger.warning("⚠️ LLM returned empty focus_areas")
+                else:
+                    logger.warning(f"⚠️ LLM API returned {response.status_code}: {response.text[:200]}")
+                    
+        except json.JSONDecodeError as e:
+            logger.warning(f"⚠️ Failed to parse LLM JSON response: {e}")
         except Exception as e:
-            logger.debug(f"LLM focus extraction error: {e}")
+            logger.warning(f"⚠️ LLM focus extraction error: {e}")
         
         return []
     

@@ -210,9 +210,26 @@ async def parallel_execution_node(state: IntelligenceState) -> IntelligenceState
         base_workflow = build_base_workflow()
         
         # Execute scenarios in parallel (await directly - we're already in async context)
-        scenario_results = await executor.execute_scenarios(scenarios, base_workflow, state)
+        # Also runs ResearchSynthesizer in parallel for PhD-level literature review
+        parallel_results = await executor.execute_scenarios(scenarios, base_workflow, state)
+        
+        # Extract scenario results and research synthesis
+        if isinstance(parallel_results, dict):
+            scenario_results = parallel_results.get("scenario_results", [])
+            research_synthesis = parallel_results.get("research_synthesis")
+        else:
+            # Backwards compatibility
+            scenario_results = parallel_results
+            research_synthesis = None
         
         state['scenario_results'] = scenario_results
+        
+        # Store research synthesis for injection into debate
+        if research_synthesis:
+            state['research_synthesis'] = research_synthesis
+            state['research_for_debate'] = research_synthesis.get('for_debate', '')
+            logger.info(f"📚 Research synthesis ready for debate injection: {len(research_synthesis.get('narrative', ''))} chars")
+        
         state['reasoning_chain'].append(
             f"✅ Completed {len(scenario_results)}/{len(scenarios)} parallel scenarios"
         )
