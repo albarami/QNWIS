@@ -1,8 +1,8 @@
 # Readiness Report: Steps 1-33
 
-**Generated:** 2025-12-03T10:15:22.883422
+**Generated:** 2025-12-03T14:15:54.533084
 **Overall Status:** FAIL
-**Execution Time:** 591 ms
+**Execution Time:** 551 ms
 
 ## Summary
 
@@ -17,7 +17,7 @@
 ## Gate Results
 
 ### step_completeness [PASS]
-- **Duration:** 18 ms
+- **Duration:** 15 ms
 - **Severity:** ERROR
 ```json
 {
@@ -360,7 +360,7 @@
 - `docs/IMPLEMENTATION_ROADMAP.md`
 
 ### no_placeholders [FAIL]
-- **Duration:** 565 ms
+- **Duration:** 527 ms
 - **Severity:** ERROR
 ```json
 {

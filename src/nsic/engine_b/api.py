@@ -5,7 +5,7 @@ Exposes all 7 compute services as REST endpoints.
 
 import logging
 from contextlib import asynccontextmanager
-from typing import Optional
+from typing import Optional, Literal
 from dataclasses import asdict
 
 from fastapi import FastAPI, HTTPException
@@ -272,10 +272,10 @@ async def run_forecasting(request: ForecastingRequest):
 class ThresholdConstraintRequest(BaseModel):
     """Constraint for threshold analysis."""
     expression: str
-    threshold_type: str = "boundary"
+    threshold_type: Literal["upper", "lower", "boundary"] = "boundary"
     target: float = 0.0
     description: str = ""
-    severity: str = "warning"
+    severity: Literal["critical", "warning", "info"] = "warning"
 
 
 class ThresholdRequest(BaseModel):

@@ -289,8 +289,8 @@ class CorrelationService:
                     "variable": var_name,
                     "correlation": float(r),
                     "p_value": float(p),
-                    "is_significant": p < alpha,
-                    "abs_correlation": abs(r),
+                    "is_significant": bool(p < alpha),  # Convert numpy.bool_ to Python bool
+                    "abs_correlation": float(abs(r)),
                 })
             except Exception:
                 pass

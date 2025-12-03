@@ -284,9 +284,9 @@ class ThresholdService:
             current_constraint_val = constraint_values[idx]
             
             if constraint.threshold_type == "upper":
-                currently_violated = current_constraint_val > target
+                currently_violated = bool(current_constraint_val > target)
             elif constraint.threshold_type == "lower":
-                currently_violated = current_constraint_val < target
+                currently_violated = bool(current_constraint_val < target)
             else:
                 currently_violated = False
             
@@ -303,7 +303,7 @@ class ThresholdService:
                 expression_value_at_threshold=float(constraint_values[min_margin_idx]),
                 severity=constraint.severity,
                 currently_violated=currently_violated,
-                margin_to_threshold=margin,
+                margin_to_threshold=float(margin),
                 margin_percent=float(margin / (abs(target) + 1e-10) * 100),
             )
         
@@ -330,11 +330,11 @@ class ThresholdService:
         current_constraint_val = constraint_values[current_idx]
         
         if constraint.threshold_type == "upper":
-            currently_violated = current_constraint_val > target
+            currently_violated = bool(current_constraint_val > target)
         elif constraint.threshold_type == "lower":
-            currently_violated = current_constraint_val < target
+            currently_violated = bool(current_constraint_val < target)
         else:
-            currently_violated = abs(current_constraint_val - target) < precision
+            currently_violated = bool(abs(current_constraint_val - target) < precision)
         
         # Calculate margin
         margin = abs(current_val - threshold_val)
