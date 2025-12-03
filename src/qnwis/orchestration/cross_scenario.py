@@ -44,11 +44,20 @@ def generate_cross_scenario_table(engine_b_results: Dict[str, Any]) -> str:
         risk_level = thresh.get("risk_level", "unknown")
         
         # Extract sensitivity results
-        sens = results.get("sensitivity", {}) or {}
-        top_drivers = sens.get("top_drivers", sens.get("parameter_impacts", []))
+        # FIXED: sensitivity can be a list (new format) or dict (old format)
+        sens = results.get("sensitivity", [])
+        if isinstance(sens, list):
+            # New format: list of {driver, label, contribution, direction}
+            top_drivers = sens
+        elif isinstance(sens, dict):
+            # Old format: dict with top_drivers or parameter_impacts
+            top_drivers = sens.get("top_drivers", sens.get("parameter_impacts", []))
+        else:
+            top_drivers = []
+        
         if isinstance(top_drivers, list) and top_drivers:
             if isinstance(top_drivers[0], dict):
-                top_driver = top_drivers[0].get("variable", top_drivers[0].get("name", "unknown"))
+                top_driver = top_drivers[0].get("driver", top_drivers[0].get("variable", top_drivers[0].get("name", "unknown")))
             else:
                 top_driver = str(top_drivers[0])
         else:
@@ -131,12 +140,19 @@ def extract_robustness_summary(engine_b_results: Dict[str, Any]) -> Dict[str, An
         })
         
         # Collect drivers
-        sens = results.get("sensitivity", {}) or {}
-        drivers = sens.get("top_drivers", sens.get("parameter_impacts", []))
+        # FIXED: sensitivity can be a list (new format) or dict (old format)
+        sens = results.get("sensitivity", [])
+        if isinstance(sens, list):
+            drivers = sens
+        elif isinstance(sens, dict):
+            drivers = sens.get("top_drivers", sens.get("parameter_impacts", []))
+        else:
+            drivers = []
+        
         if isinstance(drivers, list):
             for d in drivers[:2]:  # Top 2 from each scenario
                 if isinstance(d, dict):
-                    all_drivers.append(d.get("variable", d.get("name", "")))
+                    all_drivers.append(d.get("driver", d.get("variable", d.get("name", ""))))
                 elif isinstance(d, str):
                     all_drivers.append(d)
     

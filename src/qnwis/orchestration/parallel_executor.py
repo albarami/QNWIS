@@ -630,6 +630,7 @@ class ParallelDebateExecutor:
                     implementation_efficiency = assumptions.get("implementation_efficiency", 0.85)
                     success_factor = adjusted_facts.get("success_factor", adjusted_facts.get("retention_rate", 0.80))
                     
+                    # CRITICAL: Variable names in base_values MUST match the formula!
                     sens_base = {
                         "annual_growth_rate": growth_rate,
                         "initial_capital": base_value,
@@ -638,9 +639,16 @@ class ParallelDebateExecutor:
                         "resource_efficiency": implementation_efficiency,
                     }
                     
+                    # FIXED: Formula must use EXACTLY the same variable names as base_values
                     sens_payload = {
                         "base_values": sens_base,
-                        "formula": "initial_investment * (1 + economic_growth_rate) ** 5 * policy_effectiveness * investment_efficiency",
+                        "formula": "initial_capital * (1 + annual_growth_rate) ** 5 * policy_effectiveness * resource_efficiency",
+                        "ranges": {
+                            "annual_growth_rate": {"low": growth_rate * 0.5, "high": growth_rate * 1.5},
+                            "initial_capital": {"low": base_value * 0.8, "high": base_value * 1.2},
+                            "policy_effectiveness": {"low": policy_intensity * 0.7, "high": policy_intensity * 1.3},
+                            "resource_efficiency": {"low": implementation_efficiency * 0.8, "high": implementation_efficiency * 1.2},
+                        },
                         "n_steps": 10
                     }
                     resp = await client.post(f"{ENGINE_B_URL}/compute/sensitivity", json=sens_payload)
