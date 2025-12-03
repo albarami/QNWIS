@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-12-03T10:05:57.997592",
+  "generated_at": "2025-12-03T10:09:02.399926",
   "artifacts": [
     {
       "path": "coverage.xml",
@@ -13,12 +13,12 @@
     },
     {
       "path": "src/qnwis/docs/audit/readiness_report.json",
-      "sha256": "f7b2ed8936baa20a67eab14072f3cf222056a6810c01da7c19add556d5d0e2d0",
+      "sha256": "9549243250d03d91d63dde126492121bb8c663c9690c0dc49dee1a381f65dd86",
       "size_bytes": 20768
     },
     {
       "path": "src/qnwis/docs/audit/READINESS_REPORT_1_25.md",
-      "sha256": "c35a93f35dce231237d1278e8b899b1d791e3364a2b0df867b5b7f824e3ddbf0",
+      "sha256": "97dce8428ba3cc6a496677b253b67499439bedd36b0831f5f984ba5b49715781",
       "size_bytes": 14089
     },
     {
@@ -43,7 +43,7 @@
     },
     {
       "path": "src/qnwis/docs/audit/READINESS_SUMMARY.html",
-      "sha256": "40f0d2f146aa8d4a76e80deecdd5f852799ffd02763ab5478cf1228d14456028",
+      "sha256": "09a37307655f5c6d76f639faf21ca265fbb912893b2aaa75840a7e9e6d5ea665",
       "size_bytes": 20096
     },
     {
@@ -123,7 +123,7 @@
     },
     {
       "path": "docs/audit/rg8/rg8_report.json",
-      "sha256": "29599aa614b3f4c1226029615c11159f07e97c9f11ee93f259d107f745d2cb04",
+      "sha256": "41cabe5a7b03344b4e1f0b2baaf430164b0f010506932a944f165d6a1ecd3f9b",
       "size_bytes": 1149
     },
     {
@@ -133,7 +133,7 @@
     },
     {
       "path": "docs/audit/rg8/sample_plan.yaml",
-      "sha256": "b9d0035e5aa2d7d2affead3373f77c697c64176ad73a338dd819417f7a3a76b9",
+      "sha256": "7ea6e7ac3261a5f8600ce43e16a663659cffc80c2524ff51378fca34fb05708f",
       "size_bytes": 1256
     },
     {
