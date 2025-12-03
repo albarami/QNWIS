@@ -283,6 +283,10 @@ class LegendaryDebateOrchestrator:
         self.extracted_facts: List[Dict[str, Any]] = []
         self.debate_complexity = "standard"  # Track debate complexity level
         self.agent_turn_counts = defaultdict(int)  # Track turns per agent for balance
+        # Topic drift prevention flags
+        self._topic_drift_detected = False
+        self._topic_drift_reason = ""
+        self._needs_binary_reminder = False
     
     @staticmethod
     def _rephrase_for_content_filter(text: str) -> str:
@@ -1512,6 +1516,30 @@ Your expert analysis:"""
                 except Exception as e:
                     logger.error(f"❌ {agent_name} debate error: {e}")
                     continue
+                
+                # ENTERPRISE FIX: Handle topic drift and binary comparison reminders
+                if self._topic_drift_detected:
+                    logger.info(f"📢 Emitting moderator redirect for topic drift")
+                    await self._emit_moderator_redirect(self._topic_drift_reason)
+                    self._topic_drift_detected = False
+                    self._topic_drift_reason = ""
+                
+                if self._needs_binary_reminder:
+                    logger.info(f"📢 Emitting binary comparison reminder at turn {self.turn_counter}")
+                    binary_reminder = f"""⚠️ MODERATOR REMINDER (Turn {self.turn_counter}):
+
+The debate has proceeded {self.turn_counter} turns. Time for a PROGRESS CHECK.
+
+ORIGINAL QUESTION: {self.question[:500] if self.question else 'Unknown'}
+
+REQUIREMENT: The next speaker MUST provide:
+1. Option A success probability: X% (with reasoning)
+2. Option B success probability: Y% (with reasoning)
+3. Current verdict: Which option is leading and why?
+
+Do NOT continue with methodology discussions. ANSWER THE QUESTION with quantified probabilities."""
+                    await self._emit_turn("Moderator", "redirect", binary_reminder)
+                    self._needs_binary_reminder = False
             
             # Log round completion
             logger.info(f"📊 Round {round_num} complete: turn_counter={self.turn_counter}")
@@ -2393,6 +2421,29 @@ Include:
                 )
             except Exception as e:
                 logger.debug(f"NSIC callback error (non-fatal): {e}")
+        
+        # ENTERPRISE FIX: Check topic relevance after each turn
+        is_relevant, reason = self._check_topic_relevance(message)
+        if not is_relevant:
+            logger.warning(f"⚠️ Topic drift detected at turn {self.turn_counter}: {reason}")
+            # Don't emit redirect here (async would need await), flag for main loop
+            self._topic_drift_detected = True
+            self._topic_drift_reason = reason
+        
+        # Every 15 turns, check if we're doing binary comparison (domain agnostic)
+        if self.turn_counter > 0 and self.turn_counter % 15 == 0:
+            recent_turns = self.conversation_history[-15:]
+            comparison_count = 0
+            for turn in recent_turns:
+                msg = turn.get("message", "").lower()
+                if any(kw in msg for kw in ["option a", "option b", "compared to", 
+                                            "versus", "vs", "better than", "worse than",
+                                            "recommend", "prefer", "choose"]):
+                    comparison_count += 1
+            
+            if comparison_count < 3:
+                logger.warning(f"⚠️ Insufficient binary comparison at turn {self.turn_counter} ({comparison_count}/15 turns)")
+                self._needs_binary_reminder = True
     
     async def _emit_phase(self, phase_name: str, message: str):
         """Emit phase change event."""

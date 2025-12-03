@@ -403,6 +403,9 @@ class AlertCenterAgent:
         records: list[tuple[date, str, float]] = []
 
         for row in result.rows:
+            # FIXED: Check if row.data is None before accessing
+            if row.data is None:
+                continue
             # Extract period
             period_str = row.data.get("period")
             if not period_str:

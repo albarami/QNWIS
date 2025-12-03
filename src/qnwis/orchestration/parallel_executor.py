@@ -848,15 +848,28 @@ Evidence confidence: {synthesis.confidence_level.upper()}
                         raw_sens = resp.json()
                         # Transform Engine B format to frontend format
                         # Frontend expects: [{driver, label, contribution, direction}]
+                        
+                        # Domain-agnostic mapping: technical variable -> policy driver name
+                        DRIVER_LABELS = {
+                            "annual_growth_rate": "Economic Growth Rate",
+                            "initial_capital": "Initial Investment",
+                            "policy_effectiveness": "Policy Implementation Strength",
+                            "implementation_success": "Implementation Success Rate",
+                            "resource_efficiency": "Resource Utilization Efficiency",
+                            "growth_rate": "Annual Growth Rate",
+                            "base_value": "Base Economic Value",
+                        }
+                        
                         transformed_sensitivity = []
                         if raw_sens.get("parameter_impacts"):
                             total_swing = sum(p.get("swing", 0) for p in raw_sens["parameter_impacts"])
                             for param in raw_sens["parameter_impacts"]:
                                 contribution = param.get("swing", 0) / total_swing if total_swing > 0 else 0
-                                # Create human-readable label
-                                label = param.get("name", "").replace("_", " ").title()
+                                var_name = param.get("name", "")
+                                # Use human-readable label from mapping, or create one
+                                label = DRIVER_LABELS.get(var_name, var_name.replace("_", " ").title())
                                 transformed_sensitivity.append({
-                                    "driver": param.get("name", ""),
+                                    "driver": var_name,
                                     "label": label,
                                     "contribution": contribution,
                                     "direction": param.get("direction", "positive")

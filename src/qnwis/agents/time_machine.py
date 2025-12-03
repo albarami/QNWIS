@@ -157,6 +157,9 @@ class TimeMachineAgent:
         """
         records: list[tuple[date, str, float]] = []
         for row in result.rows:
+            # FIXED: Check if row.data is None before accessing
+            if row.data is None:
+                continue
             period_str = row.data.get("period")
             if not period_str:
                 continue
@@ -280,6 +283,10 @@ class TimeMachineAgent:
 
             # Show first few rows
             for i, row in enumerate(res.rows[:5]):
+                # FIXED: Check if row.data is None before accessing
+                if row.data is None:
+                    lines.append(f"    [{i}] (no data)")
+                    continue
                 row_str = ", ".join(f"{k}={v}" for k, v in row.data.items())
                 lines.append(f"    [{i}] {row_str}")
 
@@ -870,7 +877,8 @@ class TimeMachineAgent:
             f"Data as of: {original.freshness.asof_date}",
             "",
         ]
-        annotated_rows = [row.data for row in breaks_qr.rows]
+        # FIXED: Filter out None row.data before accessing
+        annotated_rows = [row.data for row in breaks_qr.rows if row.data is not None]
         cusum_rows = [row for row in annotated_rows if row.get('method') == 'CUSUM']
         z_rows = [row for row in annotated_rows if row.get('method') == 'Z-score']
 

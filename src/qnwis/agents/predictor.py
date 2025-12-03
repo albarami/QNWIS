@@ -116,6 +116,9 @@ class PredictorAgent:
         """
         rows_with_dates = []
         for row in result.rows:
+            # FIXED: Check if row.data is None before accessing
+            if row.data is None:
+                continue
             dt = row.data.get(date_field)
             val = row.data.get(metric_field)
             if dt is None or val is None:
