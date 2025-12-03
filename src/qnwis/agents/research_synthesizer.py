@@ -1,14 +1,21 @@
 """
-Research Synthesizer Agent - Deterministic research evidence aggregator.
+Research Synthesizer Agent - PhD-Level Academic Literature Review Engine.
 
-Aggregates findings from:
-- Semantic Scholar (214M academic papers)
-- Perplexity (real-time research/news)
-- RAG System (56 internal R&D documents)
-- Knowledge Graph (entity relationships, policy impacts)
+This agent acts as "Dr. Research" - a virtual PhD scholar who:
+1. Searches Semantic Scholar (214M+ peer-reviewed academic papers)
+2. Queries Perplexity AI for real-time research synthesis
+3. Retrieves internal R&D documents via RAG
+4. Explores Knowledge Graph for entity relationships
 
-Produces a structured research summary BEFORE the debate, so LLM agents
-have academic backing for their arguments.
+CRITICAL ROLE: Produces a RIGOROUS ACADEMIC LITERATURE REVIEW that:
+- Synthesizes peer-reviewed evidence on ANY topic
+- Provides proper academic citations (Author, Year)
+- Identifies consensus views AND scholarly debates
+- Notes evidence gaps and methodological limitations
+- Makes evidence-based policy recommendations
+
+The output is formatted as a proper academic synthesis that PhD-level
+debate agents can cite with confidence. All claims are sourced.
 """
 
 from __future__ import annotations
@@ -433,40 +440,57 @@ class ResearchSynthesizerAgent:
         if len(findings) < 5:
             gaps.append("Limited research coverage - findings may not be comprehensive.")
         
-        # Build narrative
+        # Build academic narrative
         source_breakdown = {}
         for f in findings:
             source_breakdown[f.source] = source_breakdown.get(f.source, 0) + 1
         
-        narrative = f"""Research Synthesis for: "{query}"
+        # Format top findings with academic citations
+        findings_formatted = []
+        for f in top_findings[:5]:
+            authors_short = f.authors[0].split()[-1] if f.authors else "Unknown"
+            if len(f.authors) > 1:
+                authors_short += " et al."
+            year = f.year or "n.d."
+            findings_formatted.append(f"• {f.summary[:200]}... ({authors_short}, {year})")
+        
+        narrative = f"""# ACADEMIC LITERATURE REVIEW
+## Research Question: "{query}"
 
-**Sources Analyzed:**
-- Semantic Scholar: {source_breakdown.get('semantic_scholar', 0)} papers
-- Internal R&D (RAG): {source_breakdown.get('rag', 0)} documents
-- Perplexity Real-time: {source_breakdown.get('perplexity', 0)} results
-- Knowledge Graph: {source_breakdown.get('knowledge_graph', 0)} relationships
+### Methodology
+This systematic review analyzed {len(findings)} sources using a multi-database search strategy:
+- **Semantic Scholar**: {source_breakdown.get('semantic_scholar', 0)} peer-reviewed papers
+- **Internal Documents (RAG)**: {source_breakdown.get('rag', 0)} policy documents
+- **Perplexity AI**: {source_breakdown.get('perplexity', 0)} real-time synthesis
+- **Knowledge Graph**: {source_breakdown.get('knowledge_graph', 0)} entity relationships
 
-**Confidence Level:** {confidence.upper()}
+### Evidence Quality Assessment
+**Overall Confidence Level:** {confidence.upper()}
+- Source diversity: {len(source_breakdown)} different source types
+- Average relevance score: {sum(f.relevance_score for f in top_findings) / len(top_findings):.2f}
 
-**Key Findings:**
-{chr(10).join(f'• {f.title}: {f.summary[:150]}...' for f in top_findings[:5])}
+### Key Findings from the Literature
+{chr(10).join(findings_formatted)}
 
-**Evidence Gaps:**
-{chr(10).join(f'• {gap}' for gap in gaps) if gaps else '• No significant gaps identified.'}
+### Evidence Gaps & Limitations
+{chr(10).join(f'• {gap}' for gap in gaps) if gaps else '• No significant gaps identified in available literature.'}
+
+### References
+{chr(10).join(f'{i+1}. {f.citation}' for i, f in enumerate(top_findings[:5]))}
 """
         
-        # Generate LLM summary for debate agents (GPT-5 synthesis)
-        debate_ready_summary = self._generate_llm_summary(query, top_findings, confidence)
+        # Generate PhD-level academic synthesis via LLM
+        academic_synthesis = self._generate_llm_summary(query, top_findings, confidence)
         
-        # Combine raw narrative with LLM-synthesized summary
-        if debate_ready_summary:
-            narrative = f"""## AI-SYNTHESIZED RESEARCH SUMMARY (GPT-5)
+        # Combine academic synthesis with methodology notes
+        if academic_synthesis:
+            narrative = f"""# DR. RESEARCH - ACADEMIC LITERATURE SYNTHESIS
 
-{debate_ready_summary}
+{academic_synthesis}
 
 ---
 
-## RAW DATA SOURCES
+## APPENDIX: SOURCE METHODOLOGY
 
 {narrative}"""
         
@@ -489,8 +513,10 @@ class ResearchSynthesizerAgent:
         confidence: str,
     ) -> Optional[str]:
         """
-        Generate an LLM-synthesized summary of research findings.
-        This makes the findings DEBATE-READY for the LLM agents.
+        Generate a PhD-level academic literature review and synthesis.
+        
+        This is the CORE OUTPUT of the ResearchSynthesizer - a rigorous
+        academic synthesis that debate agents can cite with confidence.
         
         Args:
             query: The research question
@@ -498,7 +524,7 @@ class ResearchSynthesizerAgent:
             confidence: Evidence confidence level
             
         Returns:
-            GPT-5 generated executive summary, or None if LLM unavailable
+            Academic literature review with proper citations
         """
         import httpx
         
@@ -509,39 +535,114 @@ class ResearchSynthesizerAgent:
         if not endpoint or not api_key or not findings:
             return None
         
-        # Format findings for the prompt
+        # Format findings with full academic citation style
         findings_text = "\n\n".join([
-            f"**{i+1}. {f.title}** (Source: {f.source}, Relevance: {f.relevance_score:.2f})\n{f.summary[:300]}"
-            for i, f in enumerate(findings[:7])
+            f"**Source {i+1}: {f.title}**\n"
+            f"- Authors: {', '.join(f.authors) if f.authors else 'N/A'}\n"
+            f"- Year: {f.year or 'N/A'}\n"
+            f"- Source Type: {f.source.replace('_', ' ').title()}\n"
+            f"- Citation Count: {f.key_metrics.get('citations', 'N/A')}\n"
+            f"- Abstract/Summary: {f.summary[:400]}\n"
+            f"- Full Citation: {f.citation}"
+            for i, f in enumerate(findings[:10])  # Include more papers
         ])
         
-        prompt = f"""You are a senior research analyst. Synthesize these research findings into an EXECUTIVE SUMMARY for policy debate.
+        # Count sources by type for methodology section
+        source_counts = {}
+        for f in findings:
+            source_counts[f.source] = source_counts.get(f.source, 0) + 1
+        
+        prompt = f"""You are **Dr. Research**, a PhD-level academic researcher and policy analyst 
+with expertise in systematic literature reviews and evidence synthesis. You have published 
+extensively in peer-reviewed journals and served on policy advisory boards.
 
-RESEARCH QUESTION: {query}
+Your task is to produce a RIGOROUS ACADEMIC LITERATURE REVIEW on the following research question.
 
-FINDINGS FROM MULTIPLE SOURCES:
+═══════════════════════════════════════════════════════════════════════════════
+RESEARCH QUESTION
+═══════════════════════════════════════════════════════════════════════════════
+{query}
+
+═══════════════════════════════════════════════════════════════════════════════
+METHODOLOGY
+═══════════════════════════════════════════════════════════════════════════════
+This synthesis draws from {len(findings)} sources:
+- Semantic Scholar (peer-reviewed academic papers): {source_counts.get('semantic_scholar', 0)} papers
+- Perplexity AI (real-time research synthesis): {source_counts.get('perplexity', 0)} results  
+- Internal RAG System (policy documents): {source_counts.get('rag', 0)} documents
+- Knowledge Graph (entity relationships): {source_counts.get('knowledge_graph', 0)} relationships
+
+Evidence Confidence Level: {confidence.upper()}
+
+═══════════════════════════════════════════════════════════════════════════════
+SOURCE MATERIALS
+═══════════════════════════════════════════════════════════════════════════════
 {findings_text}
 
-EVIDENCE CONFIDENCE: {confidence.upper()}
+═══════════════════════════════════════════════════════════════════════════════
+REQUIRED OUTPUT: ACADEMIC LITERATURE REVIEW
+═══════════════════════════════════════════════════════════════════════════════
 
-Create a DEBATE-READY summary that:
-1. States the CONSENSUS VIEW - what most research agrees on
-2. Identifies KEY DATA POINTS with specific numbers (cite sources)
-3. Notes any CONTRADICTIONS or dissenting views
-4. Highlights EVIDENCE GAPS - what we don't know
-5. Provides IMPLICATIONS for policy decision-making
+Produce a scholarly synthesis following this EXACT structure:
 
-Format as a clear, structured summary (~300 words). Include specific citations like [Semantic Scholar, 2023] or [RAG: Internal Report].
+## 1. EXECUTIVE SUMMARY (2-3 sentences)
+State the primary finding and its policy relevance.
 
-IMPORTANT: This summary will be used by AI debate agents. Make it factual, citation-heavy, and actionable."""
+## 2. STATE OF THE LITERATURE
+- What does the academic consensus say about this topic?
+- Identify the dominant theoretical frameworks used
+- Note the methodological approaches (quantitative/qualitative/mixed)
+
+## 3. KEY EMPIRICAL FINDINGS
+For each major finding, provide:
+- The specific claim with quantitative data where available
+- The source citation in academic format: (Author et al., Year)
+- The sample size, methodology, or limitations
+
+## 4. POINTS OF SCHOLARLY DEBATE
+- Where do researchers disagree?
+- What are the competing hypotheses?
+- Which findings are contested and why?
+
+## 5. EVIDENCE GAPS & RESEARCH LIMITATIONS
+- What questions remain unanswered?
+- Where is the evidence weak or missing?
+- What methodological limitations should policymakers be aware of?
+
+## 6. POLICY IMPLICATIONS
+Based on the evidence, what can we conclude for policy purposes?
+- High-confidence recommendations (strong evidence)
+- Tentative recommendations (moderate evidence)
+- Areas requiring further research before action
+
+## 7. REFERENCES
+List the top 5 most relevant citations in proper academic format.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+CRITICAL REQUIREMENTS:
+1. Write in academic third-person voice
+2. Every claim MUST have a citation (Author, Year) or source reference
+3. Distinguish between correlation and causation
+4. Acknowledge limitations and uncertainty
+5. Do NOT overstate conclusions beyond what the evidence supports
+6. Use precise academic language, not journalistic language
+
+This synthesis will be used by other PhD-level debate agents. Be rigorous."""
 
         try:
             url = f"{endpoint}/openai/deployments/{deployment}/chat/completions?api-version=2024-02-01"
             headers = {"api-key": api_key, "Content-Type": "application/json"}
             payload = {
-                "messages": [{"role": "user", "content": prompt}],
-                "temperature": 0.4,
-                "max_tokens": 800,
+                "messages": [
+                    {
+                        "role": "system", 
+                        "content": "You are Dr. Research, a PhD academic specializing in systematic literature reviews and evidence synthesis. You write in rigorous academic style with proper citations."
+                    },
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": 0.3,  # Lower temperature for more precise academic output
+                "max_tokens": 1500,  # More tokens for comprehensive review
             }
             
             with httpx.Client(timeout=60) as client:

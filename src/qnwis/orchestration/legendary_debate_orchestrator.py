@@ -1265,14 +1265,21 @@ Your expert analysis:"""
                 if narrative:
                     # Include query reference in deterministic agent output
                     query_short = self.question[:100] if len(self.question) > 100 else self.question
+                    
+                    # FIXED: ResearchSynthesizer produces comprehensive AI-synthesized summaries
+                    # Give it MUCH more space (2000 chars) since its output is debate-ready
+                    if agent_name == "ResearchSynthesizer":
+                        return f"[{agent_name} - Academic Research Synthesis]:\n{narrative[:2000]}"
+                    
+                    # Other deterministic agents get standard truncation
                     if phase == "opening":
-                        return f"[{agent_name} Analysis on '{query_short}']: {narrative[:300]}"
+                        return f"[{agent_name} Analysis on '{query_short}']: {narrative[:500]}"
                     elif phase == "edge_case":
-                        return f"[{agent_name} Data for '{query_short}']: Historical patterns show: {narrative[:200]}"
+                        return f"[{agent_name} Data for '{query_short}']: Historical patterns show: {narrative[:400]}"
                     elif phase == "risk":
-                        return f"[{agent_name} Risk Assessment for '{query_short}']: {narrative[:200]}"
+                        return f"[{agent_name} Risk Assessment for '{query_short}']: {narrative[:400]}"
                     else:
-                        return f"[{agent_name} on '{query_short}']: {narrative[:250]}"
+                        return f"[{agent_name} on '{query_short}']: {narrative[:450]}"
                 
                 if findings and len(findings) > 0:
                     finding = findings[0]
