@@ -582,9 +582,9 @@ class ParallelDebateExecutor:
             
             async with httpx.AsyncClient(timeout=30.0) as client:
                 
-                # Extract key values for computations with fallbacks
-                growth_rate = adjusted_facts.get("growth_rate", adjusted_facts.get("workforce_growth", 0.03))
-                base_value = adjusted_facts.get("base_value", adjusted_facts.get("qatari_workforce", 33300))
+                # Extract key values for computations with fallbacks (domain agnostic)
+                growth_rate = adjusted_facts.get("growth_rate", adjusted_facts.get("annual_growth", 0.03))
+                base_value = adjusted_facts.get("base_value", adjusted_facts.get("initial_value", 100000))
                 
                 # 1. Monte Carlo Simulation
                 try:
@@ -624,18 +624,18 @@ class ParallelDebateExecutor:
                 
                 # 2. Sensitivity Analysis
                 try:
-                    # FIXED: Use meaningful policy driver names instead of generic "base_value"
+                    # FIXED: Use meaningful policy driver names (domain agnostic)
                     # Extract relevant policy drivers from scenario assumptions
                     policy_intensity = assumptions.get("policy_intensity", assumptions.get("growth_multiplier", 1.0))
-                    investment_efficiency = assumptions.get("investment_efficiency", 0.85)
-                    workforce_retention = adjusted_facts.get("retention_rate", 0.80)
+                    implementation_efficiency = assumptions.get("implementation_efficiency", 0.85)
+                    success_factor = adjusted_facts.get("success_factor", adjusted_facts.get("retention_rate", 0.80))
                     
                     sens_base = {
-                        "economic_growth_rate": growth_rate,
-                        "initial_investment": base_value,
+                        "annual_growth_rate": growth_rate,
+                        "initial_capital": base_value,
                         "policy_effectiveness": policy_intensity,
-                        "workforce_retention": workforce_retention,
-                        "investment_efficiency": investment_efficiency,
+                        "implementation_success": success_factor,
+                        "resource_efficiency": implementation_efficiency,
                     }
                     
                     sens_payload = {

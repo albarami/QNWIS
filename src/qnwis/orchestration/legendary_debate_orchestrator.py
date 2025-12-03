@@ -511,16 +511,28 @@ Responses without engagement will be REJECTED.
         content_lower = turn_content.lower()
         question_lower = self.question.lower() if self.question else ""
         
-        # Extract key concepts from the original question
-        # These are domain-specific terms that SHOULD appear in relevant responses
+        # Extract key concepts from the original question dynamically (domain agnostic)
+        # These are significant terms from the question that SHOULD appear in relevant responses
         key_concepts = []
         
-        # Common policy concepts
-        for concept in ["ai", "technology", "tourism", "hub", "investment", 
-                       "qatarization", "vision 2030", "gdp", "employment",
-                       "diversification", "sustainable", "sector", "strategy"]:
-            if concept in question_lower:
-                key_concepts.append(concept)
+        # Extract significant words from question (nouns, proper nouns, key terms)
+        # Skip common stop words and keep domain-relevant terms
+        stop_words = {"the", "a", "an", "is", "are", "was", "were", "be", "been", "being",
+                     "have", "has", "had", "do", "does", "did", "will", "would", "could",
+                     "should", "may", "might", "must", "shall", "can", "to", "of", "in",
+                     "for", "on", "with", "at", "by", "from", "as", "into", "through",
+                     "during", "before", "after", "above", "below", "between", "under",
+                     "again", "further", "then", "once", "here", "there", "when", "where",
+                     "why", "how", "all", "each", "few", "more", "most", "other", "some",
+                     "such", "no", "nor", "not", "only", "own", "same", "so", "than",
+                     "too", "very", "just", "and", "but", "if", "or", "because", "until",
+                     "while", "this", "that", "these", "those", "what", "which", "who"}
+        
+        # Extract words longer than 3 chars that aren't stop words
+        question_words = question_lower.replace("?", "").replace(",", "").replace(".", "").split()
+        for word in question_words:
+            if len(word) > 3 and word not in stop_words:
+                key_concepts.append(word)
         
         # Check if this is an A vs B comparison question
         is_comparison_query = (
@@ -556,12 +568,13 @@ Responses without engagement will be REJECTED.
             # Must mention at least some key concepts from the question
             concept_matches = sum(1 for c in key_concepts if c in content_lower)
             
-            # Also check for comparison language
+            # Also check for comparison language (domain agnostic)
             comparison_indicators = [
                 "option a", "option b", "first option", "second option",
                 "compared to", "versus", "alternatively", "on one hand",
                 "on the other hand", "between the two", "either", "or",
-                "ai hub", "technology hub", "tourism", "sustainable"
+                "better than", "worse than", "prefer", "recommend",
+                "choose", "select", "advantage", "disadvantage"
             ]
             has_comparison = any(ind in content_lower for ind in comparison_indicators)
             
