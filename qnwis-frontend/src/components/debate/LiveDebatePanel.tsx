@@ -92,15 +92,26 @@ const formatInlineText = (text: string): React.ReactNode => {
   })
 }
 
-// Single message component
+// Character threshold for "Show more" toggle
+const MESSAGE_TRUNCATE_LENGTH = 500
+
+// Single message component with expand/collapse
 const DebateMessage: React.FC<{
   turn: ConversationTurn
   isNew?: boolean
   isTyping?: boolean
 }> = ({ turn, isNew = false, isTyping = false }) => {
+  const [isExpanded, setIsExpanded] = useState(false)
   const profile = getAgentProfile(turn.agent)
   const config = TURN_TYPE_CONFIG[turn.type] || { label: turn.type.toUpperCase(), color: '#64748B', bgColor: 'bg-slate-500/10' }
   const citations = extractDataCitations(turn.message || '')
+  
+  // Determine if message needs truncation
+  const messageLength = turn.message?.length || 0
+  const needsTruncation = messageLength > MESSAGE_TRUNCATE_LENGTH
+  const displayMessage = !isExpanded && needsTruncation 
+    ? turn.message?.slice(0, MESSAGE_TRUNCATE_LENGTH) + '...'
+    : turn.message
 
   if (isTyping) {
     return (
@@ -171,8 +182,28 @@ const DebateMessage: React.FC<{
 
       {/* Message content */}
       <div className="text-base leading-relaxed">
-        {formatMessageContent(turn.message)}
+        {!turn.message ? (
+          <p className="text-slate-500 italic">No content available</p>
+        ) : (
+          formatMessageContent(displayMessage)
+        )}
       </div>
+      
+      {/* Expand/Collapse button for long messages */}
+      {needsTruncation && (
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="mt-3 flex items-center gap-1 text-sm text-cyan-400 hover:text-cyan-300 transition-colors"
+        >
+          <svg 
+            className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+            fill="none" stroke="currentColor" viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+          {isExpanded ? 'Show less' : `Show more (${messageLength.toLocaleString()} chars)`}
+        </button>
+      )}
 
       {/* Data citations */}
       {citations.length > 0 && (
