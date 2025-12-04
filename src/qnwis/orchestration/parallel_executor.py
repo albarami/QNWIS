@@ -786,22 +786,60 @@ Evidence confidence: {synthesis.confidence_level.upper()}
                     growth_effect = assumptions.get("growth_multiplier", 1.0)
                     value_effect = assumptions.get("value_multiplier", 1.0)
                     
+                    # CRITICAL FIX: Convert string assumption values to numeric multipliers
+                    def str_to_multiplier(value, positive_words=None, negative_words=None):
+                        """Convert string assumption values to numeric multipliers."""
+                        if isinstance(value, (int, float)):
+                            return float(value)
+                        if isinstance(value, str):
+                            val_lower = value.lower()
+                            # Positive modifiers (increase effect)
+                            if any(w in val_lower for w in (positive_words or ["high", "strong", "accelerat", "fast", "intense", "severe"])):
+                                return 1.5
+                            # Negative modifiers (decrease effect)
+                            if any(w in val_lower for w in (negative_words or ["low", "weak", "slow", "mild", "minimal"])):
+                                return 0.6
+                            # Neutral
+                            if any(w in val_lower for w in ["steady", "stable", "moderate", "normal", "base"]):
+                                return 1.0
+                        return 1.0  # Default neutral
+                    
                     # Scenario-specific effects (convert to growth impact)
                     if "disruption_factor" in assumptions:
                         # Disruption can boost or hurt - use as multiplier
-                        growth_effect *= assumptions["disruption_factor"]
+                        growth_effect *= str_to_multiplier(assumptions["disruption_factor"])
+                    if "disruption_level" in assumptions:
+                        growth_effect *= str_to_multiplier(assumptions["disruption_level"])
                     if "competition_intensity" in assumptions:
                         # Competition typically reduces success probability
-                        growth_effect *= (2.0 - assumptions["competition_intensity"])  # e.g., 1.4 -> 0.6 multiplier
+                        comp_val = str_to_multiplier(assumptions["competition_intensity"])
+                        growth_effect *= (2.0 - comp_val)  # e.g., 1.5 (intense) -> 0.5 multiplier
+                    if "regional_competition" in assumptions:
+                        comp_val = str_to_multiplier(assumptions["regional_competition"])
+                        growth_effect *= (2.0 - comp_val)
                     if "shock_severity" in assumptions:
                         # Shocks reduce expected outcomes
-                        value_effect *= assumptions["shock_severity"]
+                        value_effect *= str_to_multiplier(assumptions["shock_severity"], 
+                                                          negative_words=["severe", "high", "major"])  # severe shock = LOW multiplier
                     if "policy_intensity" in assumptions:
                         # Higher policy intensity can accelerate growth
-                        growth_effect *= assumptions["policy_intensity"]
+                        growth_effect *= str_to_multiplier(assumptions["policy_intensity"])
+                    if "policy_rate" in assumptions:
+                        growth_effect *= str_to_multiplier(assumptions["policy_rate"])
+                    if "price_level" in assumptions:
+                        value_effect *= str_to_multiplier(assumptions["price_level"])
+                    if "demand_level" in assumptions:
+                        growth_effect *= str_to_multiplier(assumptions["demand_level"])
+                    if "transition_speed" in assumptions:
+                        growth_effect *= str_to_multiplier(assumptions["transition_speed"])
+                    if "skills_mismatch" in assumptions:
+                        # Skills mismatch is negative - severe mismatch hurts growth
+                        mismatch = str_to_multiplier(assumptions["skills_mismatch"])
+                        growth_effect *= (2.0 - mismatch)  # severe (1.5) -> 0.5 multiplier
                     if "risk_factor" in assumptions:
                         # Higher risk reduces expected value
-                        value_effect *= (1.0 / assumptions["risk_factor"]) if assumptions["risk_factor"] > 0 else 0.5
+                        risk_val = str_to_multiplier(assumptions["risk_factor"])
+                        value_effect *= (1.0 / risk_val) if risk_val > 0 else 0.5
                     
                     # Apply effects to base values
                     growth_mean = growth_rate * growth_effect
