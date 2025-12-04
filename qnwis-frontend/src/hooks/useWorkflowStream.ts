@@ -620,7 +620,7 @@ function reduceEvent(state: AppState, event: WorkflowEvent): AppState {
       console.log('📊 Engine B results received in done event:', Object.keys(payload.engine_b_results))
       // Extract sensitivity drivers from Engine B results
       const allSensitivity: any[] = []
-      for (const [scenarioName, scenarioEB] of Object.entries(payload.engine_b_results)) {
+      for (const [_scenarioName, scenarioEB] of Object.entries(payload.engine_b_results)) {
         const eb = scenarioEB as any
         if (eb?.sensitivity && Array.isArray(eb.sensitivity)) {
           allSensitivity.push(...eb.sensitivity)
