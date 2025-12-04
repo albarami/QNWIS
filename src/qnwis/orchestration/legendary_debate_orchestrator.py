@@ -496,12 +496,16 @@ Responses without engagement will be REJECTED.
         """
         ENTERPRISE FIX: Prevent topic drift by checking turn relevance.
         
+        DOMAIN AGNOSTIC: Works for any question type - evaluations, comparisons,
+        forecasts, impact assessments, etc.
+        
         Detects when agents drift into generic academic theory instead of
         addressing the actual policy question. Returns (is_relevant, reason).
         
-        For Option A vs B questions:
-        - Turns MUST mention at least one option or comparison
-        - Pure methodology discussions without application are flagged
+        Logic:
+        - Extracts key concepts from the original question dynamically
+        - Checks if response addresses those concepts
+        - Flags excessive methodological tangents
         
         Args:
             turn_content: The agent's response text
@@ -572,18 +576,19 @@ Responses without engagement will be REJECTED.
             # Must mention at least some key concepts from the question
             concept_matches = sum(1 for c in key_concepts if c in content_lower)
             
-            # Also check for comparison language (domain agnostic)
-            comparison_indicators = [
-                "option a", "option b", "first option", "second option",
+            # Check for analytical language (domain agnostic - not "option a/b" specific)
+            analytical_indicators = [
                 "compared to", "versus", "alternatively", "on one hand",
                 "on the other hand", "between the two", "either", "or",
                 "better than", "worse than", "prefer", "recommend",
-                "choose", "select", "advantage", "disadvantage"
+                "choose", "select", "advantage", "disadvantage",
+                "assessment", "probability", "success rate", "conclude",
+                "recommend", "suggest", "evidence shows", "analysis indicates"
             ]
-            has_comparison = any(ind in content_lower for ind in comparison_indicators)
+            has_analytical_content = any(ind in content_lower for ind in analytical_indicators)
             
-            if concept_matches < 2 and not has_comparison:
-                return (False, "Response doesn't address the A vs B comparison")
+            if concept_matches < 2 and not has_analytical_content:
+                return (False, "Response doesn't address the original question")
         
         return (True, "")
     
@@ -660,24 +665,23 @@ Before we proceed further, let me stress-test the emerging positions.
 
 **CHALLENGES FOR THE PANEL:**
 
-1. **BINARY COMPARISON (MANDATORY)**: If the question asks "A or B?", you MUST state:
-   - Option A success probability: X%
-   - Option B success probability: X%
-   - WINNER: Option A or Option B (pick one!)
-   Do NOT skip this with a hybrid - answer the binary first.
+1. **DIRECT ANSWER (MANDATORY)**: You MUST provide:
+   - A clear quantified assessment (probability, impact score, or confidence level)
+   - A specific recommendation tied to the original question
+   - If comparing alternatives, state success probability for EACH alternative
 
 2. **Assumption Check**: What key assumptions are you making that could be wrong?
 
 3. **Counter-Evidence**: What data would CONTRADICT your recommendation?
 
-4. **Topic Relevance**: Are you DIRECTLY answering "A or B?" If not, refocus NOW.
+4. **Topic Relevance**: Are you DIRECTLY answering the question? If not, refocus NOW.
 
 **REQUIREMENT**: The next 3 speakers must:
-- DIRECTLY COMPARE Option A vs Option B with success percentages
-- Pick a winner between the two options
-- Only AFTER picking a winner may you suggest modifications
+- Provide a QUANTIFIED assessment (percentages, scores, or confidence levels)
+- State a clear recommendation with specific reasoning
+- Address the ORIGINAL question, not tangential issues
 
-Do NOT continue with methodology discussions. Answer the question: Which option is better?"""
+Do NOT continue with methodology discussions. ANSWER THE QUESTION with specifics."""
 
         await self._emit_turn(
             "Moderator",
@@ -1532,12 +1536,13 @@ The debate has proceeded {self.turn_counter} turns. Time for a PROGRESS CHECK.
 
 ORIGINAL QUESTION: {self.question[:500] if self.question else 'Unknown'}
 
-REQUIREMENT: The next speaker MUST provide:
-1. Option A success probability: X% (with reasoning)
-2. Option B success probability: Y% (with reasoning)
-3. Current verdict: Which option is leading and why?
+REQUIREMENT: The next speaker MUST:
+1. Directly address the SPECIFIC question above
+2. Provide quantified assessment (success probability, impact estimate, or confidence level)
+3. State a clear recommendation or conclusion with reasoning
+4. Reference specific evidence from the analysis
 
-Do NOT continue with methodology discussions. ANSWER THE QUESTION with quantified probabilities."""
+Do NOT continue with theoretical discussions. ANSWER THE QUESTION with specific, actionable insights."""
                     await self._emit_turn("Moderator", "redirect", binary_reminder)
                     self._needs_binary_reminder = False
             
@@ -1562,10 +1567,12 @@ Do NOT continue with methodology discussions. ANSWER THE QUESTION with quantifie
                     for agent_name in active_llm_agents:
                         if not self._can_emit_turn():
                             break
-                            
+                        
+                        # DOMAIN AGNOSTIC: Use the actual question, not a hardcoded one
+                        question_short = self.question[:200] if self.question else "the policy question"
                         refocus_message = f"""REFOCUS: Stop methodological discussion.
 
-DIRECT POLICY QUESTION: Should Qatar proceed with 50% Qatarization by 2030?
+DIRECT QUESTION: {question_short}
 
 Provide:
 1. Your final recommendation (proceed/revise/delay)
@@ -2252,29 +2259,31 @@ These recommendations require additional data validation before ministerial acti
         # FIXED: Force binary comparison before any hybrid recommendation
         synthesis_prompt = f"""After {self.turn_counter} turns of debate, synthesize the final consensus.
 
-CRITICAL REQUIREMENT: The original question asks for a choice between OPTIONS.
-You MUST provide a DIRECT COMPARISON before any recommendation:
+ORIGINAL QUESTION: {self.question[:500] if self.question else 'Unknown'}
 
 Final positions from all agents:
 {positions_text}
 {confidence_warning}
 
-REQUIRED OUTPUT FORMAT:
-1. BINARY COMPARISON TABLE (mandatory):
-   - Option A success probability: X%
-   - Option B success probability: X%
-   - Option A risk level: HIGH/MEDIUM/LOW
-   - Option B risk level: HIGH/MEDIUM/LOW
-   - Direct winner: Option A or Option B
+REQUIRED OUTPUT FORMAT (as JSON):
+1. "direct_answer": Your SPECIFIC answer to the original question above
+2. "quantified_assessment": {{
+     "primary_metric": "Success probability / Impact score / Confidence level",
+     "value": X%,
+     "reasoning": "Why this value"
+   }}
+3. "if_comparing_alternatives": {{
+     "alternative_1": {{"name": "...", "success_probability": X%, "risk_level": "HIGH/MEDIUM/LOW"}},
+     "alternative_2": {{"name": "...", "success_probability": Y%, "risk_level": "HIGH/MEDIUM/LOW"}},
+     "recommended": "Which alternative and why"
+   }}
+4. "areas_of_consensus": ["..."]
+5. "remaining_disagreements": ["..."]
+6. "confidence_level": X%
+7. "go_no_go_decision": "GO / NO-GO / CONDITIONAL"
+8. "contingencies": ["..."]
 
-2. Areas of strong consensus
-3. Remaining disagreements  
-4. Confidence-weighted recommendation
-   - If recommending a hybrid, FIRST state which original option scores higher
-   - Explain why hybrid is better than the winning option alone
-5. Go/No-Go decision with contingencies
-
-Format as structured JSON with "binary_comparison" as first key."""
+Format as structured JSON."""
         
         consensus = await llm_client.generate_with_routing(
             prompt=synthesis_prompt,
@@ -2319,21 +2328,25 @@ Format as structured JSON with "binary_comparison" as first key."""
         
         # FIXED: Force binary comparison in final synthesis
         prompt = f"""Generate a comprehensive executive summary of the debate.
+
+ORIGINAL QUESTION: {self.question[:500] if self.question else 'Unknown'}
         
 Debate History ({len(conversation_history)} turns):
 {full_history_text[:50000]}
 
-CRITICAL: If the original question asks "A or B?", you MUST:
-1. Provide a DIRECT ANSWER (A or B) with success probability for each
-2. Create a comparison table showing quantified metrics for both options
-3. Only AFTER answering the binary choice, may you suggest modifications
+CRITICAL REQUIREMENTS:
+1. Your FIRST paragraph must DIRECTLY ANSWER the original question above
+2. Provide quantified metrics (success probability, impact assessment, confidence levels)
+3. If comparing alternatives, create a comparison table with metrics for each
+4. Only after answering the question directly may you suggest modifications
 
 The report should rival a top-tier consulting firm's output.
 Include:
 - Executive Summary with CLEAR VERDICT on the original question
-- Binary Option Comparison Table (Option A vs Option B with success rates)
+- Quantified Assessment (success rates, probabilities, or impact scores)
+- Comparison Table (if alternatives were evaluated)
 - Key Findings from Debate
-- Strategic Recommendations (answer the original question first)
+- Strategic Recommendations (tied to the original question)
 - Risk Assessment
 - Confidence Level
 - Go/No-Go Decision"""
@@ -2430,19 +2443,35 @@ Include:
             self._topic_drift_detected = True
             self._topic_drift_reason = reason
         
-        # Every 15 turns, check if we're doing binary comparison (domain agnostic)
+        # Every 15 turns, check if debate is addressing the ACTUAL question (domain agnostic)
         if self.turn_counter > 0 and self.turn_counter % 15 == 0:
             recent_turns = self.conversation_history[-15:]
-            comparison_count = 0
+            
+            # Extract key concepts from original question (domain agnostic)
+            question_lower = self.question.lower() if self.question else ""
+            question_words = set(word for word in question_lower.split() 
+                               if len(word) > 4 and word not in ["should", "would", "could", "which", "what", "about", "between", "given", "consider"])
+            
+            # Check if responses address the question's key concepts
+            concept_mentions = 0
             for turn in recent_turns:
                 msg = turn.get("message", "").lower()
-                if any(kw in msg for kw in ["option a", "option b", "compared to", 
-                                            "versus", "vs", "better than", "worse than",
-                                            "recommend", "prefer", "choose"]):
-                    comparison_count += 1
+                # Count how many question concepts appear in the message
+                matches = sum(1 for word in question_words if word in msg)
+                if matches >= 2:  # Message addresses at least 2 key concepts
+                    concept_mentions += 1
             
-            if comparison_count < 3:
-                logger.warning(f"⚠️ Insufficient binary comparison at turn {self.turn_counter} ({comparison_count}/15 turns)")
+            # Also check for general analytical language (not domain-specific)
+            analytical_count = 0
+            for turn in recent_turns:
+                msg = turn.get("message", "").lower()
+                if any(kw in msg for kw in ["recommend", "conclude", "assessment", "analysis shows",
+                                            "evidence suggests", "probability", "success rate",
+                                            "based on", "therefore", "in conclusion"]):
+                    analytical_count += 1
+            
+            if concept_mentions < 3 and analytical_count < 3:
+                logger.warning(f"⚠️ Debate may be drifting from question at turn {self.turn_counter}")
                 self._needs_binary_reminder = True
     
     async def _emit_phase(self, phase_name: str, message: str):
