@@ -519,12 +519,15 @@ class NationalStrategyAgent:
         if vals:
             metrics["gcc_unemployment_min"] = min(vals)
             metrics["gcc_unemployment_max"] = max(vals)
+        # FIXED: Handle None emp/gcc when building warnings list
+        emp_warnings = emp.warnings if emp is not None and hasattr(emp, 'warnings') else []
+        gcc_warnings = gcc.warnings if gcc is not None and hasattr(gcc, 'warnings') else []
         insight = Insight(
             title="Strategic snapshot: employment & GCC unemployment",
             summary="Latest employment split plus GCC unemployment range.",
             metrics=metrics,
             evidence=[evidence_from(emp), evidence_from(gcc)],
-            warnings=list(set(emp.warnings + gcc.warnings)),
+            warnings=list(set(emp_warnings + gcc_warnings)),
         )
         report = AgentReport(agent="NationalStrategy", findings=[insight])
         self._verify_response(report, [emp, gcc])

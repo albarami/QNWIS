@@ -131,24 +131,36 @@ class MonteCarloService:
         else:
             results_np = results
         
-        # Calculate success rate
-        success_mask = self._evaluate_condition(input_spec.success_condition, results_np)
-        success_rate = float(np.mean(success_mask))
+        # Calculate success rate - handle NaN results and None condition
+        # FIXED: Filter out NaN values before calculating success rate
+        valid_mask = ~np.isnan(results_np) if results_np is not None else np.array([False])
+        valid_results = results_np[valid_mask] if np.any(valid_mask) else results_np
         
-        # Distribution statistics
+        success_mask = self._evaluate_condition(input_spec.success_condition, valid_results)
+        
+        # FIXED: Handle None success_mask (computation failed)
+        if success_mask is None or not np.any(valid_mask):
+            # Computation failed - return a value indicating failure, not fake 50%
+            logger.warning(f"Success condition evaluation failed, returning 0.0 success rate")
+            success_rate = 0.0
+        else:
+            success_rate = float(np.mean(success_mask))
+        
+        # Distribution statistics - use valid results (non-NaN)
+        stats_results = valid_results if np.any(valid_mask) and len(valid_results) > 0 else np.array([0.0])
         percentiles = {
-            "p5": float(np.percentile(results_np, 5)),
-            "p10": float(np.percentile(results_np, 10)),
-            "p25": float(np.percentile(results_np, 25)),
-            "p50": float(np.percentile(results_np, 50)),
-            "p75": float(np.percentile(results_np, 75)),
-            "p90": float(np.percentile(results_np, 90)),
-            "p95": float(np.percentile(results_np, 95)),
+            "p5": float(np.nanpercentile(stats_results, 5)),
+            "p10": float(np.nanpercentile(stats_results, 10)),
+            "p25": float(np.nanpercentile(stats_results, 25)),
+            "p50": float(np.nanpercentile(stats_results, 50)),
+            "p75": float(np.nanpercentile(stats_results, 75)),
+            "p90": float(np.nanpercentile(stats_results, 90)),
+            "p95": float(np.nanpercentile(stats_results, 95)),
         }
         
-        # Risk metrics
-        var_95 = float(np.percentile(results_np, 5))  # 5th percentile = 95% VaR
-        cvar_95 = float(np.mean(results_np[results_np <= var_95])) if np.any(results_np <= var_95) else var_95
+        # Risk metrics - use non-NaN values
+        var_95 = float(np.nanpercentile(stats_results, 5))  # 5th percentile = 95% VaR
+        cvar_95 = float(np.nanmean(stats_results[stats_results <= var_95])) if np.any(stats_results <= var_95) else var_95
         
         # Variable sensitivity (simple contribution analysis)
         variable_contributions = self._analyze_sensitivity(
@@ -161,11 +173,11 @@ class MonteCarloService:
         
         return MonteCarloResult(
             success_rate=success_rate,
-            mean_result=float(np.mean(results_np)),
-            std_result=float(np.std(results_np)),
+            mean_result=float(np.nanmean(stats_results)),
+            std_result=float(np.nanstd(stats_results)),
             percentiles=percentiles,
-            min_result=float(np.min(results_np)),
-            max_result=float(np.max(results_np)),
+            min_result=float(np.nanmin(stats_results)),
+            max_result=float(np.nanmax(stats_results)),
             var_95=var_95,
             cvar_95=cvar_95,
             variable_contributions=variable_contributions,
@@ -246,9 +258,9 @@ class MonteCarloService:
             return result
         except Exception as e:
             logger.error(f"Formula evaluation failed: {formula} - {e}")
-            # Return random values centered around 0.5 to avoid 0%/100% artifacts
+            # FIXED: Return NaN array so success_rate shows actual failure, not fake 50%
             n = len(next(iter(samples.values())))
-            return np.random.normal(0.5, 0.1, n)
+            return np.full(n, np.nan)
     
     def _evaluate_condition(
         self, 
@@ -265,7 +277,8 @@ class MonteCarloService:
             return eval(condition, {"__builtins__": {}}, namespace)
         except Exception as e:
             logger.error(f"Condition evaluation failed: {condition} - {e}")
-            return np.zeros(len(results), dtype=bool)
+            # FIXED: Return None to indicate computation failed, not fake 0%
+            return None
     
     def _analyze_sensitivity(
         self, 

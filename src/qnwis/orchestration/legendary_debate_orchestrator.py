@@ -621,7 +621,7 @@ Do NOT continue discussing general methodology without application to the questi
         DEVIL'S ADVOCATE INTERVENTION: Moderator challenges the emerging consensus.
         
         This forces agents to defend their positions and prevents premature agreement.
-        Runs every ~15 turns during the challenge phase.
+        Runs every ~10 turns during the challenge phase (reduced from 15 to prevent topic drift).
         """
         # Analyze recent turns to find the emerging consensus
         recent_turns = self.conversation_history[-10:]
@@ -686,7 +686,7 @@ Do NOT continue with methodology discussions. ANSWER THE QUESTION with specifics
     def _check_low_confidence_agents(
         self, 
         agent_positions: Dict[str, str],
-        threshold: float = 0.65
+        threshold: float = 0.40  # FIXED: Lowered from 0.65 to reduce warning spam
     ) -> List[Dict[str, Any]]:
         """
         FIX 5: Check for agents with low confidence recommendations.
@@ -695,7 +695,7 @@ Do NOT continue with methodology discussions. ANSWER THE QUESTION with specifics
         
         Args:
             agent_positions: Dict of agent_name -> final position text
-            threshold: Minimum confidence required (default 0.65 = 65%)
+            threshold: Minimum confidence required (default 0.40 = 40%, lowered from 65%)
             
         Returns:
             List of dicts with agent name, confidence, and warning message
@@ -1373,8 +1373,9 @@ Your expert analysis:"""
             logger.info(f"📢 Debate Round {round_num}/{max_debate_rounds} (total turns so far: {self.turn_counter})")
             
             # === DEVIL'S ADVOCATE INTERVENTION ===
-            # Every 15 turns, Moderator challenges the emerging consensus
-            if self.turn_counter - last_devils_advocate_turn >= 15 and self.turn_counter >= 15:
+            # FIXED: Every 10 turns (was 15), Moderator challenges the emerging consensus
+            # Reduced frequency to prevent topic drift earlier
+            if self.turn_counter - last_devils_advocate_turn >= 10 and self.turn_counter >= 10:
                 await self._emit_devils_advocate_challenge()
                 last_devils_advocate_turn = self.turn_counter
             
@@ -2242,7 +2243,7 @@ What are 2-3 practical considerations to keep in mind?"""
             confidence_warning = f"""
 
 ⚠️ LOW CONFIDENCE WARNING:
-{len(low_confidence_agents)} agent(s) have confidence below 65% threshold:
+{len(low_confidence_agents)} agent(s) have confidence below 40% threshold:
 {warning_list}
 
 These recommendations require additional data validation before ministerial action.
@@ -2433,9 +2434,9 @@ Include:
             self._topic_drift_detected = True
             self._topic_drift_reason = reason
         
-        # Every 15 turns, check if debate is addressing the ACTUAL question (domain agnostic)
-        if self.turn_counter > 0 and self.turn_counter % 15 == 0:
-            recent_turns = self.conversation_history[-15:]
+        # FIXED: Every 10 turns (was 15), check if debate is addressing the ACTUAL question (domain agnostic)
+        if self.turn_counter > 0 and self.turn_counter % 10 == 0:
+            recent_turns = self.conversation_history[-10:]
             
             # Extract key concepts from original question (domain agnostic)
             question_lower = self.question.lower() if self.question else ""
