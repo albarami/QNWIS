@@ -154,19 +154,19 @@ async def scenario_generation_node(state: IntelligenceState) -> IntelligenceStat
         # Create intelligent default scenarios based on query keywords
         query_lower = state.get('query', '').lower()
         
-        if any(kw in query_lower for kw in ['qatarization', 'workforce', 'labor', 'employment']):
+        if any(kw in query_lower for kw in ['workforce', 'labor', 'employment', 'nationalization', 'localization']):
             default_scenarios = [
-                {"id": "base", "name": "Base Case", "description": "Current Qatarization trajectory continues with gradual private sector improvement", "probability": 0.35, "modified_assumptions": {"qatarization_rate": "steady"}},
-                {"id": "acceleration", "name": "Policy Acceleration", "description": "Government mandates stricter quotas, faster enforcement", "probability": 0.25, "modified_assumptions": {"policy_intensity": "high"}},
-                {"id": "skills_gap", "name": "Skills Gap Crisis", "description": "Private sector demand outpaces Qatari skill development", "probability": 0.20, "modified_assumptions": {"skills_mismatch": "severe"}},
-                {"id": "competition", "name": "GCC Competition", "description": "Saudi/UAE offer better packages, causing talent drain", "probability": 0.20, "modified_assumptions": {"regional_competition": "intense"}},
+                {"id": "base", "name": "Base Case", "description": "Current workforce trajectory continues with gradual improvement", "probability": 0.35, "modified_assumptions": {"policy_rate": "steady"}},
+                {"id": "acceleration", "name": "Policy Acceleration", "description": "Government mandates stricter requirements, faster enforcement", "probability": 0.25, "modified_assumptions": {"policy_intensity": "high"}},
+                {"id": "skills_gap", "name": "Skills Gap Crisis", "description": "Demand outpaces skill development capacity", "probability": 0.20, "modified_assumptions": {"skills_mismatch": "severe"}},
+                {"id": "competition", "name": "Regional Competition", "description": "Competitors offer better packages, causing talent drain", "probability": 0.20, "modified_assumptions": {"regional_competition": "intense"}},
             ]
-        elif any(kw in query_lower for kw in ['oil', 'energy', 'gas', 'lng']):
+        elif any(kw in query_lower for kw in ['oil', 'energy', 'gas', 'lng', 'hydrocarbon']):
             default_scenarios = [
-                {"id": "base", "name": "Stable Prices", "description": "Oil at $70-80/barrel, steady LNG demand", "probability": 0.35, "modified_assumptions": {"oil_price": 75}},
-                {"id": "price_crash", "name": "Price Collapse", "description": "Sustained prices below $50, fiscal pressure", "probability": 0.20, "modified_assumptions": {"oil_price": 45}},
-                {"id": "lng_boom", "name": "LNG Demand Surge", "description": "Asian energy transition drives LNG premium", "probability": 0.25, "modified_assumptions": {"lng_premium": "high"}},
-                {"id": "transition", "name": "Energy Transition", "description": "Accelerated global shift reduces hydrocarbon demand", "probability": 0.20, "modified_assumptions": {"transition_speed": "fast"}},
+                {"id": "base", "name": "Stable Prices", "description": "Energy prices remain stable with steady demand", "probability": 0.35, "modified_assumptions": {"price_level": "stable"}},
+                {"id": "price_crash", "name": "Price Collapse", "description": "Sustained low prices create fiscal pressure", "probability": 0.20, "modified_assumptions": {"price_level": "low"}},
+                {"id": "demand_surge", "name": "Demand Surge", "description": "Global energy transition drives premium pricing", "probability": 0.25, "modified_assumptions": {"demand_level": "high"}},
+                {"id": "transition", "name": "Energy Transition", "description": "Accelerated global shift changes energy landscape", "probability": 0.20, "modified_assumptions": {"transition_speed": "fast"}},
             ]
         else:
             default_scenarios = [

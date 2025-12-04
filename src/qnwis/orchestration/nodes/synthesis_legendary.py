@@ -774,9 +774,10 @@ def _build_legendary_prompt(
     if scenarios_have_valid_data:
         cross_scenario_table = _build_cross_scenario_comparison(scenario_summaries)
     else:
-        cross_scenario_table = """
+        n_debate_turns = stats.get("n_turns", "many")
+        cross_scenario_table = f"""
 ⚠️ ENGINE B SCENARIO METRICS NOT AVAILABLE - USE DEBATE VERDICT BELOW AS PRIMARY SOURCE
-The expert debate (107 turns) produced quantified assessments that supersede scenario metrics.
+The expert debate ({n_debate_turns} turns) produced quantified assessments that supersede scenario metrics.
 """
     
     # Calculate robustness ratio (X/6 scenarios pass)
@@ -884,7 +885,7 @@ Source: {r['source']}
         if isinstance(f, dict):
             metric = f.get("metric", f.get("indicator", "Metric"))
             value = f.get("value", "N/A")
-            source = f.get("source", "QNWIS")
+            source = f.get("source", "Analysis")
             facts_text += f"│ {i:>2}. {metric[:30]:<30} │ {str(value)[:15]:<15} │ {source[:20]:<20} │\n"
 
     # Get Engine B metrics for display
@@ -1080,10 +1081,10 @@ Your opening paragraph MUST:
 5. **Every claim is sourced** - [Turn X], [Fact #Y], [Scenario Z]
 
 BAD OPENING (bureaucratic - NEVER WRITE THIS):
-"Qatar's proposed 15% minimum wage increase represents a pivotal decision with significant economic, social, and geopolitical implications."
+"The proposed policy represents a pivotal decision with significant economic, social, and geopolitical implications."
 
 LEGENDARY OPENING (McKinsey Partner voice - WRITE THIS):
-"A 15% minimum wage increase will raise Qatar's construction costs by 7-10% [Fact #12]—but the Ministry is asking the wrong question. The real issue isn't whether to raise wages; it's whether Qatar's construction sector can survive the next decade without fundamental restructuring [Turn 23]. Our {stats["n_turns"]}-turn expert deliberation reveals that wage reform, automation investment, and regional labor dynamics are inseparable [Consensus: Turn 41]. Implement the increase in isolation, and you accelerate a crisis. Implement it as part of a structural pivot, and you position Qatar's construction sector for global competitiveness beyond the hydrocarbon era [Scenario 3: Automation Accelerates]."
+"[Specific quantified impact from facts]—but leadership is asking the wrong question. The real issue isn't [surface question]; it's [deeper strategic question] [Turn X]. Our {stats["n_turns"]}-turn expert deliberation reveals that [key factors] are inseparable [Consensus: Turn Y]. Implement in isolation, and you accelerate a crisis. Implement as part of a structural pivot, and you position for long-term competitiveness [Scenario Z]."
 
 ## METRIC PRESENTATION (CRITICAL):
 NEVER show raw database codes. Transform ALL metrics:
@@ -1103,29 +1104,29 @@ Before finalizing, explicitly address EACH red flag:
 - Red Flag #2 [issue] → Addressed by [specific recommendation element]
 If a flag cannot be fully addressed, acknowledge it as a limitation."
 
-## QATAR SPECIFICITY REQUIREMENTS (MANDATORY):
-Your recommendations CANNOT be generic. If a recommendation could apply to "any Gulf country," REWRITE it with Qatar-specific details.
+## DOMAIN SPECIFICITY REQUIREMENTS (MANDATORY):
+Your recommendations CANNOT be generic. If a recommendation could apply to "any country" or "any organization," REWRITE it with context-specific details from the query and extracted facts.
 
-WHEN RECOMMENDING PROGRAMS FOR QATAR, YOU MUST NAME:
-- **Specific institutions**: Ashghal, Qatar Rail, Qatar Foundation, Qatar University, QFFD, QIA, QFC, Sidra, HMC
-- **Specific projects**: Lusail City, FIFA 2022 stadiums, Metro expansion, Education City, Hamad Port
-- **Specific companies**: QatarEnergy, Ooredoo, Qatar Airways, QNB, Industries Qatar
-- **Specific funds/programs**: Vision 2030, National Development Strategy, Qatar Science & Technology Park
+WHEN RECOMMENDING PROGRAMS, YOU MUST NAME:
+- **Specific institutions**: Use actual entities mentioned in the query or extracted from facts
+- **Specific projects**: Reference real initiatives identified in the analysis
+- **Specific organizations**: Name actual stakeholders from the context
+- **Specific programs**: Use real policy frameworks mentioned in debate
 
 GENERIC (UNACCEPTABLE):
 "Launch workforce upskilling program targeting 50,000 workers"
 
-QATAR-SPECIFIC (REQUIRED):
-"Launch QR 200M Construction Skills Accelerator targeting 50,000 workers:
-- Track 1: Automation Operators (20,000 workers) — Partner with Ashghal and Qatar Rail for robotic systems training
-- Track 2: Safety Specialists (15,000 workers) — FIFA stadium maintenance certification through Qatar University
-- Track 3: Project Management (15,000 workers) — Transition supervisors through Qatar Foundation programs
-Lead: Ministry of Labour + Qatar Foundation. Timeline: First cohort March 2026.
-Success metric: 70% job placement within 90 days. [Addresses Red Flag #2: Lack of specificity]"
+CONTEXT-SPECIFIC (REQUIRED):
+"Launch [specific program name from context] targeting [specific number from facts]:
+- Track 1: [specific focus] ([number] workers) — Partner with [institution from facts]
+- Track 2: [specific focus] ([number] workers) — [specific pathway from debate]
+- Track 3: [specific focus] ([number] workers) — [specific mechanism from analysis]
+Lead: [specific ministry/entity from query]. Timeline: [specific date].
+Success metric: [quantified outcome]. [Addresses Red Flag #X]"
 
 ALWAYS include:
-- Specific budget (QR amount from facts or estimated)
-- Specific timeline (month/year)
+- Specific budget (amount from facts or estimated based on analysis)
+- Specific timeline (month/year based on debate recommendations)
 - Specific partners (named institutions)
 - Success metrics (quantified)
 - Which Red Flag this addresses
@@ -1133,10 +1134,10 @@ ALWAYS include:
 ## OUTPUT STRUCTURE (Follow EXACTLY):
 
 ═══════════════════════════════════════════════════════════════════════════════
-                    QNWIS STRATEGIC INTELLIGENCE BRIEFING
+                    NSIC STRATEGIC INTELLIGENCE BRIEFING
 ───────────────────────────────────────────────────────────────────────────────
-                    Classification: MINISTERIAL — CONFIDENTIAL
-                    Prepared: {stats["date"]} | Reference: QNWIS-{stats["unique_id"]}
+                    Classification: LEADERSHIP — CONFIDENTIAL
+                    Prepared: {stats["date"]} | Reference: NSIC-{stats["unique_id"]}
 ═══════════════════════════════════════════════════════════════════════════════
 
 ## I. STRATEGIC VERDICT
@@ -1162,7 +1163,7 @@ ALWAYS include:
 
 **ORIGINAL QUERY:** "{query}"
 
-**QNWIS INTERPRETATION:**
+**SYSTEM INTERPRETATION:**
 [Break down what this question really asks - 3-4 analytical requirements]
 
 **IMPLICIT QUESTIONS IDENTIFIED:**
@@ -1312,7 +1313,7 @@ Early Warning: [Indicator]           │
 ANALYTICAL DEPTH: {stats["n_facts"]} facts | {stats["n_scenarios"]} scenarios | {stats["n_turns"]} debate turns | {stats["n_experts"]} experts
 QUANTITATIVE BACKING: {robustness_ratio} scenarios pass | {avg_success:.0f}% avg success probability | Monte Carlo × {engine_b_scenarios}
 ═══════════════════════════════════════════════════════════════════════════════
-                QNWIS Enterprise Intelligence | Qatar Ministry of Labour
+                NSIC Enterprise Intelligence System
 ═══════════════════════════════════════════════════════════════════════════════
 
 ---
@@ -1376,7 +1377,7 @@ async def legendary_synthesis_node(state: IntelligenceState) -> IntelligenceStat
 {alternative}
 
 ### Why This Matters
-Before investing analytical resources in HOW to achieve a target, we must first verify IF the target is achievable. This query failed the basic arithmetic check - the required numbers exceed what is physically possible given Qatar's demographic constraints.
+Before investing analytical resources in HOW to achieve a target, we must first verify IF the target is achievable. This query failed the basic arithmetic check - the required numbers exceed what is physically possible given the demographic and resource constraints.
 
 ### Recommendation
 Do NOT proceed with policy analysis for this target. Instead:
@@ -1536,8 +1537,8 @@ Do NOT proceed with policy analysis for this target. Instead:
         # Emergency fallback
         state["final_synthesis"] = f"""
 ═══════════════════════════════════════════════════════════════════════════════
-                    QNWIS STRATEGIC INTELLIGENCE BRIEFING
-                    Classification: MINISTERIAL — CONFIDENTIAL
+                    NSIC STRATEGIC INTELLIGENCE BRIEFING
+                    Classification: LEADERSHIP — CONFIDENTIAL
 ═══════════════════════════════════════════════════════════════════════════════
 
 ## I. STRATEGIC VERDICT

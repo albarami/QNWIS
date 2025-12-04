@@ -178,7 +178,7 @@ def _build_synthesis_prompt(
         status = s.get('engine_b_status', 'N/A')
         comparison_table += f"{name:<20} | {success:>10} | {conf:>10} | {drivers[:20]:<20} | {status}\n"
     
-    prompt = f"""You are synthesizing {len(scenario_summaries)} parallel scenario analyses for Qatar's ministerial leadership.
+    prompt = f"""You are synthesizing {len(scenario_summaries)} parallel scenario analyses for senior leadership decision-making.
 
 SCENARIO ANALYSES COMPLETED:
 {scenario_details}
