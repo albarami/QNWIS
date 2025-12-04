@@ -366,64 +366,122 @@ def _extract_final_debate_verdict(state: IntelligenceState) -> Dict[str, Any]:
 
 
 def _extract_scenario_summaries(state: IntelligenceState) -> List[Dict[str, Any]]:
-    """Extract scenario analysis summaries with Engine B quantitative results."""
+    """Extract scenario analysis summaries with Engine B quantitative results.
+    
+    FIXED: Now handles three cases:
+    1. Both scenarios and scenario_results exist - match them
+    2. Only scenarios exist - use scenario definitions
+    3. Only scenario_results exist - build from results directly
+    """
     
     scenarios = state.get("scenarios") or []
     scenario_results = state.get("scenario_results") or []
     
     summaries = []
     
-    for i, scenario in enumerate(scenarios):
-        if not isinstance(scenario, dict):
-            continue
-        
-        # Find matching result
-        result = None
-        for r in (scenario_results or []):
-            if isinstance(r, dict) and r.get("scenario_id") == scenario.get("id"):
-                result = r
-                break
-        
-        if not result and scenario_results and i < len(scenario_results):
-            result = scenario_results[i] if isinstance(scenario_results[i], dict) else {}
-        
-        confidence = 0.75
-        if result:
-            confidence = result.get("confidence_score", result.get("confidence", 0.75))
-            if confidence <= 1:
-                confidence = confidence
-        
-        # Extract Engine B quantitative results
-        engine_b = result.get("engine_b_results", {}) if result else {}
-        monte_carlo = engine_b.get("monte_carlo", {})
-        sensitivity = engine_b.get("sensitivity", [])  # Now a list
-        forecasting = engine_b.get("forecasting", {})
-        
-        # FIXED: Handle sensitivity as list (new format) or dict (old format)
-        if isinstance(sensitivity, list):
-            key_drivers = [d.get("driver", d.get("variable", d.get("label", ""))) for d in sensitivity[:3] if isinstance(d, dict)]
-        elif isinstance(sensitivity, dict):
-            sens_list = sensitivity.get("sensitivities", sensitivity.get("parameter_impacts", []))
-            key_drivers = [d.get("variable", "") for d in sens_list[:3] if isinstance(d, dict)]
-        else:
-            key_drivers = []
-        
-        summaries.append({
-            "name": scenario.get("name", f"Scenario {i+1}"),
-            "description": scenario.get("description", ""),
-            "probability": scenario.get("probability", 0.5),
-            "confidence": confidence,
-            "key_finding": result.get("final_synthesis", "")[:300] if result else "",
-            # Engine B quantitative backing
-            "success_probability": monte_carlo.get("success_probability", 0) if monte_carlo else 0,
-            "monte_carlo_mean": monte_carlo.get("mean", 0) if monte_carlo else 0,
-            "monte_carlo_std": monte_carlo.get("std", 0) if monte_carlo else 0,
-            "key_drivers": key_drivers,
-            "forecast_trend": forecasting.get("trend", "stable") if forecasting else "unknown",
-            "engine_b_status": engine_b.get("status", "not_run"),
-        })
+    # CASE 1 & 2: If we have scenario definitions, use them as primary source
+    if scenarios:
+        for i, scenario in enumerate(scenarios):
+            if not isinstance(scenario, dict):
+                continue
+            
+            # Find matching result by ID or index
+            result = None
+            scenario_id = scenario.get("id", scenario.get("scenario_id"))
+            for r in scenario_results:
+                if isinstance(r, dict):
+                    r_id = r.get("scenario_id", r.get("id"))
+                    if r_id and scenario_id and r_id == scenario_id:
+                        result = r
+                        break
+            
+            # Fallback: use positional match
+            if not result and i < len(scenario_results):
+                result = scenario_results[i] if isinstance(scenario_results[i], dict) else {}
+            
+            summaries.append(_build_scenario_summary(scenario, result, i))
+    
+    # CASE 3: If no scenario definitions but we have results, build from results
+    elif scenario_results:
+        logger.info(f"📊 No scenario definitions, building summaries from {len(scenario_results)} results")
+        for i, result in enumerate(scenario_results):
+            if not isinstance(result, dict):
+                continue
+            
+            # Create a pseudo-scenario from the result
+            pseudo_scenario = {
+                "name": result.get("scenario_name", result.get("name", f"Scenario {i+1}")),
+                "description": result.get("description", ""),
+                "probability": result.get("probability", 0.5),
+                "id": result.get("scenario_id", result.get("id", f"scenario_{i}")),
+            }
+            summaries.append(_build_scenario_summary(pseudo_scenario, result, i))
+    
+    # CASE 4: No scenarios and no results - create empty placeholders
+    else:
+        logger.warning("⚠️ No scenario definitions or results found!")
+        # Don't create fake "Unknown" scenarios - return empty list
+        return []
     
     return summaries[:6]
+
+
+def _build_scenario_summary(scenario: Dict[str, Any], result: Optional[Dict[str, Any]], index: int) -> Dict[str, Any]:
+    """Build a single scenario summary from scenario definition and result.
+    
+    This is a helper to avoid code duplication.
+    """
+    confidence = 0.75
+    if result:
+        confidence = result.get("confidence_score", result.get("confidence", 0.75))
+        if isinstance(confidence, (int, float)) and confidence <= 1:
+            confidence = confidence  # Already normalized
+    
+    # Extract Engine B quantitative results
+    engine_b = result.get("engine_b_results", {}) if result else {}
+    monte_carlo = engine_b.get("monte_carlo", {}) or {}
+    sensitivity = engine_b.get("sensitivity", [])
+    forecasting = engine_b.get("forecasting", {}) or {}
+    
+    # Handle sensitivity as list (new format) or dict (old format)
+    key_drivers = []
+    if isinstance(sensitivity, list):
+        key_drivers = [d.get("driver", d.get("variable", d.get("label", ""))) for d in sensitivity[:3] if isinstance(d, dict)]
+    elif isinstance(sensitivity, dict):
+        sens_list = sensitivity.get("sensitivities", sensitivity.get("parameter_impacts", []))
+        key_drivers = [d.get("variable", "") for d in sens_list[:3] if isinstance(d, dict)]
+    
+    # Get success probability - try multiple field names
+    success_prob = 0
+    if monte_carlo:
+        success_prob = monte_carlo.get("success_probability", 
+                       monte_carlo.get("success_rate", 
+                       monte_carlo.get("probability", 0)))
+    
+    # Determine engine status based on actual data
+    engine_status = "not_run"
+    if engine_b:
+        if success_prob > 0 or monte_carlo.get("mean", 0) > 0:
+            engine_status = "complete"
+        elif engine_b.get("status"):
+            engine_status = engine_b.get("status")
+        else:
+            engine_status = "failed"
+    
+    return {
+        "name": scenario.get("name", f"Scenario {index+1}"),
+        "description": scenario.get("description", ""),
+        "probability": scenario.get("probability", 0.5),
+        "confidence": confidence,
+        "key_finding": result.get("final_synthesis", result.get("synthesis", ""))[:300] if result else "",
+        # Engine B quantitative backing
+        "success_probability": success_prob,
+        "monte_carlo_mean": monte_carlo.get("mean", monte_carlo.get("mean_result", 0)) if monte_carlo else 0,
+        "monte_carlo_std": monte_carlo.get("std", monte_carlo.get("std_result", 0)) if monte_carlo else 0,
+        "key_drivers": key_drivers,
+        "forecast_trend": forecasting.get("trend", "stable") if forecasting else "unknown",
+        "engine_b_status": engine_status,
+    }
 
 
 def _build_cross_scenario_comparison(scenario_summaries: List[Dict[str, Any]]) -> str:
@@ -441,12 +499,27 @@ def _build_cross_scenario_comparison(scenario_summaries: List[Dict[str, Any]]) -
     lines.append("├─────────────────────────────┼────────────┼────────────┼────────────────┼─────────────────┤")
     
     for s in scenario_summaries:
-        name = s.get("name", "Unknown")[:27]
-        prob = f"{s.get('probability', 0.5) * 100:.0f}%"
-        success = f"{s.get('success_probability', 0) * 100:.1f}%"
+        name = s.get("name", "Scenario")[:27]
+        
+        # Handle probability (could be 0-1 or 0-100)
+        raw_prob = s.get('probability', 0.5)
+        prob_pct = raw_prob * 100 if raw_prob <= 1 else raw_prob
+        prob = f"{prob_pct:.0f}%"
+        
+        # Handle success probability (could be 0-1 or 0-100)
+        raw_success = s.get('success_probability', 0)
+        success_pct = raw_success * 100 if raw_success <= 1 else raw_success
+        success = f"{success_pct:.1f}%" if raw_success > 0 else "N/A"
+        
         mc_mean = s.get("monte_carlo_mean", 0)
         mc_str = f"{mc_mean:,.0f}" if mc_mean else "N/A"
+        
         drivers = ", ".join(s.get("key_drivers", [])[:2]) or "N/A"
+        
+        # Show engine status if failed
+        engine_status = s.get("engine_b_status", "unknown")
+        if engine_status == "failed" and success == "N/A":
+            success = "Failed"
         
         lines.append(f"│ {name:<27} │ {prob:>10} │ {success:>10} │ {mc_str:>14} │ {drivers[:15]:<15} │")
     
@@ -460,10 +533,13 @@ def _calculate_robustness_ratio(scenario_summaries: List[Dict[str, Any]], thresh
     
     This is CRITICAL for McKinsey-grade output - showing "X/6 scenarios pass"
     which demonstrates quantitative rigor.
+    
+    NOTE: threshold is in decimal form (0.5 = 50%)
     """
     total = len(scenario_summaries)
     if total == 0:
-        return {"passed": 0, "total": 0, "ratio_str": "0/0", "robust": False}
+        return {"passed": 0, "total": 0, "ratio_str": "0/0", "ratio_pct": 0, "robust": False, 
+                "passing_scenarios": [], "failing_scenarios": [], "threshold_used": threshold}
     
     # Count scenarios where success probability exceeds threshold
     passed = 0
@@ -471,7 +547,10 @@ def _calculate_robustness_ratio(scenario_summaries: List[Dict[str, Any]], thresh
     failing_scenarios = []
     
     for s in scenario_summaries:
-        success_prob = s.get("success_probability", 0)
+        raw_success = s.get("success_probability", 0)
+        # Normalize to 0-1 range if it's in percentage form
+        success_prob = raw_success / 100 if raw_success > 1 else raw_success
+        
         if success_prob >= threshold:
             passed += 1
             passing_scenarios.append(s.get("name", "Unknown"))

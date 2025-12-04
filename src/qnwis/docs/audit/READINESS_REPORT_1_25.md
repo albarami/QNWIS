@@ -1,8 +1,8 @@
 # Readiness Report: Steps 1-33
 
-**Generated:** 2025-12-04T01:33:49.221105
+**Generated:** 2025-12-04T02:20:11.813841
 **Overall Status:** FAIL
-**Execution Time:** 572 ms
+**Execution Time:** 554 ms
 
 ## Summary
 
@@ -360,7 +360,7 @@
 - `docs/IMPLEMENTATION_ROADMAP.md`
 
 ### no_placeholders [FAIL]
-- **Duration:** 549 ms
+- **Duration:** 530 ms
 - **Severity:** ERROR
 ```json
 {
@@ -604,7 +604,7 @@
     },
     {
       "file": "src/qnwis/orchestration/nodes/synthesis_legendary.py",
-      "line": 1301,
+      "line": 1327,
       "pattern": "^\\s*pass\\s*$",
       "snippet": "pass"
     },
