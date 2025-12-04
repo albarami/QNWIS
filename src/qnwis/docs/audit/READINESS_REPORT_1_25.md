@@ -1,6 +1,6 @@
 # Readiness Report: Steps 1-33
 
-**Generated:** 2025-12-04T00:53:38.695421
+**Generated:** 2025-12-04T01:01:08.403806
 **Overall Status:** FAIL
 **Execution Time:** 551 ms
 
@@ -17,7 +17,7 @@
 ## Gate Results
 
 ### step_completeness [PASS]
-- **Duration:** 16 ms
+- **Duration:** 17 ms
 - **Severity:** ERROR
 ```json
 {
@@ -604,13 +604,7 @@
     },
     {
       "file": "src/qnwis/orchestration/nodes/synthesis_legendary.py",
-      "line": 286,
-      "pattern": "^\\s*pass\\s*$",
-      "snippet": "pass"
-    },
-    {
-      "file": "src/qnwis/orchestration/nodes/synthesis_legendary.py",
-      "line": 1228,
+      "line": 1279,
       "pattern": "^\\s*pass\\s*$",
       "snippet": "pass"
     },

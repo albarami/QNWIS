@@ -240,13 +240,15 @@ def _extract_final_debate_verdict(state: IntelligenceState) -> Dict[str, Any]:
     """
     Extract the final debate verdict with quantified assessments.
     
-    DOMAIN AGNOSTIC: Works for any question type - binary choices, evaluations,
-    forecasts, impact assessments, etc.
+    FULLY DOMAIN AGNOSTIC: Works for ANY question type:
+    - Policy evaluations ("Should we implement X?")
+    - Impact assessments ("What is the effect of Y?")
+    - Risk analyses ("What are the risks of Z?")
+    - Forecasts ("What will happen if...?")
+    - Comparisons ("Which is better, A or B?")
+    - Open questions ("How can we improve X?")
     
-    Looks for:
-    - Success probabilities for alternatives
-    - Primary assessment/recommendation with confidence
-    - Go/No-Go decisions
+    Extracts whatever quantified assessment the debate produced.
     """
     import json
     import re
@@ -255,11 +257,13 @@ def _extract_final_debate_verdict(state: IntelligenceState) -> Dict[str, Any]:
     debate_synthesis = state.get("debate_synthesis", "")
     
     verdict = {
-        "primary_assessment": None,       # Main quantified metric (e.g., "72% success probability")
-        "alternatives": [],               # List of {name, probability, risk_level} if comparing options
-        "recommended": None,              # Recommended alternative or course of action
+        "direct_answer": None,            # The direct answer to the question
+        "quantified_assessment": None,    # Any quantified metric (%, score, level)
+        "assessment_type": None,          # probability/impact/risk/confidence/score
+        "recommendation": None,           # What action is recommended
         "confidence_level": None,         # Overall confidence (0-100)
-        "decision": None,                 # GO/NO-GO/CONDITIONAL
+        "decision": None,                 # GO/NO-GO/CONDITIONAL if applicable
+        "key_findings": [],               # Main conclusions
         "source": None,
     }
     
@@ -273,72 +277,88 @@ def _extract_final_debate_verdict(state: IntelligenceState) -> Dict[str, Any]:
             try:
                 data = json.loads(json_str)
                 
+                # Extract direct answer
+                verdict["direct_answer"] = data.get("direct_answer", data.get("answer", 
+                                          data.get("conclusion")))
+                
                 # Look for quantified assessment (domain agnostic keys)
                 for key in ["quantified_assessment", "primary_metric", "success_probability", 
-                           "assessment", "probability", "confidence"]:
+                           "assessment", "probability", "confidence", "impact", "risk_level"]:
                     if key in data:
                         val = data[key]
                         if isinstance(val, dict):
-                            verdict["primary_assessment"] = f"{val.get('value', val.get('score', 'N/A'))}%"
+                            verdict["quantified_assessment"] = f"{val.get('value', val.get('score', 'N/A'))}"
+                            verdict["assessment_type"] = val.get('metric_type', 'probability')
                         elif isinstance(val, (int, float)):
-                            verdict["primary_assessment"] = f"{val}%"
+                            verdict["quantified_assessment"] = f"{val}%"
+                            verdict["assessment_type"] = "probability"
+                        elif isinstance(val, str):
+                            verdict["quantified_assessment"] = val
+                            verdict["assessment_type"] = "qualitative"
                         break
                 
-                # Look for alternatives comparison
-                for key in ["alternatives", "if_comparing_alternatives", "options", "comparison"]:
-                    if key in data and isinstance(data[key], dict):
-                        for alt_key, alt_val in data[key].items():
-                            if isinstance(alt_val, dict) and "success_probability" in alt_val:
-                                verdict["alternatives"].append({
-                                    "name": alt_val.get("name", alt_key),
-                                    "probability": alt_val.get("success_probability"),
-                                    "risk_level": alt_val.get("risk_level", "MEDIUM")
-                                })
+                # Look for key findings
+                findings = data.get("key_findings", data.get("findings", []))
+                if isinstance(findings, list):
+                    verdict["key_findings"] = findings[:5]
                 
                 # Look for recommendation
-                verdict["recommended"] = data.get("recommended", data.get("direct_answer", 
-                                        data.get("recommendation", data.get("winner"))))
+                verdict["recommendation"] = data.get("recommendation", data.get("recommended", 
+                                           data.get("direct_answer", data.get("action"))))
                 
                 # Look for decision
                 verdict["decision"] = data.get("go_no_go_decision", data.get("decision", 
-                                     data.get("go_no_go")))
+                                     data.get("go_no_go", data.get("verdict"))))
                 
                 # Look for confidence
                 conf = data.get("confidence_level", data.get("confidence"))
                 if conf is not None:
+                    if isinstance(conf, str) and '%' in conf:
+                        conf = float(conf.replace('%', ''))
                     verdict["confidence_level"] = conf if isinstance(conf, (int, float)) else None
                 
                 verdict["source"] = f"turn_{turn.get('turn', 'unknown')}"
                 
-                if verdict["primary_assessment"] or verdict["alternatives"]:
-                    logger.info(f"📊 Extracted debate verdict: {verdict['primary_assessment'] or 'alternatives found'}")
+                if verdict["quantified_assessment"] or verdict["direct_answer"]:
+                    logger.info(f"📊 Extracted debate verdict: {verdict.get('quantified_assessment') or str(verdict.get('direct_answer', ''))[:50]}")
                     return verdict
                     
             except json.JSONDecodeError:
                 continue
         
-        # Strategy 2: Regex extraction of any percentages with context (domain agnostic)
-        # Look for patterns like "X: Y%" or "success probability: Y%"
+        # Strategy 2: Regex extraction of any quantified metrics (domain agnostic)
         percentage_matches = re.findall(r'([A-Za-z][A-Za-z\s]+?):\s*(\d+(?:\.\d+)?)\s*%', message)
-        if len(percentage_matches) >= 1:
-            for match in percentage_matches:
-                label, value = match
-                if any(kw in label.lower() for kw in ["success", "probability", "confidence", "score", "rate"]):
-                    verdict["primary_assessment"] = f"{value}%"
+        if percentage_matches:
+            for label, value in percentage_matches:
+                if any(kw in label.lower() for kw in ["success", "probability", "confidence", 
+                      "score", "rate", "likelihood", "chance", "assessment"]):
+                    verdict["quantified_assessment"] = f"{value}%"
+                    verdict["assessment_type"] = "probability"
                     verdict["source"] = f"turn_{turn.get('turn', 'unknown')}"
             
-            if verdict["primary_assessment"]:
-                logger.info(f"📊 Extracted verdict via regex: {verdict['primary_assessment']}")
+            if verdict["quantified_assessment"]:
+                logger.info(f"📊 Extracted verdict via regex: {verdict['quantified_assessment']}")
                 return verdict
+        
+        # Also look for qualitative assessments (HIGH/MEDIUM/LOW)
+        qualitative_matches = re.findall(r'(risk|impact|severity|priority):\s*(HIGH|MEDIUM|LOW|CRITICAL)', 
+                                         message, re.IGNORECASE)
+        if qualitative_matches:
+            verdict["quantified_assessment"] = qualitative_matches[0][1].upper()
+            verdict["assessment_type"] = qualitative_matches[0][0].lower()
+            verdict["source"] = f"turn_{turn.get('turn', 'unknown')}"
+            logger.info(f"📊 Extracted qualitative verdict: {verdict['assessment_type']}={verdict['quantified_assessment']}")
+            return verdict
     
     # Strategy 3: Look in debate_synthesis
     if debate_synthesis:
-        percentage_matches = re.findall(r'(\d+(?:\.\d+)?)\s*%\s*(?:success|probability|confidence)', 
+        percentage_matches = re.findall(r'(\d+(?:\.\d+)?)\s*%\s*(?:success|probability|confidence|likely)', 
                                        debate_synthesis, re.IGNORECASE)
         if percentage_matches:
-            verdict["primary_assessment"] = f"{percentage_matches[0]}%"
+            verdict["quantified_assessment"] = f"{percentage_matches[0]}%"
+            verdict["assessment_type"] = "probability"
             verdict["source"] = "debate_synthesis"
-            logger.info(f"📊 Extracted verdict from synthesis: {verdict['primary_assessment']}")
+            logger.info(f"📊 Extracted verdict from synthesis: {verdict['quantified_assessment']}")
             return verdict
     
     logger.warning("⚠️ Could not extract structured verdict - using scenario averages")
@@ -686,26 +706,27 @@ Source: {r['source']}
     robustness_ratio = stats.get("robustness_ratio", "0/0")
     robustness_pct = stats.get("robustness_pct", 0)
     
-    # CRITICAL: Get debate verdict (DOMAIN AGNOSTIC)
+    # CRITICAL: Get debate verdict (FULLY DOMAIN AGNOSTIC)
     final_verdict = debate_highlights.get("final_verdict", {})
     debate_verdict_text = ""
-    if final_verdict.get("primary_assessment") or final_verdict.get("alternatives"):
-        # Build alternatives comparison if available
-        alternatives_text = ""
-        if final_verdict.get("alternatives"):
-            for alt in final_verdict["alternatives"][:5]:
-                alternatives_text += f"│ {alt.get('name', 'Alternative')}: {alt.get('probability', 'N/A')}% success, {alt.get('risk_level', 'MEDIUM')} risk\n"
+    if final_verdict.get("quantified_assessment") or final_verdict.get("direct_answer"):
+        # Build key findings if available
+        findings_text = ""
+        if final_verdict.get("key_findings"):
+            for finding in final_verdict["key_findings"][:3]:
+                findings_text += f"│ • {finding}\n"
         
         debate_verdict_text = f"""
 DEBATE FINAL VERDICT (FROM EXPERT CONSENSUS):
 ═══════════════════════════════════════════════════════════════════════════════
-│ Primary Assessment: {final_verdict.get('primary_assessment', 'See details')}
-{alternatives_text if alternatives_text else ''}│ Recommendation: {final_verdict.get('recommended', 'Analysis complete')}
-│ Decision: {final_verdict.get('decision', 'Pending')}
+│ Assessment: {final_verdict.get('quantified_assessment', 'See details')} ({final_verdict.get('assessment_type', 'analysis')})
+│ Direct Answer: {str(final_verdict.get('direct_answer', 'See recommendation'))[:200]}
+{findings_text if findings_text else ''}│ Recommendation: {final_verdict.get('recommendation', 'Analysis complete')}
+│ Decision: {final_verdict.get('decision', 'See recommendation')}
 │ Confidence: {final_verdict.get('confidence_level', 'N/A')}%
 │ Source: {final_verdict.get('source', 'Expert deliberation')}
 ═══════════════════════════════════════════════════════════════════════════════
-⚠️ CRITICAL: The ministerial brief MUST reflect this quantified assessment.
+⚠️ CRITICAL: The ministerial brief MUST reflect this assessment.
 """
     
     prompt = f'''You are the Chief Intelligence Officer synthesizing the most comprehensive strategic 
@@ -1131,29 +1152,26 @@ Do NOT proceed with policy analysis for this target. Instead:
     edge_cases = _extract_edge_cases(state)  # NEW: Extract edge cases
     facts = state.get("extracted_facts", [])
     
-    # CRITICAL: Extract final debate verdict (domain agnostic)
+    # CRITICAL: Extract final debate verdict (FULLY DOMAIN AGNOSTIC)
     debate_verdict = _extract_final_debate_verdict(state)
-    if debate_verdict.get("primary_assessment") or debate_verdict.get("alternatives"):
-        logger.info(f"📊 DEBATE VERDICT: {debate_verdict.get('primary_assessment', 'Alternatives analyzed')}")
+    if debate_verdict.get("quantified_assessment") or debate_verdict.get("direct_answer"):
+        logger.info(f"📊 DEBATE VERDICT: {debate_verdict.get('quantified_assessment', debate_verdict.get('direct_answer', '')[:50])}")
         debate_highlights["final_verdict"] = debate_verdict
         
-        # Extract probability from primary assessment or alternatives
-        if debate_verdict.get("primary_assessment"):
-            # Parse "72%" -> 72
+        # Extract numeric value from quantified assessment if available
+        if debate_verdict.get("quantified_assessment"):
             import re
-            prob_match = re.search(r'(\d+(?:\.\d+)?)', debate_verdict["primary_assessment"])
+            # Try to parse numeric value (e.g., "72%", "8.5", "HIGH")
+            assessment = debate_verdict["quantified_assessment"]
+            prob_match = re.search(r'(\d+(?:\.\d+)?)', str(assessment))
             if prob_match:
-                stats["debate_winner_probability"] = float(prob_match.group(1))
-                stats["debate_recommendation"] = debate_verdict.get("recommended", "See verdict")
-        elif debate_verdict.get("alternatives"):
-            # Find highest probability alternative
-            best_alt = max(debate_verdict["alternatives"], 
-                          key=lambda x: x.get("probability", 0) if isinstance(x.get("probability"), (int, float)) else 0,
-                          default=None)
-            if best_alt:
-                stats["debate_winner"] = best_alt.get("name", "Best alternative")
-                stats["debate_winner_probability"] = best_alt.get("probability", 0)
-                stats["debate_recommendation"] = debate_verdict.get("recommended", best_alt.get("name"))
+                stats["debate_assessment_value"] = float(prob_match.group(1))
+                stats["debate_assessment_type"] = debate_verdict.get("assessment_type", "score")
+            else:
+                # Qualitative assessment (HIGH/MEDIUM/LOW/CRITICAL)
+                stats["debate_assessment_value"] = assessment
+                stats["debate_assessment_type"] = "qualitative"
+            stats["debate_recommendation"] = debate_verdict.get("recommendation", "See verdict")
     
     # Extract Engine B aggregate quantitative results
     engine_b_aggregate = state.get("engine_b_aggregate", {})
@@ -1176,14 +1194,18 @@ Do NOT proceed with policy analysis for this target. Instead:
     stats["robustness_ratio"] = robustness["ratio_str"]
     stats["robustness_pct"] = robustness["ratio_pct"]
     
-    # CRITICAL: If debate verdict has quantified assessment, use it for robustness
-    if debate_verdict.get("primary_assessment") or debate_verdict.get("alternatives"):
-        winner_prob = stats.get("debate_winner_probability", 0)
-        if winner_prob and winner_prob >= 50:
-            # Debate has a strong recommendation
-            rec = stats.get("debate_recommendation", stats.get("debate_winner", "Recommended"))
-            stats["debate_summary"] = f"{rec}: {winner_prob:.0f}% assessment"
-            logger.info(f"📊 Using debate verdict for brief: {stats['debate_summary']}")
+    # CRITICAL: If debate verdict has quantified assessment, use it in summary
+    if debate_verdict.get("quantified_assessment") or debate_verdict.get("direct_answer"):
+        assessment = stats.get("debate_assessment_value", debate_verdict.get("quantified_assessment"))
+        assessment_type = stats.get("debate_assessment_type", "assessment")
+        rec = stats.get("debate_recommendation", "See verdict")
+        
+        # Build summary based on assessment type
+        if isinstance(assessment, (int, float)):
+            stats["debate_summary"] = f"{rec}: {assessment:.0f}% {assessment_type}"
+        else:
+            stats["debate_summary"] = f"{rec}: {assessment} {assessment_type}"
+        logger.info(f"📊 Using debate verdict for brief: {stats['debate_summary']}")
     
     logger.info(
         f"🏛️ Generating Legendary Briefing: "

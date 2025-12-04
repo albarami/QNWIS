@@ -542,15 +542,8 @@ Responses without engagement will be REJECTED.
             if len(word) > 3 and word not in stop_words:
                 key_concepts.append(word)
         
-        # Check if this is an A vs B comparison question
-        is_comparison_query = (
-            " or " in question_lower or
-            " versus " in question_lower or
-            " vs " in question_lower or
-            "option a" in question_lower or
-            "option b" in question_lower or
-            "which " in question_lower
-        )
+        # No special handling for "comparison" questions - ALL questions
+        # should be treated the same way: extract concepts, check relevance
         
         # Forbidden academic tangent patterns
         # These indicate pure methodology discussion without practical application
@@ -571,24 +564,23 @@ Responses without engagement will be REJECTED.
             if content_lower.count(pattern) > max_count:
                 return (False, f"Excessive focus on '{pattern}' - redirect to practical analysis")
         
-        # For comparison queries, check if turn addresses the comparison
-        if is_comparison_query:
-            # Must mention at least some key concepts from the question
-            concept_matches = sum(1 for c in key_concepts if c in content_lower)
-            
-            # Check for analytical language (domain agnostic - not "option a/b" specific)
-            analytical_indicators = [
-                "compared to", "versus", "alternatively", "on one hand",
-                "on the other hand", "between the two", "either", "or",
-                "better than", "worse than", "prefer", "recommend",
-                "choose", "select", "advantage", "disadvantage",
-                "assessment", "probability", "success rate", "conclude",
-                "recommend", "suggest", "evidence shows", "analysis indicates"
-            ]
-            has_analytical_content = any(ind in content_lower for ind in analytical_indicators)
-            
-            if concept_matches < 2 and not has_analytical_content:
-                return (False, "Response doesn't address the original question")
+        # Check if turn addresses the question (applies to ALL question types)
+        # Must mention at least some key concepts from the question
+        concept_matches = sum(1 for c in key_concepts if c in content_lower)
+        
+        # Check for substantive analytical content (domain agnostic)
+        analytical_indicators = [
+            "analysis", "assessment", "evidence", "data", "finding",
+            "probability", "success", "risk", "impact", "outcome",
+            "recommend", "suggest", "conclude", "therefore", "because",
+            "based on", "according to", "indicates", "shows", "demonstrates",
+            "evaluate", "estimate", "project", "forecast", "predict"
+        ]
+        has_analytical_content = any(ind in content_lower for ind in analytical_indicators)
+        
+        # Flag if response doesn't address question AND lacks analytical content
+        if concept_matches < 2 and not has_analytical_content:
+            return (False, "Response doesn't address the original question")
         
         return (True, "")
     
@@ -666,9 +658,9 @@ Before we proceed further, let me stress-test the emerging positions.
 **CHALLENGES FOR THE PANEL:**
 
 1. **DIRECT ANSWER (MANDATORY)**: You MUST provide:
-   - A clear quantified assessment (probability, impact score, or confidence level)
-   - A specific recommendation tied to the original question
-   - If comparing alternatives, state success probability for EACH alternative
+   - A clear quantified assessment (probability, impact score, risk level, or confidence)
+   - A specific recommendation or conclusion tied to the original question
+   - Evidence-based reasoning that directly addresses what was asked
 
 2. **Assumption Check**: What key assumptions are you making that could be wrong?
 
@@ -2266,22 +2258,21 @@ Final positions from all agents:
 {confidence_warning}
 
 REQUIRED OUTPUT FORMAT (as JSON):
-1. "direct_answer": Your SPECIFIC answer to the original question above
-2. "quantified_assessment": {{
-     "primary_metric": "Success probability / Impact score / Confidence level",
-     "value": X%,
-     "reasoning": "Why this value"
-   }}
-3. "if_comparing_alternatives": {{
-     "alternative_1": {{"name": "...", "success_probability": X%, "risk_level": "HIGH/MEDIUM/LOW"}},
-     "alternative_2": {{"name": "...", "success_probability": Y%, "risk_level": "HIGH/MEDIUM/LOW"}},
-     "recommended": "Which alternative and why"
-   }}
-4. "areas_of_consensus": ["..."]
-5. "remaining_disagreements": ["..."]
-6. "confidence_level": X%
-7. "go_no_go_decision": "GO / NO-GO / CONDITIONAL"
-8. "contingencies": ["..."]
+{{
+  "direct_answer": "Your SPECIFIC answer to the original question",
+  "quantified_assessment": {{
+    "metric_type": "probability/impact/risk/confidence/score",
+    "value": "X% or HIGH/MEDIUM/LOW or numeric score",
+    "reasoning": "Evidence-based explanation"
+  }},
+  "key_findings": ["Finding 1", "Finding 2", "..."],
+  "areas_of_consensus": ["..."],
+  "remaining_disagreements": ["..."],
+  "confidence_level": "X%",
+  "recommendation": "Clear, actionable recommendation",
+  "risks_and_mitigations": ["Risk 1: Mitigation", "..."],
+  "next_steps": ["Action 1", "Action 2", "..."]
+}}
 
 Format as structured JSON."""
         
@@ -2335,21 +2326,20 @@ Debate History ({len(conversation_history)} turns):
 {full_history_text[:50000]}
 
 CRITICAL REQUIREMENTS:
-1. Your FIRST paragraph must DIRECTLY ANSWER the original question above
-2. Provide quantified metrics (success probability, impact assessment, confidence levels)
-3. If comparing alternatives, create a comparison table with metrics for each
-4. Only after answering the question directly may you suggest modifications
+1. Your FIRST paragraph must DIRECTLY ANSWER the original question
+2. Provide quantified metrics relevant to the question (probability, impact, risk, score)
+3. Base conclusions on evidence discussed in the debate
+4. Give actionable recommendations
 
 The report should rival a top-tier consulting firm's output.
 Include:
 - Executive Summary with CLEAR VERDICT on the original question
-- Quantified Assessment (success rates, probabilities, or impact scores)
-- Comparison Table (if alternatives were evaluated)
-- Key Findings from Debate
-- Strategic Recommendations (tied to the original question)
+- Quantified Assessment (appropriate to the question type)
+- Key Findings from the Debate
+- Evidence-Based Recommendations
 - Risk Assessment
 - Confidence Level
-- Go/No-Go Decision"""
+- Decision (GO/NO-GO/CONDITIONAL) or Clear Conclusion"""
         
         synthesis_text = await llm_client.generate_with_routing(
             prompt=prompt,
