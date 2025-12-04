@@ -491,7 +491,8 @@ class NationalStrategyAgent:
         emp = self.client.run(queries[0])
         gcc = self.client.run(queries[1])
         metrics = {}
-        if emp.rows:
+        # FIXED: Check if emp and emp.rows are not None before accessing
+        if emp is not None and emp.rows is not None and len(emp.rows) > 0:
             latest = emp.rows[-1]
             # FIXED: Check if row.data is None before accessing
             if latest is not None and latest.data is not None:
@@ -501,7 +502,12 @@ class NationalStrategyAgent:
                         metrics[f"employment_{k}"] = float(v)
         # GCC: record simple aggregates if possible
         vals = []
-        for r in gcc.rows:
+        # FIXED: Check if gcc and gcc.rows are not None before iterating
+        if gcc is None or gcc.rows is None:
+            gcc_rows = []
+        else:
+            gcc_rows = gcc.rows
+        for r in gcc_rows:
             # FIXED: Check if row.data is None before accessing
             if r.data is None:
                 continue
