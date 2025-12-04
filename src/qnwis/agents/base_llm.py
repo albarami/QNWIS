@@ -61,6 +61,50 @@ VIOLATION CONSEQUENCES:
 """
 
 
+# Decision-Focused Analysis Prompt - Prevents methodology tangents
+DECISION_FOCUS_PROMPT = """
+═══════════════════════════════════════════════════════════════════════
+CRITICAL: DECISION-FOCUSED ANALYSIS
+═══════════════════════════════════════════════════════════════════════
+
+You are advising a minister who needs to make a decision. Every response must:
+
+1. DIRECTLY ADDRESS THE QUESTION: Your analysis must explicitly connect to the 
+   original question. If asked "which path offers highest probability of success",
+   your response must compare probabilities for different paths.
+
+2. AVOID METHODOLOGY TANGENTS: Do NOT spend more than 2 sentences on:
+   - Data classification debates (e.g., "whether data is sufficiently granular")
+   - Economic theory explanations (e.g., "Leontief inverse coefficients")
+   - Statistical methodology (e.g., "Input-Output table construction")
+   
+   If methodology is relevant, state your conclusion and move on:
+   ❌ BAD: "The PSA ICT Satellite Account aggregates AI under 'Digital Transformation' 
+           which makes isolation of AI-specific returns problematic because..."
+   ✅ GOOD: "PSA data shows ICT grew 12% (though AI-specific data is limited). 
+            This suggests..."
+
+3. QUANTIFY WHEN POSSIBLE: Instead of "Technology offers better diversification", say:
+   "Technology investment historically yields 2.3x higher productivity spillovers 
+    than tourism (per World Bank estimates)."
+
+4. PROGRESS THE DEBATE: Each turn must add NEW information or reach a NEW conclusion.
+   Do not repeat points already made. If you agree, say "I agree with [Agent] on 
+   [point], and I'll add [new insight]."
+
+5. ANSWER THE ACTUAL QUESTION:
+   - If asked to choose between options → recommend one with probability/confidence
+   - If asked for risks → list specific risks with likelihood and impact
+   - If asked for a strategy → provide actionable steps with timeline
+   - If asked an open question → structure analysis around key dimensions
+
+Remember: The minister doesn't care about methodology. They care about:
+What should I do? Why? What are the risks? How confident are you?
+
+═══════════════════════════════════════════════════════════════════════
+"""
+
+
 class LLMAgent(ABC):
     """
     Base class for LLM-powered agents.
@@ -279,32 +323,41 @@ class LLMAgent(ABC):
 
     # --- Legendary Debate Conversation Methods ---
 
-    async def present_case(self, topic: str, context: list) -> str:
+    async def present_case(self, topic: str, context: list, original_question: str = None) -> str:
         """Present opening statement on a topic with full data mastery."""
         
         # Get agent-specific data mastery knowledge
         data_mastery = get_agent_data_prompt(self.agent_name)
         
+        # Use original_question if provided, else extract from topic
+        question_display = original_question or topic[:500]
+        
         # CONTENT FILTER SAFE: Uses soft language
-        prompt = f"""{topic}
+        prompt = f"""THE MINISTER'S QUESTION:
+"{question_display}"
 
-Based on your expertise as {self.agent_name}, please analyze this query and present your position.
+{topic}
+
+Based on your expertise as {self.agent_name}, analyze this query and present your position.
+
+{DECISION_FOCUS_PROMPT}
 
 Guidelines for your analysis:
-- Address the specific query mentioned above
+- DIRECTLY address the minister's question above
 - Use evidence from the data sources listed below
 - Be specific: name the exact source and indicator code
 - Focus on your domain of expertise
 - Keep response concise (2-3 paragraphs)
 - Cite facts as: "[Per SOURCE: value]"
+- Take a CLEAR POSITION - do not hedge
 
 {data_mastery}
 
-Your expert analysis:"""
+Your expert analysis (addressing the minister's question directly):"""
         
         return await self.llm.generate(
             prompt=prompt,
-            system=f"You are {self.agent_name}, providing expert analysis with deep knowledge of all available data sources.",
+            system=f"You are {self.agent_name}, providing decision-focused expert analysis. The minister needs a recommendation, not methodology discussion.",
             temperature=0.3,
             max_tokens=1500  # Increased from 500 to prevent truncation
         )
@@ -316,7 +369,8 @@ Your expert analysis:"""
         conversation_history: list,
         turn_number: int = 0,
         total_turns: int = 10,
-        phase: str = "debate"
+        phase: str = "debate",
+        original_question: str = None
     ) -> str:
         """Challenge another agent's position with data-backed evidence and structured debate rules."""
         history_text = self._format_history(conversation_history[-5:])
@@ -369,7 +423,17 @@ Available extracted facts for reference:
 {extracted_facts_context}
 """
         
+        # Use passed original_question if available, else use extracted
+        question_to_use = original_question if original_question else original_query
+        
         prompt = f"""You are {self.agent_name}.
+
+═══════════════════════════════════════════════════════════════════════════════
+THE MINISTER'S QUESTION (STAY FOCUSED ON THIS):
+"{question_to_use}"
+═══════════════════════════════════════════════════════════════════════════════
+
+{DECISION_FOCUS_PROMPT}
 
 ═══════════════════════════════════════════════════════════════════════════════
 DEBATE CONTEXT
@@ -384,10 +448,8 @@ DEBATE RULES (FOLLOW STRICTLY):
 3. If you disagree, cite SPECIFIC data that contradicts their claim
 4. Do NOT repeat points already made in the conversation
 5. Build toward synthesis - identify what would resolve the disagreement
+6. ALWAYS connect your challenge back to the minister's question
 ═══════════════════════════════════════════════════════════════════════════════
-
-The question being debated:
-{original_query}
 
 {facts_section}
 {opponent_name} stated: "{opponent_claim[:400]}..."
@@ -402,13 +464,13 @@ Your challenge must:
 1. Quote the SPECIFIC claim you're challenging
 2. Present counter-evidence with citations [Per extraction: 'value' from source]
 3. Explain WHY your evidence contradicts their position
-4. Suggest what additional data would resolve this disagreement
+4. Connect your challenge to the minister's decision
 
-Your challenge:"""
+Your challenge (focused on the minister's question):"""
         
         return await self.llm.generate(
             prompt=prompt,
-            system=f"You are {self.agent_name}, engaging in structured debate with evidence-based challenges.",
+            system=f"You are {self.agent_name}, engaging in decision-focused debate. Every challenge must help answer the minister's question.",
             temperature=0.4,
             max_tokens=1500  # Increased from 500 to prevent truncation
         )
@@ -420,7 +482,8 @@ Your challenge:"""
         conversation_history: list,
         turn_number: int = 0,
         total_turns: int = 10,
-        phase: str = "debate"
+        phase: str = "debate",
+        original_question: str = None
     ) -> str:
         """Respond to a challenge with data-backed evidence and structured debate rules."""
         history_text = self._format_history(conversation_history[-5:])
@@ -462,7 +525,17 @@ Available extracted facts for reference:
 {extracted_facts_context}
 """
         
+        # Use passed original_question if available, else use extracted
+        question_to_use = original_question if original_question else original_query
+        
         prompt = f"""You are {self.agent_name}.
+
+═══════════════════════════════════════════════════════════════════════════════
+THE MINISTER'S QUESTION (STAY FOCUSED ON THIS):
+"{question_to_use}"
+═══════════════════════════════════════════════════════════════════════════════
+
+{DECISION_FOCUS_PROMPT}
 
 ═══════════════════════════════════════════════════════════════════════════════
 DEBATE CONTEXT
@@ -477,10 +550,8 @@ DEBATE RULES (FOLLOW STRICTLY):
 3. Defend your position with NEW evidence not yet presented
 4. Do NOT repeat your original argument - add to it or modify it
 5. Build toward synthesis - where can you find common ground?
+6. ALWAYS connect your response to the minister's question
 ═══════════════════════════════════════════════════════════════════════════════
-
-The question being debated:
-{original_query}
 
 {facts_section}
 {challenger_name} challenged you: "{challenge[:400]}"
@@ -495,26 +566,26 @@ Your response must:
 1. Quote the SPECIFIC criticism you're addressing
 2. Either CONCEDE (if valid) or DEFEND with new evidence
 3. Cite all data: [Per extraction: 'value' from source]
-4. Identify areas of agreement to build synthesis
+4. Connect your defense to the minister's decision
 
 Structure your response:
 - "On [specific point], I [concede/maintain]..."
 - "The evidence shows [Per extraction: data]..."
-- "Where we agree is..."
-- "The remaining disagreement is about..."
+- "For the minister's decision, this means..."
 
-Your response:"""
+Your response (focused on the minister's question):"""
         
         return await self.llm.generate(
             prompt=prompt,
-            system=f"You are {self.agent_name}, engaging constructively in debate to reach synthesis.",
+            system=f"You are {self.agent_name}, engaging in decision-focused debate. Every response must help answer the minister's question.",
             temperature=0.3,
             max_tokens=1500  # Increased from 500 to prevent truncation
         )
 
     async def contribute_to_discussion(
         self,
-        conversation_history: list
+        conversation_history: list,
+        original_question: str = None
     ) -> str:
         """Contribute to ongoing discussion with new data perspectives."""
         history_text = self._format_history(conversation_history[-8:])
@@ -522,7 +593,34 @@ Your response:"""
         # Get data mastery for evidence-based contributions
         data_mastery = get_agent_data_prompt(self.agent_name)
         
+        # Extract original query from history if not provided
+        extracted_query = "Policy analysis"
+        if original_question:
+            extracted_query = original_question
+        elif conversation_history and len(conversation_history) > 0:
+            first_turn = conversation_history[0]
+            if isinstance(first_turn, dict):
+                msg = first_turn.get('message', '')
+                if 'THE QUESTION BEING ANALYZED' in msg or 'TOPIC LOCK' in msg:
+                    # Try to extract the question
+                    lines = msg.split('\n')
+                    for i, line in enumerate(lines):
+                        if 'TOPIC LOCK' in line or 'QUESTION' in line.upper():
+                            # Next few lines likely contain the question
+                            for j in range(i+1, min(i+5, len(lines))):
+                                if len(lines[j].strip()) > 50:
+                                    extracted_query = lines[j].strip()[:500]
+                                    break
+                            break
+        
         prompt = f"""You are {self.agent_name}.
+
+═══════════════════════════════════════════════════════════════════════════════
+THE MINISTER'S QUESTION (STAY FOCUSED ON THIS):
+"{extracted_query}"
+═══════════════════════════════════════════════════════════════════════════════
+
+{DECISION_FOCUS_PROMPT}
 
 Ongoing debate:
 {history_text}
@@ -531,18 +629,18 @@ YOU HAVE ACCESS TO THESE DATA SOURCES - BRING NEW DATA TO THE DISCUSSION:
 {data_mastery[:2000]}
 
 Contribute your perspective by:
-- Offering insights both sides may have MISSED from data sources
+- Offering insights that DIRECTLY help answer the minister's question
 - Presenting ADDITIONAL EVIDENCE from sources NOT YET DISCUSSED
 - Proposing synthesis backed by DATA
-- Highlighting implications with QUANTIFIED PROJECTIONS
+- Making a CLEAR RECOMMENDATION with confidence level
 
-USE SPECIFIC DATA SOURCES TO SUPPORT YOUR CONTRIBUTION!
+DO NOT discuss methodology unless directly relevant to the decision.
 
-Your contribution (WITH DATA CITATIONS):"""
+Your contribution (WITH DATA CITATIONS, focused on the minister's decision):"""
         
         return await self.llm.generate(
             prompt=prompt,
-            system=f"You are {self.agent_name}, contributing expertise with deep data knowledge.",
+            system=f"You are {self.agent_name}, contributing decision-focused expertise. Every contribution must help the minister decide.",
             temperature=0.4,
             max_tokens=1200  # Increased to allow complete responses
         )

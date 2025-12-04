@@ -9,6 +9,8 @@ from typing import Any, Callable, Dict, List, Optional
 
 from ..llm.client import LLMClient
 from .debate import detect_debate_convergence
+from .smart_moderator import SmartModerator
+from .turn_validator import TurnValidator
 
 logger = logging.getLogger(__name__)
 
@@ -249,6 +251,60 @@ class LegendaryDebateOrchestrator:
     MAX_TURNS_TOTAL = 150  # Changed from 30 to ensure legendary depth
     MAX_TURNS_PER_PHASE = DEBATE_CONFIGS["standard"]["phases"]
     
+    # Phase transition prompts to force progress
+    PHASE_TRANSITION_PROMPTS = {
+        'OPENING_TO_ANALYSIS': """
+═══════════════════════════════════════════════════════════════════════════════
+📌 PHASE TRANSITION: Opening → Analysis
+═══════════════════════════════════════════════════════════════════════════════
+
+Opening statements are complete. All agents have introduced their perspective.
+
+NEXT PHASE REQUIREMENTS:
+- Challenge specific claims with counter-evidence
+- Identify key disagreements  
+- Begin quantifying trade-offs
+- Reference specific data to support or refute claims
+
+Do NOT repeat opening positions. ADVANCE the analysis toward a decision.
+═══════════════════════════════════════════════════════════════════════════════
+""",
+
+        'ANALYSIS_TO_DELIBERATION': """
+═══════════════════════════════════════════════════════════════════════════════
+📌 PHASE TRANSITION: Analysis → Deliberation
+═══════════════════════════════════════════════════════════════════════════════
+
+Key issues have been identified. Evidence has been presented.
+
+NEXT PHASE REQUIREMENTS:
+- Synthesize areas of agreement
+- Resolve remaining disagreements with evidence
+- Begin forming a consensus recommendation
+- Quantify confidence levels
+
+Move toward a VERDICT. The minister needs a decision.
+═══════════════════════════════════════════════════════════════════════════════
+""",
+
+        'DELIBERATION_TO_CONSENSUS': """
+═══════════════════════════════════════════════════════════════════════════════
+📌 PHASE TRANSITION: Deliberation → Consensus
+═══════════════════════════════════════════════════════════════════════════════
+
+Time to reach a conclusion.
+
+EACH AGENT MUST NOW:
+1. State their FINAL POSITION (not a summary of debate)
+2. Provide a CONCRETE RECOMMENDATION
+3. Assign a CONFIDENCE LEVEL (percentage)
+4. Note any REMAINING CONCERNS
+
+The next round will synthesize these into a ministerial recommendation.
+═══════════════════════════════════════════════════════════════════════════════
+"""
+    }
+    
     def __init__(
         self, 
         emit_event_fn: Callable, 
@@ -287,6 +343,10 @@ class LegendaryDebateOrchestrator:
         self._topic_drift_detected = False
         self._topic_drift_reason = ""
         self._needs_binary_reminder = False
+        
+        # Smart moderation (initialized when question is set)
+        self._smart_moderator: Optional[SmartModerator] = None
+        self._turn_validator: Optional[TurnValidator] = None
     
     @staticmethod
     def _rephrase_for_content_filter(text: str) -> str:
@@ -591,7 +651,12 @@ Responses without engagement will be REJECTED.
         Args:
             reason: Why the redirect is needed
         """
-        redirect_message = f"""⚠️ MODERATOR REDIRECT: {reason}
+        # Check if SmartModerator has a custom message
+        if hasattr(self, '_smart_moderator_message') and self._smart_moderator_message:
+            redirect_message = self._smart_moderator_message
+            self._smart_moderator_message = None  # Clear after use
+        else:
+            redirect_message = f"""⚠️ MODERATOR REDIRECT: {reason}
 
 REFOCUS REQUIRED: The discussion has drifted from the core policy question.
 
@@ -600,7 +665,7 @@ ORIGINAL QUESTION: {self.question[:500] if hasattr(self, 'question') else 'Unkno
 REQUIREMENTS FOR NEXT SPEAKER:
 1. Directly address the specific options/alternatives in the question
 2. Provide quantitative comparison where possible
-3. Reference Qatar-specific data and context
+3. Reference specific data and context
 4. Give a clear recommendation with reasoning
 
 Do NOT continue discussing general methodology without application to the question."""
@@ -1021,6 +1086,11 @@ Do NOT continue with methodology discussions. ANSWER THE QUESTION with specifics
         # FIXED: Store cross-scenario context for agents to reference
         self.cross_scenario_context = cross_scenario_context or ""
         
+        # Initialize smart moderation with the question
+        self._smart_moderator = SmartModerator(question)
+        self._turn_validator = TurnValidator(question)
+        logger.info(f"🧠 SmartModerator initialized for content-based intervention")
+        
         if self.cross_scenario_context:
             logger.info(f"📊 Cross-scenario context loaded: {len(self.cross_scenario_context)} chars")
         
@@ -1064,6 +1134,17 @@ Do NOT continue with methodology discussions. ANSWER THE QUESTION with specifics
         await self._phase_1_opening_statements(agents_map)
         logger.warning(f"🔥 PHASE 1 DONE: turn_counter={self.turn_counter}")
         
+        # Phase Transition: Opening → Analysis
+        await self._emit_turn(
+            "Moderator",
+            "phase_transition",
+            self.PHASE_TRANSITION_PROMPTS['OPENING_TO_ANALYSIS']
+        )
+        
+        # Reset SmartModerator warnings at phase transition
+        if self._smart_moderator:
+            self._smart_moderator.reset_warnings()
+        
         # Phase 2: Challenge/Defense - THE CORE OF LEGENDARY DEPTH
         # For legendary debates, this phase should produce 60-80 turns
         logger.warning(f"🔥 PHASE 2 START: turn_counter={self.turn_counter}")
@@ -1091,6 +1172,17 @@ Do NOT continue with methodology discussions. ANSWER THE QUESTION with specifics
                 "truncated": True  # Flag that debate was shortened
             }
         
+        # Phase Transition: Analysis → Deliberation
+        await self._emit_turn(
+            "Moderator",
+            "phase_transition",
+            self.PHASE_TRANSITION_PROMPTS['ANALYSIS_TO_DELIBERATION']
+        )
+        
+        # Reset SmartModerator warnings at phase transition
+        if self._smart_moderator:
+            self._smart_moderator.reset_warnings()
+        
         # Phase 3: Edge Case Exploration (reduced for production)
         edge_cases = await self._generate_edge_cases_llm(
             question, 
@@ -1104,6 +1196,17 @@ Do NOT continue with methodology discussions. ANSWER THE QUESTION with specifics
             await self._phase_4_risk_analysis(agents_map)
         else:
             logger.warning("Skipping Phase 4 (Risk Analysis) to ensure synthesis completes")
+        
+        # Phase Transition: Deliberation → Consensus
+        await self._emit_turn(
+            "Moderator",
+            "phase_transition",
+            self.PHASE_TRANSITION_PROMPTS['DELIBERATION_TO_CONSENSUS']
+        )
+        
+        # Reset SmartModerator warnings at phase transition
+        if self._smart_moderator:
+            self._smart_moderator.reset_warnings()
         
         # Phase 5: Consensus Building - ALWAYS RUN (critical for synthesis)
         try:
@@ -1201,7 +1304,8 @@ Do NOT continue with methodology discussions. ANSWER THE QUESTION with specifics
                     micro_challenge = await micro_agent.challenge_position(
                         opponent_name="MacroEconomist",
                         opponent_claim=macro_position,
-                        conversation_history=self.conversation_history
+                        conversation_history=self.conversation_history,
+                        original_question=self.question
                     )
                     await self._emit_turn(
                         "MicroEconomist",
@@ -1216,7 +1320,8 @@ Do NOT continue with methodology discussions. ANSWER THE QUESTION with specifics
                     macro_response = await macro_agent.respond_to_challenge(
                         challenger_name="MicroEconomist",
                         challenge=micro_challenge,
-                        conversation_history=self.conversation_history
+                        conversation_history=self.conversation_history,
+                        original_question=self.question
                     )
                     await self._emit_turn(
                         "MacroEconomist",
@@ -1253,7 +1358,7 @@ INSTRUCTIONS:
 
 Your expert analysis:"""
             
-            return await agent.present_case(enhanced_topic, self.conversation_history)
+            return await agent.present_case(enhanced_topic, self.conversation_history, original_question=self.question)
         else:
             # Deterministic agent - extract from report
             report = self.agent_reports_map.get(agent_name)
@@ -1443,7 +1548,8 @@ Your expert analysis:"""
                                 challenge_text = await agent.challenge_position(
                                     opponent_name=target,
                                     opponent_claim=target_position,
-                                    conversation_history=self.conversation_history
+                                    conversation_history=self.conversation_history,
+                                    original_question=self.question
                                 )
                                 
                                 await self._emit_turn(
@@ -1456,12 +1562,13 @@ Your expert analysis:"""
                                 weighin_text = await agent.respond_to_challenge(
                                     challenger_name=target,
                                     challenge=f"Challenge {target}'s position: {target_position[:500]}",
-                                    conversation_history=self.conversation_history
+                                    conversation_history=self.conversation_history,
+                                    original_question=self.question
                                 )
                                 await self._emit_turn(agent_name, "challenge", weighin_text)
                             elif hasattr(agent, 'present_case'):
                                 # Fallback: use present_case
-                                case_text = await agent.present_case(self.conversation_history)
+                                case_text = await agent.present_case(self.conversation_history, original_question=self.question)
                                 await self._emit_turn(agent_name, "position", case_text)
                             else:
                                 logger.warning(f"Agent {agent_name} has no debate methods - skipping")
@@ -1487,7 +1594,8 @@ Your expert analysis:"""
                             weighin_text = await agent.respond_to_challenge(
                                 challenger_name="Moderator",
                                 challenge=f"Recent debate:\n{recent_summary}\n\nAdd your unique perspective from your expertise.",
-                                conversation_history=self.conversation_history
+                                conversation_history=self.conversation_history,
+                                original_question=self.question
                             )
                             
                             await self._emit_turn(
@@ -1497,14 +1605,15 @@ Your expert analysis:"""
                             )
                         elif hasattr(agent, 'present_case'):
                             # Fallback: use present_case for agents without respond_to_challenge
-                            case_text = await agent.present_case(self.conversation_history)
+                            case_text = await agent.present_case(self.conversation_history, original_question=self.question)
                             await self._emit_turn(agent_name, "position", case_text)
                         elif hasattr(agent, 'challenge_position'):
                             # Last resort: use challenge_position with a generic challenge
                             challenge_text = await agent.challenge_position(
                                 opponent_name="Previous speakers",
                                 opponent_claim=recent_summary[:500] if recent_summary else "initial positions",
-                                conversation_history=self.conversation_history
+                                conversation_history=self.conversation_history,
+                                original_question=self.question
                             )
                             await self._emit_turn(agent_name, "weigh_in", challenge_text)
                         else:
@@ -1629,7 +1738,8 @@ Be DIRECT. No meta-analysis."""
                 challenge = await agent1.challenge_position(
                     opponent_name=agent2_name,
                     opponent_claim=contradiction.get("agent2_value_str", ""),
-                    conversation_history=self.conversation_history
+                    conversation_history=self.conversation_history,
+                    original_question=self.question
                 )
                 
                 await self._emit_turn(
@@ -1650,7 +1760,8 @@ Be DIRECT. No meta-analysis."""
                 response = await agent2.respond_to_challenge(
                     challenger_name=agent1_name,
                     challenge=challenge,
-                    conversation_history=self.conversation_history
+                    conversation_history=self.conversation_history,
+                    original_question=self.question
                 )
                 
                 await self._emit_turn(
@@ -2433,6 +2544,18 @@ Include:
             # Don't emit redirect here (async would need await), flag for main loop
             self._topic_drift_detected = True
             self._topic_drift_reason = reason
+        
+        # SMART MODERATION: Evaluate turn for content-based intervention
+        # This provides more intelligent intervention than turn-count-based checks
+        if self._smart_moderator and agent_name not in ["Moderator", "DataValidator"]:
+            moderation = self._smart_moderator.evaluate_turn(message, self.conversation_history)
+            if moderation['should_intervene']:
+                # Flag for intervention in main loop
+                self._topic_drift_detected = True
+                self._topic_drift_reason = f"SmartModerator: {moderation['intervention_type']}"
+                # Store the custom intervention message
+                self._smart_moderator_message = moderation['intervention_message']
+                logger.info(f"🧠 SmartModerator flagged intervention: {moderation['intervention_type']}")
         
         # FIXED: Every 10 turns (was 15), check if debate is addressing the ACTUAL question (domain agnostic)
         if self.turn_counter > 0 and self.turn_counter % 10 == 0:
