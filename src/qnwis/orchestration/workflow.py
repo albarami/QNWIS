@@ -510,31 +510,53 @@ async def meta_synthesis_wrapper(state: IntelligenceState) -> IntelligenceState:
     robust recommendations, scenario-dependent strategies, and early warning indicators.
     
     FIXED: Also handles cases where debate_synthesis exists but scenario_results doesn't.
+    FIXED: Uses debate_synthesis if all scenarios are failed/unknown.
     """
-    scenario_results = state.get('scenario_results')
+    scenario_results = state.get('scenario_results') or []
     debate_synthesis = state.get('debate_synthesis', '')
     conversation_history = state.get('conversation_history', [])
     
-    # Check if we already have synthesis from debate or another node
-    if not scenario_results:
-        # Check if we have debate content we can use
-        if debate_synthesis or conversation_history:
-            logger.info(f"No scenario results, but found debate content: {len(debate_synthesis)} chars, {len(conversation_history)} turns")
+    # CRITICAL FIX: Check if scenarios have VALID data or are all failed/unknown
+    def scenarios_have_valid_data(results):
+        """Returns True if at least one scenario has non-zero success probability and valid name."""
+        for r in results:
+            engine_b = r.get('engine_b_results', {}) or {}
+            monte_carlo = engine_b.get('monte_carlo', {}) or {}
+            success_prob = monte_carlo.get('success_probability', 0)
+            scenario_meta = r.get('scenario_metadata', {})
+            name = scenario_meta.get('name', 'Unknown')
             
-            # Use debate synthesis as final synthesis if available
-            if debate_synthesis and not state.get('final_synthesis'):
+            # Valid if: has >0% success OR has a real scenario name (not "Unknown")
+            if success_prob > 0.01 or (name and name.lower() != 'unknown' and 'unknown' not in name.lower()):
+                return True
+        return False
+    
+    scenarios_valid = scenarios_have_valid_data(scenario_results) if scenario_results else False
+    
+    # Check if we should use legendary_synthesis_node instead (which extracts debate verdict properly)
+    if not scenario_results or not scenarios_valid:
+        # Scenarios are empty or ALL failed - use legendary_synthesis_node which has debate verdict extraction
+        logger.info(f"📊 Scenarios {'empty' if not scenario_results else 'all failed'}, routing to legendary_synthesis_node...")
+        
+        # CRITICAL: Call legendary_synthesis_node which properly extracts debate verdict
+        # This is the node with all the fixes for handling failed scenarios
+        try:
+            from .nodes.synthesis_legendary import legendary_synthesis_node_sync
+            state = legendary_synthesis_node_sync(state)
+            state['reasoning_chain'].append("✅ Used legendary_synthesis (scenarios failed, debate verdict extracted)")
+            logger.info(f"✅ Legendary synthesis complete (bypassed meta_synthesis due to failed scenarios)")
+            return state
+        except Exception as leg_err:
+            logger.error(f"Legendary synthesis failed: {leg_err}, falling back to debate_synthesis")
+            # Fallback to raw debate synthesis
+            if debate_synthesis:
                 state['final_synthesis'] = debate_synthesis
                 state['meta_synthesis'] = debate_synthesis
-                state['reasoning_chain'].append("✅ Using debate synthesis as final output")
-                logger.info(f"✅ Using debate_synthesis ({len(debate_synthesis)} chars) as final_synthesis")
-            
-            return state
-        else:
-            logger.info("No scenario results or debate content to synthesize")
+                state['reasoning_chain'].append("✅ Using raw debate synthesis (legendary failed)")
             return state
     
     try:
-        logger.info(f"Synthesizing insights across {len(scenario_results)} scenarios...")
+        logger.info(f"Synthesizing insights across {len(scenario_results)} scenarios (validated: have real data)...")
         
         # Await meta-synthesis (already in async context)
         meta_synthesis = await meta_synthesis_node(scenario_results)

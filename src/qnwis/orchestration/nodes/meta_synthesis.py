@@ -133,15 +133,9 @@ def _extract_scenario_summaries(scenario_results: List[Dict[str, Any]]) -> List[
             
         except Exception as e:
             logger.warning(f"Failed to extract summary from scenario result: {e}")
-            # Add minimal summary
-            summaries.append({
-                'name': 'Unknown Scenario',
-                'description': 'Could not extract scenario information',
-                'recommendation': 'Error in scenario execution',
-                'confidence': 0.0,
-                'engine_b_status': 'failed',
-                'success_probability': 0,
-            })
+            # FIXED: Skip failed scenarios instead of adding "Unknown Scenario" placeholders
+            # Adding 0% placeholders causes meta_synthesis to generate misleading "0/6 failed" content
+            logger.info(f"Skipping scenario due to extraction error - will not add Unknown Scenario placeholder")
     
     return summaries
 
