@@ -264,6 +264,10 @@ def _extract_final_debate_verdict(state: IntelligenceState) -> Dict[str, Any]:
         "confidence_level": None,         # Overall confidence (0-100)
         "decision": None,                 # GO/NO-GO/CONDITIONAL if applicable
         "key_findings": [],               # Main conclusions
+        "areas_of_consensus": [],         # What all experts agreed on
+        "remaining_disagreements": [],    # Unresolved points
+        "risks_and_mitigations": [],      # Risks with mitigation strategies
+        "next_steps": [],                 # Recommended actions
         "source": None,
     }
     
@@ -271,9 +275,29 @@ def _extract_final_debate_verdict(state: IntelligenceState) -> Dict[str, Any]:
     for turn in reversed(conversation[-10:]):
         message = turn.get("message", "") if isinstance(turn, dict) else ""
         
-        # Try to find any JSON block with assessment data
-        json_matches = re.findall(r'\{[^{}]+\}', message, re.DOTALL)
-        for json_str in json_matches:
+        # Try to find JSON blocks - look for complete JSON objects with nested content
+        # First try to find JSON that starts with { and ends with } handling nested braces
+        json_candidates = []
+        
+        # Method 1: Find JSON by brace matching
+        brace_depth = 0
+        start_idx = None
+        for i, char in enumerate(message):
+            if char == '{':
+                if brace_depth == 0:
+                    start_idx = i
+                brace_depth += 1
+            elif char == '}':
+                brace_depth -= 1
+                if brace_depth == 0 and start_idx is not None:
+                    json_candidates.append(message[start_idx:i+1])
+                    start_idx = None
+        
+        # Method 2: Fallback - simple regex for non-nested JSON
+        if not json_candidates:
+            json_candidates = re.findall(r'\{[^{}]+\}', message, re.DOTALL)
+        
+        for json_str in json_candidates:
             try:
                 data = json.loads(json_str)
                 
@@ -313,9 +337,37 @@ def _extract_final_debate_verdict(state: IntelligenceState) -> Dict[str, Any]:
                 # Look for confidence
                 conf = data.get("confidence_level", data.get("confidence"))
                 if conf is not None:
-                    if isinstance(conf, str) and '%' in conf:
-                        conf = float(conf.replace('%', ''))
+                    if isinstance(conf, str):
+                        # Parse "≈80%" or "80%" or "80"
+                        conf_str = conf.replace('≈', '').replace('%', '').strip()
+                        try:
+                            conf = float(conf_str)
+                        except ValueError:
+                            conf = None
                     verdict["confidence_level"] = conf if isinstance(conf, (int, float)) else None
+                
+                # ENHANCED: Extract additional rich fields from Moderator synthesis
+                # These fields provide detailed content for the briefing
+                
+                # Areas of consensus (for ROBUST RECOMMENDATIONS)
+                consensus = data.get("areas_of_consensus", [])
+                if isinstance(consensus, list) and consensus:
+                    verdict["areas_of_consensus"] = consensus[:6]
+                
+                # Remaining disagreements (for nuanced reporting)
+                disagreements = data.get("remaining_disagreements", [])
+                if isinstance(disagreements, list) and disagreements:
+                    verdict["remaining_disagreements"] = disagreements[:4]
+                
+                # Risks and mitigations (for SCENARIO-DEPENDENT STRATEGIES)
+                risks = data.get("risks_and_mitigations", [])
+                if isinstance(risks, list) and risks:
+                    verdict["risks_and_mitigations"] = risks[:6]
+                
+                # Next steps (for IMMEDIATE ACTIONS)
+                next_steps = data.get("next_steps", [])
+                if isinstance(next_steps, list) and next_steps:
+                    verdict["next_steps"] = next_steps[:5]
                 
                 verdict["source"] = f"turn_{turn.get('turn', 'unknown')}"
                 
@@ -789,23 +841,54 @@ Source: {r['source']}
     final_verdict = debate_highlights.get("final_verdict", {})
     debate_verdict_text = ""
     if final_verdict.get("quantified_assessment") or final_verdict.get("direct_answer"):
-        # Build key findings if available
+        # Build key findings section
         findings_text = ""
         if final_verdict.get("key_findings"):
-            for finding in final_verdict["key_findings"][:3]:
-                findings_text += f"│ • {finding}\n"
+            findings_text = "\n│ KEY FINDINGS (from debate):\n"
+            for finding in final_verdict["key_findings"][:5]:
+                findings_text += f"│   • {str(finding)[:150]}\n"
+        
+        # Build consensus section
+        consensus_text = ""
+        if final_verdict.get("areas_of_consensus"):
+            consensus_text = "\n│ AREAS OF CONSENSUS (for ROBUST RECOMMENDATIONS):\n"
+            for item in final_verdict["areas_of_consensus"][:5]:
+                consensus_text += f"│   ✓ {str(item)[:150]}\n"
+        
+        # Build risks section  
+        risks_text = ""
+        if final_verdict.get("risks_and_mitigations"):
+            risks_text = "\n│ RISKS & MITIGATIONS (for SCENARIO-DEPENDENT STRATEGIES):\n"
+            for item in final_verdict["risks_and_mitigations"][:5]:
+                risks_text += f"│   ⚠ {str(item)[:150]}\n"
+        
+        # Build next steps section
+        next_steps_text = ""
+        if final_verdict.get("next_steps"):
+            next_steps_text = "\n│ NEXT STEPS (for IMMEDIATE ACTIONS):\n"
+            for i, item in enumerate(final_verdict["next_steps"][:5], 1):
+                next_steps_text += f"│   {i}. {str(item)[:150]}\n"
         
         debate_verdict_text = f"""
-DEBATE FINAL VERDICT (FROM EXPERT CONSENSUS):
+DEBATE FINAL VERDICT (FROM EXPERT CONSENSUS - USE THIS AS PRIMARY SOURCE):
 ═══════════════════════════════════════════════════════════════════════════════
-│ Assessment: {final_verdict.get('quantified_assessment', 'See details')} ({final_verdict.get('assessment_type', 'analysis')})
-│ Direct Answer: {str(final_verdict.get('direct_answer', 'See recommendation'))[:200]}
-{findings_text if findings_text else ''}│ Recommendation: {final_verdict.get('recommendation', 'Analysis complete')}
-│ Decision: {final_verdict.get('decision', 'See recommendation')}
-│ Confidence: {final_verdict.get('confidence_level', 'N/A')}%
-│ Source: {final_verdict.get('source', 'Expert deliberation')}
+│ SUCCESS PROBABILITY: {final_verdict.get('quantified_assessment', 'See details')} ({final_verdict.get('assessment_type', 'analysis')})
+│ CONFIDENCE LEVEL: {final_verdict.get('confidence_level', 'N/A')}%
+│ 
+│ DIRECT ANSWER: 
+│   {str(final_verdict.get('direct_answer', 'See recommendation'))[:400]}
+│
+│ RECOMMENDATION:
+│   {str(final_verdict.get('recommendation', 'Analysis complete'))[:400]}
+{findings_text}{consensus_text}{risks_text}{next_steps_text}│
+│ Source: {final_verdict.get('source', 'Turn 106 Expert deliberation')}
 ═══════════════════════════════════════════════════════════════════════════════
-⚠️ CRITICAL: The ministerial brief MUST reflect this assessment.
+⚠️ CRITICAL: This verdict contains SPECIFIC content that MUST appear in the briefing.
+- Use KEY FINDINGS for evidence
+- Use AREAS OF CONSENSUS for ROBUST RECOMMENDATIONS section
+- Use RISKS & MITIGATIONS for SCENARIO-DEPENDENT STRATEGIES
+- Use NEXT STEPS for IMMEDIATE ACTIONS
+Do NOT generate generic placeholders - use the actual content above.
 """
     
     prompt = f'''You are the Chief Intelligence Officer synthesizing the most comprehensive strategic 
@@ -849,6 +932,28 @@ CROSS-SCENARIO COMPARISON (ENGINE B QUANTITATIVE):
 {robustness_text}
 
 {debate_verdict_text}
+
+⚠️ CRITICAL INSTRUCTION FOR BRIEFING GENERATION:
+═══════════════════════════════════════════════════════════════════════════════
+IF the DEBATE FINAL VERDICT above contains specific recommendations (allocation percentages,
+strategy names, confidence levels), then USE THOSE as the PRIMARY source for:
+- ROBUST RECOMMENDATIONS section
+- SCENARIO-DEPENDENT STRATEGIES section  
+- All quantified assessments
+
+DO NOT generate generic placeholder scenarios like "Economic Shock" or "Geopolitical Escalation"
+UNLESS those specific scenarios were discussed in the debate.
+
+IF the Cross-Scenario table shows "Failed" or "N/A" status, BUT the debate verdict has
+specific recommendations:
+- IGNORE the failed scenario metrics
+- USE the debate consensus as your primary data source
+- The debate synthesis represents {stats["n_turns"]} turns of expert analysis - that IS the analysis
+
+The SCENARIO-DEPENDENT STRATEGIES table should contain:
+- ACTUAL scenarios discussed in the debate (Base Case, Optimistic, Pessimistic, etc.)
+- NOT generic risk categories like "Economic Shock" or "Climate Stress"
+═══════════════════════════════════════════════════════════════════════════════
 
 FEASIBILITY ANALYSIS:
 ├── Feasibility check: {'✓ PERFORMED' if stats.get('feasibility_checked') else '○ SKIPPED'}
