@@ -103,23 +103,36 @@ function App() {
     const completedScenarios = state.scenariosCompleted || 0
     
     // FIXED: Use Engine B Monte Carlo success_rate, not the generic confidence field
-    const rates: number[] = []
+    // FIX: Track both rates AND scenario names to find the best performing scenario
+    const scenarioRates: { name: string; rate: number }[] = []
     state.scenarioResults.forEach((r: any) => {
       // Try to get success_rate from Engine B monte_carlo results
       const engineB = r.engine_b_results || r.engineBResults || {}
       const monteCarlo = engineB.monte_carlo || r.monteCarlo || r.monte_carlo
+      const scenarioName = r.scenario?.name || r.scenario_name || 'Unknown'
       
       if (monteCarlo?.success_rate != null) {
-        rates.push(monteCarlo.success_rate)
+        scenarioRates.push({ name: scenarioName, rate: monteCarlo.success_rate })
       } else if (typeof r.confidence === 'number' && r.confidence <= 1) {
         // Fallback to confidence only if Engine B not available
-        rates.push(r.confidence)
+        scenarioRates.push({ name: scenarioName, rate: r.confidence })
       }
     })
     
-    if (rates.length === 0) return null // No real data yet
+    if (scenarioRates.length === 0) return null // No real data yet
     
+    const rates = scenarioRates.map(s => s.rate)
     const avgSuccessRate = Math.round((rates.reduce((a, b) => a + b, 0) / rates.length) * 100)
+    
+    // FIX: Find the BEST performing scenario to show prominently
+    // This addresses the 42% vs 64.5% discrepancy - show the recommended option's rate
+    const sortedByRate = [...scenarioRates].sort((a, b) => b.rate - a.rate)
+    const bestScenario = sortedByRate[0]
+    const bestSuccessRate = Math.round(bestScenario.rate * 100)
+    
+    // Use the BEST scenario rate for the summary card (not average)
+    // This matches what the ministerial brief recommends
+    const displaySuccessRate = bestSuccessRate
     
     // Count vulnerabilities (scenarios with success rate below 40%)
     const vulnerabilities: string[] = []
@@ -142,24 +155,30 @@ function App() {
       : null
     
     // FIXED: Confidence should reflect actual Engine B confidence, not be 100%
+    // Use displaySuccessRate (best scenario) not avgSuccessRate
     const finalConfidence = state.completedStages.has('done') 
-      ? Math.round(Math.min(robustnessScore * 100, avgSuccessRate + 15))  // Cap at success rate + 15%
+      ? Math.round(Math.min(robustnessScore * 100, displaySuccessRate + 15))  // Cap at success rate + 15%
       : Math.min(30 + completedScenarios * 10, 70)
     
     return {
       question: state.question || question,
-      verdict: determineVerdict(avgSuccessRate, robustnessScore),
-      successRate: avgSuccessRate,
+      // Use best scenario rate for verdict (matches ministerial brief recommendation)
+      verdict: determineVerdict(displaySuccessRate, robustnessScore),
+      // FIXED: Show best scenario rate, not average (addresses 42% vs 64.5% discrepancy)
+      successRate: displaySuccessRate,
       robustness: {
         passed: Math.round(robustnessScore * scenarioCount),
         total: scenarioCount,
         vulnerabilities: vulnerabilities.slice(0, 3),
       },
       confidence: finalConfidence,
-      riskLevel: avgSuccessRate >= 60 ? 'medium' : avgSuccessRate >= 40 ? 'high' : 'critical',
+      // Risk level based on best scenario, not average
+      riskLevel: displaySuccessRate >= 60 ? 'medium' : displaySuccessRate >= 40 ? 'high' : 'critical',
       trend: state.engineBTrend || 'stable',
       topDriver: topDriverLabel,
-      recommendation: state.engineBRecommendation,
+      // Include best scenario info in recommendation
+      recommendation: state.engineBRecommendation || 
+        (bestScenario ? `Best scenario: ${bestScenario.name} (${bestSuccessRate}%)` : undefined),
     }
   }, [state, showAnalysis, question])
 

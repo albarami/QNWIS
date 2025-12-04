@@ -1,8 +1,8 @@
 # Readiness Report: Steps 1-33
 
-**Generated:** 2025-12-04T11:40:16.172186
+**Generated:** 2025-12-04T15:42:46.490743
 **Overall Status:** FAIL
-**Execution Time:** 4933 ms
+**Execution Time:** 4535 ms
 
 ## Summary
 
@@ -17,7 +17,7 @@
 ## Gate Results
 
 ### step_completeness [PASS]
-- **Duration:** 16 ms
+- **Duration:** 17 ms
 - **Severity:** ERROR
 ```json
 {
@@ -360,7 +360,7 @@
 - `docs/IMPLEMENTATION_ROADMAP.md`
 
 ### no_placeholders [FAIL]
-- **Duration:** 4911 ms
+- **Duration:** 4510 ms
 - **Severity:** ERROR
 ```json
 {
@@ -376,13 +376,13 @@
   "violations": [
     {
       "file": "src/qnwis/agents/base_llm.py",
-      "line": 258,
+      "line": 302,
       "pattern": "^\\s*pass\\s*$",
       "snippet": "pass"
     },
     {
       "file": "src/qnwis/agents/base_llm.py",
-      "line": 278,
+      "line": 322,
       "pattern": "^\\s*pass\\s*$",
       "snippet": "pass"
     },
@@ -538,19 +538,19 @@
     },
     {
       "file": "src/qnwis/orchestration/legendary_debate_orchestrator.py",
-      "line": 46,
+      "line": 48,
       "pattern": "^\\s*pass\\s*$",
       "snippet": "pass"
     },
     {
       "file": "src/qnwis/orchestration/legendary_debate_orchestrator.py",
-      "line": 79,
+      "line": 81,
       "pattern": "^\\s*pass\\s*$",
       "snippet": "pass"
     },
     {
       "file": "src/qnwis/orchestration/legendary_debate_orchestrator.py",
-      "line": 95,
+      "line": 97,
       "pattern": "^\\s*pass\\s*$",
       "snippet": "pass"
     },

@@ -105,6 +105,44 @@ What should I do? Why? What are the risks? How confident are you?
 """
 
 
+# Anti-Contradiction Prompt - Prevents data inconsistency spirals
+ANTI_CONTRADICTION_PROMPT = """
+═══════════════════════════════════════════════════════════════════════
+CRITICAL: DATA CONSISTENCY RULE
+═══════════════════════════════════════════════════════════════════════
+
+If you cite a statistic, you MUST use it consistently throughout the debate.
+
+BEFORE citing any number:
+1. Check: Have I or another agent already cited a different figure for this metric?
+2. If YES: Either use the previously cited figure, OR explicitly acknowledge:
+   "Earlier we cited X%, but updated data shows Y%. Using Y% going forward."
+
+EXAMPLES:
+
+❌ WRONG - Contradicting without acknowledgment:
+   Turn 23: "ICT employment grew 11.8% annually"
+   Turn 40: "ICT employment grew only 0.8% per year"
+
+✅ RIGHT - Consistent usage:
+   Turn 23: "ICT employment grew 11.8% annually (Per MoL LMIS 2023)"
+   Turn 40: "Given the 11.8% growth rate cited earlier, we can project..."
+
+✅ RIGHT - Explicit correction:
+   Turn 23: "ICT employment grew 11.8% annually"
+   Turn 40: "While earlier data showed 11.8%, recent MoL 2024 data indicates 
+            only 0.8%. Using the updated 0.8% figure..."
+
+RULE: Maximum ONE turn to resolve any data discrepancy.
+State which figure you trust, explain why briefly, then MOVE ON.
+
+The minister doesn't care which growth rate is exactly right.
+They care: Should we invest in AI or Tourism?
+
+═══════════════════════════════════════════════════════════════════════
+"""
+
+
 class LLMAgent(ABC):
     """
     Base class for LLM-powered agents.
@@ -342,6 +380,8 @@ Based on your expertise as {self.agent_name}, analyze this query and present you
 
 {DECISION_FOCUS_PROMPT}
 
+{ANTI_CONTRADICTION_PROMPT}
+
 Guidelines for your analysis:
 - DIRECTLY address the minister's question above
 - Use evidence from the data sources listed below
@@ -434,6 +474,8 @@ THE MINISTER'S QUESTION (STAY FOCUSED ON THIS):
 ═══════════════════════════════════════════════════════════════════════════════
 
 {DECISION_FOCUS_PROMPT}
+
+{ANTI_CONTRADICTION_PROMPT}
 
 ═══════════════════════════════════════════════════════════════════════════════
 DEBATE CONTEXT
@@ -537,6 +579,8 @@ THE MINISTER'S QUESTION (STAY FOCUSED ON THIS):
 
 {DECISION_FOCUS_PROMPT}
 
+{ANTI_CONTRADICTION_PROMPT}
+
 ═══════════════════════════════════════════════════════════════════════════════
 DEBATE CONTEXT
 ═══════════════════════════════════════════════════════════════════════════════
@@ -621,6 +665,8 @@ THE MINISTER'S QUESTION (STAY FOCUSED ON THIS):
 ═══════════════════════════════════════════════════════════════════════════════
 
 {DECISION_FOCUS_PROMPT}
+
+{ANTI_CONTRADICTION_PROMPT}
 
 Ongoing debate:
 {history_text}

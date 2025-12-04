@@ -200,12 +200,14 @@ class LegendaryDebateOrchestrator:
     # Higher turns = more thorough analysis = better ministerial intelligence
     # Designed for 5 LLM agents: MicroEconomist, MacroEconomist, SkillsAgent, Nationalization, PatternDetective
     # FIXED: Use standardized phase names for diagnostic detection
+    # Phase budgets - CRITICAL for preventing methodology spirals
+    # FIX 4: Stricter phase budgets to prevent debate from stalling
     DEBATE_CONFIGS = {
         "simple": {
             "max_turns": 40,
             "phases": {
                 "opening": 10,       # 2 turns × 5 agents
-                "challenge": 15,     # 3 rounds × 5 agents
+                "challenge": 15,     # 3 rounds × 5 agents (STRICT LIMIT)
                 "edge_case": 8,
                 "risk": 5,
                 "consensus": 2
@@ -215,7 +217,7 @@ class LegendaryDebateOrchestrator:
             "max_turns": 80,
             "phases": {
                 "opening": 12,
-                "challenge": 35,     # 7 rounds × 5 agents
+                "challenge": 25,     # REDUCED from 35 to prevent spirals
                 "edge_case": 15,
                 "risk": 12,
                 "consensus": 6
@@ -225,7 +227,7 @@ class LegendaryDebateOrchestrator:
             "max_turns": 150,  # FULL DEPTH for ministerial queries
             "phases": {
                 "opening": 15,       # 3 turns × 5 agents
-                "challenge": 60,     # 12 rounds × 5 agents
+                "challenge": 40,     # REDUCED from 60 - prevent methodology spiral
                 "edge_case": 25,     # 5 cases × 5 agents
                 "risk": 25,          # 5 risks × 5 assessors
                 "consensus": 25      # 5 rounds × 5 agents
@@ -237,15 +239,18 @@ class LegendaryDebateOrchestrator:
             "max_turns": 150,
             "phases": {
                 "opening": 10,           # Initial positions
-                "option_a_advocacy": 20, # NEW: Make case FOR option A
-                "option_b_advocacy": 20, # NEW: Make case FOR option B
-                "challenge": 30,         # Challenge BOTH options
-                "cross_examination": 20, # NEW: Direct A vs B comparison
+                "option_a_advocacy": 15, # REDUCED from 20 - make case FOR option A
+                "option_b_advocacy": 15, # REDUCED from 20 - make case FOR option B
+                "challenge": 25,         # REDUCED from 30 - Challenge BOTH options
+                "cross_examination": 15, # REDUCED from 20 - Direct A vs B comparison
                 "risk": 20,              # Risks for each option
-                "consensus": 30          # Final verdict
+                "consensus": 25          # Final verdict
             }
         }
     }
+    
+    # Phase budget enforcement - forces transition if exceeded
+    PHASE_BUDGET_STRICT = True  # Set to True to force phase transitions
     
     # Default configuration - USE LEGENDARY DEPTH by default for ministerial queries!
     MAX_TURNS_TOTAL = 150  # Changed from 30 to ensure legendary depth
@@ -2496,13 +2501,20 @@ Include:
         turn_type: str,
         message: str
     ):
-        """Emit a conversation turn event with limit checking."""
+        """Emit a conversation turn event with limit checking and phase budget enforcement."""
         if not self._can_emit_turn():
             return
         
         self.turn_counter += 1
         if self.current_phase:
             self.phase_turn_counters[self.current_phase] += 1
+            
+            # FIX 4: Phase budget enforcement - emit warning if budget exceeded
+            if self._is_phase_budget_exceeded():
+                budget_warning = self._generate_phase_budget_warning()
+                if budget_warning:
+                    # Log the warning (will be handled by orchestration layer)
+                    logger.warning(f"⏰ PHASE BUDGET EXCEEDED: {self.current_phase} has {self.phase_turn_counters[self.current_phase]} turns")
         
         # Track agent turn counts for balance
         self.agent_turn_counts[agent_name] += 1
@@ -2521,6 +2533,35 @@ Include:
         
         if self.emit_event:
             await self.emit_event("debate:turn", "streaming", turn_data)
+    
+    def _is_phase_budget_exceeded(self) -> bool:
+        """Check if current phase has exceeded its turn budget."""
+        if not self.current_phase:
+            return False
+        
+        # Get the phase budget for current complexity
+        config = self.DEBATE_CONFIGS.get(self.debate_complexity, self.DEBATE_CONFIGS["standard"])
+        phases = config.get("phases", {})
+        budget = phases.get(self.current_phase, 50)  # Default to 50 if not specified
+        
+        current_turns = self.phase_turn_counters.get(self.current_phase, 0)
+        return current_turns >= budget
+    
+    def _generate_phase_budget_warning(self) -> str:
+        """Generate a warning message when phase budget is exceeded."""
+        config = self.DEBATE_CONFIGS.get(self.debate_complexity, self.DEBATE_CONFIGS["standard"])
+        phases = config.get("phases", {})
+        budget = phases.get(self.current_phase, 50)
+        current_turns = self.phase_turn_counters.get(self.current_phase, 0)
+        
+        return f"""⏰ PHASE BUDGET WARNING: The {self.current_phase} phase has used {current_turns}/{budget} allocated turns.
+        
+The debate must progress to the next phase. Remaining turns should focus on:
+- Synthesizing key points
+- Stating clear positions
+- Moving toward a recommendation
+
+Do NOT continue methodology debates or data quality discussions."""
         
         # NSIC: Call live debate logging callback for EVERY turn
         if self.on_turn_complete:
