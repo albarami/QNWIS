@@ -236,6 +236,80 @@ def _extract_debate_highlights(state: IntelligenceState) -> Dict[str, Any]:
     }
 
 
+def _extract_final_debate_verdict(state: IntelligenceState) -> Dict[str, Any]:
+    """
+    Extract the final debate verdict JSON with Option A/B success probabilities.
+    
+    This is CRITICAL for ensuring the ministerial brief reflects the debate's
+    actual conclusion (e.g., "Option A: 84%, Option B: 68%").
+    """
+    import json
+    import re
+    
+    conversation = state.get("conversation_history", []) or []
+    debate_results = state.get("debate_results", {}) or {}
+    debate_synthesis = state.get("debate_synthesis", "")
+    
+    verdict = {
+        "option_a_probability": None,
+        "option_b_probability": None,
+        "winner": None,
+        "decision": None,
+        "source": None,
+    }
+    
+    # Strategy 1: Look for JSON in last 10 turns of conversation
+    for turn in reversed(conversation[-10:]):
+        message = turn.get("message", "") if isinstance(turn, dict) else ""
+        
+        # Try to find JSON block
+        json_match = re.search(r'\{[^{}]*"(?:Option_A|option_a|optionA).*?\}', message, re.DOTALL | re.IGNORECASE)
+        if json_match:
+            try:
+                json_data = json.loads(json_match.group())
+                # Try different key variations
+                for key_a in ["Option_A_success_probability", "option_a_probability", "optionA"]:
+                    if key_a in json_data:
+                        verdict["option_a_probability"] = json_data[key_a]
+                        break
+                for key_b in ["Option_B_success_probability", "option_b_probability", "optionB"]:
+                    if key_b in json_data:
+                        verdict["option_b_probability"] = json_data[key_b]
+                        break
+                verdict["winner"] = json_data.get("direct_winner", json_data.get("winner"))
+                verdict["decision"] = json_data.get("decision", json_data.get("go_no_go"))
+                verdict["source"] = f"turn_{turn.get('turn', 'unknown')}"
+                if verdict["option_a_probability"] is not None:
+                    logger.info(f"📊 Extracted debate verdict from conversation: Option A={verdict['option_a_probability']}%, Option B={verdict['option_b_probability']}%")
+                    return verdict
+            except json.JSONDecodeError:
+                pass
+        
+        # Try regex extraction of percentages
+        match_a = re.search(r'[Oo]ption\s*[Aa].*?(\d+(?:\.\d+)?)\s*%', message)
+        match_b = re.search(r'[Oo]ption\s*[Bb].*?(\d+(?:\.\d+)?)\s*%', message)
+        if match_a and match_b:
+            verdict["option_a_probability"] = float(match_a.group(1))
+            verdict["option_b_probability"] = float(match_b.group(1))
+            verdict["source"] = f"turn_{turn.get('turn', 'unknown')}"
+            logger.info(f"📊 Extracted debate verdict from regex: Option A={verdict['option_a_probability']}%, Option B={verdict['option_b_probability']}%")
+            return verdict
+    
+    # Strategy 2: Look in debate_synthesis
+    if debate_synthesis:
+        match_a = re.search(r'[Oo]ption\s*[Aa].*?(\d+(?:\.\d+)?)\s*%', debate_synthesis)
+        match_b = re.search(r'[Oo]ption\s*[Bb].*?(\d+(?:\.\d+)?)\s*%', debate_synthesis)
+        if match_a and match_b:
+            verdict["option_a_probability"] = float(match_a.group(1))
+            verdict["option_b_probability"] = float(match_b.group(1))
+            verdict["source"] = "debate_synthesis"
+            logger.info(f"📊 Extracted debate verdict from synthesis: Option A={verdict['option_a_probability']}%, Option B={verdict['option_b_probability']}%")
+            return verdict
+    
+    logger.warning("⚠️ Could not extract debate verdict - using scenario averages")
+    return verdict
+
+
 def _extract_scenario_summaries(state: IntelligenceState) -> List[Dict[str, Any]]:
     """Extract scenario analysis summaries with Engine B quantitative results."""
     
@@ -577,6 +651,24 @@ Source: {r['source']}
     robustness_ratio = stats.get("robustness_ratio", "0/0")
     robustness_pct = stats.get("robustness_pct", 0)
     
+    # CRITICAL: Get debate verdict (Option A vs Option B)
+    final_verdict = debate_highlights.get("final_verdict", {})
+    debate_verdict_text = ""
+    if final_verdict.get("option_a_probability"):
+        debate_verdict_text = f"""
+DEBATE FINAL VERDICT (FROM EXPERT CONSENSUS):
+═══════════════════════════════════════════════════════════════════════════════
+│ Option A Success Probability: {final_verdict['option_a_probability']}%
+│ Option B Success Probability: {final_verdict['option_b_probability']}%
+│ Recommended Winner: {final_verdict.get('winner', 'Not determined')}
+│ Decision: {final_verdict.get('decision', 'Pending')}
+│ Source: {final_verdict.get('source', 'Expert deliberation')}
+═══════════════════════════════════════════════════════════════════════════════
+⚠️ CRITICAL: The ministerial brief MUST reflect these probabilities.
+   Use Option A: {final_verdict['option_a_probability']}% and Option B: {final_verdict['option_b_probability']}%
+   in the Strategic Verdict section.
+"""
+    
     prompt = f'''You are the Chief Intelligence Officer synthesizing the most comprehensive strategic 
 analysis ever produced by an AI system. You have witnessed:
 
@@ -616,6 +708,8 @@ CROSS-SCENARIO COMPARISON (ENGINE B QUANTITATIVE):
 {cross_scenario_table}
 
 {robustness_text}
+
+{debate_verdict_text}
 
 FEASIBILITY ANALYSIS:
 ├── Feasibility check: {'✓ PERFORMED' if stats.get('feasibility_checked') else '○ SKIPPED'}
@@ -998,6 +1092,19 @@ Do NOT proceed with policy analysis for this target. Instead:
     edge_cases = _extract_edge_cases(state)  # NEW: Extract edge cases
     facts = state.get("extracted_facts", [])
     
+    # CRITICAL: Extract final debate verdict (Option A vs B probabilities)
+    debate_verdict = _extract_final_debate_verdict(state)
+    if debate_verdict.get("option_a_probability"):
+        logger.info(f"📊 DEBATE VERDICT: Option A={debate_verdict['option_a_probability']}%, Option B={debate_verdict['option_b_probability']}%")
+        debate_highlights["final_verdict"] = debate_verdict
+        # Override avg_success_probability with debate winner's probability
+        if debate_verdict.get("winner", "").lower() in ["option_a", "a"]:
+            stats["debate_winner"] = "Option A"
+            stats["debate_winner_probability"] = debate_verdict["option_a_probability"]
+        else:
+            stats["debate_winner"] = "Option B"
+            stats["debate_winner_probability"] = debate_verdict.get("option_b_probability", 0)
+    
     # Extract Engine B aggregate quantitative results
     engine_b_aggregate = state.get("engine_b_aggregate", {})
     stats["engine_b_scenarios"] = engine_b_aggregate.get("scenarios_with_compute", 0)
@@ -1018,6 +1125,14 @@ Do NOT proceed with policy analysis for this target. Instead:
     robustness = _calculate_robustness_ratio(scenario_summaries)
     stats["robustness_ratio"] = robustness["ratio_str"]
     stats["robustness_pct"] = robustness["ratio_pct"]
+    
+    # CRITICAL: If debate verdict has probabilities, use those for robustness assessment
+    if debate_verdict.get("option_a_probability"):
+        winner_prob = stats.get("debate_winner_probability", 0)
+        if winner_prob >= 50:
+            # Debate recommends winning option - update robustness
+            stats["debate_recommendation"] = f"{stats.get('debate_winner', 'Option A')}: {winner_prob}% success probability"
+            logger.info(f"📊 Using debate verdict for brief: {stats['debate_recommendation']}")
     
     logger.info(
         f"🏛️ Generating Legendary Briefing: "

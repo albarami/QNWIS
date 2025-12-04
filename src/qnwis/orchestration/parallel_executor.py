@@ -780,9 +780,34 @@ Evidence confidence: {synthesis.confidence_level.upper()}
                 
                 # 1. Monte Carlo Simulation
                 try:
-                    # Apply assumption multipliers to distribution parameters
-                    growth_mean = growth_rate * assumptions.get("growth_multiplier", 1.0)
-                    value_mean = base_value * assumptions.get("value_multiplier", 1.0)
+                    # FIXED: Apply scenario assumptions to distribution parameters
+                    # Different scenarios use different assumption keys - check all of them
+                    # Positive multipliers (increase expected outcome)
+                    growth_effect = assumptions.get("growth_multiplier", 1.0)
+                    value_effect = assumptions.get("value_multiplier", 1.0)
+                    
+                    # Scenario-specific effects (convert to growth impact)
+                    if "disruption_factor" in assumptions:
+                        # Disruption can boost or hurt - use as multiplier
+                        growth_effect *= assumptions["disruption_factor"]
+                    if "competition_intensity" in assumptions:
+                        # Competition typically reduces success probability
+                        growth_effect *= (2.0 - assumptions["competition_intensity"])  # e.g., 1.4 -> 0.6 multiplier
+                    if "shock_severity" in assumptions:
+                        # Shocks reduce expected outcomes
+                        value_effect *= assumptions["shock_severity"]
+                    if "policy_intensity" in assumptions:
+                        # Higher policy intensity can accelerate growth
+                        growth_effect *= assumptions["policy_intensity"]
+                    if "risk_factor" in assumptions:
+                        # Higher risk reduces expected value
+                        value_effect *= (1.0 / assumptions["risk_factor"]) if assumptions["risk_factor"] > 0 else 0.5
+                    
+                    # Apply effects to base values
+                    growth_mean = growth_rate * growth_effect
+                    value_mean = base_value * value_effect
+                    
+                    logger.info(f"   Scenario effects: growth_effect={growth_effect:.2f}, value_effect={value_effect:.2f}")
                     
                     # FIXED: success_condition must use 'result' not 'outcome'
                     # The Monte Carlo service evaluates: eval("result > threshold", {"result": simulated_values})
@@ -807,8 +832,21 @@ Evidence confidence: {synthesis.confidence_level.upper()}
                     }
                     resp = await client.post(f"{ENGINE_B_URL}/compute/monte_carlo", json=mc_payload)
                     if resp.status_code == 200:
-                        engine_b_results["monte_carlo"] = resp.json()
-                        logger.info(f"  ✓ Monte Carlo complete for {scenario_name}")
+                        raw_mc = resp.json()
+                        # CRITICAL FIX: Normalize field names for synthesis
+                        # Engine B returns: success_rate, mean_result, std_result
+                        # Synthesis expects: success_probability, mean, std
+                        engine_b_results["monte_carlo"] = {
+                            "success_probability": raw_mc.get("success_rate", 0),
+                            "mean": raw_mc.get("mean_result", raw_mc.get("mean", 0)),
+                            "std": raw_mc.get("std_result", raw_mc.get("std", 0)),
+                            "percentiles": raw_mc.get("percentiles", {}),
+                            "var_95": raw_mc.get("var_95", 0),
+                            "cvar_95": raw_mc.get("cvar_95", 0),
+                            "n_simulations": raw_mc.get("n_simulations", 10000),
+                            "gpu_used": raw_mc.get("gpu_used", False),
+                        }
+                        logger.info(f"  ✓ Monte Carlo complete for {scenario_name}: {engine_b_results['monte_carlo']['success_probability']:.1%} success")
                     else:
                         logger.warning(f"  Monte Carlo returned {resp.status_code}: {resp.text[:200]}")
                 except Exception as e:
