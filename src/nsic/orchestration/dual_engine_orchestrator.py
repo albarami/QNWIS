@@ -1852,9 +1852,17 @@ Your arguments MUST account for the quantitative facts above."""
             enhanced["quantitative_validation"]["key_drivers"] = sens.get("top_drivers", [])
         
         # Compute adjusted confidence based on Monte Carlo success rate
+        # FIXED: Don't default to 0.5 - use None and handle missing data properly
         original_confidence = synthesis.get("overall_confidence", 0.7)
-        mc_success = engine_b_compute.get("monte_carlo", {}).get("success_rate", 0.5)
-        enhanced["adjusted_confidence"] = (original_confidence + mc_success) / 2
+        mc_result = engine_b_compute.get("monte_carlo", {})
+        mc_success = mc_result.get("success_rate")
+        
+        if mc_success is not None and mc_success != 0.5:
+            # Only use MC success if it was actually computed (not a default)
+            enhanced["adjusted_confidence"] = (original_confidence + mc_success) / 2
+        else:
+            # MC computation failed or returned default - use original confidence only
+            enhanced["adjusted_confidence"] = original_confidence
         
         enhanced["analysis_type"] = "quantitative_informed_debate"
         

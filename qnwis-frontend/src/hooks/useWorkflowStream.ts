@@ -23,7 +23,7 @@ interface UseWorkflowStreamResult {
   cancel: () => void
 }
 
-const API_BASE_URL = (import.meta.env.VITE_QNWIS_API_URL ?? 'http://localhost:8000').replace(/\/$/, '')
+const API_BASE_URL = (import.meta.env.VITE_QNWIS_API_URL ?? 'http://172.29.181.70:8000').replace(/\/$/, '')
 const SSE_ENDPOINT = `${API_BASE_URL}/api/v1/council/stream`
 
 function handleAgentEvent(state: AppState, event: WorkflowEvent) {

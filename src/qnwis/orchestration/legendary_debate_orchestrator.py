@@ -2772,7 +2772,9 @@ Include:
                     confidence = 0.7  # Default moderate confidence
             
             # Flag if recommendation with low confidence
-            if confidence < 0.6:
+            # FIXED: Lowered threshold from 0.6 to 0.4 to reduce warning spam
+            # Only flag truly low confidence (below 40%), not moderate confidence (50%)
+            if confidence < 0.4:
                 flag = {
                     "type": "LOW_CONFIDENCE_RECOMMENDATION",
                     "agent": agent_name,

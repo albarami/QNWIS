@@ -903,20 +903,25 @@ Evidence confidence: {synthesis.confidence_level.upper()}
                     resp = await client.post(f"{ENGINE_B_URL}/compute/monte_carlo", json=mc_payload)
                     if resp.status_code == 200:
                         raw_mc = resp.json()
-                        # CRITICAL FIX: Normalize field names for synthesis
+                        # CRITICAL FIX: Include BOTH field names for frontend and backend compatibility
                         # Engine B returns: success_rate, mean_result, std_result
-                        # Synthesis expects: success_probability, mean, std
+                        # Synthesis expects: success_probability
+                        # Frontend expects: success_rate
+                        mc_success = raw_mc.get("success_rate", 0)
                         engine_b_results["monte_carlo"] = {
-                            "success_probability": raw_mc.get("success_rate", 0),
+                            "success_rate": mc_success,  # ADDED: Frontend needs this exact name
+                            "success_probability": mc_success,  # Backend/synthesis uses this
                             "mean": raw_mc.get("mean_result", raw_mc.get("mean", 0)),
+                            "mean_result": raw_mc.get("mean_result", raw_mc.get("mean", 0)),  # Alias
                             "std": raw_mc.get("std_result", raw_mc.get("std", 0)),
+                            "std_result": raw_mc.get("std_result", raw_mc.get("std", 0)),  # Alias
                             "percentiles": raw_mc.get("percentiles", {}),
                             "var_95": raw_mc.get("var_95", 0),
                             "cvar_95": raw_mc.get("cvar_95", 0),
                             "n_simulations": raw_mc.get("n_simulations", 10000),
                             "gpu_used": raw_mc.get("gpu_used", False),
                         }
-                        logger.info(f"  ✓ Monte Carlo complete for {scenario_name}: {engine_b_results['monte_carlo']['success_probability']:.1%} success")
+                        logger.info(f"  ✓ Monte Carlo complete for {scenario_name}: {mc_success:.1%} success")
                     else:
                         logger.warning(f"  Monte Carlo returned {resp.status_code}: {resp.text[:200]}")
                 except Exception as e:
