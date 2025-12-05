@@ -318,34 +318,8 @@ export const CrossScenarioTable: React.FC<CrossScenarioTableProps> = ({
     )
   }
 
-  // FIX RUN 7: Group scenarios by strategic option
-  const aiKeywords = ['ai', 'tech', 'digital', 'automation', 'policy', 'base case', 'competitive', 'shock', 'disruption', 'gradual', 'acceleration']
-  const tourismKeywords = ['tourism', 'sustainable', 'destination', 'hospitality', 'travel']
-  
-  const aiScenarios = analysis.scenarios.filter(s => 
-    aiKeywords.some(kw => (s.scenarioName || '').toLowerCase().includes(kw)) &&
-    !tourismKeywords.some(kw => (s.scenarioName || '').toLowerCase().includes(kw))
-  )
-  const tourismScenarios = analysis.scenarios.filter(s => 
-    tourismKeywords.some(kw => (s.scenarioName || '').toLowerCase().includes(kw))
-  )
-  const otherScenarios = analysis.scenarios.filter(s => 
-    !aiScenarios.includes(s) && !tourismScenarios.includes(s)
-  )
-  
-  // Calculate option-level metrics
-  const calcOptionMetrics = (scenarios: typeof analysis.scenarios) => {
-    if (scenarios.length === 0) return null
-    const rates = scenarios.map(s => s.monteCarlo?.successRate || 0)
-    const avg = rates.reduce((a, b) => a + b, 0) / rates.length
-    const passed = scenarios.filter(s => (s.monteCarlo?.successRate || 0) > 0.5).length
-    const best = Math.max(...rates)
-    const worst = Math.min(...rates)
-    return { avg, passed, total: scenarios.length, best, worst }
-  }
-  
-  const aiMetrics = calcOptionMetrics(aiScenarios)
-  const tourismMetrics = calcOptionMetrics(tourismScenarios)
+  // DOMAIN-AGNOSTIC: Simply show all scenarios without hardcoded grouping
+  // Works for ANY query type
   
   return (
     <div className="rounded-2xl bg-slate-900/60 border border-slate-700 overflow-hidden">
@@ -357,79 +331,17 @@ export const CrossScenarioTable: React.FC<CrossScenarioTableProps> = ({
               <span>📊</span> Cross-Scenario Analysis
             </h3>
             <p className="text-sm text-slate-400">
-              How does each strategic option perform across different futures?
+              Policy performance across {analysis.scenarios.length} possible futures
             </p>
           </div>
           <div className="text-right">
             <p className="text-2xl font-bold text-white">
               {(analysis.overallSuccessRate * 100).toFixed(0)}%
             </p>
-            <p className="text-xs text-slate-400">overall success</p>
+            <p className="text-xs text-slate-400">average success rate</p>
           </div>
         </div>
       </div>
-
-      {/* FIX RUN 7: Option Comparison Summary */}
-      {(aiMetrics || tourismMetrics) && (
-        <div className="px-4 py-3 border-b border-slate-700/50 bg-gradient-to-r from-slate-800/30 to-slate-800/10">
-          <div className="grid grid-cols-2 gap-4">
-            {/* AI Hub Option */}
-            {aiMetrics && (
-              <div className="bg-cyan-900/20 border border-cyan-500/30 rounded-lg p-3">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg">🤖</span>
-                  <span className="text-sm font-bold text-cyan-300">AI & Technology Hub</span>
-                </div>
-                <div className="grid grid-cols-3 gap-2 text-xs">
-                  <div>
-                    <p className="text-slate-400">Average</p>
-                    <p className="text-white font-bold">{(aiMetrics.avg * 100).toFixed(0)}%</p>
-                  </div>
-                  <div>
-                    <p className="text-slate-400">Robustness</p>
-                    <p className="text-emerald-400 font-bold">{aiMetrics.passed}/{aiMetrics.total} pass</p>
-                  </div>
-                  <div>
-                    <p className="text-slate-400">Range</p>
-                    <p className="text-slate-300">{(aiMetrics.worst * 100).toFixed(0)}% - {(aiMetrics.best * 100).toFixed(0)}%</p>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {/* Tourism Option */}
-            {tourismMetrics && (
-              <div className="bg-amber-900/20 border border-amber-500/30 rounded-lg p-3">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg">🏖️</span>
-                  <span className="text-sm font-bold text-amber-300">Sustainable Tourism</span>
-                </div>
-                <div className="grid grid-cols-3 gap-2 text-xs">
-                  <div>
-                    <p className="text-slate-400">Average</p>
-                    <p className="text-white font-bold">{(tourismMetrics.avg * 100).toFixed(0)}%</p>
-                  </div>
-                  <div>
-                    <p className="text-slate-400">Robustness</p>
-                    <p className="text-emerald-400 font-bold">{tourismMetrics.passed}/{tourismMetrics.total} pass</p>
-                  </div>
-                  <div>
-                    <p className="text-slate-400">Scenarios</p>
-                    <p className="text-slate-300">{tourismMetrics.total} tested</p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-          
-          {/* Risk-adjusted recommendation note */}
-          {aiMetrics && tourismMetrics && aiMetrics.total > tourismMetrics.total && (
-            <p className="text-xs text-slate-400 mt-2 italic">
-              💡 AI Hub is tested across {aiMetrics.total} scenarios vs Tourism's {tourismMetrics.total} — more robust stress-testing.
-            </p>
-          )}
-        </div>
-      )}
 
       {/* Table header */}
       <div className="grid grid-cols-12 gap-4 px-4 py-3 bg-slate-800/30 text-xs uppercase tracking-wider text-slate-400">
@@ -440,50 +352,9 @@ export const CrossScenarioTable: React.FC<CrossScenarioTableProps> = ({
         <div className="col-span-2 text-right">Status</div>
       </div>
 
-      {/* Table body - grouped by option */}
+      {/* Table body - all scenarios */}
       <div className="divide-y divide-slate-700/30">
-        {/* AI Hub scenarios */}
-        {aiScenarios.length > 0 && (
-          <>
-            <div className="px-4 py-2 bg-cyan-900/10 border-l-4 border-cyan-500">
-              <span className="text-xs font-semibold text-cyan-400">🤖 AI & Technology Hub Path</span>
-            </div>
-            {aiScenarios.map((scenario) => (
-              <ScenarioRow
-                key={scenario.scenarioId}
-                scenario={scenario}
-                isExpanded={expandedId === scenario.scenarioId}
-                onToggle={() => {
-                  setExpandedId(expandedId === scenario.scenarioId ? null : scenario.scenarioId)
-                  onScenarioClick?.(scenario)
-                }}
-              />
-            ))}
-          </>
-        )}
-        
-        {/* Tourism scenarios */}
-        {tourismScenarios.length > 0 && (
-          <>
-            <div className="px-4 py-2 bg-amber-900/10 border-l-4 border-amber-500">
-              <span className="text-xs font-semibold text-amber-400">🏖️ Sustainable Tourism Path</span>
-            </div>
-            {tourismScenarios.map((scenario) => (
-              <ScenarioRow
-                key={scenario.scenarioId}
-                scenario={scenario}
-                isExpanded={expandedId === scenario.scenarioId}
-                onToggle={() => {
-                  setExpandedId(expandedId === scenario.scenarioId ? null : scenario.scenarioId)
-                  onScenarioClick?.(scenario)
-                }}
-              />
-            ))}
-          </>
-        )}
-        
-        {/* Other scenarios */}
-        {otherScenarios.length > 0 && otherScenarios.map((scenario) => (
+        {analysis.scenarios.map((scenario) => (
           <ScenarioRow
             key={scenario.scenarioId}
             scenario={scenario}

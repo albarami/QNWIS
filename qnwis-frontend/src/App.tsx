@@ -102,8 +102,8 @@ function App() {
     const scenarioCount = state.scenarioResults.length
     const completedScenarios = state.scenariosCompleted || 0
     
-    // FIXED: Use Engine B Monte Carlo success_rate, not the generic confidence field
-    // FIX RUN 7: Group scenarios by STRATEGIC OPTION, not just highest probability
+    // DOMAIN-AGNOSTIC: Simply calculate metrics from scenario results
+    // No hardcoded keywords - works for ANY query type
     const scenarioRates: { name: string; rate: number }[] = []
     state.scenarioResults.forEach((r: any) => {
       const engineB = r.engine_b_results || r.engineBResults || {}
@@ -117,58 +117,20 @@ function App() {
       }
     })
     
-    if (scenarioRates.length === 0) return null // No real data yet
+    if (scenarioRates.length === 0) return null
     
+    // Simple average across all scenarios
     const rates = scenarioRates.map(s => s.rate)
-    const avgSuccessRate = Math.round((rates.reduce((a, b) => a + b, 0) / rates.length) * 100)
-    
-    // FIX RUN 7: Group scenarios by strategic option for risk-adjusted analysis
-    // AI Hub scenarios: test the technology path under various conditions
-    // Tourism scenarios: test the tourism path
-    const aiKeywords = ['ai', 'tech', 'digital', 'automation', 'policy', 'base case', 'competitive', 'shock', 'disruption', 'gradual']
-    const tourismKeywords = ['tourism', 'sustainable', 'destination', 'hospitality', 'travel']
-    
-    const aiScenarios = scenarioRates.filter(s => 
-      aiKeywords.some(kw => s.name.toLowerCase().includes(kw)) &&
-      !tourismKeywords.some(kw => s.name.toLowerCase().includes(kw))
-    )
-    const tourismScenarios = scenarioRates.filter(s => 
-      tourismKeywords.some(kw => s.name.toLowerCase().includes(kw))
-    )
-    
-    // Calculate risk-adjusted metrics per option
-    const aiAvgRate = aiScenarios.length > 0 
-      ? aiScenarios.reduce((sum, s) => sum + s.rate, 0) / aiScenarios.length 
-      : 0
-    const tourismAvgRate = tourismScenarios.length > 0 
-      ? tourismScenarios.reduce((sum, s) => sum + s.rate, 0) / tourismScenarios.length 
-      : 0
+    const avgSuccessRate = rates.reduce((a, b) => a + b, 0) / rates.length
+    const displaySuccessRate = Math.round(avgSuccessRate * 100)
     
     // Robustness = how many scenarios pass 50% threshold
-    const aiRobustness = aiScenarios.filter(s => s.rate > 0.5).length / Math.max(aiScenarios.length, 1)
-    const tourismRobustness = tourismScenarios.length > 0 ? (tourismScenarios[0].rate > 0.5 ? 1 : 0) : 0
+    const passingScenarios = scenarioRates.filter(s => s.rate > 0.5)
     
-    // Risk-adjusted score: average * robustness bonus
-    // AI Hub tested across multiple scenarios = more reliable estimate
-    const aiRiskAdjusted = aiAvgRate * (1 + aiRobustness * 0.3) * (aiScenarios.length > 1 ? 1.1 : 1)
-    const tourismRiskAdjusted = tourismAvgRate * (1 + tourismRobustness * 0.3)
-    
-    // Determine recommended option based on risk-adjusted analysis (matches debate logic)
-    const recommendAI = aiRiskAdjusted >= tourismRiskAdjusted || aiScenarios.length >= 3
-    const recommendedOption = recommendAI ? 'AI & Technology Hub' : 'Sustainable Tourism'
-    const recommendedRate = recommendAI ? aiAvgRate : tourismAvgRate
-    const recommendedRobustness = recommendAI 
-      ? `${aiScenarios.filter(s => s.rate > 0.5).length}/${aiScenarios.length} scenarios pass`
-      : `${tourismScenarios.filter(s => s.rate > 0.5).length}/${tourismScenarios.length} scenarios pass`
-    
-    // Use RISK-ADJUSTED rate for display (not raw highest)
-    const displaySuccessRate = Math.round(recommendedRate * 100)
-    
-    // Best/worst within recommended option
-    const recommendedScenarios = recommendAI ? aiScenarios : tourismScenarios
-    const sortedRecommended = [...recommendedScenarios].sort((a, b) => b.rate - a.rate)
-    const bestInOption = sortedRecommended[0]
-    const worstInOption = sortedRecommended[sortedRecommended.length - 1]
+    // Best and worst scenarios
+    const sortedAll = [...scenarioRates].sort((a, b) => b.rate - a.rate)
+    const bestScenario = sortedAll[0]
+    const worstScenario = sortedAll[sortedAll.length - 1]
     
     // Count vulnerabilities (scenarios with success rate below 40%)
     const vulnerabilities: string[] = []
@@ -198,9 +160,7 @@ function App() {
     
     return {
       question: state.question || question,
-      // FIX RUN 7: Use risk-adjusted rate for verdict (matches debate logic)
       verdict: determineVerdict(displaySuccessRate, robustnessScore),
-      // FIX RUN 7: Show RECOMMENDED OPTION's rate, not raw highest probability
       successRate: displaySuccessRate,
       robustness: {
         passed: Math.round(robustnessScore * scenarioCount),
@@ -208,17 +168,14 @@ function App() {
         vulnerabilities: vulnerabilities.slice(0, 3),
       },
       confidence: finalConfidence,
-      // Risk level based on recommended option's rate
       riskLevel: displaySuccessRate >= 60 ? 'medium' : displaySuccessRate >= 40 ? 'high' : 'critical',
       trend: state.engineBTrend || 'stable',
       topDriver: topDriverLabel,
-      // FIX RUN 7: Show recommended option with risk-adjusted info (matches ministerial brief)
+      // Domain-agnostic: show best/worst scenarios
       recommendation: state.engineBRecommendation || 
-        `Recommended: ${recommendedOption} (${recommendedRobustness})${
-          bestInOption && worstInOption && bestInOption !== worstInOption
-            ? ` | Best: ${Math.round(bestInOption.rate * 100)}%, Worst: ${Math.round(worstInOption.rate * 100)}%`
-            : ''
-        }`,
+        (bestScenario && worstScenario 
+          ? `Best: ${bestScenario.name} (${Math.round(bestScenario.rate * 100)}%) | Worst: ${worstScenario.name} (${Math.round(worstScenario.rate * 100)}%)`
+          : undefined),
     }
   }, [state, showAnalysis, question])
 
