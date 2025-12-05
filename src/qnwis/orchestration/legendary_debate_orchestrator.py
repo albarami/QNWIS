@@ -825,7 +825,7 @@ Do NOT continue with methodology discussions. ANSWER THE QUESTION with specifics
         context_parts.append("")
         context_parts.append("FORBIDDEN (immediate disqualification):")
         context_parts.append("- General economic theory not specific to this question")
-        context_parts.append("- Historical examples unless directly relevant to Qatar's choice")
+        context_parts.append("- Historical examples unless directly relevant to the decision at hand")
         context_parts.append("- Tangential topics not in the question")
         context_parts.append("- Meta-discussion about methodology")
         context_parts.append("- Repetition of points already made")
@@ -1028,9 +1028,11 @@ Do NOT continue with methodology discussions. ANSWER THE QUESTION with specifics
         if any(w in question_lower for w in ["strategic", "policy", "strategy", "long-term", "plan", "national"]):
             complex_signals += 2  # Increased weight
         
-        # Signal 5: Qatar/GCC specific - ALWAYS needs thorough analysis
-        if any(w in question_lower for w in ["qatar", "qatari", "qatarization", "gcc", "gulf"]):
-            complex_signals += 2  # Regional policy questions need deep analysis
+        # Signal 5: Government/national/regional policy - ALWAYS needs thorough analysis
+        # DOMAIN-AGNOSTIC: Works for any country or region
+        if any(w in question_lower for w in ["national", "country", "government", "ministry", "minister", 
+                                              "regional", "federal", "state", "sovereign", "public sector"]):
+            complex_signals += 2  # Policy questions need deep analysis
         
         # Signal 6: Economic/labor market topics
         if any(w in question_lower for w in ["labor", "labour", "workforce", "employment", "economic", "economy"]):
@@ -1062,8 +1064,9 @@ Do NOT continue with methodology discussions. ANSWER THE QUESTION with specifics
             question_lower.startswith("when did ") and word_count < 8,
             question_lower.startswith("who is ") and word_count < 6,
         ]
-        # Additional check: Don't classify as simple if it mentions Qatar/policy
-        is_policy_related = any(w in question_lower for w in ["qatar", "policy", "trend", "analysis"])
+        # Additional check: Don't classify as simple if it mentions policy/analysis terms
+        # DOMAIN-AGNOSTIC: Works for any question about policy or strategic analysis
+        is_policy_related = any(w in question_lower for w in ["policy", "trend", "analysis", "strategic", "national"])
         
         if any(simple_patterns) and not is_policy_related:
             logger.info("Query classified as SIMPLE (factual lookup pattern)")
@@ -2012,8 +2015,8 @@ Be DIRECT. No meta-analysis."""
 Let's refocus on the core policy question: {self.question}
 
 Based on the analysis so far, what is your final recommendation?
-- Should Qatar proceed with the 50% target?
-- Should it be revised? If so, to what target and timeline?
+- Should the decision-maker proceed with the proposed option?
+- Should it be revised? If so, how?
 - What are the key risks and contingencies?
 
 Provide a concise final position."""

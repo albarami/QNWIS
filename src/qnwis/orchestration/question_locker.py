@@ -2,11 +2,12 @@
 Question Locker - Ensures agents answer the ACTUAL question asked.
 
 This module prevents agents from:
-1. Redefining the question (asked AI vs Tourism, answered "external investments")
+1. Redefining the question (asked A vs B, answered "something else entirely")
 2. Skipping to recommendations without comparing original options
 3. Introducing new options without addressing the original ones first
 
-Domain-agnostic: Works for any comparative or evaluative question.
+FULLY DOMAIN-AGNOSTIC: Works for any comparative or evaluative question.
+No hardcoded domain keywords - extracts options dynamically from question text.
 """
 
 import logging
@@ -79,25 +80,21 @@ class QuestionLocker:
                 after = ' '.join(parts[1].split()[:5])
                 options = [before.strip(), after.strip()]
         
-        # Pattern 3: Look for common domain keywords
+        # Pattern 3: Extract noun phrases as potential options (DOMAIN-AGNOSTIC)
+        # This works for ANY domain - no hardcoded keywords
         if not options:
-            domain_keywords = {
-                'ai': 'AI/Technology Hub',
-                'technology hub': 'AI/Technology Hub',
-                'tech hub': 'AI/Technology Hub',
-                'tourism': 'Tourism Destination',
-                'sustainable tourism': 'Sustainable Tourism',
-                'manufacturing': 'Manufacturing',
-                'financial': 'Financial Services',
-                'healthcare': 'Healthcare',
-                'education': 'Education',
-            }
+            # Look for quoted terms which often indicate options
+            quoted = re.findall(r'"([^"]+)"', question)
+            options.extend(quoted[:2])
             
-            for keyword, label in domain_keywords.items():
-                if keyword in question_lower and label not in options:
-                    options.append(label)
-                    if len(options) >= 2:
-                        break
+            # Look for capitalized noun phrases (potential named options)
+            if not options:
+                capitalized = re.findall(r'([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)', self.original_question)
+                for cap in capitalized:
+                    if cap not in options and len(cap) > 5:
+                        options.append(cap)
+                        if len(options) >= 2:
+                            break
         
         return options
     

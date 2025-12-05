@@ -202,12 +202,16 @@ function App() {
       const bestRate = bestScenario?.rate || avgSuccessRate
       displaySuccessRate = Math.round((bestRate > 1 ? bestRate : bestRate * 100))
       
-      // Determine verdict based on BEST scenario rate
-      if (displaySuccessRate >= 65) {
-        displayVerdict = 'APPROVE'
-      } else if (displaySuccessRate >= 55) {
-        displayVerdict = 'PROCEED_WITH_CAUTION'
-      } else if (displaySuccessRate >= 45) {
+      // FIX RUN 18: Aligned verdict thresholds (same as Brief)
+      // 60%+ = GO/APPROVE (passing grade, actionable)
+      // 50-60% = CONDITIONAL GO/PROCEED_WITH_CAUTION (proceed with monitoring)
+      // 40-50% = RECONSIDER (significant concerns)
+      // <40% = REJECT (high risk)
+      if (displaySuccessRate >= 60) {
+        displayVerdict = 'APPROVE'  // Maps to Brief's "GO"
+      } else if (displaySuccessRate >= 50) {
+        displayVerdict = 'PROCEED_WITH_CAUTION'  // Maps to Brief's "CONDITIONAL GO"
+      } else if (displaySuccessRate >= 40) {
         displayVerdict = 'RECONSIDER'
       } else {
         displayVerdict = 'REJECT'

@@ -507,34 +507,38 @@ class ScenarioAwareSynthesis:
         """
         Fallback: Extract the investment OPTION from scenario text.
         
-        QUESTION-TYPE AGNOSTIC: Looks for common patterns.
+        FIX RUN 18: FULLY DOMAIN-AGNOSTIC - NO HARDCODED PATTERNS.
+        Uses generic text processing to extract meaningful option name.
         """
-        combined = f"{name} {description}".lower()
+        # NO hardcoded domain patterns - works for any question type
         
-        # Look for explicit option indicators
-        option_patterns = [
-            (r'ai\s+(?:and\s+)?tech(?:nology)?', 'AI and Technology Hub'),
-            (r'tech(?:nology)?\s+hub', 'Technology Hub'),
-            (r'sustainable\s+tourism', 'Sustainable Tourism'),
-            (r'tourism\s+(?:pivot|develop|destination)', 'Sustainable Tourism'),
-            (r'digital\s+transform', 'Digital Transformation'),
-            (r'innovation\s+hub', 'Innovation Hub'),
+        # Step 1: Remove stress test indicators to get core theme
+        stress_indicators = [
+            'shock', 'crisis', 'collapse', 'disruption', 'adverse', 'stress',
+            'black swan', 'worst case', 'downturn', 'recession', 'pandemic',
+            'war', 'conflict', 'instability', 'freeze'
         ]
         
-        for pattern, option in option_patterns:
-            if re.search(pattern, combined):
-                return option
-        
-        # If no pattern match, extract the core theme (remove stress test indicators)
-        stress_indicators = ['shock', 'crisis', 'collapse', 'disruption', 'adverse', 'stress']
         clean_name = name
         for indicator in stress_indicators:
-            clean_name = re.sub(rf'\b{indicator}\b', '', clean_name, flags=re.IGNORECASE)
+            clean_name = re.sub(rf'\b{indicator}s?\b', '', clean_name, flags=re.IGNORECASE)
         
-        # Clean up and return
-        clean_name = re.sub(r'[-–—]+', ' ', clean_name)
+        # Step 2: Clean up separators and whitespace
+        clean_name = re.sub(r'[-–—:]+', ' ', clean_name)
         clean_name = re.sub(r'\s+', ' ', clean_name).strip()
         
+        # Step 3: If we have options extracted from question, try to match
+        if self._disambiguator and self._disambiguator.options:
+            combined = f"{name} {description}".lower()
+            for option in self._disambiguator.options:
+                # Check if any significant words from option appear in scenario
+                option_words = [w for w in option.lower().split() if len(w) > 3]
+                matches = sum(1 for w in option_words if w in combined)
+                if matches >= 1:
+                    logger.info(f"   Matched option '{option}' from scenario text")
+                    return option
+        
+        # Step 4: Return cleaned scenario name as option (fallback)
         if clean_name and len(clean_name) > 3:
             return clean_name
         

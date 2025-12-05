@@ -1,7 +1,7 @@
 """
 Confidence Calibration - Ensures claimed confidence matches actual evidence.
 
-PROBLEM: Scenarios show AI Hub (65.9%) vs Tourism (65.1%) - 0.8pp gap
+PROBLEM: Scenarios show Option A (65.9%) vs Option B (65.1%) - 0.8pp gap
          But brief claims 72% vs 48% - 24pp gap that doesn't exist
 
 SOLUTION: 
@@ -9,7 +9,8 @@ SOLUTION:
 2. Gap between options must reflect actual scenario gaps
 3. When options are essentially tied, confidence must be moderate
 
-DOMAIN-AGNOSTIC: Works for any question type.
+FULLY DOMAIN-AGNOSTIC: Works for any question type.
+No hardcoded domain keywords - analyzes scenario rates dynamically.
 """
 
 import logging

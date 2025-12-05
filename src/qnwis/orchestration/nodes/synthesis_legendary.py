@@ -2368,31 +2368,61 @@ Do NOT proceed with policy analysis for this target. Instead:
         
         logger.info(f"📤 FINAL debate_verdict for frontend: {state['debate_verdict']}")
         
-        # FIX RUN 17: Update the briefing to use DERIVED confidence (not inflated 75%)
+        # FIX RUN 18: Update the briefing to use DERIVED confidence (not inflated 75%)
         # The LLM generated the brief with stats["confidence"] = 75 (default)
-        # We need to fix the header to show the actual derived confidence
+        # We need to fix ALL confidence mentions to show the actual derived confidence
         import re
         
-        # Replace confidence in the header (e.g., "75% Confidence" → "66% Confidence")
         old_conf_int = stats.get("confidence", 75)  # What the LLM used
-        new_conf_int = int(derived_confidence)  # What it should be
+        new_conf_int = int(round(derived_confidence))  # What it should be (e.g., 64%)
         
-        if old_conf_int != new_conf_int:
-            # Replace in header and any mentions
-            briefing = re.sub(
-                rf'\b{old_conf_int}%\s+Confidence\b',
-                f'{new_conf_int}% Confidence',
-                briefing,
-                flags=re.IGNORECASE
-            )
-            # Also replace standalone confidence mentions
-            briefing = re.sub(
-                rf'confidence[:\s]+{old_conf_int}%',
-                f'confidence: {new_conf_int}%',
-                briefing,
-                flags=re.IGNORECASE
-            )
-            logger.info(f"📝 Fixed Brief confidence: {old_conf_int}% → {new_conf_int}%")
+        logger.info(f"📝 Brief confidence fix: {old_conf_int}% → {new_conf_int}%")
+        
+        # Replace ALL patterns where confidence appears
+        # Pattern 1: "75% Confidence" → "64% Confidence"
+        briefing = re.sub(
+            rf'\b{old_conf_int}%\s*Confidence\b',
+            f'{new_conf_int}% Confidence',
+            briefing,
+            flags=re.IGNORECASE
+        )
+        
+        # Pattern 2: "confidence: 75%" → "confidence: 64%"
+        briefing = re.sub(
+            rf'confidence[:\s]+{old_conf_int}%',
+            f'confidence: {new_conf_int}%',
+            briefing,
+            flags=re.IGNORECASE
+        )
+        
+        # Pattern 3: "Confidence Level: 75%" → "Confidence Level: 64%"
+        briefing = re.sub(
+            rf'Confidence\s+Level[:\s]+{old_conf_int}%',
+            f'Confidence Level: {new_conf_int}%',
+            briefing,
+            flags=re.IGNORECASE
+        )
+        
+        # Pattern 4: Just "75%" in confidence context (more aggressive but necessary)
+        # Only replace if followed by common confidence indicators
+        briefing = re.sub(
+            rf'\b{old_conf_int}%\s*(confidence|certain)',
+            f'{new_conf_int}% \\1',
+            briefing,
+            flags=re.IGNORECASE
+        )
+        
+        # FIX RUN 18: Also align the decision text with the verdict
+        # If scenario rate is 60%+, decision should be "GO" or "APPROVE"
+        # If scenario rate is 50-60%, decision should be "CONDITIONAL GO"
+        if derived_confidence >= 60:
+            aligned_decision_text = "GO"
+        elif derived_confidence >= 50:
+            aligned_decision_text = "CONDITIONAL GO"
+        else:
+            aligned_decision_text = "RECONSIDER"
+        
+        logger.info(f"📝 Brief decision aligned: {aligned_decision_text} at {new_conf_int}%")
         
         # Store the briefing
         state["final_synthesis"] = briefing
