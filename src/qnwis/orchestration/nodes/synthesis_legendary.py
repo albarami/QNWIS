@@ -19,6 +19,17 @@ from ..state import IntelligenceState
 from ...llm.client import LLMClient
 from ..case_studies import extract_case_studies, format_case_studies_for_synthesis
 
+# Financial modeling for NPV/IRR analysis
+try:
+    from src.nsic.engine_b.services.financial_modeling import (
+        FinancialModelingService, 
+        format_comparison_matrix_for_brief
+    )
+    FINANCIAL_MODELING_AVAILABLE = True
+except ImportError:
+    FINANCIAL_MODELING_AVAILABLE = False
+    logger.warning("Financial modeling service not available")
+
 logger = logging.getLogger(__name__)
 
 
@@ -744,11 +755,13 @@ def _build_legendary_prompt(
     facts: List[Dict[str, Any]],
     edge_cases: List[Dict[str, Any]] = None,
     case_studies_text: str = "",
+    financial_analysis_text: str = "",
 ) -> str:
     """Build the legendary synthesis prompt."""
     
     edge_cases = edge_cases or []
     case_studies_text = case_studies_text or "Case studies not available for this query."
+    financial_analysis_text = financial_analysis_text or "Financial modeling not available."
     
     # Format expert contributions
     expert_table = ""
@@ -1257,7 +1270,34 @@ Using the FETCHED CASE STUDIES above, write a comparative analysis:
 
 ---
 
-## VI. EXPERT DELIBERATION SYNTHESIS
+## VI. FINANCIAL ANALYSIS (Big 4 Standard)
+
+═══════════════════════════════════════════════════════════════════════════════
+                    OPTION COMPARISON MATRIX
+═══════════════════════════════════════════════════════════════════════════════
+{financial_analysis_text}
+═══════════════════════════════════════════════════════════════════════════════
+
+**YOUR TASK:** Present this financial data in your brief with:
+
+1. **OPTION COMPARISON TABLE:** Use the NPV/IRR/Jobs data above
+2. **PHASED INVESTMENT BREAKDOWN:** For each option, show Year 0-3, 4-7, 8-10 phases
+3. **SENSITIVITY ANALYSIS:** What happens if key assumptions change +/- 20%?
+4. **RECOMMENDATION:** Which option offers best risk-adjusted return?
+
+**FORMAT:**
+| Metric | Option A | Option B | Hybrid 60/40 | Hybrid 40/60 |
+|--------|----------|----------|--------------|--------------|
+| NPV    | $X       | $Y       | $Z           | $W           |
+| IRR    | A%       | B%       | C%           | D%           |
+| Jobs   | 50K      | 80K      | 65K          | 70K          |
+| Risk   | High     | Medium   | Medium       | Medium       |
+
+⚠️ If financial analysis shows "not available", use debate qualitative assessment instead.
+
+---
+
+## VII. EXPERT DELIBERATION SYNTHESIS
 
 **DELIBERATION STATISTICS:**
 • Total Debate Turns: {stats["n_turns"]}
@@ -1548,6 +1588,80 @@ Do NOT proceed with policy analysis for this target. Instead:
         logger.warning(f"  ⚠️ Case study extraction failed: {e}")
         case_studies_text = f"Case study extraction failed: {e}. Proceed with analysis based on available data."
     
+    # Financial modeling - NPV/IRR analysis (Big 4 Standard)
+    logger.info("💰 Running financial modeling (NPV/IRR analysis)...")
+    financial_analysis_text = ""
+    try:
+        if FINANCIAL_MODELING_AVAILABLE:
+            from src.nsic.engine_b.services.financial_modeling import FinancialModelingService, format_comparison_matrix_for_brief
+            
+            financial_service = FinancialModelingService(discount_rate=0.08)
+            
+            # Extract options from scenario_summaries
+            options = []
+            for s in scenario_summaries[:4]:
+                options.append({
+                    "name": s.get("name", "Option"),
+                    "type": s.get("type", "base")
+                })
+            
+            # If no scenarios, create generic options based on query
+            if not options:
+                options = [{"name": "Option A", "type": "base"}, {"name": "Option B", "type": "alternative"}]
+            
+            # Extract investment amount from query or facts
+            import re
+            investment_match = re.search(r'\$?([\d.]+)\s*(billion|B)', query, re.IGNORECASE)
+            total_investment = float(investment_match.group(1)) * 1e9 if investment_match else 50e9
+            
+            # Convert facts list to dict
+            facts_dict = {}
+            for f in facts:
+                if isinstance(f, dict):
+                    key = f.get("metric", f.get("indicator", ""))
+                    value = f.get("value", "")
+                    if key:
+                        facts_dict[key] = value
+            
+            # Run financial analysis
+            result = financial_service.analyze(
+                query=query,
+                options=options,
+                facts=facts_dict,
+                total_investment=total_investment,
+                time_horizon=10
+            )
+            
+            if result.comparison_matrix:
+                financial_analysis_text = format_comparison_matrix_for_brief(result.comparison_matrix)
+                
+                # Add phased breakdown if available
+                if result.phases:
+                    financial_analysis_text += "\n\n**PHASED INVESTMENT BREAKDOWN:**\n"
+                    for phase_data in result.phases[:2]:  # First 2 options
+                        option_name = phase_data.get("option", "Option")
+                        financial_analysis_text += f"\n{option_name}:\n"
+                        for p in phase_data.get("phases", []):
+                            financial_analysis_text += f"  • {p['years']}: {p['name']} - {p['investment']}\n"
+                
+                # Add sensitivity
+                if result.sensitivity:
+                    financial_analysis_text += "\n\n**SENSITIVITY ANALYSIS:**\n"
+                    for var, scenarios in list(result.sensitivity.items())[:3]:
+                        financial_analysis_text += f"  • {var}: "
+                        scenarios_str = ", ".join(f"{k}=${v/1e9:.1f}B" for k, v in scenarios.items())
+                        financial_analysis_text += scenarios_str + "\n"
+                
+                logger.info(f"  ✅ Financial analysis complete: {len(result.comparison_matrix)} options compared")
+            else:
+                financial_analysis_text = "Financial modeling did not produce comparison data. Use qualitative debate analysis."
+                logger.warning("  ⚠️ Financial modeling returned no comparison matrix")
+        else:
+            financial_analysis_text = "Financial modeling service not available. Use qualitative debate analysis for option comparison."
+    except Exception as e:
+        logger.warning(f"  ⚠️ Financial modeling failed: {e}")
+        financial_analysis_text = f"Financial modeling error: {e}. Use qualitative analysis from debate."
+    
     # Build the legendary prompt
     prompt = _build_legendary_prompt(
         query=query,
@@ -1557,7 +1671,8 @@ Do NOT proceed with policy analysis for this target. Instead:
         risks=risks,
         facts=facts,
         edge_cases=edge_cases,
-        case_studies_text=case_studies_text,  # NEW: Real case studies from APIs
+        case_studies_text=case_studies_text,
+        financial_analysis_text=financial_analysis_text,  # NEW: NPV/IRR analysis
     )
     
     # Initialize LLM client
