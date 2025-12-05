@@ -41,6 +41,36 @@ except ImportError:
     IMPLEMENTATION_PLANNER_AVAILABLE = False
     logger.warning("Implementation planner not available")
 
+# Stakeholder analysis
+try:
+    from ..stakeholder_analyzer import (
+        StakeholderAnalyzer,
+        format_stakeholder_analysis_for_brief
+    )
+    STAKEHOLDER_ANALYZER_AVAILABLE = True
+except ImportError:
+    STAKEHOLDER_ANALYZER_AVAILABLE = False
+    logger.warning("Stakeholder analyzer not available")
+
+# Risk register
+try:
+    from ..risk_register import (
+        RiskRegisterGenerator,
+        format_risk_register_for_brief
+    )
+    RISK_REGISTER_AVAILABLE = True
+except ImportError:
+    RISK_REGISTER_AVAILABLE = False
+    logger.warning("Risk register not available")
+
+# Fact validator
+try:
+    from ..fact_validator import FactValidator
+    FACT_VALIDATOR_AVAILABLE = True
+except ImportError:
+    FACT_VALIDATOR_AVAILABLE = False
+    logger.warning("Fact validator not available")
+
 logger = logging.getLogger(__name__)
 
 
@@ -768,6 +798,8 @@ def _build_legendary_prompt(
     case_studies_text: str = "",
     financial_analysis_text: str = "",
     implementation_plan_text: str = "",
+    stakeholder_analysis_text: str = "",
+    risk_register_text: str = "",
 ) -> str:
     """Build the legendary synthesis prompt."""
     
@@ -775,6 +807,8 @@ def _build_legendary_prompt(
     case_studies_text = case_studies_text or "Case studies not available for this query."
     financial_analysis_text = financial_analysis_text or "Financial modeling not available."
     implementation_plan_text = implementation_plan_text or "Detailed implementation plan not available."
+    stakeholder_analysis_text = stakeholder_analysis_text or "Stakeholder analysis not available."
+    risk_register_text = risk_register_text or "Risk register not available."
     
     # Format expert contributions
     expert_table = ""
@@ -1348,6 +1382,28 @@ Using the FETCHED CASE STUDIES above, write a comparative analysis:
 - How recommendations address it (required!)
 - Residual risk after mitigation
 
+**E. DETAILED RISK REGISTER (30+ Risks)**
+═══════════════════════════════════════════════════════════════════════════════
+{risk_register_text}
+═══════════════════════════════════════════════════════════════════════════════
+
+---
+
+## VI-B. STAKEHOLDER & POLITICAL ANALYSIS
+
+═══════════════════════════════════════════════════════════════════════════════
+              POLITICAL FEASIBILITY ASSESSMENT
+═══════════════════════════════════════════════════════════════════════════════
+{stakeholder_analysis_text}
+═══════════════════════════════════════════════════════════════════════════════
+
+**YOUR TASK:** Include stakeholder analysis in your brief with:
+
+1. **POWER/INTEREST MATRIX:** Classify stakeholders
+2. **IMPACT ASSESSMENT:** Winners and losers for each option
+3. **COALITION STRATEGY:** How to build political support
+4. **RISK MITIGATION:** Strategies for potential opponents
+
 ---
 
 ## VII. STRATEGIC RECOMMENDATIONS
@@ -1728,6 +1784,54 @@ Do NOT proceed with policy analysis for this target. Instead:
         logger.warning(f"  ⚠️ Financial modeling failed: {e}")
         financial_analysis_text = f"Financial modeling error: {e}. Use qualitative analysis from debate."
     
+    # Stakeholder analysis (Big 4 Standard - political feasibility)
+    logger.info("👥 Running stakeholder analysis...")
+    stakeholder_analysis_text = ""
+    try:
+        if STAKEHOLDER_ANALYZER_AVAILABLE:
+            stakeholder_analyzer = StakeholderAnalyzer()
+            
+            # Get best option from scenarios
+            best_option = "Strategic Initiative"
+            if scenario_summaries:
+                best_scenario = max(scenario_summaries, key=lambda s: s.get("success_probability", 0))
+                best_option = best_scenario.get("name", "Strategic Initiative")
+            
+            analysis = stakeholder_analyzer.analyze_option(
+                option_name=best_option,
+                query=query,
+                facts=facts_dict if 'facts_dict' in dir() else {}
+            )
+            
+            stakeholder_analysis_text = format_stakeholder_analysis_for_brief(analysis)
+            logger.info(f"  ✅ Stakeholder analysis complete: {len(analysis.get('stakeholders', []))} stakeholders analyzed")
+        else:
+            stakeholder_analysis_text = "Stakeholder analysis not available."
+    except Exception as e:
+        logger.warning(f"  ⚠️ Stakeholder analysis failed: {e}")
+        stakeholder_analysis_text = f"Stakeholder analysis error: {e}"
+    
+    # Risk register generation (Big 4 Standard - 30+ risks)
+    logger.info("⚠️ Generating detailed risk register...")
+    risk_register_text = ""
+    try:
+        if RISK_REGISTER_AVAILABLE:
+            risk_generator = RiskRegisterGenerator()
+            
+            risks_generated = risk_generator.generate_risk_register(
+                strategy_name=best_option if 'best_option' in dir() else "Strategic Initiative",
+                query=query,
+                total_investment=total_investment if 'total_investment' in dir() else 50e9
+            )
+            
+            risk_register_text = format_risk_register_for_brief(risks_generated)
+            logger.info(f"  ✅ Risk register complete: {len(risks_generated)} risks identified")
+        else:
+            risk_register_text = "Risk register generation not available."
+    except Exception as e:
+        logger.warning(f"  ⚠️ Risk register generation failed: {e}")
+        risk_register_text = f"Risk register error: {e}"
+    
     # Implementation plan generation (Big 4 Standard - quarterly milestones)
     logger.info("📋 Generating detailed implementation plan...")
     implementation_plan_text = ""
@@ -1777,7 +1881,9 @@ Do NOT proceed with policy analysis for this target. Instead:
         edge_cases=edge_cases,
         case_studies_text=case_studies_text,
         financial_analysis_text=financial_analysis_text,
-        implementation_plan_text=implementation_plan_text,  # NEW: Quarterly milestones
+        implementation_plan_text=implementation_plan_text,
+        stakeholder_analysis_text=stakeholder_analysis_text,  # NEW: Political feasibility
+        risk_register_text=risk_register_text,  # NEW: 30+ detailed risks
     )
     
     # Initialize LLM client
