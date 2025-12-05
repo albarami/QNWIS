@@ -333,34 +333,79 @@ def _is_case_study_paper(paper: Dict[str, Any]) -> bool:
     """Check if paper is a case study analysis."""
     title = paper.get("metric", paper.get("title", "")).lower()
     abstract = paper.get("value", paper.get("abstract", "")).lower()
+    citations = paper.get("citations", paper.get("citationCount", 0)) or 0
     
+    # Must have case study indicators in title or abstract
     case_indicators = [
         "case study", "implementation", "policy evaluation",
         "lessons learned", "comparative analysis", "country experience",
-        "economic impact", "success factors", "benchmark"
+        "economic impact", "success factors", "benchmark",
+        "singapore", "ireland", "uae", "dubai", "korea", "germany",
+        "norway", "estonia", "israel", "sovereign wealth", "fdi",
+        "technology hub", "tourism", "digital transformation"
     ]
     
-    return any(ind in title or ind in abstract for ind in case_indicators)
+    has_indicator = any(ind in title or ind in abstract for ind in case_indicators)
+    
+    # Prefer highly cited papers (more credible)
+    is_well_cited = citations >= 5
+    
+    # Exclude meta-analysis papers about research itself
+    exclude_patterns = [
+        "systematic review of", "meta-analysis", "literature review",
+        "natural language processing", "machine learning model",
+        "deep learning", "neural network", "classification algorithm"
+    ]
+    is_excluded = any(ex in title or ex in abstract for ex in exclude_patterns)
+    
+    return has_indicator and not is_excluded and (is_well_cited or has_indicator)
 
 
 def _parse_perplexity_to_case(fact: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     """Parse Perplexity fact into case study format."""
     try:
-        content = fact.get("value", fact.get("content", ""))
+        # Perplexity stores content in 'text' field, title in 'title'
+        content = fact.get("text", fact.get("value", fact.get("content", "")))
         source = fact.get("source", "Perplexity AI")
+        url = fact.get("url", "")
+        metric = fact.get("title", fact.get("metric", ""))
         
-        # Extract country/region
-        country = _extract_country_from_text(content)
-        if not country:
+        # Add URL to source if available
+        if url:
+            source = f"{source} ({url[:50]}...)" if len(url) > 50 else f"{source} ({url})"
+        
+        # Skip very short content
+        if len(content) < 100:
             return None
+        
+        # Check if this looks like a case study or policy analysis
+        case_indicators = [
+            "case study", "implementation", "policy", "invest", 
+            "billion", "million", "program", "initiative", "reform",
+            "success", "growth", "gdp", "jobs", "employment"
+        ]
+        content_lower = content.lower()
+        if not any(ind in content_lower for ind in case_indicators):
+            return None
+        
+        # Extract country/region - more lenient now
+        country = _extract_country_from_text(content)
         
         # Extract numbers
         numbers = _extract_numbers_from_text(content)
         
+        # Create title from metric or first sentence
+        if metric and len(metric) > 10:
+            title = metric[:80]
+        else:
+            # Use first sentence as title
+            first_sentence = content.split('.')[0][:80] if '.' in content else content[:80]
+            title = first_sentence
+        
         return {
             "id": f"PPLX-{hash(content) % 10000:04d}",
-            "title": f"{country} Implementation",
-            "country": country,
+            "title": title,
+            "country": country or "Multiple/Various",
             "source": source,
             "source_type": "perplexity",
             "content": content[:1000],
@@ -373,7 +418,7 @@ def _parse_perplexity_to_case(fact: Dict[str, Any]) -> Optional[Dict[str, Any]]:
                 "source": source
             },
             "lessons": _extract_lessons_from_text(content),
-            "relevance_score": 0.8
+            "relevance_score": 0.7 if country else 0.5  # Lower score if no country
         }
     except Exception as e:
         logger.debug(f"Failed to parse Perplexity case: {e}")
