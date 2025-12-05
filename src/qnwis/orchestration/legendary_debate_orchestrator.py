@@ -1372,18 +1372,66 @@ Do NOT continue with methodology discussions. ANSWER THE QUESTION with specifics
         query_context = self._format_query_context()
         
         if hasattr(agent, "present_case"):
-            # LLM agent - pass full context with query AND facts
+            # AGENT PERSONALITY ASSIGNMENTS for genuine intellectual conflict
+            # Different agents have different biases - this creates real debate
+            agent_personalities = {
+                "MicroEconomist": {
+                    "bias": "SKEPTICAL",
+                    "stance": "Challenge expensive options. Favor lower-risk, proven approaches. Question large capital allocations.",
+                    "typical_position": "The more cautious option is usually correct"
+                },
+                "MacroEconomist": {
+                    "bias": "STRATEGIC", 
+                    "stance": "Favor transformational investments. Accept short-term costs for long-term positioning. Think in decades.",
+                    "typical_position": "Bold strategic moves define national success"
+                },
+                "SkillsAgent": {
+                    "bias": "PRAGMATIC",
+                    "stance": "Focus on workforce readiness. Challenge plans that exceed human capital capacity. Prefer gradual approaches.",
+                    "typical_position": "Implementation capacity is the binding constraint"
+                },
+                "Nationalization": {
+                    "bias": "NATIONALIST",
+                    "stance": "Prioritize national employment. Challenge options that rely heavily on expatriates. Favor domestic capacity building.",
+                    "typical_position": "National participation must be the primary metric"
+                },
+                "PatternDetective": {
+                    "bias": "CONTRARIAN",
+                    "stance": "Challenge consensus. Look for what others are missing. Question assumptions that 'everyone agrees on'.",
+                    "typical_position": "If everyone agrees, someone is probably wrong"
+                }
+            }
+            
+            personality = agent_personalities.get(agent_name, {
+                "bias": "ANALYTICAL",
+                "stance": "Provide objective analysis based on available evidence.",
+                "typical_position": "Evidence should drive recommendations"
+            })
+            
+            # LLM agent - pass full context with query AND facts AND personality
             enhanced_topic = f"""{query_context}
 
 YOUR ROLE AS {agent_name}: {topic}
 
+🎭 YOUR DEBATE PERSONALITY:
+Bias: {personality['bias']}
+Stance: {personality['stance']}
+Typical Position: {personality['typical_position']}
+
+⚠️ GENUINE INTELLECTUAL CONFLICT REQUIRED:
+- You must DEFEND your stance vigorously
+- Do NOT default to "hybrid" or "balanced" approaches
+- If you genuinely believe Option A is better, SAY SO CLEARLY
+- Challenge other agents who disagree with you
+- Real consulting teams have genuine disagreements
+
 INSTRUCTIONS:
 1. Address the SPECIFIC QUESTION above (not generic risks)
-2. Use the EXTRACTED FACTS provided (cite as [Per extraction: value from SOURCE])
-3. Give your expert perspective on this particular decision
-4. Be SPECIFIC about how your analysis applies to this query
+2. Use the EXTRACTED FACTS provided (cite as [FACT N: value from SOURCE])
+3. Give your expert perspective THROUGH YOUR PERSONALITY LENS
+4. Take a CLEAR POSITION - avoid hedge words like "could", "might", "perhaps"
 
-Your expert analysis:"""
+Your expert analysis (be decisive, not diplomatic):"""
             
             return await agent.present_case(enhanced_topic, self.conversation_history, original_question=self.question)
         else:

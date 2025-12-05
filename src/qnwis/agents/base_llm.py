@@ -483,11 +483,17 @@ DEBATE CONTEXT
 
 DEBATE RULES (FOLLOW STRICTLY):
 1. You MUST engage with SPECIFIC points from {opponent_name}'s statement
-2. If you agree on some points, say so - then add NEW evidence
+2. DEFEND YOUR POSITION VIGOROUSLY - do not concede easily
 3. If you disagree, cite SPECIFIC data that contradicts their claim
 4. Do NOT repeat points already made in the conversation
-5. Build toward synthesis - identify what would resolve the disagreement
+5. DO NOT default to "hybrid" or "balanced approach" - take a CLEAR SIDE
 6. ALWAYS connect your challenge back to the minister's question
+
+⚠️ INTELLECTUAL CONFLICT REQUIRED:
+- A real consulting team has genuine disagreement
+- Partners defend their positions intensely before conceding anything
+- Do NOT say "I partially agree" - either you agree or you don't
+- If {opponent_name} is wrong, say so clearly with evidence
 ═══════════════════════════════════════════════════════════════════════════════
 
 {facts_section}
@@ -587,11 +593,17 @@ DEBATE CONTEXT
 
 DEBATE RULES (FOLLOW STRICTLY):
 1. You MUST address the SPECIFIC points {challenger_name} raised
-2. Acknowledge valid criticisms honestly - "I concede that..."
-3. Defend your position with NEW evidence not yet presented
-4. Do NOT repeat your original argument - add to it or modify it
-5. Build toward synthesis - where can you find common ground?
+2. DEFEND YOUR POSITION - do not concede unless evidence is overwhelming
+3. Counter-attack with NEW evidence not yet presented
+4. Do NOT water down your argument - strengthen it or pivot to a stronger point
+5. DO NOT suggest "hybrid" or "compromise" unless truly warranted by evidence
 6. ALWAYS connect your response to the minister's question
+
+⚠️ HOLD YOUR GROUND:
+- If {challenger_name}'s data is weak, expose the weakness
+- If their logic is flawed, call it out
+- Real consultants don't concede easily - they defend their analysis
+- Only concede if the evidence genuinely changes your assessment
 ═══════════════════════════════════════════════════════════════════════════════
 
 {facts_section}
@@ -605,14 +617,21 @@ Available data sources to support your position:
 
 Your response must:
 1. Quote the SPECIFIC criticism you're addressing
-2. Either CONCEDE (if valid) or DEFEND with new evidence
-3. Cite all data: [Per extraction: 'value' from source]
+2. DEFEND your position with new evidence - concession is rare
+3. Cite all data: [FACT N: 'value' from source]
 4. Connect your defense to the minister's decision
 
 Structure your response:
-- "On [specific point], I [concede/maintain]..."
-- "The evidence shows [Per extraction: data]..."
-- "For the minister's decision, this means..."
+- "On [specific point], {challenger_name} is [correct/incorrect] because..."
+- "The evidence shows [FACT N: data]..."
+- "My recommendation remains [X] because..."
+- OR if truly wrong: "I revise my position to [Y] based on [FACT N]..."
+
+⚠️ AVOID THESE WEAK PATTERNS:
+❌ "I partially concede but maintain..."
+❌ "There are valid points on both sides..."
+❌ "A balanced approach might be..."
+✅ TAKE A CLEAR POSITION
 
 Your response (focused on the minister's question):"""
         
@@ -797,24 +816,39 @@ Please provide an objective and balanced assessment."""
         debate_history: List[Dict],
         confidence_level: bool = True
     ) -> str:
-        """State final position after debate."""
+        """State final position after debate - MUST be decisive, not hedged."""
         history_text = self._format_history(debate_history[-10:])
         
         prompt = f"""You are {self.agent_name}.
 
-The debate is concluding.
+The debate is concluding. The minister needs a CLEAR recommendation.
+
 Recent conversation:
 {history_text}
 
-State your final position:
-1. Your core recommendation
-2. Key caveats or risks
-3. Your final confidence level (0-100%)
-4. What would change your mind?
+State your FINAL position:
 
-Be decisive."""
+1. YOUR RECOMMENDATION: Choose ONE option (not "hybrid" or "balanced")
+   - If Option A: "I recommend Option A with X% confidence"
+   - If Option B: "I recommend Option B with X% confidence"
+   - If genuinely torn: "I cannot recommend either - here's why..."
+
+2. KEY RISKS with your recommendation (be honest about downsides)
+
+3. WHERE YOU DISAGREE with other agents (name them specifically)
+   - "I disagree with [Agent] because..."
+   - Real consulting teams have unresolved tensions - acknowledge them
+
+4. CONFIDENCE LEVEL (0-100%) and what would change it
+
+⚠️ AVOID WEAK CONCLUSIONS:
+❌ "A phased hybrid approach combining elements of both..."
+❌ "The optimal path likely involves balancing..."
+❌ "I partially agree with everyone..."
+
+✅ BE DECISIVE - The minister needs to make a choice."""
         
-        return await self.llm.generate(prompt=prompt, temperature=0.3)
+        return await self.llm.generate(prompt=prompt, temperature=0.4)
 
     def _format_history(self, history: list) -> str:
         """Format conversation history for prompts."""
