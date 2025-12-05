@@ -30,6 +30,17 @@ except ImportError:
     FINANCIAL_MODELING_AVAILABLE = False
     logger.warning("Financial modeling service not available")
 
+# Implementation plan generator
+try:
+    from ..implementation_planner import (
+        ImplementationPlanner,
+        format_implementation_plan_for_brief
+    )
+    IMPLEMENTATION_PLANNER_AVAILABLE = True
+except ImportError:
+    IMPLEMENTATION_PLANNER_AVAILABLE = False
+    logger.warning("Implementation planner not available")
+
 logger = logging.getLogger(__name__)
 
 
@@ -756,12 +767,14 @@ def _build_legendary_prompt(
     edge_cases: List[Dict[str, Any]] = None,
     case_studies_text: str = "",
     financial_analysis_text: str = "",
+    implementation_plan_text: str = "",
 ) -> str:
     """Build the legendary synthesis prompt."""
     
     edge_cases = edge_cases or []
     case_studies_text = case_studies_text or "Case studies not available for this query."
     financial_analysis_text = financial_analysis_text or "Financial modeling not available."
+    implementation_plan_text = implementation_plan_text or "Detailed implementation plan not available."
     
     # Format expert contributions
     expert_table = ""
@@ -1355,7 +1368,60 @@ Using the FETCHED CASE STUDIES above, write a comparative analysis:
 
 ---
 
-## VIII. CONFIDENCE ASSESSMENT
+## VIII. DETAILED IMPLEMENTATION PLAN (Big 4 Standard)
+
+═══════════════════════════════════════════════════════════════════════════════
+              QUARTERLY IMPLEMENTATION ROADMAP
+═══════════════════════════════════════════════════════════════════════════════
+{implementation_plan_text}
+═══════════════════════════════════════════════════════════════════════════════
+
+**YOUR TASK:** Present this implementation detail in your brief with:
+
+1. **PHASED BREAKDOWN:** For each phase, show:
+   - Phase name and duration
+   - Total budget allocation
+   - Key partners involved
+   - Strategic objective
+
+2. **QUARTERLY MILESTONES:** For the first 2 years (8 quarters), show:
+   - Specific actions per quarter
+   - Responsible party for each action
+   - Budget allocation per action
+   - Deliverable and success metric
+
+3. **GOVERNANCE:** Include:
+   - Steering committee composition
+   - Reporting cadence
+   - Escalation path
+
+4. **SUCCESS CRITERIA:** For each phase, list:
+   - Quantified metrics
+   - Go/No-Go decision points
+
+**FORMAT EXAMPLE:**
+
+### Phase 1: Foundation (2025-2027) — $8B
+
+**Q1 2025:**
+- Establish Authority via legislation
+  - Responsible: Ministry of Communications
+  - Budget: $50M
+  - Deliverable: Authority operational by Q2
+  
+- Recruit CEO from global tech company
+  - Responsible: Executive Search Firm
+  - Budget: $2M search fee
+  - Success metric: CEO hired within 90 days
+
+**Q2 2025:**
+[Continue with same level of detail...]
+
+⚠️ If implementation plan shows "not available", generate reasonable quarterly milestones based on the debate recommendations and standard implementation timelines.
+
+---
+
+## IX. CONFIDENCE ASSESSMENT
 
 **OVERALL CONFIDENCE: {stats["confidence"]}%**
 
@@ -1371,7 +1437,7 @@ Using the FETCHED CASE STUDIES above, write a comparative analysis:
 
 ---
 
-## IX. MINISTER'S BRIEFING CARD
+## X. MINISTER'S BRIEFING CARD
 
 ═══════════════════════════════════════════════════════════════════════════════
               MINISTER'S BRIEFING CARD | {stats["date"]} | Confidence: {stats["confidence"]}%
@@ -1662,6 +1728,44 @@ Do NOT proceed with policy analysis for this target. Instead:
         logger.warning(f"  ⚠️ Financial modeling failed: {e}")
         financial_analysis_text = f"Financial modeling error: {e}. Use qualitative analysis from debate."
     
+    # Implementation plan generation (Big 4 Standard - quarterly milestones)
+    logger.info("📋 Generating detailed implementation plan...")
+    implementation_plan_text = ""
+    try:
+        if IMPLEMENTATION_PLANNER_AVAILABLE:
+            planner = ImplementationPlanner()
+            
+            # Extract best option name from scenarios
+            option_name = "Strategic Initiative"
+            if scenario_summaries:
+                # Find highest probability scenario as the recommended option
+                best_scenario = max(scenario_summaries, key=lambda s: s.get("success_probability", 0))
+                option_name = best_scenario.get("name", "Strategic Initiative")
+            
+            # Extract investment amount from query
+            import re
+            investment_match = re.search(r'\$?([\d.]+)\s*(billion|B)', query, re.IGNORECASE)
+            total_investment = float(investment_match.group(1)) * 1e9 if investment_match else 10e9
+            
+            # Generate detailed phases with quarterly milestones
+            phases = planner.generate_implementation_plan(
+                query=query,
+                option_name=option_name,
+                total_budget=total_investment,
+                time_horizon=10
+            )
+            
+            if phases:
+                implementation_plan_text = format_implementation_plan_for_brief(phases)
+                logger.info(f"  ✅ Generated {len(phases)} phases with quarterly milestones")
+            else:
+                implementation_plan_text = "Detailed implementation plan generation failed. Use high-level phases from debate."
+        else:
+            implementation_plan_text = "Implementation planner not available. Use high-level phases from debate."
+    except Exception as e:
+        logger.warning(f"  ⚠️ Implementation plan generation failed: {e}")
+        implementation_plan_text = f"Implementation plan generation error: {e}"
+    
     # Build the legendary prompt
     prompt = _build_legendary_prompt(
         query=query,
@@ -1672,7 +1776,8 @@ Do NOT proceed with policy analysis for this target. Instead:
         facts=facts,
         edge_cases=edge_cases,
         case_studies_text=case_studies_text,
-        financial_analysis_text=financial_analysis_text,  # NEW: NPV/IRR analysis
+        financial_analysis_text=financial_analysis_text,
+        implementation_plan_text=implementation_plan_text,  # NEW: Quarterly milestones
     )
     
     # Initialize LLM client
