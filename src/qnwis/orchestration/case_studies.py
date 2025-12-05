@@ -28,27 +28,56 @@ async def extract_case_studies(query: str, max_cases: int = 4) -> List[Dict[str,
     
     Domain-agnostic: works for any query topic.
     """
+    import os
     all_cases = []
+    apis_available = []
+    apis_missing = []
+    
+    # Check API key availability FIRST
+    if os.getenv("PERPLEXITY_API_KEY"):
+        apis_available.append("Perplexity")
+    else:
+        apis_missing.append("PERPLEXITY_API_KEY")
+    
+    if os.getenv("BRAVE_API_KEY"):
+        apis_available.append("Brave")
+    else:
+        apis_missing.append("BRAVE_API_KEY")
+    
+    # Semantic Scholar doesn't require API key for basic usage
+    apis_available.append("Semantic Scholar")
+    
+    if apis_missing:
+        logger.warning(f"⚠️ CASE STUDIES: Missing API keys: {', '.join(apis_missing)}")
+        logger.warning(f"   Available APIs: {', '.join(apis_available) if apis_available else 'None'}")
+        logger.warning(f"   Set these environment variables to enable full case study extraction")
     
     # Extract key topics from query for case study search
     case_study_queries = _generate_case_study_queries(query)
     logger.info(f"🔍 Searching for case studies with {len(case_study_queries)} queries")
+    logger.info(f"   APIs: {', '.join(apis_available)}")
     
     try:
         # 1. Perplexity - Best for comprehensive case studies with real data
-        perplexity_cases = await _fetch_perplexity_case_studies(query, case_study_queries)
-        all_cases.extend(perplexity_cases)
-        logger.info(f"  Perplexity: {len(perplexity_cases)} case studies")
+        if "Perplexity" in apis_available:
+            perplexity_cases = await _fetch_perplexity_case_studies(query, case_study_queries)
+            all_cases.extend(perplexity_cases)
+            logger.info(f"  ✅ Perplexity: {len(perplexity_cases)} case studies")
+        else:
+            logger.info(f"  ⏭️ Perplexity: Skipped (no API key)")
         
-        # 2. Semantic Scholar - Academic case studies
+        # 2. Semantic Scholar - Academic case studies (free API)
         academic_cases = await _fetch_academic_case_studies(query, case_study_queries)
         all_cases.extend(academic_cases)
-        logger.info(f"  Semantic Scholar: {len(academic_cases)} academic cases")
+        logger.info(f"  ✅ Semantic Scholar: {len(academic_cases)} academic cases")
         
         # 3. Brave - Recent implementations
-        news_cases = await _fetch_brave_case_studies(query, case_study_queries)
-        all_cases.extend(news_cases)
-        logger.info(f"  Brave: {len(news_cases)} recent cases")
+        if "Brave" in apis_available:
+            news_cases = await _fetch_brave_case_studies(query, case_study_queries)
+            all_cases.extend(news_cases)
+            logger.info(f"  ✅ Brave: {len(news_cases)} recent cases")
+        else:
+            logger.info(f"  ⏭️ Brave: Skipped (no API key)")
         
     except Exception as e:
         logger.error(f"Case study extraction error: {e}")
@@ -57,7 +86,11 @@ async def extract_case_studies(query: str, max_cases: int = 4) -> List[Dict[str,
     unique_cases = _deduplicate_cases(all_cases)
     ranked_cases = _rank_cases_by_relevance(unique_cases, query)
     
-    logger.info(f"📚 Total unique case studies: {len(ranked_cases)}")
+    if not ranked_cases and apis_missing:
+        logger.warning(f"📚 No case studies found. Configure API keys for better results: {', '.join(apis_missing)}")
+    else:
+        logger.info(f"📚 Total unique case studies: {len(ranked_cases)}")
+    
     return ranked_cases[:max_cases]
 
 

@@ -1034,6 +1034,7 @@ def _build_legendary_prompt(
     implementation_plan_text: str = "",
     stakeholder_analysis_text: str = "",
     risk_register_text: str = "",
+    research_analysis_text: str = "",  # NEW: Research agent academic literature
 ) -> str:
     """Build the legendary synthesis prompt."""
     
@@ -1043,6 +1044,7 @@ def _build_legendary_prompt(
     implementation_plan_text = implementation_plan_text or "Detailed implementation plan not available."
     stakeholder_analysis_text = stakeholder_analysis_text or "Stakeholder analysis not available."
     risk_register_text = risk_register_text or "Risk register not available."
+    research_analysis_text = research_analysis_text or "Academic literature synthesis not available."
     
     # Format expert contributions
     expert_table = ""
@@ -1488,6 +1490,9 @@ Feasibility Ratio: {stats.get('feasibility_ratio', 1.0):.2f}
 Target Arithmetic Verdict: {stats.get('feasibility_verdict', 'FEASIBLE')}
 [Explain whether the target is achievable based on data constraints]
 
+**E. ACADEMIC RESEARCH SYNTHESIS**
+{research_analysis_text}
+
 ---
 
 ## IV. COMPARATIVE CASE ANALYSIS (Big 4 Standard)
@@ -1842,6 +1847,11 @@ Do NOT proceed with policy analysis for this target. Instead:
     edge_cases = _extract_edge_cases(state)  # NEW: Extract edge cases
     facts = state.get("extracted_facts", [])
     
+    # Extract research agent analysis (academic literature synthesis)
+    research_analysis = state.get("research_analysis", "")
+    if research_analysis:
+        logger.info(f"📚 Including research agent analysis: {len(research_analysis)} chars")
+    
     # CRITICAL: Extract final debate verdict (FULLY DOMAIN AGNOSTIC)
     debate_verdict = _extract_final_debate_verdict(state)
     if debate_verdict.get("quantified_assessment") or debate_verdict.get("direct_answer"):
@@ -1930,19 +1940,35 @@ Do NOT proceed with policy analysis for this target. Instead:
     )
     
     # Fetch real case studies from authoritative sources (Harvard, McKinsey, World Bank, etc.)
-    logger.info("📚 Fetching comparative case studies from authoritative sources...")
+    logger.info("=" * 60)
+    logger.info("📚 CASE STUDY EXTRACTION STARTING...")
+    logger.info("=" * 60)
+    
+    # Check API key availability
+    import os as _os
+    perplexity_key = _os.getenv("PERPLEXITY_API_KEY")
+    brave_key = _os.getenv("BRAVE_API_KEY")
+    logger.info(f"  PERPLEXITY_API_KEY: {'✅ Set' if perplexity_key else '❌ NOT SET'}")
+    logger.info(f"  BRAVE_API_KEY: {'✅ Set' if brave_key else '❌ NOT SET'}")
+    
     case_studies_text = ""
     try:
         case_studies = await extract_case_studies(query, max_cases=4)
+        logger.info(f"  📊 Case studies returned: {len(case_studies) if case_studies else 0}")
+        
         if case_studies:
             case_studies_text = format_case_studies_for_synthesis(case_studies)
             logger.info(f"  ✅ Fetched {len(case_studies)} case studies from real sources")
+            for i, cs in enumerate(case_studies[:3]):
+                logger.info(f"    Case {i+1}: {cs.get('title', 'Untitled')[:50]}... ({cs.get('source_type', 'unknown')})")
         else:
             case_studies_text = "No directly relevant case studies found. The synthesis should note limited international benchmarking data."
             logger.warning("  ⚠️ No case studies found for this query")
     except Exception as e:
-        logger.warning(f"  ⚠️ Case study extraction failed: {e}")
+        logger.error(f"  ❌ Case study extraction FAILED: {e}", exc_info=True)
         case_studies_text = f"Case study extraction failed: {e}. Proceed with analysis based on available data."
+    
+    logger.info("=" * 60)
     
     # Financial modeling - NPV/IRR analysis (Big 4 Standard)
     logger.info("💰 Running financial modeling (NPV/IRR analysis)...")
@@ -2126,8 +2152,9 @@ Do NOT proceed with policy analysis for this target. Instead:
         case_studies_text=case_studies_text,
         financial_analysis_text=financial_analysis_text,
         implementation_plan_text=implementation_plan_text,
-        stakeholder_analysis_text=stakeholder_analysis_text,  # NEW: Political feasibility
-        risk_register_text=risk_register_text,  # NEW: 30+ detailed risks
+        stakeholder_analysis_text=stakeholder_analysis_text,  # Political feasibility
+        risk_register_text=risk_register_text,  # 30+ detailed risks
+        research_analysis_text=research_analysis,  # Research agent academic literature
     )
     
     # Initialize LLM client
