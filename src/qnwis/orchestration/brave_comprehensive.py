@@ -105,7 +105,7 @@ async def _brave_search(
         "q": query,
         "count": count,
         "search_lang": "en",
-        "text_decorations": False,
+        "text_decorations": "false",  # Must be string, not bool
         "safesearch": "off"
     }
     
