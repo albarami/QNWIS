@@ -134,7 +134,7 @@ RULE: Maximum ONE turn to resolve any data discrepancy.
 State which figure you trust, explain why briefly, then MOVE ON.
 
 The minister doesn't care which growth rate is exactly right.
-They care: Should we invest in AI or Tourism?
+They care: Which option should we choose? What's the recommendation?
 
 ═══════════════════════════════════════════════════════════════════════
 """

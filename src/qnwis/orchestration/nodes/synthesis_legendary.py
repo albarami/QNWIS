@@ -11,11 +11,13 @@ from __future__ import annotations
 import json
 import logging
 import os
+import asyncio
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from ..state import IntelligenceState
 from ...llm.client import LLMClient
+from ..case_studies import extract_case_studies, format_case_studies_for_synthesis
 
 logger = logging.getLogger(__name__)
 
@@ -741,10 +743,12 @@ def _build_legendary_prompt(
     risks: List[Dict[str, Any]],
     facts: List[Dict[str, Any]],
     edge_cases: List[Dict[str, Any]] = None,
+    case_studies_text: str = "",
 ) -> str:
     """Build the legendary synthesis prompt."""
     
     edge_cases = edge_cases or []
+    case_studies_text = case_studies_text or "Case studies not available for this query."
     
     # Format expert contributions
     expert_table = ""
@@ -1192,7 +1196,47 @@ Target Arithmetic Verdict: {stats.get('feasibility_verdict', 'FEASIBLE')}
 
 ---
 
-## IV. SCENARIO ANALYSIS
+## IV. COMPARATIVE CASE ANALYSIS (Big 4 Standard)
+
+**PURPOSE:** No strategic recommendation should stand without evidence from comparable implementations elsewhere. This section provides international benchmarking based on REAL DATA fetched from authoritative sources.
+
+═══════════════════════════════════════════════════════════════════════════════
+                 FETCHED CASE STUDIES (FROM REAL SOURCES)
+═══════════════════════════════════════════════════════════════════════════════
+Sources: Harvard Business Review, McKinsey Global Institute, World Bank, IMF, OECD, Semantic Scholar
+
+{case_studies_text}
+
+═══════════════════════════════════════════════════════════════════════════════
+
+**YOUR TASK FOR THIS SECTION:**
+Using the FETCHED CASE STUDIES above, write a comparative analysis:
+
+1. **CASE COMPARISON TABLE:** Create a table comparing the cases above
+2. **PATTERN ANALYSIS:** What patterns emerge across multiple cases?
+3. **APPLICABILITY ASSESSMENT:** Which lessons apply to this decision and which don't?
+4. **CITATION:** Reference cases as [Case N] with the source provided
+
+**OUTPUT FORMAT:**
+
+**A. RELEVANT CASES FROM DATA**
+[Use the fetched cases above - cite the source for each]
+
+**B. CROSS-CASE PATTERNS**
+- **Success Pattern:** [What worked in 2+ cases - cite specific cases]
+- **Failure Pattern:** [What failed in 2+ cases - cite specific cases]
+- **Key Differentiator:** [What separates successes from failures]
+
+**C. LESSONS FOR THIS DECISION**
+- **Directly Applicable:** [Lessons that transfer]
+- **Partially Applicable:** [Lessons that require adaptation]
+- **Not Applicable:** [Why certain lessons don't transfer]
+
+**⚠️ CRITICAL:** Use ONLY the case study data provided above. Do not fabricate additional case studies. If the provided data is insufficient, state "Limited case study data available" and explain what additional research would be needed
+
+---
+
+## V. SCENARIO ANALYSIS
 
 **METHODOLOGY:** {stats["n_scenarios"]} distinct futures analyzed simultaneously.
 
@@ -1213,7 +1257,7 @@ Target Arithmetic Verdict: {stats.get('feasibility_verdict', 'FEASIBLE')}
 
 ---
 
-## V. EXPERT DELIBERATION SYNTHESIS
+## VI. EXPERT DELIBERATION SYNTHESIS
 
 **DELIBERATION STATISTICS:**
 • Total Debate Turns: {stats["n_turns"]}
@@ -1489,6 +1533,21 @@ Do NOT proceed with policy analysis for this target. Instead:
         f"{len(edge_cases)} edge cases, {len(risks)} risks"
     )
     
+    # Fetch real case studies from authoritative sources (Harvard, McKinsey, World Bank, etc.)
+    logger.info("📚 Fetching comparative case studies from authoritative sources...")
+    case_studies_text = ""
+    try:
+        case_studies = await extract_case_studies(query, max_cases=4)
+        if case_studies:
+            case_studies_text = format_case_studies_for_synthesis(case_studies)
+            logger.info(f"  ✅ Fetched {len(case_studies)} case studies from real sources")
+        else:
+            case_studies_text = "No directly relevant case studies found. The synthesis should note limited international benchmarking data."
+            logger.warning("  ⚠️ No case studies found for this query")
+    except Exception as e:
+        logger.warning(f"  ⚠️ Case study extraction failed: {e}")
+        case_studies_text = f"Case study extraction failed: {e}. Proceed with analysis based on available data."
+    
     # Build the legendary prompt
     prompt = _build_legendary_prompt(
         query=query,
@@ -1497,7 +1556,8 @@ Do NOT proceed with policy analysis for this target. Instead:
         scenario_summaries=scenario_summaries,
         risks=risks,
         facts=facts,
-        edge_cases=edge_cases,  # NEW: Pass edge cases to prompt
+        edge_cases=edge_cases,
+        case_studies_text=case_studies_text,  # NEW: Real case studies from APIs
     )
     
     # Initialize LLM client
