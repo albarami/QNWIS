@@ -11,6 +11,7 @@ from ..llm.client import LLMClient
 from .debate import detect_debate_convergence
 from .smart_moderator import SmartModerator
 from .turn_validator import TurnValidator
+from .question_locker import QuestionLocker, create_question_lock_prompt, create_phase_reminder
 
 logger = logging.getLogger(__name__)
 
@@ -225,28 +226,31 @@ class LegendaryDebateOrchestrator:
             }
         },
         "complex": {
-            "max_turns": 150,  # FULL DEPTH for ministerial queries
+            # FIX RUN 14: REDUCED from 150 to 45 turns
+            # 73 turns caused context decay and number inversion
+            # Agents correctly cited Tourism 65.7% in opening, inverted to AI 65.7% by turn 67
+            "max_turns": 45,
             "phases": {
-                "opening": 15,       # 3 turns × 5 agents
-                "analysis": 20,      # FIX RUN 7: HARD LIMIT 20 turns for analysis
-                "challenge": 25,     # REDUCED from 40 - force faster transition
-                "edge_case": 25,     # 5 cases × 5 agents
-                "risk": 25,          # 5 risks × 5 assessors
-                "consensus": 25      # 5 rounds × 5 agents
+                "opening": 6,        # 1 turn × 5 agents + 1 moderator
+                "analysis": 8,       # Focused data analysis
+                "challenge": 10,     # Direct option comparison
+                "edge_case": 8,      # Limited stress testing (prevents number contamination)
+                "risk": 6,           # Key risks only
+                "consensus": 7       # Final positions + synthesis
             }
         },
         # ENTERPRISE FIX: Comparative debate config for A vs B questions
-        # Ensures both options are thoroughly analyzed and compared
+        # FIX RUN 14: Reduced to 45 turns to prevent context decay
         "comparative": {
-            "max_turns": 150,
+            "max_turns": 45,
             "phases": {
-                "opening": 10,           # Initial positions
-                "option_a_advocacy": 15, # REDUCED from 20 - make case FOR option A
-                "option_b_advocacy": 15, # REDUCED from 20 - make case FOR option B
-                "challenge": 25,         # REDUCED from 30 - Challenge BOTH options
-                "cross_examination": 15, # REDUCED from 20 - Direct A vs B comparison
-                "risk": 20,              # Risks for each option
-                "consensus": 25          # Final verdict
+                "opening": 6,            # Initial positions with scenario acknowledgment
+                "option_a_advocacy": 8,  # Make case FOR option A
+                "option_b_advocacy": 8,  # Make case FOR option B
+                "challenge": 8,          # Direct A vs B comparison
+                "cross_examination": 6,  # Final comparison
+                "risk": 4,               # Key risks only
+                "consensus": 5           # Final verdict
             }
         }
     }
@@ -254,18 +258,21 @@ class LegendaryDebateOrchestrator:
     # Phase budget enforcement - forces transition if exceeded
     PHASE_BUDGET_STRICT = True  # Set to True to force phase transitions
     
-    # FIX RUN 7: HARD LIMITS - force transition even if agents want to continue
+    # FIX RUN 14: REDUCED HARD LIMITS to prevent context decay
+    # Run 14 showed: 73 turns caused agents to INVERT scenario numbers
+    # Tourism 65.7% became AI 65.7% due to too much edge-case discussion
     PHASE_HARD_LIMITS = {
-        'opening': 16,
-        'analysis': 20,      # HARD LIMIT - forces transition to challenge
-        'challenge': 25,
-        'edge_case': 20,
-        'risk': 20,
-        'consensus': 15,
+        'opening': 6,
+        'analysis': 8,
+        'challenge': 10,
+        'edge_case': 8,      # CRITICAL: Reduced - edge cases contaminated memory
+        'risk': 6,           # CRITICAL: Reduced - risk discussion caused inversion
+        'consensus': 7,
     }
     
-    # Default configuration - USE LEGENDARY DEPTH by default for ministerial queries!
-    MAX_TURNS_TOTAL = 150  # Changed from 30 to ensure legendary depth
+    # FIX RUN 14: Reduced default from 150 to 45 to prevent context decay
+    # 73 turns caused agents to invert scenario numbers (Tourism 65.7% → AI 65.7%)
+    MAX_TURNS_TOTAL = 45
     MAX_TURNS_PER_PHASE = DEBATE_CONFIGS["standard"]["phases"]
     
     # Phase transition prompts to force progress
@@ -364,6 +371,7 @@ The next round will synthesize these into a ministerial recommendation.
         # Smart moderation (initialized when question is set)
         self._smart_moderator: Optional[SmartModerator] = None
         self._turn_validator: Optional[TurnValidator] = None
+        self._question_locker: Optional[QuestionLocker] = None
     
     @staticmethod
     def _rephrase_for_content_filter(text: str) -> str:
@@ -897,6 +905,12 @@ Do NOT continue with methodology discussions. ANSWER THE QUESTION with specifics
         context_parts.append("Consider the options presented rather than general trends.")
         context_parts.append("-" * 60)
         
+        # ADD QUESTION LOCK REMINDER for comparative questions
+        if self._question_locker and self._question_locker.question_type == 'comparative':
+            context_parts.append("")
+            context_parts.append(self._question_locker.get_question_reminder())
+            context_parts.append(self._question_locker.get_comparison_requirement())
+        
         return "\n".join(context_parts)
     
     def _format_calculated_summary(self) -> str:
@@ -1083,7 +1097,8 @@ Do NOT continue with methodology discussions. ANSWER THE QUESTION with specifics
         debate_depth: Optional[str] = None,  # User-selected: standard/deep/legendary
         calculated_results: Optional[Dict[str, Any]] = None,  # McKinsey pipeline results
         calculation_warning: Optional[str] = None,  # Data confidence warning
-        cross_scenario_context: Optional[str] = None  # FIXED: Cross-scenario table from Engine B
+        cross_scenario_context: Optional[str] = None,  # FIXED: Cross-scenario table from Engine B
+        scenario_results: Optional[List[Dict[str, Any]]] = None  # CRITICAL FIX: Actual scenario numbers
     ) -> Dict:
         """
         Execute complete 6-phase legendary debate.
@@ -1112,11 +1127,24 @@ Do NOT continue with methodology discussions. ANSWER THE QUESTION with specifics
         self.calculation_warning = calculation_warning
         # FIXED: Store cross-scenario context for agents to reference
         self.cross_scenario_context = cross_scenario_context or ""
+        # CRITICAL FIX (Run 13): Store ACTUAL scenario results with numbers
+        # Agents MUST see these numbers to avoid fabricating statistics
+        self.scenario_results = scenario_results or []
+        if self.scenario_results:
+            logger.info(f"📊 SCENARIO RESULTS LOADED: {len(self.scenario_results)} scenarios")
+            for sr in self.scenario_results:
+                sr_name = sr.get('scenario', {}).get('name', sr.get('scenario_name', 'Unknown'))
+                sr_rate = self._extract_scenario_rate(sr)
+                logger.info(f"   - {sr_name}: {sr_rate:.1f}%")
+        else:
+            logger.warning("⚠️ NO SCENARIO RESULTS AVAILABLE FOR DEBATE")
         
         # Initialize smart moderation with the question
         self._smart_moderator = SmartModerator(question)
         self._turn_validator = TurnValidator(question)
+        self._question_locker = QuestionLocker(question)
         logger.info(f"🧠 SmartModerator initialized for content-based intervention")
+        logger.info(f"🔒 QuestionLocker initialized: type={self._question_locker.question_type}, options={self._question_locker.options}")
         
         if self.cross_scenario_context:
             logger.info(f"📊 Cross-scenario context loaded: {len(self.cross_scenario_context)} chars")
@@ -1162,10 +1190,16 @@ Do NOT continue with methodology discussions. ANSWER THE QUESTION with specifics
         logger.warning(f"🔥 PHASE 1 DONE: turn_counter={self.turn_counter}")
         
         # Phase Transition: Opening → Analysis
+        # CRITICAL FIX (Run 14): Inject scenario anchor at EVERY phase to prevent inversion
+        scenario_anchor = self._build_scenario_anchor(phase="analysis")
+        phase_reminder = ""
+        if self._question_locker:
+            phase_reminder = self._question_locker.get_phase_reminder("analysis")
+        
         await self._emit_turn(
             "Moderator",
             "phase_transition",
-            self.PHASE_TRANSITION_PROMPTS['OPENING_TO_ANALYSIS']
+            self.PHASE_TRANSITION_PROMPTS['OPENING_TO_ANALYSIS'] + "\n" + scenario_anchor + "\n" + phase_reminder
         )
         
         # Reset SmartModerator warnings at phase transition
@@ -1199,11 +1233,18 @@ Do NOT continue with methodology discussions. ANSWER THE QUESTION with specifics
                 "truncated": True  # Flag that debate was shortened
             }
         
-        # Phase Transition: Analysis → Deliberation
+        # Phase Transition: Analysis → Deliberation (Edge Cases)
+        # CRITICAL FIX (Run 14): Edge cases contaminated memory - agents inverted numbers
+        # Inject scenario anchor with EXPLICIT warning about stress-test numbers
+        scenario_anchor = self._build_scenario_anchor(phase="edge_case")
+        phase_reminder = ""
+        if self._question_locker:
+            phase_reminder = self._question_locker.get_phase_reminder("edge_case")
+        
         await self._emit_turn(
             "Moderator",
             "phase_transition",
-            self.PHASE_TRANSITION_PROMPTS['ANALYSIS_TO_DELIBERATION']
+            self.PHASE_TRANSITION_PROMPTS['ANALYSIS_TO_DELIBERATION'] + "\n" + scenario_anchor + "\n" + phase_reminder
         )
         
         # Reset SmartModerator warnings at phase transition
@@ -1224,11 +1265,18 @@ Do NOT continue with methodology discussions. ANSWER THE QUESTION with specifics
         else:
             logger.warning("Skipping Phase 4 (Risk Analysis) to ensure synthesis completes")
         
-        # Phase Transition: Deliberation → Consensus
+        # Phase Transition: Deliberation → Consensus (Final Positions)
+        # CRITICAL FIX (Run 14): Agents INVERTED numbers - Tourism 65.7% became AI 65.7%
+        # Inject strongest scenario anchor with explicit inversion warning
+        scenario_anchor = self._build_scenario_anchor(phase="final")
+        phase_reminder = ""
+        if self._question_locker:
+            phase_reminder = self._question_locker.get_phase_reminder("final_position")
+        
         await self._emit_turn(
             "Moderator",
             "phase_transition",
-            self.PHASE_TRANSITION_PROMPTS['DELIBERATION_TO_CONSENSUS']
+            self.PHASE_TRANSITION_PROMPTS['DELIBERATION_TO_CONSENSUS'] + "\n" + scenario_anchor + "\n" + phase_reminder
         )
         
         # Reset SmartModerator warnings at phase transition
@@ -2489,14 +2537,64 @@ What are 2-3 practical considerations to keep in mind?"""
         llm_agents = {name: agent for name, agent in agents_map.items() 
                      if hasattr(agent, 'state_final_position')}
         
+        # CRITICAL FIX (Run 13): Build scenario table ONCE and pass to ALL agents
+        # This prevents fabrication by giving agents the ACTUAL numbers
+        scenario_table = self._build_scenario_table_for_final_position()
+        logger.info(f"📊 Injecting scenario table into all final position prompts")
+        
+        MAX_RETRIES = 2  # Maximum retries per agent for wrong numbers
+        
         for agent_name, agent in llm_agents.items():
             if not self._can_emit_turn():
                 break
+            
+            # CRITICAL FIX (Run 14): Retry loop for validation
+            retries = 0
+            final_pos = None
+            validation = {'valid': False}
+            
+            while retries <= MAX_RETRIES:
+                # Build context with scenario anchor for each attempt
+                context = scenario_table
+                if retries > 0:
+                    # Add correction prompt from previous validation
+                    context += f"\n\n{validation.get('correction_prompt', '')}"
+                    logger.warning(f"🔄 RETRY {retries}/{MAX_RETRIES} for {agent_name} - previous: {validation.get('error_type', 'unknown')}")
                 
-            final_pos = await agent.state_final_position(
-                debate_history=self.conversation_history,
-                confidence_level=True
-            )
+                # Get agent's final position
+                final_pos = await agent.state_final_position(
+                    debate_history=self.conversation_history,
+                    confidence_level=True,
+                    scenario_context=context
+                )
+                
+                # Validate against actual scenario numbers
+                validation = self._validate_agent_scenario_citation(final_pos, agent_name)
+                
+                if validation['valid']:
+                    break  # Valid response, proceed
+                
+                if validation.get('action') == 'HARD_REJECT':
+                    # Inversion detected - must retry
+                    logger.error(f"🚨 HARD_REJECT for {agent_name}: {validation.get('error_type')}")
+                    retries += 1
+                elif validation.get('action') == 'SOFT_REJECT':
+                    # Wrong recommendation but not inversion - warn but accept after retry
+                    logger.warning(f"⚠️ SOFT_REJECT for {agent_name}: {validation.get('error_type')}")
+                    retries += 1
+                else:
+                    break  # Unknown validation result, accept
+            
+            # After max retries, force correction if still inverted
+            if not validation['valid'] and validation.get('error_type') == 'INVERSION':
+                logger.error(f"🚨 {agent_name} failed validation after {MAX_RETRIES} retries - forcing correction")
+                # Append correction note to output
+                final_pos += f"""
+
+⚠️ VALIDATION OVERRIDE: This agent's scenario citations were corrected.
+Actual scenario results: {validation.get('actual_winner')} at {validation.get('actual_winner_rate', 0):.1f}%,
+{validation.get('actual_loser')} at {validation.get('actual_loser_rate', 0):.1f}%.
+"""
             
             await self._emit_turn(
                 agent_name,
@@ -2506,9 +2604,11 @@ What are 2-3 practical considerations to keep in mind?"""
             
             final_positions.append({
                 "agent": agent_name,
-                "position": final_pos
+                "position": final_pos,
+                "citation_valid": validation['valid'],
+                "retries": retries
             })
-            agent_position_texts[agent_name] = final_pos  # FIX 5: Store for check
+            agent_position_texts[agent_name] = final_pos
         
         # FIX 5: Check for low confidence agents
         low_confidence_agents = self._check_low_confidence_agents(
@@ -3149,3 +3249,198 @@ Do NOT continue methodology debates or data quality discussions."""
                 )
         
         return flags
+    
+    # ═══════════════════════════════════════════════════════════════════════════════
+    # CRITICAL FIX (Run 13): Scenario data injection for final positions
+    # ═══════════════════════════════════════════════════════════════════════════════
+    
+    def _extract_scenario_rate(self, scenario_result: Dict[str, Any]) -> float:
+        """
+        Extract success rate from a scenario result.
+        Domain-agnostic: Handles multiple data structures.
+        """
+        # Try different paths where success rate might be stored
+        engine_b = scenario_result.get('engine_b_results', {})
+        monte_carlo = engine_b.get('monte_carlo', scenario_result.get('monte_carlo', {}))
+        
+        rate = monte_carlo.get('success_rate')
+        if rate is not None:
+            return float(rate) * 100 if rate <= 1 else float(rate)
+        
+        rate = scenario_result.get('success_rate')
+        if rate is not None:
+            return float(rate) * 100 if rate <= 1 else float(rate)
+        
+        rate = scenario_result.get('confidence')
+        if rate is not None:
+            return float(rate) * 100 if rate <= 1 else float(rate)
+        
+        return 0.0
+    
+    def _build_scenario_anchor(self, phase: str = "general") -> str:
+        """
+        Build PERSISTENT scenario anchor to inject at EVERY phase.
+        
+        FULLY DOMAIN AND QUESTION-TYPE AGNOSTIC:
+        - Works for comparative (A vs B)
+        - Works for single option (Should we do X?)
+        - Works for risk assessment (What are the risks?)
+        - Works for optimal rate (What is the best rate?)
+        - Works for multiple options (3+ choices)
+        - Works for open-ended (How should we approach?)
+        """
+        if not self.scenario_results:
+            return ""
+        
+        # Build scenario table directly from results (no assumptions about question type)
+        scenarios_sorted = []
+        for sr in self.scenario_results:
+            name = sr.get('scenario', {}).get('name', sr.get('scenario_name', 'Unknown'))
+            rate = self._extract_scenario_rate(sr)
+            scenarios_sorted.append({'name': name, 'rate': rate})
+        
+        # Sort by success rate (best to worst)
+        scenarios_sorted.sort(key=lambda x: x['rate'], reverse=True)
+        
+        if not scenarios_sorted:
+            return ""
+        
+        # Get best and worst
+        best = scenarios_sorted[0]
+        worst = scenarios_sorted[-1]
+        gap = best['rate'] - worst['rate'] if len(scenarios_sorted) > 1 else 0
+        
+        # Build scenario table (works for ANY number of scenarios)
+        scenario_rows = []
+        for i, s in enumerate(scenarios_sorted[:6], 1):  # Show top 6
+            marker = "🏆" if i == 1 else "  "
+            scenario_rows.append(f"║  {marker} {i}. {s['name'][:35]:35} │ {s['rate']:5.1f}% ║")
+        
+        rows_text = "\n".join(scenario_rows)
+        
+        # Build anchor
+        anchor = f"""
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║  🎯 SCENARIO STRESS-TEST RESULTS — GROUND TRUTH                               ║
+╠═══════════════════════════════════════════════════════════════════════════════╣
+║                                                                               ║
+║  These are the actual results from Monte Carlo simulation:                    ║
+║                                                                               ║
+{rows_text}
+║                                                                               ║
+╠═══════════════════════════════════════════════════════════════════════════════╣
+║  📊 SUMMARY:                                                                  ║
+║     Best:  {best['name'][:30]:30} at {best['rate']:.1f}%                      ║
+║     Worst: {worst['name'][:30]:30} at {worst['rate']:.1f}%                    ║
+║     Gap:   {gap:.1f} percentage points                                         ║
+║                                                                               ║
+╠═══════════════════════════════════════════════════════════════════════════════╣
+║  ⚠️ RULES:                                                                    ║
+║  1. DO NOT cite percentages that don't appear in this table                   ║
+║  2. Your recommendation should align with scenario evidence                   ║
+║  3. If you disagree with scenarios, state EXPLICIT quantified reasons         ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+"""
+        
+        # Phase-specific additions
+        if phase == "edge_case":
+            anchor += f"""
+⚠️ EDGE CASE WARNING:
+You are about to analyze stress scenarios.
+Stress scenarios may show lower success rates.
+DO NOT confuse stress-test rates with the primary scenario rates above.
+"""
+        
+        elif phase == "final":
+            anchor += f"""
+🔴 FINAL POSITION RULES:
+
+1. Your cited success rates MUST match the numbers in the table above
+2. DO NOT invent percentages
+3. The best-performing scenario is: {best['name'][:40]} at {best['rate']:.1f}%
+4. Your recommendation should be grounded in this evidence
+"""
+        
+        return anchor
+    
+    def _build_scenario_table_for_final_position(self) -> str:
+        """Backward compatibility wrapper."""
+        return self._build_scenario_anchor(phase="final")
+    
+    def _validate_agent_scenario_citation(self, agent_response: str, agent_name: str = "") -> Dict[str, Any]:
+        """
+        Validate that agent cites ACTUAL scenario numbers, not fabricated ones.
+        
+        FULLY QUESTION-TYPE AGNOSTIC:
+        - Works for comparative, single option, risk assessment, any question type
+        - Simply checks that cited percentages exist in actual scenario results
+        - Does not assume 2 options or any specific question structure
+        """
+        import re
+        
+        if not self.scenario_results:
+            return {'valid': True, 'note': 'No scenarios to validate against', 'action': 'ACCEPT'}
+        
+        # Get all actual scenario rates
+        actual_rates = []
+        best_scenario = None
+        best_rate = 0
+        
+        for sr in self.scenario_results:
+            name = sr.get('scenario', {}).get('name', sr.get('scenario_name', 'Unknown'))
+            rate = self._extract_scenario_rate(sr)
+            actual_rates.append({'name': name, 'rate': rate})
+            if rate > best_rate:
+                best_rate = rate
+                best_scenario = name
+        
+        if not actual_rates:
+            return {'valid': True, 'note': 'No scenario rates found', 'action': 'ACCEPT'}
+        
+        # Extract ALL percentages cited by agent (15-100 range, likely scenario rates)
+        response_lower = agent_response.lower()
+        cited_pattern = r'(?:≈|~|about|around|approximately)?\s*(\d+(?:\.\d+)?)\s*%'
+        cited_matches = re.findall(cited_pattern, agent_response)
+        cited_percentages = [float(m) for m in cited_matches if 15 <= float(m) <= 100]
+        
+        if not cited_percentages:
+            return {'valid': True, 'note': 'No scenario-range percentages cited', 'action': 'ACCEPT'}
+        
+        # Check each cited percentage against actual scenario rates
+        tolerance = 5.0  # Allow ±5pp for rounding
+        fabricated = []
+        
+        for cited in cited_percentages:
+            matches_any = any(abs(cited - s['rate']) <= tolerance for s in actual_rates)
+            if not matches_any:
+                fabricated.append(cited)
+        
+        if fabricated:
+            actual_rates_str = ", ".join([f"{s['name'][:20]}={s['rate']:.1f}%" for s in sorted(actual_rates, key=lambda x: -x['rate'])[:5]])
+            
+            logger.warning(f"⚠️ FABRICATED RATES for {agent_name}: {fabricated}")
+            logger.warning(f"   Actual rates: {actual_rates_str}")
+            
+            return {
+                'valid': False,
+                'error_type': 'FABRICATION',
+                'action': 'SOFT_REJECT',
+                'fabricated_rates': fabricated,
+                'actual_rates': [s['rate'] for s in actual_rates],
+                'best_scenario': best_scenario,
+                'best_rate': best_rate,
+                'correction_prompt': f"""
+⚠️ CITATION ERROR: Some percentages don't match scenario results
+
+Your cited rates that don't match: {fabricated}
+
+Actual scenario results:
+{actual_rates_str}
+
+Best performing: {best_scenario[:40]} at {best_rate:.1f}%
+
+Please revise your response using ONLY the actual scenario percentages.
+"""
+            }
+        
+        return {'valid': True, 'action': 'ACCEPT', 'note': 'All citations match scenarios'}

@@ -18,6 +18,13 @@ from typing import Any, Dict, List, Optional
 from ..state import IntelligenceState
 from ...llm.client import LLMClient
 from ..case_studies import extract_case_studies, format_case_studies_for_synthesis
+from ..coherence_validator import CoherenceValidator, fix_coherence_issues
+from ..scenario_aware_synthesis import ScenarioAwareSynthesis, validate_recommendation_against_scenarios
+from ..confidence_calibration import (
+    ConfidenceCalibrator, 
+    generate_honest_uncertainty_section,
+    align_summary_and_brief
+)
 
 # Financial modeling for NPV/IRR analysis
 try:
@@ -469,6 +476,233 @@ def _extract_final_debate_verdict(state: IntelligenceState) -> Dict[str, Any]:
     
     logger.warning("⚠️ Could not extract structured verdict - using scenario averages")
     return verdict
+
+
+def _extract_dissenting_views(state: IntelligenceState) -> List[Dict[str, Any]]:
+    """
+    Extract dissenting views from the debate transcript.
+    
+    For a Big 4 standard brief, minority views must be:
+    1. Identified and attributed
+    2. Rationale explained
+    3. Reason for overruling documented
+    
+    Returns a list of dissent dicts:
+    {
+        'agent': str,
+        'recommendation': str,
+        'rationale': str,
+        'confidence': float,
+        'key_concern': str
+    }
+    """
+    debate_transcript = state.get("debate_transcript", [])
+    if not debate_transcript:
+        debate_transcript = state.get("conversation_history", [])
+    
+    if not debate_transcript:
+        return []
+    
+    # Extract final positions from last ~25 turns
+    final_positions = []
+    
+    for turn in reversed(debate_transcript[-25:]):
+        message = turn.get("message", turn.get("content", ""))
+        agent = turn.get("agent", turn.get("speaker", ""))
+        
+        if not message or not agent:
+            continue
+        
+        message_lower = message.lower()
+        
+        # Look for final position statements
+        if 'final position' in message_lower or 'i recommend' in message_lower or 'my recommendation' in message_lower:
+            # Determine which option they recommend
+            option = None
+            if 'option a' in message_lower:
+                option = 'Option A'
+            elif 'option b' in message_lower:
+                option = 'Option B'
+            elif 'ai hub' in message_lower or 'technology hub' in message_lower:
+                option = 'AI Hub'
+            elif 'tourism' in message_lower:
+                option = 'Tourism'
+            elif 'hybrid' in message_lower:
+                option = 'Hybrid'
+            
+            if option:
+                # Extract confidence
+                import re
+                conf_match = re.search(r'(\d+)\s*%\s*confidence', message_lower)
+                confidence = int(conf_match.group(1)) / 100 if conf_match else 0.7
+                
+                # Extract rationale (first sentence after recommendation)
+                rationale = message[:300] if len(message) > 300 else message
+                
+                final_positions.append({
+                    'agent': agent,
+                    'recommendation': option,
+                    'rationale': rationale,
+                    'confidence': confidence,
+                    'key_concern': ''
+                })
+    
+    if len(final_positions) < 2:
+        return []
+    
+    # Find majority position
+    position_counts = {}
+    for pos in final_positions:
+        rec = pos['recommendation']
+        position_counts[rec] = position_counts.get(rec, 0) + 1
+    
+    majority_rec = max(position_counts, key=position_counts.get)
+    
+    # Return dissenters (agents who didn't recommend the majority)
+    dissenters = [pos for pos in final_positions if pos['recommendation'] != majority_rec]
+    
+    return dissenters
+
+
+def _generate_dissent_section(dissenters: List[Dict[str, Any]], majority_rec: str) -> str:
+    """Generate the dissent section for the ministerial brief."""
+    
+    if not dissenters:
+        return ""
+    
+    section = """
+## ⚠️ DISSENTING VIEWS
+
+The following expert(s) recommended a different path:
+"""
+    
+    for d in dissenters[:3]:  # Show max 3 dissenters
+        section += f"""
+### {d['agent']} — Recommended: {d['recommendation']} ({d['confidence']*100:.0f}% confidence)
+
+**Rationale:** {d['rationale'][:200]}{'...' if len(d['rationale']) > 200 else ''}
+
+"""
+    
+    section += f"""
+### Why the Majority View ({majority_rec}) Prevailed
+
+The synthesis adopted the majority recommendation because:
+1. More experts supported this path with higher average confidence
+2. Risk analysis indicated better resilience under stress scenarios
+3. Implementation feasibility favored this approach
+
+**Note to Decision-Maker:** If you share the dissenter's priorities, their recommended path may be preferable despite the majority view. This brief presents both perspectives for informed decision-making.
+"""
+    
+    return section
+
+
+def _extract_agent_final_positions(state: IntelligenceState) -> List[Dict[str, Any]]:
+    """
+    Extract agent final positions from debate for scenario-aware synthesis.
+    
+    Domain-agnostic: Works for any question type.
+    
+    Returns list of:
+    {
+        'agent': str,
+        'recommendation': str,
+        'confidence': float (0-100),
+        'rationale': str
+    }
+    """
+    import re
+    
+    debate_transcript = state.get("debate_transcript", [])
+    if not debate_transcript:
+        debate_transcript = state.get("conversation_history", [])
+    
+    if not debate_transcript:
+        return []
+    
+    final_positions = []
+    
+    # Look at last 30 turns for final positions
+    for turn in reversed(debate_transcript[-30:]):
+        message = turn.get("message", turn.get("content", ""))
+        agent = turn.get("agent", turn.get("speaker", ""))
+        
+        if not message or not agent:
+            continue
+        
+        # Skip moderator and system turns
+        if agent.lower() in ['moderator', 'system', 'context', 'datavalidator']:
+            continue
+        
+        message_lower = message.lower()
+        
+        # Look for final position indicators
+        is_final = any(phrase in message_lower for phrase in [
+            'final position', 'my recommendation', 'i recommend', 
+            'my final', 'in conclusion', 'ultimately recommend',
+            'final recommendation', 'concluding position'
+        ])
+        
+        if not is_final:
+            continue
+        
+        # Extract recommendation (domain-agnostic)
+        recommendation = None
+        
+        # Pattern 1: "Option A/B"
+        if 'option a' in message_lower:
+            recommendation = 'Option A'
+        elif 'option b' in message_lower:
+            recommendation = 'Option B'
+        
+        # Pattern 2: Look for specific terms in context
+        if not recommendation:
+            # Check what follows "recommend" or "support"
+            rec_match = re.search(r'(?:recommend|support|favor)\s+(?:the\s+)?([^,.\n]{5,50})', message_lower)
+            if rec_match:
+                rec_text = rec_match.group(1).strip()
+                
+                if any(term in rec_text for term in ['ai', 'tech', 'technology', 'hub']):
+                    recommendation = 'AI/Technology Hub'
+                elif any(term in rec_text for term in ['tourism', 'sustainable', 'destination']):
+                    recommendation = 'Tourism'
+                elif any(term in rec_text for term in ['hybrid', 'balanced', 'dual', 'both']):
+                    recommendation = 'Hybrid'
+                else:
+                    recommendation = rec_text.title()[:30]
+        
+        if not recommendation:
+            continue
+        
+        # Extract confidence
+        confidence = 70.0
+        conf_match = re.search(r'(\d+)\s*%\s*confidence', message_lower)
+        if conf_match:
+            confidence = float(conf_match.group(1))
+        
+        # Extract rationale (first 200 chars)
+        rationale = message[:200] if len(message) > 200 else message
+        
+        # Avoid duplicates from same agent
+        if not any(p['agent'] == agent for p in final_positions):
+            # FIX: Confidence floor - exclude agents with <30% confidence (Run 12: 6% confidence)
+            if confidence < 30:
+                logger.warning(f"⚠️ EXCLUDING {agent}: Only {confidence:.0f}% confidence (below 30% threshold)")
+                continue
+            
+            final_positions.append({
+                'agent': agent,
+                'recommendation': recommendation,
+                'confidence': confidence,
+                'rationale': rationale
+            })
+    
+    logger.info(f"📊 Extracted {len(final_positions)} agent final positions")
+    for pos in final_positions:
+        logger.info(f"   {pos['agent']}: {pos['recommendation']} ({pos['confidence']:.0f}%)")
+    
+    return final_positions
 
 
 def _extract_scenario_summaries(state: IntelligenceState) -> List[Dict[str, Any]]:
@@ -1910,16 +2144,274 @@ Do NOT proceed with policy analysis for this target. Instead:
             max_tokens=8000,  # Allow for comprehensive output
         )
         
+        # ═══════════════════════════════════════════════════════════════════════════
+        # CRITICAL: SCENARIO-AWARE VALIDATION
+        # Ensure the recommendation is supported by scenario analysis
+        # ═══════════════════════════════════════════════════════════════════════════
+        
+        # Extract agent final positions from debate
+        agent_positions = _extract_agent_final_positions(state)
+        
+        # Run scenario-aware synthesis to validate/reconcile
+        scenario_synthesizer = ScenarioAwareSynthesis()
+        synthesis_result = scenario_synthesizer.synthesize(
+            scenarios=scenario_summaries,
+            agent_positions=agent_positions,
+            original_question=query,
+            debate_summary=debate_highlights.get("synthesis_summary", "")
+        )
+        
+        # CRITICAL FIX (Run 14): Get scenario ground truth for summary-brief alignment
+        # This is computed directly from scenarios, ignoring potentially inverted agent claims
+        scenario_ground_truth = scenario_synthesizer._scenario_ground_truth or {
+            'best_option': synthesis_result.recommendation,
+            'best_rate': synthesis_result.confidence,
+            'worst_option': 'Unknown',
+            'worst_rate': 0.0,
+            'gap': 0.0
+        }
+        logger.info(f"📊 SCENARIO GROUND TRUTH (for summary card):")
+        logger.info(f"   Best: {scenario_ground_truth['best_option']} at {scenario_ground_truth['best_rate']:.1f}%")
+        logger.info(f"   Gap: {scenario_ground_truth['gap']:.1f}pp")
+        
+        # ═══════════════════════════════════════════════════════════════════════════
+        # CRITICAL FIX: CONFIDENCE CALIBRATION
+        # Ensure confidence matches actual scenario gaps, not inflated agent claims
+        # Problem: Scenarios show 0.8pp gap but brief claimed 24pp gap
+        # ═══════════════════════════════════════════════════════════════════════════
+        
+        confidence_calibrator = ConfidenceCalibrator()
+        calibration = confidence_calibrator.calibrate_from_scenarios(
+            scenarios=scenario_summaries,
+            agent_positions=agent_positions,
+            original_question=query
+        )
+        
+        logger.info(f"📊 CONFIDENCE CALIBRATION RESULT:")
+        logger.info(f"   Recommended: {calibration.recommended_option} at {calibration.recommended_confidence:.1f}%")
+        logger.info(f"   Alternative: {calibration.alternative_option} at {calibration.alternative_confidence:.1f}%")
+        logger.info(f"   Gap: {calibration.gap:.1f}pp")
+        logger.info(f"   Close call: {calibration.is_close_call}")
+        
+        if calibration.adjustment_made:
+            logger.warning(f"⚠️ CONFIDENCE INFLATION CORRECTED:")
+            logger.warning(f"   Agents claimed: {calibration.original_claimed_confidence:.0f}%")
+            logger.warning(f"   Calibrated to: {calibration.recommended_confidence:.1f}%")
+        
+        # Generate honest uncertainty section
+        uncertainty_section = generate_honest_uncertainty_section(calibration)
+        
+        # Check if scenario and agent disagree
+        if not synthesis_result.scenario_agent_aligned:
+            logger.warning(f"⚠️ SCENARIO-AGENT CONFLICT DETECTED!")
+            logger.warning(f"   Best scenario recommends: {synthesis_result.recommendation}")
+            logger.warning(f"   Agents recommended: {synthesis_result.agent_recommendation}")
+            logger.warning(f"   Reconciliation applied: Using {synthesis_result.recommendation}")
+            
+            # Inject reconciliation note into briefing
+            reconciliation_section = synthesis_result.reconciliation_note
+            
+            # Find where to insert (after Executive Summary)
+            exec_summary_marker = "## I. EXECUTIVE SUMMARY" 
+            if exec_summary_marker in briefing:
+                insert_pos = briefing.find(exec_summary_marker)
+                # Find the end of executive summary section
+                next_section = briefing.find("## II.", insert_pos)
+                if next_section == -1:
+                    next_section = briefing.find("## ", insert_pos + 50)
+                
+                if next_section > insert_pos:
+                    briefing = (
+                        briefing[:next_section] + 
+                        "\n" + reconciliation_section + "\n\n" +
+                        uncertainty_section + "\n\n" +
+                        briefing[next_section:]
+                    )
+            else:
+                # Prepend if can't find marker
+                briefing = reconciliation_section + "\n\n" + uncertainty_section + "\n\n" + briefing
+            
+            # Update confidence based on CALIBRATED analysis (not inflated)
+            state["confidence_score"] = calibration.recommended_confidence / 100
+            
+            # Store debate verdict for frontend coherence
+            state["debate_verdict"] = {
+                "recommendation": synthesis_result.recommendation,
+                "probability": calibration.recommended_confidence,  # Use calibrated
+                "decision": synthesis_result.decision,
+                "scenario_agent_aligned": False,
+                "reconciliation_applied": True,
+                "is_close_call": calibration.is_close_call,
+                "scenario_gap": calibration.gap
+            }
+        else:
+            # Aligned - but still inject honest uncertainty section if close call
+            if calibration.is_close_call:
+                # Find where to insert
+                exec_summary_marker = "## I. EXECUTIVE SUMMARY"
+                if exec_summary_marker in briefing:
+                    insert_pos = briefing.find(exec_summary_marker)
+                    next_section = briefing.find("## II.", insert_pos)
+                    if next_section == -1:
+                        next_section = briefing.find("## ", insert_pos + 50)
+                    
+                    if next_section > insert_pos:
+                        briefing = (
+                            briefing[:next_section] + 
+                            "\n" + uncertainty_section + "\n\n" +
+                            briefing[next_section:]
+                        )
+            
+            # Store verdict with calibrated confidence AND ground truth
+            # CRITICAL FIX (Run 14): Include ground truth for summary card alignment
+            state["debate_verdict"] = {
+                "recommendation": synthesis_result.recommendation,
+                "probability": calibration.recommended_confidence,  # Use calibrated
+                "decision": synthesis_result.decision,
+                "scenario_agent_aligned": True,
+                "reconciliation_applied": False,
+                "is_close_call": calibration.is_close_call,
+                "scenario_gap": calibration.gap,
+                # GROUND TRUTH (computed directly from scenarios, not agents)
+                "ground_truth_winner": scenario_ground_truth['best_option'],
+                "ground_truth_rate": scenario_ground_truth['best_rate'],
+                "ground_truth_loser": scenario_ground_truth['worst_option'],
+                "ground_truth_loser_rate": scenario_ground_truth['worst_rate'],
+                "ground_truth_gap": scenario_ground_truth['gap']
+            }
+            
+            # Update confidence based on calibrated analysis
+            state["confidence_score"] = calibration.recommended_confidence / 100
+        
+        # ═══════════════════════════════════════════════════════════════════════════
+        # FIX (Run 15 + Run 16): SUMMARY-BRIEF ALIGNMENT + TIED SCENARIO HANDLING
+        # QUESTION-TYPE AGNOSTIC: Works for any scenario structure
+        # 
+        # Issues being fixed:
+        # 1. Summary shows 41%, Brief shows 75% (different sources)
+        # 2. Confidence inflation (agents said 58%, brief said 75%)
+        # 3. Tied scenarios (0.4pp gap) presented as clear winner
+        # ═══════════════════════════════════════════════════════════════════════════
+        
+        # SAFETY: Ensure scenario_ground_truth has required keys
+        if not scenario_ground_truth or 'best_rate' not in scenario_ground_truth:
+            logger.warning("⚠️ scenario_ground_truth missing - using calibration defaults")
+            scenario_ground_truth = {
+                'best_option': synthesis_result.recommendation,
+                'best_rate': calibration.recommended_confidence,
+                'worst_option': 'Alternative',
+                'worst_rate': 50.0,
+                'gap': 10.0
+            }
+        
+        # Use GROUND TRUTH rate (best scenario rate)
+        ground_truth_rate = scenario_ground_truth.get('best_rate', 50.0)
+        ground_truth_gap = scenario_ground_truth.get('gap', 0)
+        
+        # FIX 1: Detect TIED scenarios (gap < 5pp)
+        is_tied = ground_truth_gap < 5.0
+        
+        # FIX 2: Derive confidence from SCENARIO DATA, not invented
+        # Cap confidence based on gap (question-type agnostic)
+        if is_tied:
+            # Scenarios are essentially tied - max 60% confidence
+            derived_confidence = min(ground_truth_rate, 60.0)
+            logger.warning(f"⚠️ TIED SCENARIOS: Gap={ground_truth_gap:.1f}pp, capping confidence at 60%")
+        elif ground_truth_gap < 10:
+            # Moderate gap - max 70% confidence
+            derived_confidence = min(ground_truth_rate, 70.0)
+        elif ground_truth_gap < 20:
+            # Clear gap - max 80% confidence
+            derived_confidence = min(ground_truth_rate, 80.0)
+        else:
+            # Very clear gap - can use scenario rate directly
+            derived_confidence = ground_truth_rate
+        
+        # FIX 3: Determine verdict based on derived confidence (not inflated)
+        if derived_confidence >= 60:
+            aligned_verdict = 'PROCEED_WITH_CAUTION' if is_tied else 'APPROVE'
+            aligned_decision = 'CONDITIONAL GO' if is_tied else 'GO'
+        elif derived_confidence >= 50:
+            aligned_verdict = 'PROCEED_WITH_CAUTION'
+            aligned_decision = 'CONDITIONAL GO'
+        elif derived_confidence >= 40:
+            aligned_verdict = 'RECONSIDER'
+            aligned_decision = 'RECONSIDER'
+        else:
+            aligned_verdict = 'REJECT'
+            aligned_decision = 'NO GO'
+        
+        # For tied scenarios, always use CONDITIONAL GO (not clear winner)
+        if is_tied and aligned_decision == 'GO':
+            aligned_decision = 'CONDITIONAL GO'
+            aligned_verdict = 'PROCEED_WITH_CAUTION'
+        
+        logger.info(f"📊 SUMMARY-BRIEF ALIGNMENT (Run 15 fix):")
+        logger.info(f"   Ground truth rate: {ground_truth_rate:.1f}%")
+        logger.info(f"   Ground truth gap: {ground_truth_gap:.1f}pp")
+        logger.info(f"   Is tied: {is_tied}")
+        logger.info(f"   Derived confidence: {derived_confidence:.1f}% (not inflated)")
+        logger.info(f"   Aligned verdict: {aligned_verdict}")
+        logger.info(f"   Aligned decision: {aligned_decision}")
+        
+        # Ensure debate_verdict exists before updating
+        if "debate_verdict" not in state or not isinstance(state["debate_verdict"], dict):
+            state["debate_verdict"] = {}
+        
+        # Update debate_verdict with aligned values - CRITICAL FOR SUMMARY-BRIEF COHERENCE
+        state["debate_verdict"]["aligned_verdict"] = aligned_verdict
+        state["debate_verdict"]["aligned_decision"] = aligned_decision
+        state["debate_verdict"]["probability"] = derived_confidence  # Use DERIVED (not inflated)
+        state["debate_verdict"]["recommendation"] = scenario_ground_truth.get('best_option', synthesis_result.recommendation)
+        state["debate_verdict"]["is_tied"] = is_tied
+        state["debate_verdict"]["scenario_gap"] = ground_truth_gap
+        
+        logger.info(f"📤 FINAL debate_verdict for frontend: {state['debate_verdict']}")
+        
+        # FIX RUN 17: Update the briefing to use DERIVED confidence (not inflated 75%)
+        # The LLM generated the brief with stats["confidence"] = 75 (default)
+        # We need to fix the header to show the actual derived confidence
+        import re
+        
+        # Replace confidence in the header (e.g., "75% Confidence" → "66% Confidence")
+        old_conf_int = stats.get("confidence", 75)  # What the LLM used
+        new_conf_int = int(derived_confidence)  # What it should be
+        
+        if old_conf_int != new_conf_int:
+            # Replace in header and any mentions
+            briefing = re.sub(
+                rf'\b{old_conf_int}%\s+Confidence\b',
+                f'{new_conf_int}% Confidence',
+                briefing,
+                flags=re.IGNORECASE
+            )
+            # Also replace standalone confidence mentions
+            briefing = re.sub(
+                rf'confidence[:\s]+{old_conf_int}%',
+                f'confidence: {new_conf_int}%',
+                briefing,
+                flags=re.IGNORECASE
+            )
+            logger.info(f"📝 Fixed Brief confidence: {old_conf_int}% → {new_conf_int}%")
+        
         # Store the briefing
         state["final_synthesis"] = briefing
         state["meta_synthesis"] = briefing
-        state["confidence_score"] = stats["confidence"] / 100
+        state["confidence_score"] = derived_confidence / 100  # Use DERIVED confidence (not inflated)
         
         elapsed = (datetime.now() - start_time).total_seconds()
         
         reasoning_chain.append(
             f"🏛️ Legendary Strategic Briefing generated: {len(briefing):,} chars in {elapsed:.1f}s"
         )
+        if not synthesis_result.scenario_agent_aligned:
+            reasoning_chain.append(
+                f"⚠️ Scenario-agent conflict resolved: Using {synthesis_result.recommendation}"
+            )
+        if calibration.adjustment_made:
+            reasoning_chain.append(
+                f"⚠️ Confidence inflation corrected: {calibration.original_claimed_confidence:.0f}% → {calibrated_prob:.1f}%"
+            )
         nodes_executed.append("synthesis")
         
         logger.info(

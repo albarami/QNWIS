@@ -814,9 +814,10 @@ Please provide an objective and balanced assessment."""
     async def state_final_position(
         self,
         debate_history: List[Dict],
-        confidence_level: bool = True
+        confidence_level: bool = True,
+        scenario_context: str = ""
     ) -> str:
-        """State final position after debate - MUST be decisive, not hedged."""
+        """State final position after debate - MUST be decisive and scenario-grounded."""
         history_text = self._format_history(debate_history[-10:])
         
         prompt = f"""You are {self.agent_name}.
@@ -826,12 +827,29 @@ The debate is concluding. The minister needs a CLEAR recommendation.
 Recent conversation:
 {history_text}
 
+{scenario_context}
+
+## MANDATORY SCENARIO REFERENCE (REQUIRED)
+
+Before stating your recommendation, you MUST reference the scenario analysis:
+
+1. What is the SUCCESS RATE for Option A in the scenarios? ____%
+2. What is the SUCCESS RATE for Option B in the scenarios? ____%
+3. What is the DIFFERENCE? ____pp
+
+⚠️ CONFIDENCE CALIBRATION RULE:
+- If scenario difference is <5pp, options are ESSENTIALLY TIED
+- You CANNOT claim >65% confidence when options are within 5pp
+- Your confidence MUST be grounded in scenario evidence, not general principles
+
+---
+
 State your FINAL position:
 
 1. YOUR RECOMMENDATION: Choose ONE option (not "hybrid" or "balanced")
-   - If Option A: "I recommend Option A with X% confidence"
-   - If Option B: "I recommend Option B with X% confidence"
-   - If genuinely torn: "I cannot recommend either - here's why..."
+   - If Option A: "Based on scenario analysis showing X% success, I recommend Option A with Y% confidence"
+   - If Option B: "Based on scenario analysis showing X% success, I recommend Option B with Y% confidence"
+   - If scenarios are tied (<5pp gap): "Both options show similar success rates (~X%). I lean toward [Option] because of [specific secondary factors]..."
 
 2. KEY RISKS with your recommendation (be honest about downsides)
 
@@ -839,14 +857,17 @@ State your FINAL position:
    - "I disagree with [Agent] because..."
    - Real consulting teams have unresolved tensions - acknowledge them
 
-4. CONFIDENCE LEVEL (0-100%) and what would change it
+4. CONFIDENCE LEVEL (0-100%) - MUST reflect scenario gap:
+   - If gap >15pp: Up to 75% confidence allowed
+   - If gap 5-15pp: Up to 65% confidence allowed
+   - If gap <5pp: Maximum 60% confidence (close call)
 
-⚠️ AVOID WEAK CONCLUSIONS:
+⚠️ AVOID:
 ❌ "A phased hybrid approach combining elements of both..."
-❌ "The optimal path likely involves balancing..."
-❌ "I partially agree with everyone..."
+❌ "72% confidence" when scenarios show 0.8pp gap
+❌ Ignoring the scenario analysis
 
-✅ BE DECISIVE - The minister needs to make a choice."""
+✅ BE DECISIVE AND SCENARIO-GROUNDED."""
         
         return await self.llm.generate(prompt=prompt, temperature=0.4)
 

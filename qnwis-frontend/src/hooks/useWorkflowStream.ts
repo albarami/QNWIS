@@ -23,7 +23,7 @@ interface UseWorkflowStreamResult {
   cancel: () => void
 }
 
-const API_BASE_URL = (import.meta.env.VITE_QNWIS_API_URL ?? 'http://172.29.181.70:8000').replace(/\/$/, '')
+const API_BASE_URL = (import.meta.env.VITE_QNWIS_API_URL ?? 'http://localhost:8002').replace(/\/$/, '')
 const SSE_ENDPOINT = `${API_BASE_URL}/api/v1/council/stream`
 
 function handleAgentEvent(state: AppState, event: WorkflowEvent) {
@@ -648,6 +648,19 @@ function reduceEvent(state: AppState, event: WorkflowEvent): AppState {
     if (payload?.scenario_results && !next.scenarioResults?.length) {
       next.scenarioResults = payload.scenario_results
       console.log('📊 Extracted scenario results:', next.scenarioResults?.length)
+    }
+    
+    // COHERENCE FIX: Extract debate verdict from done event
+    // This ensures summary card matches ministerial brief
+    if (payload?.debate_verdict) {
+      (next as any).debateVerdict = payload.debate_verdict
+      console.log('📊 Extracted debate verdict:', payload.debate_verdict)
+    }
+    
+    // Also check for verdict in synthesis stats
+    if (payload?.stats?.debate_verdict) {
+      (next as any).debateVerdict = payload.stats.debate_verdict
+      console.log('📊 Extracted debate verdict from stats:', payload.stats.debate_verdict)
     }
     
     // Mark done stage as complete

@@ -928,6 +928,9 @@ async def run_workflow_stream(
                 "conversation_history": conversation_history,
                 "debate_turns": len(conversation_history),
                 "debate_results": debate_results,
+                # COHERENCE FIX (Run 17): Add debate verdict for frontend summary card alignment
+                # This MUST include aligned_verdict and probability for Summary-Brief coherence
+                "debate_verdict": accumulated_state.get("debate_verdict", debate_results.get("verdict", {}) if isinstance(debate_results, dict) else {}),
                 # Critique data
                 "critique_results": critique_results,
                 # Classification

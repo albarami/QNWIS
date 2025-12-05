@@ -663,6 +663,15 @@ Reference these computed values in your arguments.
     
     try:
         logger.info(f"🚀 STARTING legendary debate with {len(contradictions)} contradictions (depth={debate_depth})")
+        
+        # CRITICAL FIX (Run 13): Pass ACTUAL scenario results to debate
+        # Without this, agents fabricate scenario percentages
+        scenario_results = state.get("scenario_results", [])
+        if scenario_results:
+            logger.info(f"📊 Passing {len(scenario_results)} scenario results to debate for citation validation")
+        else:
+            logger.warning("⚠️ No scenario_results available - agents may fabricate statistics")
+        
         debate_results = await orchestrator.conduct_legendary_debate(
             question=state.get("query", ""),
             contradictions=contradictions,
@@ -671,7 +680,8 @@ Reference these computed values in your arguments.
             llm_client=llm_client,
             extracted_facts=state.get("extracted_facts", []),
             debate_depth=debate_depth,  # Pass user-selected depth
-            cross_scenario_context=cross_scenario_context  # FIXED: Pass cross-scenario data
+            cross_scenario_context=cross_scenario_context,  # FIXED: Pass cross-scenario data
+            scenario_results=scenario_results  # CRITICAL: Pass actual scenario numbers
         )
         logger.info(f"✅ Legendary debate SUCCEEDED: {debate_results['total_turns']} turns")
 
