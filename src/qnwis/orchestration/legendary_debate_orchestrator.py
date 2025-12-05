@@ -856,31 +856,41 @@ Do NOT continue with methodology discussions. ANSWER THE QUESTION with specifics
             context_parts.append("⚠️ DO NOT invent success rates - use the values from the table above.")
             context_parts.append("")
         
-        # Add extracted facts if available
+        # Add extracted facts if available - STRICT NUMBERED LIST
         if self.extracted_facts:
             context_parts.append("=" * 60)
-            context_parts.append("VERIFIED FACTS YOU MUST CITE (from data extraction)")
+            context_parts.append("🚨 MANDATORY DATA SOURCE - USE ONLY THESE NUMBERS 🚨")
             context_parts.append("=" * 60)
+            context_parts.append("")
+            context_parts.append("⛔ CRITICAL RULE: You may ONLY cite statistics from this list.")
+            context_parts.append("⛔ Citing ANY number not in this list = FABRICATION = REJECTION")
+            context_parts.append("⛔ If a metric you need is NOT here, write: 'NOT IN DATA'")
+            context_parts.append("")
             
-            # Group facts by source
-            facts_by_source = {}
-            for fact in self.extracted_facts[:30]:  # Limit to 30 most relevant
+            # NUMBER each fact for strict referencing
+            fact_index = 1
+            for fact in self.extracted_facts[:40]:  # Limit to 40 most relevant
                 source = fact.get("source", "Unknown")
-                if source not in facts_by_source:
-                    facts_by_source[source] = []
-                facts_by_source[source].append(fact)
-            
-            for source, facts in facts_by_source.items():
-                context_parts.append(f"\n📊 {source}:")
-                for f in facts[:5]:  # Max 5 per source
-                    metric = f.get("metric", f.get("description", ""))
-                    value = f.get("value", "")
-                    year = f.get("year", "")
-                    if metric and value:
-                        context_parts.append(f"  • {metric}: {value} ({year})")
+                metric = fact.get("metric", fact.get("description", ""))
+                value = fact.get("value", "")
+                year = fact.get("year", "")
+                if metric and value:
+                    context_parts.append(f"[FACT {fact_index}] {metric}: {value} | Source: {source} | Year: {year}")
+                    fact_index += 1
             
             context_parts.append("")
-            context_parts.append("CITATION REQUIREMENT: Cite facts as [Per extraction: 'value' from SOURCE]")
+            context_parts.append("=" * 60)
+            context_parts.append("CITATION FORMAT (REQUIRED):")
+            context_parts.append("  ✅ 'ICT employment is [FACT 3: 2.1% from LMIS]'")
+            context_parts.append("  ✅ 'NOT IN DATA - cannot provide ICT national participation rate'")
+            context_parts.append("  ❌ 'ICT employs 0.8% of nationals' (NO SOURCE = FABRICATION)")
+            context_parts.append("  ❌ 'Per MoL LMIS 2023, 4.8%' (NUMBER NOT IN LIST = FABRICATION)")
+            context_parts.append("=" * 60)
+        else:
+            context_parts.append("")
+            context_parts.append("⚠️ WARNING: No extracted data available for this query.")
+            context_parts.append("⚠️ You must write 'NOT IN DATA' for any statistics.")
+            context_parts.append("⚠️ DO NOT fabricate numbers - provide qualitative analysis only.")
         
         context_parts.append("-" * 60)
         context_parts.append("Please keep your analysis focused on the specific question above.")

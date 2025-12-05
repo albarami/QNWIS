@@ -27,36 +27,33 @@ logger = logging.getLogger(__name__)
 # Zero Fabrication Citation Requirement
 ZERO_FABRICATION_CITATION_RULES = """
 ═══════════════════════════════════════════════════════════════════════
-MANDATORY CITATION FORMAT - ZERO FABRICATION GUARANTEE
+🚨 ZERO FABRICATION POLICY - CRITICAL 🚨
 ═══════════════════════════════════════════════════════════════════════
 
-RULE 1: Every metric, number, percentage, or statistic MUST include inline citation.
+You have been provided a NUMBERED LIST of verified facts (e.g., [FACT 1], [FACT 2]).
+These are the ONLY numbers you are allowed to cite.
 
-RULE 2: Citation format is EXACTLY:
-  [Per extraction: '{exact_value}' from {source} {period}]
+RULE 1: ONLY cite numbers from the [FACT N] list provided above.
 
-RULE 3: Example formats:
-  ✅ CORRECT: "Qatar unemployment was [Per extraction: '0.10%' from GCC-STAT Q1-2024]"
-  ✅ CORRECT: "Employment reached [Per extraction: '2.3M workers' from LMIS Database 2024-Q1]"
-  ✅ CORRECT: "Qatarization rate stands at [Per extraction: '23.5%' from Ministry Report 2024]"
+RULE 2: Citation format:
+  ✅ "ICT employment is [FACT 3: 2.1% from LMIS]"
+  ✅ "GDP grew [FACT 7: 4.2% from World Bank]"
 
-  ❌ WRONG: "Qatar unemployment is 0.10%" (no citation)
-  ❌ WRONG: "Qatar unemployment is very low" (vague, no number)
-  ❌ WRONG: "According to data, unemployment is 0.10%" (citation not inline)
+RULE 3: If a metric is NOT in the fact list:
+  ✅ "NOT IN DATA - cannot provide ICT national participation rate"
+  ✅ Provide QUALITATIVE analysis instead of fabricating numbers
 
-RULE 4: If metric NOT in provided extraction:
-  Write EXACTLY: "NOT IN DATA - cannot provide {metric_name} figure"
+RULE 4: FORBIDDEN - These will be DETECTED and REJECTED:
+  ❌ "Per MoL LMIS 2023, nationals represent 0.8% of ICT" (NUMBER NOT IN LIST)
+  ❌ "ICT employment grew 11.8% annually" (FABRICATED STATISTIC)
+  ❌ "According to the data, productivity is 15% higher" (NO [FACT N] CITATION)
 
-  Example: "Youth unemployment: NOT IN DATA - cannot provide youth unemployment figure"
-
-RULE 5: NEVER round, estimate, or approximate without showing:
-  "Approximately [Per extraction: '0.098%' from source] rounds to 0.1%"
+RULE 5: When you don't have data, say so:
+  ✅ "Without specific ICT employment breakdowns in the data, I cannot quantify..."
+  ✅ "The available data does not include national participation rates by sector..."
 
 ═══════════════════════════════════════════════════════════════════════
-VIOLATION CONSEQUENCES:
-- Response will be flagged
-- Confidence score reduced by 30%
-- May be rejected entirely
+⛔ ANY NUMBER WITHOUT [FACT N] CITATION = FABRICATION = REJECTION ⛔
 ═══════════════════════════════════════════════════════════════════════
 """
 
