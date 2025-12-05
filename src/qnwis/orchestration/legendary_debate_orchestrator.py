@@ -1372,66 +1372,166 @@ Do NOT continue with methodology discussions. ANSWER THE QUESTION with specifics
         query_context = self._format_query_context()
         
         if hasattr(agent, "present_case"):
-            # AGENT PERSONALITY ASSIGNMENTS for genuine intellectual conflict
-            # Different agents have different biases - this creates real debate
-            agent_personalities = {
-                "MicroEconomist": {
-                    "bias": "SKEPTICAL",
-                    "stance": "Challenge expensive options. Favor lower-risk, proven approaches. Question large capital allocations.",
-                    "typical_position": "The more cautious option is usually correct"
-                },
-                "MacroEconomist": {
-                    "bias": "STRATEGIC", 
-                    "stance": "Favor transformational investments. Accept short-term costs for long-term positioning. Think in decades.",
-                    "typical_position": "Bold strategic moves define national success"
-                },
-                "SkillsAgent": {
-                    "bias": "PRAGMATIC",
-                    "stance": "Focus on workforce readiness. Challenge plans that exceed human capital capacity. Prefer gradual approaches.",
-                    "typical_position": "Implementation capacity is the binding constraint"
-                },
-                "Nationalization": {
-                    "bias": "NATIONALIST",
-                    "stance": "Prioritize national employment. Challenge options that rely heavily on expatriates. Favor domestic capacity building.",
-                    "typical_position": "National participation must be the primary metric"
-                },
-                "PatternDetective": {
-                    "bias": "CONTRARIAN",
-                    "stance": "Challenge consensus. Look for what others are missing. Question assumptions that 'everyone agrees on'.",
-                    "typical_position": "If everyone agrees, someone is probably wrong"
+            # POSITION-LOCKED AGENT ASSIGNMENTS for genuine intellectual conflict
+            # AGGRESSIVE: Agents are ASSIGNED to advocate for specific positions
+            # This creates REAL debate, not polite agreement
+            
+            # Detect if this is a comparative question (Option A vs Option B)
+            query_lower = self.question.lower()
+            has_options = any(word in query_lower for word in ["or", "versus", "vs", "either", "between"])
+            
+            if has_options:
+                # COMPARATIVE QUESTION: Lock agents to specific positions
+                agent_personalities = {
+                    "MicroEconomist": {
+                        "bias": "ADVOCATE_OPTION_A",
+                        "stance": """YOU ARE THE CHAMPION FOR THE FIRST OPTION MENTIONED.
+Your job is to make the STRONGEST possible case for Option A (the first option in the question).
+You must argue that Option A is CLEARLY SUPERIOR to Option B.
+Do NOT concede points easily. Challenge every argument for Option B.
+Only change position if presented with OVERWHELMING evidence.""",
+                        "typical_position": "Option A is the right choice. Option B has fatal flaws.",
+                        "debate_rules": """
+- Present Option A as the clear winner
+- Attack Option B's weaknesses relentlessly
+- When challenged, defend with data
+- Do NOT say "both have merit" or suggest hybrids"""
+                    },
+                    "MacroEconomist": {
+                        "bias": "ADVOCATE_OPTION_B", 
+                        "stance": """YOU ARE THE CHAMPION FOR THE SECOND OPTION MENTIONED.
+Your job is to make the STRONGEST possible case for Option B (the second option in the question).
+You must argue that Option B is CLEARLY SUPERIOR to Option A.
+Do NOT concede points easily. Challenge every argument for Option A.
+Only change position if presented with OVERWHELMING evidence.""",
+                        "typical_position": "Option B is the right choice. Option A is unrealistic.",
+                        "debate_rules": """
+- Present Option B as the clear winner
+- Attack Option A's weaknesses relentlessly  
+- When challenged, defend with data
+- Do NOT say "both have merit" or suggest hybrids"""
+                    },
+                    "SkillsAgent": {
+                        "bias": "SKEPTIC_OF_BOTH",
+                        "stance": """YOU ARE SKEPTICAL OF BOTH OPTIONS.
+Your job is to challenge BOTH Option A AND Option B advocates.
+Ask hard questions: Why this amount? Why not something else entirely?
+Point out what everyone is overlooking.
+Force advocates to provide EVIDENCE, not assertions.""",
+                        "typical_position": "Neither option is as good as advocates claim. What are we missing?",
+                        "debate_rules": """
+- Challenge Option A advocate's claims
+- Challenge Option B advocate's claims equally
+- Ask: "What's the null hypothesis? What if we do nothing?"
+- Question the assumptions everyone takes for granted"""
+                    },
+                    "Nationalization": {
+                        "bias": "HYBRID_ADVOCATE",
+                        "stance": """YOU BELIEVE A HYBRID/PHASED APPROACH IS BEST.
+Your job is to argue that neither pure Option A nor pure Option B is optimal.
+Propose specific hybrid allocations (e.g., 60/40, 70/30) with justification.
+But you must DEFEND this against pure option advocates.""",
+                        "typical_position": "A hybrid approach captures benefits while reducing risks.",
+                        "debate_rules": """
+- Propose specific hybrid ratios with reasoning
+- Defend hybrid against "pick one" critics
+- Show how hybrid addresses weaknesses of both pure options
+- Be specific: not "some of each" but "60% A, 40% B because..."
+"""
+                    },
+                    "PatternDetective": {
+                        "bias": "DEVIL_ADVOCATE",
+                        "stance": """YOU CHALLENGE EVERY POSITION INCLUDING YOUR OWN.
+Your job is to find flaws in ALL arguments. 
+If consensus is forming, break it by introducing counter-evidence.
+If everyone agrees Option A is best, make the case for Option B.
+Your goal is stress-testing, not agreement.""",
+                        "typical_position": "Wait - what about [thing nobody mentioned]?",
+                        "debate_rules": """
+- Never agree without challenge
+- If 3 agents favor one option, argue for the other
+- Introduce uncomfortable facts others are ignoring
+- Force the group to earn their consensus"""
+                    }
                 }
-            }
+            else:
+                # NON-COMPARATIVE: Use standard aggressive personalities
+                agent_personalities = {
+                    "MicroEconomist": {
+                        "bias": "FISCAL_CONSERVATIVE",
+                        "stance": "Challenge expensive proposals. Demand ROI justification. Favor proven approaches over experiments.",
+                        "typical_position": "This will cost more and deliver less than claimed.",
+                        "debate_rules": "- Attack cost assumptions\n- Demand payback analysis\n- Question optimistic projections"
+                    },
+                    "MacroEconomist": {
+                        "bias": "STRATEGIC_OPTIMIST", 
+                        "stance": "Favor bold transformational investments. Accept short-term costs for long-term positioning.",
+                        "typical_position": "The opportunity cost of NOT doing this is greater than the investment.",
+                        "debate_rules": "- Make the strategic case\n- Compare to peer countries\n- Think in decades not quarters"
+                    },
+                    "SkillsAgent": {
+                        "bias": "IMPLEMENTATION_REALIST",
+                        "stance": "Focus on whether this can actually be executed. Challenge plans that exceed human capital capacity.",
+                        "typical_position": "The plan is good but we can't deliver it with available talent.",
+                        "debate_rules": "- Question execution capacity\n- Challenge timeline assumptions\n- Demand workforce plans"
+                    },
+                    "Nationalization": {
+                        "bias": "NATIONAL_INTEREST_FIRST",
+                        "stance": "Prioritize national employment and participation. Challenge options that create expatriate dependency.",
+                        "typical_position": "If nationals can't do it, we shouldn't do it at this scale.",
+                        "debate_rules": "- Demand nationalization targets\n- Challenge foreign dependency\n- Push for capacity building"
+                    },
+                    "PatternDetective": {
+                        "bias": "CONTRARIAN",
+                        "stance": "Challenge consensus. If everyone agrees, find the flaw. Look for what's being ignored.",
+                        "typical_position": "You're all missing the obvious problem.",
+                        "debate_rules": "- Break forming consensus\n- Raise uncomfortable facts\n- Question assumptions"
+                    }
+                }
             
             personality = agent_personalities.get(agent_name, {
                 "bias": "ANALYTICAL",
                 "stance": "Provide objective analysis based on available evidence.",
-                "typical_position": "Evidence should drive recommendations"
+                "typical_position": "Evidence should drive recommendations",
+                "debate_rules": "- Be evidence-based\n- Challenge unsupported claims"
             })
             
             # LLM agent - pass full context with query AND facts AND personality
+            debate_rules = personality.get('debate_rules', '')
             enhanced_topic = f"""{query_context}
 
 YOUR ROLE AS {agent_name}: {topic}
 
-🎭 YOUR DEBATE PERSONALITY:
+═══════════════════════════════════════════════════════════════════════════════
+🎭 YOUR ASSIGNED POSITION (YOU MUST DEFEND THIS):
+═══════════════════════════════════════════════════════════════════════════════
 Bias: {personality['bias']}
-Stance: {personality['stance']}
-Typical Position: {personality['typical_position']}
 
-⚠️ GENUINE INTELLECTUAL CONFLICT REQUIRED:
-- You must DEFEND your stance vigorously
-- Do NOT default to "hybrid" or "balanced" approaches
-- If you genuinely believe Option A is better, SAY SO CLEARLY
-- Challenge other agents who disagree with you
-- Real consulting teams have genuine disagreements
+{personality['stance']}
+
+Your Default Position: "{personality['typical_position']}"
+
+YOUR DEBATE RULES:
+{debate_rules}
+═══════════════════════════════════════════════════════════════════════════════
+
+⚠️ THIS IS A REAL DEBATE - NOT A POLITE DISCUSSION:
+- You are LOCKED to your assigned position
+- DEFEND your stance vigorously - do NOT be diplomatic
+- ATTACK weak arguments from other agents
+- Do NOT say "I see merit in both sides" unless you TRULY do
+- Do NOT converge on consensus prematurely
+- REAL consulting teams have REAL disagreements
+- If another agent makes a weak argument, SAY SO directly
 
 INSTRUCTIONS:
 1. Address the SPECIFIC QUESTION above (not generic risks)
 2. Use the EXTRACTED FACTS provided (cite as [FACT N: value from SOURCE])
-3. Give your expert perspective THROUGH YOUR PERSONALITY LENS
-4. Take a CLEAR POSITION - avoid hedge words like "could", "might", "perhaps"
+3. ADVOCATE for your assigned position with evidence
+4. CHALLENGE other agents who disagree with you
+5. Use STRONG language: "is", "will", "must" — NOT "could", "might", "perhaps"
 
-Your expert analysis (be decisive, not diplomatic):"""
+Your expert analysis (be aggressive, not diplomatic):"""
             
             return await agent.present_case(enhanced_topic, self.conversation_history, original_question=self.question)
         else:

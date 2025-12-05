@@ -1715,7 +1715,7 @@ Do NOT proceed with policy analysis for this target. Instead:
     financial_analysis_text = ""
     try:
         if FINANCIAL_MODELING_AVAILABLE:
-            from src.nsic.engine_b.services.financial_modeling import FinancialModelingService, format_comparison_matrix_for_brief
+            from src.nsic.engine_b.services.financial_modeling import FinancialModelingService, format_comparison_matrix_for_brief, generate_year_by_year_projection
             
             financial_service = FinancialModelingService(discount_rate=0.08)
             
@@ -1773,6 +1773,16 @@ Do NOT proceed with policy analysis for this target. Instead:
                         financial_analysis_text += f"  • {var}: "
                         scenarios_str = ", ".join(f"{k}=${v/1e9:.1f}B" for k, v in scenarios.items())
                         financial_analysis_text += scenarios_str + "\n"
+                
+                # Add year-by-year projections for top 2 options
+                for opt in options[:2]:
+                    opt_name = opt.get("name", "Option")
+                    year_by_year = generate_year_by_year_projection(
+                        option_name=opt_name,
+                        total_investment=total_investment,
+                        time_horizon=10
+                    )
+                    financial_analysis_text += "\n" + year_by_year
                 
                 logger.info(f"  ✅ Financial analysis complete: {len(result.comparison_matrix)} options compared")
             else:

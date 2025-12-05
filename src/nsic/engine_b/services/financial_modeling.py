@@ -651,12 +651,14 @@ def format_comparison_matrix_for_brief(matrix: List[Dict]) -> str:
     if not matrix:
         return "No comparison data available."
     
+    output = []
+    
     # Determine columns based on data
     if matrix[0].get("npv") is not None:
         # Investment comparison
         header = "| Option | NPV | IRR | Payback | Jobs | Risk |"
         divider = "|--------|-----|-----|---------|------|------|"
-        rows = [header, divider]
+        output.extend([header, divider])
         
         for m in matrix:
             option = m.get('option', 'N/A')
@@ -669,12 +671,12 @@ def format_comparison_matrix_for_brief(matrix: List[Dict]) -> str:
             risk_str = risk.title() if risk else "Medium"
             
             row = f"| {option} | {npv} | {irr} | {payback_str} | {jobs} | {risk_str} |"
-            rows.append(row)
+            output.append(row)
     else:
         # Policy comparison
         header = "| Option | Cost | Benefit | B/C Ratio | Net Benefit |"
         divider = "|--------|------|---------|-----------|-------------|"
-        rows = [header, divider]
+        output.extend([header, divider])
         
         for m in matrix:
             option = m.get('option', 'N/A')
@@ -684,7 +686,84 @@ def format_comparison_matrix_for_brief(matrix: List[Dict]) -> str:
             net = m.get('net_formatted', 'N/A')
             
             row = f"| {option} | {cost} | {benefit} | {ratio:.2f} | {net} |"
-            rows.append(row)
+            output.append(row)
     
-    return "\n".join(rows)
+    return "\n".join(output)
+
+
+def generate_year_by_year_projection(
+    option_name: str,
+    total_investment: float,
+    time_horizon: int = 10
+) -> str:
+    """
+    Generate detailed year-by-year financial projection.
+    Big 4 standard: Shows capex, opex, revenue, cash flow for each year.
+    """
+    option_lower = option_name.lower()
+    
+    # Determine sector-specific parameters
+    if any(kw in option_lower for kw in ["tech", "ai", "digital", "innovation"]):
+        capex_profile = [0.15, 0.20, 0.20, 0.15, 0.10, 0.08, 0.05, 0.03, 0.02, 0.02]
+        opex_rate = 0.03  # 3% of cumulative capex
+        revenue_start_year = 3
+        revenue_growth = 0.25  # 25% annual growth
+        revenue_multiple = 0.08  # Revenue = 8% of investment at maturity
+    elif any(kw in option_lower for kw in ["tourism", "hospitality"]):
+        capex_profile = [0.20, 0.25, 0.20, 0.15, 0.10, 0.05, 0.03, 0.01, 0.01, 0.00]
+        opex_rate = 0.04
+        revenue_start_year = 2
+        revenue_growth = 0.15
+        revenue_multiple = 0.10
+    else:
+        capex_profile = [0.15, 0.15, 0.15, 0.15, 0.10, 0.10, 0.08, 0.05, 0.04, 0.03]
+        opex_rate = 0.035
+        revenue_start_year = 3
+        revenue_growth = 0.20
+        revenue_multiple = 0.08
+    
+    # Generate year-by-year data
+    output = [f"\n**YEAR-BY-YEAR PROJECTION: {option_name}**\n"]
+    output.append("| Year | CapEx | OpEx | Revenue | Cash Flow | Cumulative |")
+    output.append("|------|-------|------|---------|-----------|------------|")
+    
+    cumulative_capex = 0
+    cumulative_cf = 0
+    
+    for year in range(time_horizon):
+        year_label = year + 1
+        
+        # CapEx
+        capex = total_investment * capex_profile[min(year, len(capex_profile)-1)]
+        cumulative_capex += capex
+        
+        # OpEx (% of cumulative investment)
+        opex = cumulative_capex * opex_rate
+        
+        # Revenue (starts after delay, grows annually)
+        if year >= revenue_start_year:
+            years_operating = year - revenue_start_year + 1
+            base_revenue = total_investment * revenue_multiple
+            revenue = base_revenue * ((1 + revenue_growth) ** years_operating)
+        else:
+            revenue = 0
+        
+        # Cash flow
+        cash_flow = revenue - capex - opex
+        cumulative_cf += cash_flow
+        
+        # Format for display
+        capex_str = f"${capex/1e9:.1f}B"
+        opex_str = f"${opex/1e9:.1f}B"
+        revenue_str = f"${revenue/1e9:.1f}B" if revenue > 0 else "-"
+        cf_str = f"${cash_flow/1e9:.1f}B" if cash_flow >= 0 else f"-${abs(cash_flow)/1e9:.1f}B"
+        cumulative_str = f"${cumulative_cf/1e9:.1f}B" if cumulative_cf >= 0 else f"-${abs(cumulative_cf)/1e9:.1f}B"
+        
+        output.append(f"| Year {year_label} | {capex_str} | {opex_str} | {revenue_str} | {cf_str} | {cumulative_str} |")
+    
+    # Summary
+    output.append(f"\n**Break-even:** {'Year ' + str(revenue_start_year + 5) if cumulative_cf < 0 else 'Achieved'}")
+    output.append(f"**Total Investment:** ${total_investment/1e9:.1f}B over {time_horizon} years")
+    
+    return "\n".join(output)
 
