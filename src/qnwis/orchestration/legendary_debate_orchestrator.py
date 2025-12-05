@@ -217,7 +217,8 @@ class LegendaryDebateOrchestrator:
             "max_turns": 80,
             "phases": {
                 "opening": 12,
-                "challenge": 25,     # REDUCED from 35 to prevent spirals
+                "analysis": 20,      # FIX RUN 7: HARD LIMIT - prevent methodology spiral
+                "challenge": 20,     # REDUCED from 35 to prevent spirals
                 "edge_case": 15,
                 "risk": 12,
                 "consensus": 6
@@ -227,7 +228,8 @@ class LegendaryDebateOrchestrator:
             "max_turns": 150,  # FULL DEPTH for ministerial queries
             "phases": {
                 "opening": 15,       # 3 turns × 5 agents
-                "challenge": 40,     # REDUCED from 60 - prevent methodology spiral
+                "analysis": 20,      # FIX RUN 7: HARD LIMIT 20 turns for analysis
+                "challenge": 25,     # REDUCED from 40 - force faster transition
                 "edge_case": 25,     # 5 cases × 5 agents
                 "risk": 25,          # 5 risks × 5 assessors
                 "consensus": 25      # 5 rounds × 5 agents
@@ -251,6 +253,16 @@ class LegendaryDebateOrchestrator:
     
     # Phase budget enforcement - forces transition if exceeded
     PHASE_BUDGET_STRICT = True  # Set to True to force phase transitions
+    
+    # FIX RUN 7: HARD LIMITS - force transition even if agents want to continue
+    PHASE_HARD_LIMITS = {
+        'opening': 16,
+        'analysis': 20,      # HARD LIMIT - forces transition to challenge
+        'challenge': 25,
+        'edge_case': 20,
+        'risk': 20,
+        'consensus': 15,
+    }
     
     # Default configuration - USE LEGENDARY DEPTH by default for ministerial queries!
     MAX_TURNS_TOTAL = 150  # Changed from 30 to ensure legendary depth
@@ -2539,7 +2551,16 @@ Include:
         if not self.current_phase:
             return False
         
-        # Get the phase budget for current complexity
+        # FIX RUN 7: Use HARD LIMITS first, then fall back to config
+        hard_limit = self.PHASE_HARD_LIMITS.get(self.current_phase)
+        
+        if hard_limit:
+            current_turns = self.phase_turn_counters.get(self.current_phase, 0)
+            if current_turns >= hard_limit:
+                logger.warning(f"⛔ HARD LIMIT REACHED: {self.current_phase} at {current_turns}/{hard_limit} turns")
+                return True
+        
+        # Fall back to config-based budget
         config = self.DEBATE_CONFIGS.get(self.debate_complexity, self.DEBATE_CONFIGS["standard"])
         phases = config.get("phases", {})
         budget = phases.get(self.current_phase, 50)  # Default to 50 if not specified
@@ -2549,10 +2570,27 @@ Include:
     
     def _generate_phase_budget_warning(self) -> str:
         """Generate a warning message when phase budget is exceeded."""
+        hard_limit = self.PHASE_HARD_LIMITS.get(self.current_phase, 0)
         config = self.DEBATE_CONFIGS.get(self.debate_complexity, self.DEBATE_CONFIGS["standard"])
         phases = config.get("phases", {})
-        budget = phases.get(self.current_phase, 50)
+        budget = hard_limit if hard_limit else phases.get(self.current_phase, 50)
         current_turns = self.phase_turn_counters.get(self.current_phase, 0)
+        
+        # FIX RUN 7: More aggressive warning for hard limit
+        if hard_limit and current_turns >= hard_limit:
+            return f"""⛔ PHASE LIMIT REACHED — MANDATORY TRANSITION
+
+The {self.current_phase.upper()} phase has reached its {hard_limit}-turn HARD LIMIT.
+
+IMMEDIATE TRANSITION TO NEXT PHASE REQUIRED.
+
+All agents must now move to the next phase.
+No more {self.current_phase.lower()}-style responses allowed.
+
+🔴 ANY CONTINUATION OF DATA DEBATES, METHODOLOGY DISCUSSION, OR 
+   STATISTIC CHALLENGES WILL BE BLOCKED.
+
+The minister needs a decision. Provide your recommendation NOW."""
         
         return f"""⏰ PHASE BUDGET WARNING: The {self.current_phase} phase has used {current_turns}/{budget} allocated turns.
         

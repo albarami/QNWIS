@@ -98,17 +98,38 @@ class SmartModerator:
             
             # Academic tangents
             'literature suggests', 'theoretical framework', 'academic consensus',
-            'epistemological', 'ontological', 'methodological debate'
+            'epistemological', 'ontological', 'methodological debate',
+            
+            # FIX RUN 7: New patterns from Run 7 analysis (project completion rate spiral)
+            'project completion rate', 'disbursement ratio', 'disbursement efficiency',
+            'capital absorption', 'operational integration', 'execution capacity',
+            'absorptive capacity', 'completion rate', 'implementation rate',
+            
+            # Employment statistics spirals (from Run 6-7)
+            'grew only', 'only 0.', 'only 1.', 'only 2.', 'only 3.', 'only 4.',
+            'employment among nationals', 'nationals comprise only',
+            'participation rate', 'absorption rate', 'graduate absorption',
+            
+            # Concession spirals
+            'i partially concede', 'counter-evidence', 'i concede that',
+            'however, i maintain', 'that figure describes'
         ]
         
         content_lower = turn_content.lower()
         methodology_mentions = sum(1 for ind in methodology_indicators if ind in content_lower)
         
-        # If more than 3 methodology terms in one turn, it's a tangent
-        is_tangent = methodology_mentions >= 3
+        # FIX RUN 7: Also detect percentage debates (multiple different percentages for same metric)
+        import re
+        pct_matches = re.findall(r'(\d+\.?\d*)\s*%', content_lower)
+        unique_percentages = set(pct_matches)
+        # If 4+ different percentages mentioned, likely a statistics debate
+        stats_debate = len(unique_percentages) >= 4
+        
+        # If more than 3 methodology terms OR excessive stats debate, it's a tangent
+        is_tangent = methodology_mentions >= 3 or (methodology_mentions >= 2 and stats_debate)
         
         if is_tangent:
-            logger.warning(f"Methodology tangent detected: {methodology_mentions} indicators found")
+            logger.warning(f"Methodology tangent detected: {methodology_mentions} indicators, {len(unique_percentages)} unique percentages")
         
         return is_tangent
     
