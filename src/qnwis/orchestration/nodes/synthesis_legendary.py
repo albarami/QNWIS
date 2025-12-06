@@ -1941,32 +1941,39 @@ Do NOT proceed with policy analysis for this target. Instead:
     
     # Fetch real case studies from authoritative sources (Harvard, McKinsey, World Bank, etc.)
     logger.info("=" * 60)
-    logger.info("📚 CASE STUDY EXTRACTION STARTING...")
+    logger.info("📚 CASE STUDY EXTRACTION...")
     logger.info("=" * 60)
     
-    # Check API key availability
-    import os as _os
-    perplexity_key = _os.getenv("PERPLEXITY_API_KEY")
-    brave_key = _os.getenv("BRAVE_API_KEY")
-    logger.info(f"  PERPLEXITY_API_KEY: {'✅ Set' if perplexity_key else '❌ NOT SET'}")
-    logger.info(f"  BRAVE_API_KEY: {'✅ Set' if brave_key else '❌ NOT SET'}")
-    
     case_studies_text = ""
-    try:
-        case_studies = await extract_case_studies(query, max_cases=4)
-        logger.info(f"  📊 Case studies returned: {len(case_studies) if case_studies else 0}")
+    
+    # S-TIER FIX: Check if case studies were already fetched during debate (avoid duplicate API calls)
+    cached_case_studies = state.get("case_studies_cache")
+    if cached_case_studies:
+        logger.info(f"  ✅ Using {len(cached_case_studies)} CACHED case studies from debate phase")
+        case_studies_text = format_case_studies_for_synthesis(cached_case_studies)
+    else:
+        # Fetch fresh if not cached
+        import os as _os
+        perplexity_key = _os.getenv("PERPLEXITY_API_KEY")
+        brave_key = _os.getenv("BRAVE_API_KEY")
+        logger.info(f"  PERPLEXITY_API_KEY: {'✅ Set' if perplexity_key else '❌ NOT SET'}")
+        logger.info(f"  BRAVE_API_KEY: {'✅ Set' if brave_key else '❌ NOT SET'}")
         
-        if case_studies:
-            case_studies_text = format_case_studies_for_synthesis(case_studies)
-            logger.info(f"  ✅ Fetched {len(case_studies)} case studies from real sources")
-            for i, cs in enumerate(case_studies[:3]):
-                logger.info(f"    Case {i+1}: {cs.get('title', 'Untitled')[:50]}... ({cs.get('source_type', 'unknown')})")
-        else:
-            case_studies_text = "No directly relevant case studies found. The synthesis should note limited international benchmarking data."
-            logger.warning("  ⚠️ No case studies found for this query")
-    except Exception as e:
-        logger.error(f"  ❌ Case study extraction FAILED: {e}", exc_info=True)
-        case_studies_text = f"Case study extraction failed: {e}. Proceed with analysis based on available data."
+        try:
+            case_studies = await extract_case_studies(query, max_cases=4)
+            logger.info(f"  📊 Case studies returned: {len(case_studies) if case_studies else 0}")
+            
+            if case_studies:
+                case_studies_text = format_case_studies_for_synthesis(case_studies)
+                logger.info(f"  ✅ Fetched {len(case_studies)} case studies from real sources")
+                for i, cs in enumerate(case_studies[:3]):
+                    logger.info(f"    Case {i+1}: {cs.get('title', 'Untitled')[:50]}... ({cs.get('source_type', 'unknown')})")
+            else:
+                case_studies_text = "No directly relevant case studies found. The synthesis should note limited international benchmarking data."
+                logger.warning("  ⚠️ No case studies found for this query")
+        except Exception as e:
+            logger.error(f"  ❌ Case study extraction FAILED: {e}", exc_info=True)
+            case_studies_text = f"Case study extraction failed: {e}. Proceed with analysis based on available data."
     
     logger.info("=" * 60)
     

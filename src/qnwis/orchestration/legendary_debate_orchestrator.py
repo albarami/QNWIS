@@ -864,6 +864,45 @@ Do NOT continue with methodology discussions. ANSWER THE QUESTION with specifics
             context_parts.append("⚠️ DO NOT invent success rates - use the values from the table above.")
             context_parts.append("")
         
+        # ==================================================================
+        # S-TIER: Add case studies for international benchmarking
+        # ==================================================================
+        if hasattr(self, 'case_studies_context') and self.case_studies_context:
+            context_parts.append("=" * 60)
+            context_parts.append("📚 COMPARATIVE CASE STUDIES (REAL DATA FROM AUTHORITATIVE SOURCES)")
+            context_parts.append("=" * 60)
+            context_parts.append("")
+            context_parts.append(self.case_studies_context)
+            context_parts.append("")
+            context_parts.append("⚠️ Use these case studies to support your arguments with international precedent.")
+            context_parts.append("⚠️ Cite as [Case N] when referencing specific examples.")
+            context_parts.append("")
+        
+        # ==================================================================
+        # S-TIER: Add agent analysis reports (research, financial, market, operations)
+        # This allows debaters to reference what other analysts found
+        # ==================================================================
+        if hasattr(self, 'agent_reports_map') and self.agent_reports_map:
+            context_parts.append("=" * 60)
+            context_parts.append("🔬 ANALYST REPORTS (FROM OTHER AGENTS)")
+            context_parts.append("=" * 60)
+            context_parts.append("")
+            context_parts.append("Reference these analyses from your colleagues:")
+            context_parts.append("")
+            
+            for agent_name, report in self.agent_reports_map.items():
+                if report:
+                    narrative = getattr(report, 'narrative', '')
+                    if narrative and len(narrative) > 50:
+                        # Truncate to key insights (first 800 chars)
+                        truncated = narrative[:800] + "..." if len(narrative) > 800 else narrative
+                        context_parts.append(f"### {agent_name.upper()} ANALYSIS:")
+                        context_parts.append(truncated)
+                        context_parts.append("")
+            
+            context_parts.append("⚠️ Build on these findings - don't repeat them. Add YOUR perspective.")
+            context_parts.append("")
+        
         # Add extracted facts if available - STRICT NUMBERED LIST
         if self.extracted_facts:
             context_parts.append("=" * 60)
@@ -1101,7 +1140,8 @@ Do NOT continue with methodology discussions. ANSWER THE QUESTION with specifics
         calculated_results: Optional[Dict[str, Any]] = None,  # McKinsey pipeline results
         calculation_warning: Optional[str] = None,  # Data confidence warning
         cross_scenario_context: Optional[str] = None,  # FIXED: Cross-scenario table from Engine B
-        scenario_results: Optional[List[Dict[str, Any]]] = None  # CRITICAL FIX: Actual scenario numbers
+        scenario_results: Optional[List[Dict[str, Any]]] = None,  # CRITICAL FIX: Actual scenario numbers
+        case_studies_context: Optional[str] = None  # S-TIER: Case studies for agent reference
     ) -> Dict:
         """
         Execute complete 6-phase legendary debate.
@@ -1133,6 +1173,10 @@ Do NOT continue with methodology discussions. ANSWER THE QUESTION with specifics
         # CRITICAL FIX (Run 13): Store ACTUAL scenario results with numbers
         # Agents MUST see these numbers to avoid fabricating statistics
         self.scenario_results = scenario_results or []
+        # S-TIER FIX (Run 20): Store case studies for agents to reference during debate
+        self.case_studies_context = case_studies_context or ""
+        if self.case_studies_context:
+            logger.info(f"📚 CASE STUDIES LOADED for debate context")
         if self.scenario_results:
             logger.info(f"📊 SCENARIO RESULTS LOADED: {len(self.scenario_results)} scenarios")
             for sr in self.scenario_results:

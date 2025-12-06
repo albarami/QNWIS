@@ -70,6 +70,28 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
                 'warnings': [],
                 'metadata': {}
             })()
+    
+    # S-TIER FIX: Also extract from agent_reports list (contains ALL scenario analyses)
+    # This ensures debaters can see research agent output from ALL scenarios
+    all_agent_reports = state.get("agent_reports", [])
+    if all_agent_reports:
+        logger.info(f"📊 Found {len(all_agent_reports)} agent reports from scenarios")
+        for ar in all_agent_reports:
+            if isinstance(ar, dict):
+                agent = ar.get("agent", "")
+                report = ar.get("report", {})
+                if isinstance(report, dict) and report.get("narrative"):
+                    # Use first occurrence of each agent type (most comprehensive)
+                    base_agent = agent.split("_")[0] if "_" in agent else agent
+                    if base_agent not in agent_reports_map:
+                        agent_reports_map[base_agent] = type('AgentReport', (object,), {
+                            'narrative': str(report.get("narrative", ""))[:2000],
+                            'agent': base_agent,
+                            'findings': [],
+                            'confidence': report.get("confidence", 0.7),
+                            'warnings': [],
+                            'metadata': {'scenario': report.get("scenario_name", "")}
+                        })()
 
     # Detect contradictions using existing logic
     from .debate import _extract_perspectives, _detect_contradictions
@@ -672,6 +694,24 @@ Reference these computed values in your arguments.
         else:
             logger.warning("⚠️ No scenario_results available - agents may fabricate statistics")
         
+        # S-TIER FIX (Run 20): Fetch case studies BEFORE debate so agents can reference them
+        # Previously, case studies were only fetched in synthesis (too late for debate)
+        case_studies_context = ""
+        try:
+            from ..case_studies import extract_case_studies, format_case_studies_for_synthesis
+            query = state.get("query", "")
+            logger.info("📚 Fetching case studies for debate context...")
+            case_studies = await extract_case_studies(query, max_cases=4)
+            if case_studies:
+                case_studies_context = format_case_studies_for_synthesis(case_studies)
+                logger.info(f"  ✅ Fetched {len(case_studies)} case studies for debate")
+                # Store in state for synthesis to reuse (avoid duplicate API calls)
+                state["case_studies_cache"] = case_studies
+            else:
+                logger.warning("  ⚠️ No case studies found for debate context")
+        except Exception as e:
+            logger.warning(f"  ⚠️ Case study fetch failed: {e}")
+        
         debate_results = await orchestrator.conduct_legendary_debate(
             question=state.get("query", ""),
             contradictions=contradictions,
@@ -681,7 +721,8 @@ Reference these computed values in your arguments.
             extracted_facts=state.get("extracted_facts", []),
             debate_depth=debate_depth,  # Pass user-selected depth
             cross_scenario_context=cross_scenario_context,  # FIXED: Pass cross-scenario data
-            scenario_results=scenario_results  # CRITICAL: Pass actual scenario numbers
+            scenario_results=scenario_results,  # CRITICAL: Pass actual scenario numbers
+            case_studies_context=case_studies_context  # S-TIER: Pass case studies to debate
         )
         logger.info(f"✅ Legendary debate SUCCEEDED: {debate_results['total_turns']} turns")
 

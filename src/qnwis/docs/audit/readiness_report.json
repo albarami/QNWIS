@@ -338,12 +338,12 @@
         },
         "missing": {}
       },
-      "duration_ms": 16.668081283569336,
+      "duration_ms": 15.559673309326172,
       "severity": "ERROR",
       "evidence_paths": [
         "docs/IMPLEMENTATION_ROADMAP.md"
       ],
-      "timestamp": "2025-12-05T18:48:51.206398"
+      "timestamp": "2025-12-06T03:07:12.098425"
     },
     {
       "name": "no_placeholders",
@@ -361,13 +361,13 @@
         "violations": [
           {
             "file": "src/qnwis/agents/base_llm.py",
-            "line": 337,
+            "line": 360,
             "pattern": "^\\s*pass\\s*$",
             "snippet": "pass"
           },
           {
             "file": "src/qnwis/agents/base_llm.py",
-            "line": 357,
+            "line": 380,
             "pattern": "^\\s*pass\\s*$",
             "snippet": "pass"
           },
@@ -607,17 +607,17 @@
           }
         ]
       },
-      "duration_ms": 577.815055847168,
+      "duration_ms": 4049.190044403076,
       "severity": "ERROR",
       "evidence_paths": [
         "src/qnwis/scripts/qa/grep_rules.yml"
       ],
-      "timestamp": "2025-12-05T18:48:51.785358"
+      "timestamp": "2025-12-06T03:07:16.147616"
     }
   ],
   "overall_pass": false,
-  "execution_time_ms": 600.6035804748535,
-  "timestamp": "2025-12-05T18:48:51.790334",
+  "execution_time_ms": 4073.542356491089,
+  "timestamp": "2025-12-06T03:07:16.156408",
   "summary": {
     "total_gates": 2,
     "total": 2,
@@ -627,8 +627,8 @@
   "artifacts": {
     "coverage.xml": "a983cdf5fa5911a848b72fb3c0e1873dc544bc88697bf45abf0d4bbfd5223104",
     "junit.xml": "1936cb6760d2944a3e93d625ce6d9911b24758cee616d5db7eb8eb0f3abf7270",
-    "src/qnwis/docs/audit/READINESS_REPORT_1_25.md": "903bdadd3dd0e4d6a0d25f15d12370dda6e5e1eacdefc37718fcea041b7bed1f",
-    "src/qnwis/docs/audit/READINESS_SUMMARY.html": "9c6a9cd4a2f9a28bd9c85d1bac38f5b99e68c1dd5208c751b1eb0af872040591",
+    "src/qnwis/docs/audit/READINESS_REPORT_1_25.md": "145614fd98d552468cf2457606446fea672f00703939b25cf3dbea1d6c054cb1",
+    "src/qnwis/docs/audit/READINESS_SUMMARY.html": "52b802ee4355c68cf0a4574ba0056ba34184a1700f5fad136352291e09637702",
     "src/qnwis/docs/audit/badges/rg1_pass.svg": "9995f7f48c4cb371d7db73a0cb755b09a43f686d6f82bb85a81eb9d7b1b857d8",
     "ops_notify_report.json": "eeeb7a4be860d00f103c927d235181ddb91dc12b888dfe0f08284ff29cf686ce",
     "OPS_NOTIFY_SUMMARY.md": "292aa2e89f94f28714ca7fed8a86fc45c48d896c936d714c36b877f7c918673f",
@@ -646,9 +646,9 @@
     "docs/audit/rg7/DR_SUMMARY.md": "9ae905e6286676f0d3902004400824e35fadc37d8b4ed7047cb6d65491af0ac2",
     "docs/audit/rg7/sample_manifest.json": "d04382655812b537b43247d53653cc47421b2b4d0c0910ae482ed4c70df9be84",
     "src/qnwis/docs/audit/badges/rg7_pass.svg": "4b179dc9aa67e5dc0a76eac73c7c4c285662ee8fd575b9a6babf5413bd0a14af",
-    "docs/audit/rg8/rg8_report.json": "dccedb7d125931792baec40247e37e8e15281e7dc5fd592e989029f753abe1a1",
+    "docs/audit/rg8/rg8_report.json": "8ce6e67d52b3f45b73d88c348eec28782a864c1bb288361aa0a160df530004b1",
     "docs/audit/rg8/CONTINUITY_SUMMARY.md": "7baf3f961363b2dc79c05a02976bdd6fb2ca905e3747fe6de069603d66e942b5",
-    "docs/audit/rg8/sample_plan.yaml": "bbc9da1d80285d90b49584f26eb23e4b4f62f11e9ced098988173d76779839ee",
+    "docs/audit/rg8/sample_plan.yaml": "30d2913c6e6af1024fc9baa09f8ffc94fc95a82b307fc3950799e07f72591b86",
     "src/qnwis/docs/audit/badges/rg8_pass.svg": "dd7d6c73ea33703864a5044faa10e6654ead7bedc00a14fe36774d78139926d6",
     "docs/audit/badges/rg8_pass.svg": "dd7d6c73ea33703864a5044faa10e6654ead7bedc00a14fe36774d78139926d6"
   },
