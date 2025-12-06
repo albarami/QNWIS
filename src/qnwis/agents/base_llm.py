@@ -168,6 +168,29 @@ class LLMAgent(ABC):
         self.parser = LLMResponseParser()
         self.agent_name = self.__class__.__name__.replace("Agent", "")
     
+    def _get_debate_persona(self) -> str:
+        """
+        Get the rich persona for debate interactions.
+        
+        S-TIER FIX: Use the agent's SYSTEM_PROMPT (e.g., "Dr. Ahmed, PhD from LSE...")
+        instead of generic "You are MicroEconomist..." during debates.
+        
+        This makes the debate feel like real experts arguing, not generic roles.
+        """
+        # Check if this agent class has a rich SYSTEM_PROMPT defined
+        agent_persona = getattr(self.__class__, 'SYSTEM_PROMPT', None)
+        
+        if agent_persona:
+            # Use the rich persona + add decision focus instruction
+            return f"""{agent_persona}
+
+DEBATE INSTRUCTION: You are in a ministerial debate. Engage as the expert described above.
+Challenge colleagues by name. Defend your positions with your credentials.
+The minister needs a decision, not methodology discussion."""
+        else:
+            # Fallback to generic prompt if no persona defined
+            return f"You are {self.agent_name}, providing decision-focused expert analysis. The minister needs a recommendation, not methodology discussion."
+    
     async def run_stream(
         self,
         question: str,
@@ -394,7 +417,7 @@ Your expert analysis (addressing the minister's question directly):"""
         
         return await self.llm.generate(
             prompt=prompt,
-            system=f"You are {self.agent_name}, providing decision-focused expert analysis. The minister needs a recommendation, not methodology discussion.",
+            system=self._get_debate_persona(),  # S-TIER: Use rich persona (e.g., "Dr. Ahmed")
             temperature=0.3,
             max_tokens=1500  # Increased from 500 to prevent truncation
         )
@@ -515,7 +538,7 @@ Your challenge (focused on the minister's question):"""
         
         return await self.llm.generate(
             prompt=prompt,
-            system=f"You are {self.agent_name}, engaging in decision-focused debate. Every challenge must help answer the minister's question.",
+            system=self._get_debate_persona(),  # S-TIER: Use rich persona for challenges
             temperature=0.4,
             max_tokens=1500  # Increased from 500 to prevent truncation
         )
@@ -637,7 +660,7 @@ Your response (focused on the minister's question):"""
         
         return await self.llm.generate(
             prompt=prompt,
-            system=f"You are {self.agent_name}, engaging in decision-focused debate. Every response must help answer the minister's question.",
+            system=self._get_debate_persona(),  # S-TIER: Use rich persona for responses
             temperature=0.3,
             max_tokens=1500  # Increased from 500 to prevent truncation
         )
@@ -702,7 +725,7 @@ Your contribution (WITH DATA CITATIONS, focused on the minister's decision):"""
         
         return await self.llm.generate(
             prompt=prompt,
-            system=f"You are {self.agent_name}, contributing decision-focused expertise. Every contribution must help the minister decide.",
+            system=self._get_debate_persona(),  # S-TIER: Use rich persona for contributions
             temperature=0.4,
             max_tokens=1200  # Increased to allow complete responses
         )
@@ -820,7 +843,17 @@ Please provide an objective and balanced assessment."""
         """State final position after debate - MUST be decisive and scenario-grounded."""
         history_text = self._format_history(debate_history[-10:])
         
-        prompt = f"""You are {self.agent_name}.
+        # S-TIER FIX: Use rich persona name if available (e.g., "Dr. Ahmed" not "MicroEconomist")
+        agent_persona = getattr(self.__class__, 'SYSTEM_PROMPT', None)
+        agent_identity = self.agent_name
+        if agent_persona:
+            # Extract the name from the first line (e.g., "You are **Dr. Ahmed**,...")
+            import re
+            name_match = re.search(r'You are \*\*([^*]+)\*\*', agent_persona)
+            if name_match:
+                agent_identity = name_match.group(1)
+        
+        prompt = f"""You are {agent_identity}.
 
 The debate is concluding. The minister needs a CLEAR recommendation.
 
