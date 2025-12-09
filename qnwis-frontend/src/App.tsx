@@ -85,7 +85,7 @@ const DEBATE_DEPTHS: Record<DebateDepth, { label: string; turns: string; descrip
 
 function App() {
   const { state, connect, cancel } = useWorkflowStream()
-  const [question, setQuestion] = useState('Should Qatar accelerate Qatarization to 20% in the private sector by 2028?')
+  const [question, setQuestion] = useState('What is the probability Qatar will reverse productivity stagnation by 2030?')
   const [debateDepth, setDebateDepth] = useState<DebateDepth>('legendary')
   const [activeTab, setActiveTab] = useState<string>('scenarios')
   const provider = 'azure' as const
@@ -106,33 +106,70 @@ function App() {
     // DOMAIN-AGNOSTIC: Simply calculate metrics from scenario results
     // No hardcoded keywords - works for ANY query type
     const scenarioRates: { name: string; rate: number }[] = []
-    state.scenarioResults.forEach((r: any) => {
-      const engineB = r.engine_b_results || r.engineBResults || {}
-      const monteCarlo = engineB.monte_carlo || r.monteCarlo || r.monte_carlo
-      const scenarioName = r.scenario?.name || r.scenario_name || 'Unknown'
-      
-      if (monteCarlo?.success_rate != null) {
-        scenarioRates.push({ name: scenarioName, rate: monteCarlo.success_rate })
-      } else if (typeof r.confidence === 'number' && r.confidence <= 1) {
-        scenarioRates.push({ name: scenarioName, rate: r.confidence })
+    
+    // FIX RUN 37: Cap unrealistic rates at collection time
+    const capRate = (rate: number): number => {
+      const MAX_REALISTIC = 0.85 // 85% - any higher is model miscalibration
+      if (rate > MAX_REALISTIC) {
+        console.warn(`⚠️ Capping unrealistic rate: ${(rate * 100).toFixed(1)}% → 85%`)
+        return MAX_REALISTIC
       }
-    })
+      return rate
+    }
     
-    if (scenarioRates.length === 0) return null
+    // PHASE 5: Check if Monte Carlo is valid for this question type
+    const debateVerdict = (state as any).debateVerdict
+    const groundTruth = (state as any).groundTruth || (state as any).ground_truth
+    const questionType = groundTruth?.question_type || debateVerdict?.question_type
+    const monteCarloValid = debateVerdict?.monte_carlo_valid !== false
     
-    // Simple average across all scenarios
+    console.log('═══════════════════════════════════════════════')
+    console.log('[CHECKPOINT 5 - FRONTEND] GROUND TRUTH & DEBATE VERDICT:')
+    console.log('  groundTruth:', groundTruth)
+    console.log('  question_type:', questionType)
+    console.log('  monte_carlo_valid:', debateVerdict?.monte_carlo_valid)
+    console.log('  probability:', groundTruth?.probability_percent || debateVerdict?.probability)
+    console.log('  confidence:', groundTruth?.confidence_percent || debateVerdict?.confidence)
+    console.log('  source:', groundTruth?.source || debateVerdict?.source)
+    console.log('═══════════════════════════════════════════════')
+    
+    // For DIAGNOSTIC/FORECAST/HYBRID questions, skip scenario rate collection
+    // These rates are fabricated and should NOT be used
+    if (questionType && ['DIAGNOSTIC', 'FORECAST', 'HYBRID'].includes(questionType)) {
+      console.warn(`⚠️ ${questionType} question - ignoring Monte Carlo scenario rates (fabricated)`)
+    } else {
+      // For COMPARATIVE questions, collect scenario rates as normal
+      state.scenarioResults.forEach((r: any) => {
+        const engineB = r.engine_b_results || r.engineBResults || {}
+        const monteCarlo = engineB.monte_carlo || r.monteCarlo || r.monte_carlo
+        const scenarioName = r.scenario?.name || r.scenario_name || 'Unknown'
+        
+        if (monteCarlo?.success_rate != null) {
+          scenarioRates.push({ name: scenarioName, rate: capRate(monteCarlo.success_rate) })
+        } else if (typeof r.confidence === 'number' && r.confidence <= 1) {
+          scenarioRates.push({ name: scenarioName, rate: capRate(r.confidence) })
+        }
+      })
+    }
+    
+    // For DIAGNOSTIC questions, we skip scenario rates but still need to show Summary Card
+    // Only return null if we have no rates AND it's not a DIAGNOSTIC question
+    if (scenarioRates.length === 0 && !questionType) return null
+    if (scenarioRates.length === 0 && questionType === 'COMPARATIVE') return null
+    
+    // Simple average across all scenarios (or 0 for DIAGNOSTIC with no rates)
     const rates = scenarioRates.map(s => s.rate)
-    const avgSuccessRate = rates.reduce((a, b) => a + b, 0) / rates.length
+    const avgSuccessRate = rates.length > 0 ? rates.reduce((a, b) => a + b, 0) / rates.length : 0
     
-    // Best and worst scenarios
+    // Best and worst scenarios (handle empty array for DIAGNOSTIC questions)
     const sortedAll = [...scenarioRates].sort((a, b) => b.rate - a.rate)
-    const bestScenario = sortedAll[0]
-    const worstScenario = sortedAll[sortedAll.length - 1]
+    const bestScenario = sortedAll[0] || { name: 'N/A', rate: 0 }
+    const worstScenario = sortedAll[sortedAll.length - 1] || { name: 'N/A', rate: 0 }
     
     // CRITICAL FIX (Run 17): SUMMARY-BRIEF ALIGNMENT
     // Both Summary Card and Brief MUST use the SAME source: BEST SCENARIO RATE
     // This prevents Summary showing 41% (avg) while Brief shows 75% (inflated)
-    const debateVerdict = (state as any).debateVerdict
+    // NOTE: debateVerdict already declared above at line 121
     const debateProbability = debateVerdict?.probability || debateVerdict?.success_probability
     const debateRecommendation = debateVerdict?.recommendation || debateVerdict?.recommended_option
     const isTied = debateVerdict?.is_tied || false
@@ -159,7 +196,55 @@ function App() {
     let displaySuccessRate: number
     let displayVerdict: VerdictType
     
-    if (alignedVerdict && typeof debateProbability === 'number' && debateProbability > 0) {
+    // FIX RUN 49: Handle COMPARATIVE questions - show WINNING OPTION, not average
+    // DOMAIN-AGNOSTIC: Identify stress tests by NEGATIVE keywords only
+    // Everything else is considered a main option
+    const STRESS_TEST_KEYWORDS = [
+      'shock', 'collapse', 'disruption', 'crisis', 'pessimistic', 
+      'black swan', 'worst', 'failure', 'crash', 'recession',
+      'downturn', 'adverse', 'negative', 'bear', 'stress'
+    ]
+    
+    const stressTestScenarios = scenarioRates.filter(s => {
+      const name = s.name.toLowerCase()
+      return STRESS_TEST_KEYWORDS.some(keyword => name.includes(keyword))
+    })
+    
+    // Main options = everything that's NOT a stress test
+    const mainOptionScenarios = scenarioRates.filter(s => {
+      const name = s.name.toLowerCase()
+      return !STRESS_TEST_KEYWORDS.some(keyword => name.includes(keyword))
+    })
+    
+    console.log('📊 FIX RUN 49 - Scenario Classification:', {
+      mainOptions: mainOptionScenarios.map(s => `${s.name}: ${(s.rate * 100).toFixed(1)}%`),
+      stressTests: stressTestScenarios.map(s => `${s.name}: ${(s.rate * 100).toFixed(1)}%`)
+    })
+    
+    // For COMPARATIVE: Find the winning main option
+    let winningOption = mainOptionScenarios.length > 0 
+      ? mainOptionScenarios.reduce((best, curr) => curr.rate > best.rate ? curr : best)
+      : bestScenario
+    
+    // PHASE 5: Handle DIAGNOSTIC/FORECAST questions differently
+    // These use agent consensus (ground_truth), NOT Monte Carlo rates
+    if (questionType && ['DIAGNOSTIC', 'FORECAST', 'HYBRID', 'diagnostic', 'forecast', 'hybrid'].includes(questionType)) {
+      // For DIAGNOSTIC questions: Use ground_truth.probability_percent (single source of truth)
+      // NEVER fall back to Monte Carlo rates - they are fabricated
+      displaySuccessRate = groundTruth?.probability_percent || debateProbability || 45
+      console.log(`📊 ${questionType}: Using GROUND TRUTH ${displaySuccessRate}% (source: ${groundTruth?.source || 'debate_verdict'})`)
+      
+      // Determine verdict based on probability for diagnostic questions
+      if (displaySuccessRate >= 60) {
+        displayVerdict = 'PROCEED_WITH_CAUTION' // Diagnostic questions are inherently uncertain
+      } else if (displaySuccessRate >= 40) {
+        displayVerdict = 'RECONSIDER'
+      } else {
+        displayVerdict = 'REJECT'
+      }
+      
+      console.log(`📊 ${questionType} verdict: ${displayVerdict} at ${displaySuccessRate}%`)
+    } else if (alignedVerdict && typeof debateProbability === 'number' && debateProbability > 0) {
       // BEST: Use ALIGNED verdict from backend (calibrated, not inflated)
       displaySuccessRate = Math.round(debateProbability)
       
@@ -193,14 +278,34 @@ function App() {
         displayVerdict = determineVerdict(displaySuccessRate, avgSuccessRate > 0.5 ? 0.67 : 0.33)
       }
     } else {
-      // FIX RUN 17: Use BEST SCENARIO rate, not average
-      // The average (41%) includes stress tests (21%, 28%) which unfairly drags down success probability
-      // The BEST scenario rate (65.6%) represents the recommended option's actual success rate
-      // This aligns Summary Card with Brief (both use best scenario rate)
+      // FIX RUN 49: For COMPARATIVE questions, use WINNING OPTION rate
+      // NOT average of all scenarios (which includes stress tests)
       
-      // QUESTION-TYPE AGNOSTIC: Just use the highest-performing non-stress scenario
-      const bestRate = bestScenario?.rate || avgSuccessRate
-      displaySuccessRate = Math.round((bestRate > 1 ? bestRate : bestRate * 100))
+      let rawRate: number
+      
+      if (mainOptionScenarios.length > 0) {
+        // COMPARATIVE: Use the winning main option's rate
+        rawRate = winningOption.rate > 1 ? winningOption.rate : winningOption.rate * 100
+        console.log(`📊 FIX RUN 49 COMPARATIVE: Winner is "${winningOption.name}" at ${rawRate.toFixed(1)}%`)
+      } else {
+        // Fallback: Filter out unrealistic scenarios (>85% or <5%) and average
+        const realisticRates = scenarioRates
+          .map(s => s.rate > 1 ? s.rate : s.rate * 100)
+          .filter(r => r >= 5 && r <= 85)
+        
+        if (realisticRates.length > 0) {
+          rawRate = realisticRates.reduce((a, b) => a + b, 0) / realisticRates.length
+          console.log(`📊 FIX RUN 49: Using AVERAGE of ${realisticRates.length} realistic scenarios: ${rawRate.toFixed(1)}%`)
+        } else if (avgSuccessRate > 0) {
+          rawRate = avgSuccessRate > 1 ? avgSuccessRate : avgSuccessRate * 100
+          console.log(`📊 FIX RUN 49: Using overall average: ${rawRate.toFixed(1)}%`)
+        } else {
+          rawRate = 50
+          console.log(`📊 FIX RUN 49: Using conservative default: ${rawRate}%`)
+        }
+      }
+      
+      displaySuccessRate = Math.round(rawRate)
       
       // FIX RUN 18: Aligned verdict thresholds (same as Brief)
       // 60%+ = GO/APPROVE (passing grade, actionable)
@@ -240,11 +345,24 @@ function App() {
       ? `${topDriverFromEngineB.label} (${Math.round(topDriverFromEngineB.contribution * 100)}%)`
       : null
     
-    // FIXED: Confidence should reflect actual Engine B confidence, not be 100%
-    // Use displaySuccessRate (best scenario) not avgSuccessRate
-    const finalConfidence = state.completedStages.has('done') 
-      ? Math.round(Math.min(robustnessScore * 100, displaySuccessRate + 15))  // Cap at success rate + 15%
-      : Math.min(30 + completedScenarios * 10, 70)
+    // FIX RUN 34: Use CALIBRATED confidence from backend (single source of truth)
+    // The backend's calculate_calibrated_confidence() uses gap + consensus for accurate confidence
+    // Frontend fallback only used during loading or if backend value missing
+    const backendCalibratedConfidence = debateVerdict?.confidence || debateVerdict?.probability
+    
+    let finalConfidence: number
+    if (typeof backendCalibratedConfidence === 'number' && backendCalibratedConfidence > 0) {
+      // Use backend calibrated confidence (single source of truth)
+      finalConfidence = Math.round(backendCalibratedConfidence)
+      console.log('📊 Using CALIBRATED confidence from backend:', finalConfidence + '%')
+    } else if (state.completedStages.has('done')) {
+      // Fallback: compute from robustness (legacy behavior)
+      finalConfidence = Math.round(Math.min(robustnessScore * 100, displaySuccessRate + 15))
+      console.log('⚠️ Backend confidence missing, using fallback:', finalConfidence + '%')
+    } else {
+      // Loading state
+      finalConfidence = Math.min(30 + completedScenarios * 10, 70)
+    }
     
     // COHERENCE FIX: Recommendation should match debate verdict
     const recommendation = debateRecommendation || state.engineBRecommendation || 
@@ -266,8 +384,21 @@ function App() {
       trend: state.engineBTrend || 'stable',
       topDriver: topDriverLabel,
       recommendation: recommendation,
+      questionType: questionType,  // FIX: Include question type for UI routing
     }
   }, [state, showAnalysis, question])
+
+  // Extract question type separately so it's available for UI routing even when verdictData is null
+  // Now stored directly in state by the streaming hook
+  const currentQuestionType = useMemo(() => {
+    if (!state) return undefined
+    // Use the typed question_type from state (set by classify/scenario_gen events)
+    if (state.question_type) return state.question_type
+    // Fallback to groundTruth and debateVerdict (set later by synthesis)
+    const debateVerdict = (state as any).debateVerdict
+    const groundTruth = (state as any).groundTruth || (state as any).ground_truth
+    return groundTruth?.question_type || debateVerdict?.question_type
+  }, [state])
 
   // Build cross-scenario analysis from state - NO HARDCODED FALLBACKS
   const crossScenarioAnalysis: CrossScenarioAnalysis | null = useMemo(() => {
@@ -511,6 +642,7 @@ function App() {
                 isLoading={!state.completedStages.has('classify')}
                 isAnalyzing={state.isStreaming && !state.scenarioResults?.length}
                 analysisProgress={(state.completedStages.size / 13) * 100}
+                questionType={currentQuestionType}
               />
             </section>
 
@@ -541,6 +673,7 @@ function App() {
                     totalScenarios={state.totalScenarios || 6}
                     completedScenarios={state.scenariosCompleted || 0}
                     isActive={state.parallelExecutionActive || state.currentStage === 'scenario_gen'}
+                    questionType={currentQuestionType}
                   />
                   
                   {/* Cross-Scenario Analysis - shows after scenarios complete */}
@@ -552,7 +685,7 @@ function App() {
                   )}
                   
                   {/* Sensitivity Chart - shows Engine B drivers */}
-                  <SensitivityChart drivers={sensitivityDrivers} />
+                  <SensitivityChart drivers={sensitivityDrivers} questionType={currentQuestionType || verdictData?.questionType} />
                 </div>
               )}
 

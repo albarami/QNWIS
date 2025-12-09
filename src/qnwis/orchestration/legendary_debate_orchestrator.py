@@ -363,6 +363,8 @@ The next round will synthesize these into a ministerial recommendation.
         self.extracted_facts: List[Dict[str, Any]] = []
         self.debate_complexity = "standard"  # Track debate complexity level
         self.agent_turn_counts = defaultdict(int)  # Track turns per agent for balance
+        # PHASE 3: Question type for conditional context injection
+        self.question_type = "COMPARATIVE"  # Default - can be DIAGNOSTIC, FORECAST, HYBRID
         # Topic drift prevention flags
         self._topic_drift_detected = False
         self._topic_drift_reason = ""
@@ -851,9 +853,14 @@ Do NOT continue with methodology discussions. ANSWER THE QUESTION with specifics
             context_parts.append("")
         
         # ==================================================================
-        # FIXED: Add cross-scenario context from Engine B
+        # PHASE 3: CONDITIONAL CONTEXT INJECTION BASED ON QUESTION TYPE
+        # COMPARATIVE: Inject Monte Carlo scenario results (A/B comparison)
+        # DIAGNOSTIC/FORECAST/HYBRID: Inject structured output format (agents derive estimates)
         # ==================================================================
-        if hasattr(self, 'cross_scenario_context') and self.cross_scenario_context:
+        question_type = getattr(self, 'question_type', 'COMPARATIVE')
+        
+        if question_type == "COMPARATIVE" and hasattr(self, 'cross_scenario_context') and self.cross_scenario_context:
+            # COMPARATIVE: Inject pre-computed scenario rates (existing behavior)
             context_parts.append("=" * 60)
             context_parts.append("CROSS-SCENARIO QUANTITATIVE ANALYSIS (6 SCENARIOS)")
             context_parts.append("=" * 60)
@@ -863,26 +870,81 @@ Do NOT continue with methodology discussions. ANSWER THE QUESTION with specifics
             context_parts.append("⚠️ CRITICAL: Reference these computed scenario results in your arguments.")
             context_parts.append("⚠️ DO NOT invent success rates - use the values from the table above.")
             context_parts.append("")
+            logger.info(f"✅ COMPARATIVE question - injected cross-scenario context")
+            
+        elif question_type in ("DIAGNOSTIC", "FORECAST", "HYBRID"):
+            # DIAGNOSTIC/FORECAST: Agents derive their own probability estimates
+            context_parts.append("=" * 60)
+            context_parts.append(f"📊 {question_type} ANALYSIS - DERIVE YOUR OWN PROBABILITY")
+            context_parts.append("=" * 60)
+            context_parts.append("")
+            context_parts.append(f"""QUESTION TYPE: {question_type}
+
+You are analyzing a {question_type.lower()} question. This is NOT an A vs B comparison.
+
+CRITICAL RULES:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✗ Do NOT cite any pre-computed success rates or scenario percentages
+✗ Do NOT reference "scenario analysis shows X%" or "Monte Carlo indicates Y%"
+✗ Do NOT assume this is an Option A vs Option B comparison
+
+✓ DO identify root causes with evidence from the data
+✓ DO derive YOUR OWN probability estimate based on reasoning
+✓ DO express genuine uncertainty (structural problems rarely have >60% success)
+✓ DO calibrate: if you estimate >70%, you must justify exceptional circumstances
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+OUTPUT FORMAT (REQUIRED FOR EXTRACTION):
+Your response MUST include these sections with EXACT headers:
+
+### ROOT CAUSES (ranked)
+1. [Most important cause]: [Evidence from data]
+2. [Second cause]: [Evidence from data]
+3. [Third cause]: [Evidence from data]
+
+### PROBABILITY ESTIMATE
+**Central Estimate:** [X]%
+**Range:** [Lower]% - [Upper]%
+**Confidence:** [High/Medium/Low]
+
+### REASONING
+[Your detailed justification for the probability estimate]
+[What would need to change for a higher/lower estimate?]
+
+CALIBRATION GUIDANCE:
+• Structural economic reforms: typically 30-55% probability of success
+• "Reversal by 2030" for entrenched problems: typically 25-50%
+• If estimating >65%, explain exceptional favorable factors
+• If estimating <25%, explain why situation is particularly difficult
+""")
+            context_parts.append("")
+            logger.warning(f"⚠️ {question_type} question - agents will derive their own probability estimates")
+            logger.warning(f"   NOT injecting cross-scenario rates to prevent fabrication")
         
         # ==================================================================
         # S-TIER: Add case studies for international benchmarking
         # ==================================================================
         if hasattr(self, 'case_studies_context') and self.case_studies_context:
+            logger.info(f"📚 INJECTING case studies into debate context: {len(self.case_studies_context)} chars")
             context_parts.append("=" * 60)
             context_parts.append("📚 COMPARATIVE CASE STUDIES (REAL DATA FROM AUTHORITATIVE SOURCES)")
             context_parts.append("=" * 60)
             context_parts.append("")
             context_parts.append(self.case_studies_context)
             context_parts.append("")
-            context_parts.append("⚠️ Use these case studies to support your arguments with international precedent.")
-            context_parts.append("⚠️ Cite as [Case N] when referencing specific examples.")
+            context_parts.append("🚨 MANDATORY: You MUST cite at least ONE case study in your response!")
+            context_parts.append("🚨 Format: 'As seen in [Case 1: Singapore's AI Hub], ...' or '[Case 2] demonstrates...'")
+            context_parts.append("🚨 Responses without case study citations will be REJECTED.")
             context_parts.append("")
+        else:
+            logger.warning(f"⚠️ NO case_studies_context available: hasattr={hasattr(self, 'case_studies_context')}, len={len(self.case_studies_context) if hasattr(self, 'case_studies_context') else 'N/A'}")
         
         # ==================================================================
         # S-TIER: Add agent analysis reports (research, financial, market, operations)
         # This allows debaters to reference what other analysts found
         # ==================================================================
         if hasattr(self, 'agent_reports_map') and self.agent_reports_map:
+            logger.info(f"🔬 INJECTING {len(self.agent_reports_map)} agent reports into debate context")
             context_parts.append("=" * 60)
             context_parts.append("🔬 ANALYST REPORTS (FROM OTHER AGENTS)")
             context_parts.append("=" * 60)
@@ -890,18 +952,35 @@ Do NOT continue with methodology discussions. ANSWER THE QUESTION with specifics
             context_parts.append("Reference these analyses from your colleagues:")
             context_parts.append("")
             
+            included_count = 0
             for agent_name, report in self.agent_reports_map.items():
                 if report:
                     narrative = getattr(report, 'narrative', '')
+                    logger.info(f"   - {agent_name}: narrative={len(narrative) if narrative else 0} chars")
                     if narrative and len(narrative) > 50:
-                        # Truncate to key insights (first 800 chars)
-                        truncated = narrative[:800] + "..." if len(narrative) > 800 else narrative
+                        # CRITICAL FIX: Allow more content for research-heavy agents
+                        # ResearchSynthesizer and similar agents have valuable academic content
+                        if agent_name.lower() in ['researchsynthesizer', 'research', 'financial', 'market', 'operations']:
+                            # Allow up to 3000 chars for key analysis agents
+                            max_chars = 3000
+                        else:
+                            # Other agents get 800 chars
+                            max_chars = 800
+                        
+                        truncated = narrative[:max_chars] + "..." if len(narrative) > max_chars else narrative
                         context_parts.append(f"### {agent_name.upper()} ANALYSIS:")
                         context_parts.append(truncated)
                         context_parts.append("")
+                        included_count += 1
+                        logger.info(f"      → Included {len(truncated)} chars (max={max_chars})")
             
-            context_parts.append("⚠️ Build on these findings - don't repeat them. Add YOUR perspective.")
+            logger.info(f"   ✅ Included {included_count}/{len(self.agent_reports_map)} agent reports in context")
+            context_parts.append("🚨 MANDATORY: Reference at least ONE analyst finding in your argument!")
+            context_parts.append("🚨 Format: 'The Financial analysis found...' or 'Building on the Research synthesis...'")
+            context_parts.append("🚨 Responses that ignore analyst reports will be REJECTED.")
             context_parts.append("")
+        else:
+            logger.warning(f"⚠️ NO agent_reports_map available: hasattr={hasattr(self, 'agent_reports_map')}, value={self.agent_reports_map if hasattr(self, 'agent_reports_map') else 'N/A'}")
         
         # Add extracted facts if available - STRICT NUMBERED LIST
         if self.extracted_facts:
@@ -950,7 +1029,15 @@ Do NOT continue with methodology discussions. ANSWER THE QUESTION with specifics
             context_parts.append(self._question_locker.get_question_reminder())
             context_parts.append(self._question_locker.get_comparison_requirement())
         
-        return "\n".join(context_parts)
+        # S-TIER DEBUG: Log what's being included in context
+        final_context = "\n".join(context_parts)
+        logger.info(f"📋 _format_query_context BUILT: {len(final_context)} chars")
+        logger.info(f"   - case_studies_context: {len(self.case_studies_context) if hasattr(self, 'case_studies_context') and self.case_studies_context else 0} chars")
+        logger.info(f"   - agent_reports_map: {len(self.agent_reports_map) if hasattr(self, 'agent_reports_map') and self.agent_reports_map else 0} agents")
+        logger.info(f"   - cross_scenario_context: {len(self.cross_scenario_context) if hasattr(self, 'cross_scenario_context') and self.cross_scenario_context else 0} chars")
+        logger.info(f"   - extracted_facts: {len(self.extracted_facts) if self.extracted_facts else 0} facts")
+        
+        return final_context
     
     def _format_calculated_summary(self) -> str:
         """
@@ -1141,7 +1228,8 @@ Do NOT continue with methodology discussions. ANSWER THE QUESTION with specifics
         calculation_warning: Optional[str] = None,  # Data confidence warning
         cross_scenario_context: Optional[str] = None,  # FIXED: Cross-scenario table from Engine B
         scenario_results: Optional[List[Dict[str, Any]]] = None,  # CRITICAL FIX: Actual scenario numbers
-        case_studies_context: Optional[str] = None  # S-TIER: Case studies for agent reference
+        case_studies_context: Optional[str] = None,  # S-TIER: Case studies for agent reference
+        question_type: Optional[str] = None  # PHASE 3: Question type (COMPARATIVE/DIAGNOSTIC/FORECAST/HYBRID)
     ) -> Dict:
         """
         Execute complete 6-phase legendary debate.
@@ -1170,6 +1258,9 @@ Do NOT continue with methodology discussions. ANSWER THE QUESTION with specifics
         self.calculation_warning = calculation_warning
         # FIXED: Store cross-scenario context for agents to reference
         self.cross_scenario_context = cross_scenario_context or ""
+        # PHASE 3: Store question type for conditional context injection
+        self.question_type = question_type or "COMPARATIVE"
+        logger.info(f"📋 Question type for debate: {self.question_type}")
         # CRITICAL FIX (Run 13): Store ACTUAL scenario results with numbers
         # Agents MUST see these numbers to avoid fabricating statistics
         self.scenario_results = scenario_results or []
@@ -3203,44 +3294,38 @@ Do NOT continue methodology debates or data quality discussions."""
     def _flag_low_confidence_recommendations(self, conversation_history: List[Dict]) -> List[Dict]:
         """
         Flag when agents make recommendations despite low confidence.
-        Extracts confidence from agent statements and warns if low.
+        
+        FIXED (Run 21): 
+        - Only use FINAL position per agent (not all turns) to avoid duplicates
+        - Only flag if explicit confidence < 35% (very low), not heuristic-derived
+        - Use agent's stated confidence, not computed from uncertainty phrases
         """
         flags = []
+        
+        # FIX: Track final confidence per agent (not every turn)
+        agent_final_confidence: Dict[str, float] = {}
+        agent_final_turn: Dict[str, int] = {}
         
         for turn in conversation_history:
             agent_name = turn.get("agent", "")
             message = turn.get("message", "").lower()
-            turn_type = turn.get("type", "")
+            turn_num = turn.get("turn", 0)
             
             # Skip non-agent turns
-            if agent_name in ["Moderator", "DataValidator"]:
+            if agent_name in ["Moderator", "DataValidator", ""]:
                 continue
             
-            # Check if this is a recommendation
-            recommendation_keywords = [
-                "recommend", "should", "must", "advise",
-                "suggest", "propose", "target", "proceed",
-                "my recommendation", "i recommend", "we should",
-                "go forward", "move ahead", "implement"
-            ]
-            
-            is_recommendation = any(kw in message for kw in recommendation_keywords)
-            
-            if not is_recommendation:
-                continue
-            
-            # Try to extract confidence from message
-            confidence = None
-            
-            # Look for explicit confidence statements
+            # Look for EXPLICIT confidence statements only
             import re
             confidence_patterns = [
                 r'(\d+)%?\s*confidence',
-                r'confidence\s*(?:of\s*)?(\d+)%?',
+                r'confidence\s*(?:of\s*)?:?\s*(\d+)%?',
                 r'(\d+)%?\s*certain',
-                r'certainty\s*(?:of\s*)?(\d+)%?'
+                r'certainty\s*(?:of\s*)?:?\s*(\d+)%?',
+                r'my confidence[:\s]+(\d+)%?',
             ]
             
+            confidence = None
             for pattern in confidence_patterns:
                 match = re.search(pattern, message)
                 if match:
@@ -3254,45 +3339,30 @@ Do NOT continue methodology debates or data quality discussions."""
                     except (ValueError, IndexError):
                         continue
             
-            # If no explicit confidence, use heuristics
-            if confidence is None:
-                # Check for uncertainty phrases
-                uncertainty_phrases = [
-                    "uncertain", "unclear", "limited data", "insufficient",
-                    "may be", "might be", "possibly", "perhaps",
-                    "tentatively", "cautiously"
-                ]
-                
-                certainty_phrases = [
-                    "clearly", "definitely", "certainly", "confidently",
-                    "strongly", "firmly", "absolutely"
-                ]
-                
-                uncertainty_count = sum(1 for phrase in uncertainty_phrases if phrase in message)
-                certainty_count = sum(1 for phrase in certainty_phrases if phrase in message)
-                
-                if uncertainty_count > 0:
-                    confidence = max(0.3, 0.6 - (uncertainty_count * 0.1))
-                elif certainty_count > 0:
-                    confidence = min(0.9, 0.7 + (certainty_count * 0.1))
-                else:
-                    confidence = 0.7  # Default moderate confidence
-            
-            # Flag if recommendation with low confidence
-            # FIXED: Lowered threshold from 0.6 to 0.4 to reduce warning spam
-            # Only flag truly low confidence (below 40%), not moderate confidence (50%)
-            if confidence < 0.4:
+            # FIX: Only track EXPLICIT confidence, don't derive from heuristics
+            # This prevents false warnings from uncertainty phrases like "may be"
+            if confidence is not None:
+                # Keep updating - last turn wins (final position)
+                agent_final_confidence[agent_name] = confidence
+                agent_final_turn[agent_name] = turn_num
+        
+        # FIX: Only flag agents with EXPLICITLY stated LOW confidence
+        # Threshold: 35% (very low) - agents at 58% should NOT be flagged
+        LOW_CONFIDENCE_THRESHOLD = 0.35
+        
+        for agent_name, confidence in agent_final_confidence.items():
+            if confidence < LOW_CONFIDENCE_THRESHOLD:
                 flag = {
                     "type": "LOW_CONFIDENCE_RECOMMENDATION",
                     "agent": agent_name,
                     "confidence": confidence,
-                    "turn": turn.get("turn", 0),
-                    "message": f"⚠️ {agent_name} made recommendations with only {confidence*100:.0f}% confidence",
+                    "turn": agent_final_turn.get(agent_name, 0),
+                    "message": f"⚠️ {agent_name} stated only {confidence*100:.0f}% confidence",
                     "action": "Request additional data before implementation"
                 }
                 flags.append(flag)
                 logger.warning(
-                    f"⚠️ {agent_name}: {confidence*100:.0f}% confidence recommendation (Turn {turn.get('turn', 0)})"
+                    f"⚠️ {agent_name}: {confidence*100:.0f}% explicit confidence (Turn {agent_final_turn.get(agent_name, 0)})"
                 )
         
         return flags
@@ -3306,10 +3376,18 @@ Do NOT continue methodology debates or data quality discussions."""
         Extract success rate from a scenario result.
         Domain-agnostic: Handles multiple data structures.
         """
+        # FIX RUN 22: Handle None scenario_result and nested None values
+        if scenario_result is None:
+            return 0.0
+            
         # Try different paths where success rate might be stored
-        engine_b = scenario_result.get('engine_b_results', {})
-        monte_carlo = engine_b.get('monte_carlo', scenario_result.get('monte_carlo', {}))
+        engine_b = scenario_result.get('engine_b_results') or {}
+        monte_carlo = engine_b.get('monte_carlo') or scenario_result.get('monte_carlo') or {}
         
+        # FIX: Ensure monte_carlo is a dict before calling .get()
+        if not isinstance(monte_carlo, dict):
+            monte_carlo = {}
+            
         rate = monte_carlo.get('success_rate')
         if rate is not None:
             return float(rate) * 100 if rate <= 1 else float(rate)

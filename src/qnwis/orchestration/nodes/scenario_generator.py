@@ -5,17 +5,21 @@ Generates 4-6 plausible scenarios with different assumptions for parallel testin
 Supports Azure OpenAI and Anthropic based on configuration.
 
 ENHANCED: Stake-prompting for specific scenarios (Columbia/Harvard research finding)
+
+PHASE 2 FIX: Skip A/B scenario generation for DIAGNOSTIC/FORECAST questions.
+These questions don't need fabricated Option A vs Option B scenarios.
 """
 
 import logging
 import json
 import os
 import re
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Literal
 
 from src.qnwis.llm.client import LLMClient
 from src.qnwis.llm.config import get_llm_config
 from .scenario_baseline_requirements import format_baselines_for_prompt
+from .classifier import classify_question_type
 
 logger = logging.getLogger(__name__)
 
@@ -87,6 +91,10 @@ class ScenarioGenerator:
         - Ensures all scenarios have assumptions dict with multipliers
         - Validates exactly 6 scenarios are returned
         
+        PHASE 2 FIX:
+        - For DIAGNOSTIC/FORECAST questions, returns empty scenarios
+        - This prevents fabrication of fake A/B options with unrealistic rates
+        
         Args:
             query: Original ministerial query
             extracted_facts: Facts extracted from data sources
@@ -95,11 +103,39 @@ class ScenarioGenerator:
             
         Returns:
             List of exactly 6 scenario dicts with id, name, description, assumptions
+            For DIAGNOSTIC/FORECAST: Empty list with metadata flags
             
         Raises:
             ValueError: If scenario generation fails or produces invalid JSON
             RuntimeError: If API call fails after retries
         """
+        # ═══════════════════════════════════════════════════════════════════════════
+        # PHASE 2: BYPASS A/B SCENARIO GENERATION FOR DIAGNOSTIC/FORECAST QUESTIONS
+        # These questions don't need fabricated Option A vs Option B scenarios
+        # Agents will derive their own probability estimates instead
+        # ═══════════════════════════════════════════════════════════════════════════
+        
+        question_type = classify_question_type(query)
+        
+        logger.warning(f"[CHECKPOINT 2] ═══════════════════════════════════════════════")
+        logger.warning(f"[CHECKPOINT 2] Question type from classify: {question_type}")
+        logger.warning(f"[CHECKPOINT 2] Query: {query[:100]}...")
+        
+        if question_type in ("DIAGNOSTIC", "FORECAST", "HYBRID"):
+            logger.warning(f"[CHECKPOINT 2] SKIPPING Monte Carlo for {question_type} question")
+            logger.warning(f"[CHECKPOINT 2] Returning EMPTY scenarios list")
+            logger.warning(f"[CHECKPOINT 2] ═══════════════════════════════════════════════")
+            
+            # Return minimal structure - no fabricated scenarios
+            # The workflow will still proceed but without Monte Carlo rates
+            return []
+        
+        logger.warning(f"[CHECKPOINT 2] PROCEEDING with A/B scenario generation (COMPARATIVE)")
+        logger.warning(f"[CHECKPOINT 2] ═══════════════════════════════════════════════")
+        
+        # For COMPARATIVE questions, proceed with normal A/B scenario generation
+        logger.info(f"✅ COMPARATIVE question - proceeding with A/B scenario generation")
+        
         REQUIRED_SCENARIO_COUNT = 6
         response = None
         

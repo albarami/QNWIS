@@ -98,7 +98,15 @@ def _payload_for_stage(stage: str, state: Dict[str, Any]) -> Dict[str, Any]:
     if stage == "classifier":
         return {
             "complexity": state.get("complexity"),
-            "reasoning": state.get("reasoning_chain") or []
+            "reasoning": state.get("reasoning_chain") or [],
+            "question_type": state.get("question_type"),  # For UI routing
+        }
+    if stage == "parallel_research":
+        case_studies = state.get("case_studies_cache") or []
+        return {
+            "case_studies_count": len(case_studies),
+            "fetched_early": state.get("case_studies_fetched_early", False),
+            "message": f"Pre-fetched {len(case_studies)} case studies (parallel optimization)",
         }
     if stage == "extraction":
         return {
@@ -240,7 +248,8 @@ def _payload_for_stage(stage: str, state: Dict[str, Any]) -> Dict[str, Any]:
         scenarios = state.get("scenarios") or []
         return {
             "scenarios": scenarios,
-            "num_scenarios": len(scenarios)
+            "num_scenarios": len(scenarios),
+            "question_type": state.get("question_type"),  # For UI routing
         }
     if stage == "parallel_exec":
         # Sanitize scenario_results to remove non-serializable fields
@@ -604,7 +613,8 @@ async def run_workflow_stream(
             # Parallel path: parallel_exec → aggregate → debate → critique → verify → meta_synthesis → done
             # Single path: agents → debate → critique → verify → synthesize → done
             next_stage_map = {
-                "classifier": "prefetch",
+                "classifier": "parallel_research",  # OPTIMIZED: Fetch case studies early
+                "parallel_research": "prefetch",    # Then extraction/prefetch
                 "extraction": "scenario_gen",  # Handled specially above
                 "scenario_gen": "parallel_exec",
                 "parallel_exec": "aggregate_scenarios",
@@ -623,6 +633,7 @@ async def run_workflow_stream(
             # Map node names to stage names (frontend-compatible)
             stage_map = {
                 "classifier": "classify",
+                "parallel_research": "research_fetch",  # Early case study fetch
                 "extraction": "prefetch",
                 "scenario_gen": "scenario_gen",
                 "parallel_exec": "parallel_exec",

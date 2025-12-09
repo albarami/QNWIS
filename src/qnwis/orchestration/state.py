@@ -60,6 +60,11 @@ class IntelligenceState(TypedDict, total=False):
     query: Annotated[str, keep_first]
     complexity: Annotated[str, take_last]  # Can be updated by classifier
     debate_depth: Annotated[str, keep_first]  # User-selected: standard/deep/legendary (25-40/50-100/100-150 turns)
+    
+    # Question Type Classification (CRITICAL for routing)
+    # COMPARATIVE: A vs B questions - use Monte Carlo scenarios
+    # DIAGNOSTIC/FORECAST/HYBRID: Use agent consensus, skip Monte Carlo
+    question_type: Annotated[str, take_last]
 
     # Feasibility Gate (first-principles reasoning)
     target_infeasible: Annotated[bool, take_last]  # True if target is arithmetically impossible
@@ -105,6 +110,11 @@ class IntelligenceState(TypedDict, total=False):
     meta_synthesis: Annotated[Optional[str], take_last]  # Parallel path synthesis
     confidence_score: Annotated[float, take_last]  # 0.0 to 1.0
     reasoning_chain: Annotated[List[str], merge_lists]
+    
+    # Ground Truth & Verdict (Single Source of Truth)
+    ground_truth: Annotated[Optional[Dict[str, Any]], take_last]  # Authoritative numbers
+    debate_verdict: Annotated[Optional[Dict[str, Any]], take_last]  # Final verdict for Summary Card
+    calibrated_confidence: Annotated[Optional[float], take_last]  # Calibrated confidence value
 
     # Metadata
     metadata: Annotated[Dict[str, Any], take_last]
@@ -119,8 +129,15 @@ class IntelligenceState(TypedDict, total=False):
     # Event Callback (for real-time streaming of sub-events like debate turns)
     emit_event_fn: Annotated[Optional[Callable], keep_first]
 
+    # Parallel Research Cache (fetched early to save time)
+    case_studies_cache: Annotated[Optional[List[Dict[str, Any]]], take_last]  # Pre-fetched case studies
+    case_studies_fetched_early: Annotated[bool, take_last]  # Flag indicating early fetch completed
+    research_cache: Annotated[Optional[Dict[str, Any]], take_last]  # Pre-fetched research data
+    
     # Parallel Scenario Analysis (Multi-GPU)
     enable_parallel_scenarios: Annotated[bool, keep_first]
+    skip_monte_carlo: Annotated[bool, take_last]  # Skip for DIAGNOSTIC/FORECAST questions
+    monte_carlo_valid: Annotated[bool, take_last]  # Whether Monte Carlo results should be trusted
     scenarios: Annotated[Optional[List[Dict[str, Any]]], take_last]
     scenario_results: Annotated[Optional[List[Dict[str, Any]]], take_last]
     scenario_name: Annotated[Optional[str], take_last]

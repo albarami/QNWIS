@@ -12,6 +12,7 @@ interface ScenarioProgressGridProps {
   totalScenarios: number
   completedScenarios: number
   isActive: boolean
+  questionType?: string  // COMPARATIVE, DIAGNOSTIC, FORECAST, HYBRID
 }
 
 const ScenarioCard: React.FC<{ scenario: ScenarioProgress; index: number }> = ({ scenario, index }) => {
@@ -73,7 +74,45 @@ export const ScenarioProgressGrid: React.FC<ScenarioProgressGridProps> = ({
   totalScenarios,
   completedScenarios,
   isActive,
+  questionType,
 }) => {
+  // For DIAGNOSTIC/FORECAST/HYBRID questions, Monte Carlo was skipped
+  const isNonComparative = questionType && ['DIAGNOSTIC', 'FORECAST', 'HYBRID'].includes(questionType)
+  
+  // For non-comparative questions, show a different UI
+  if (isNonComparative) {
+    return (
+      <div className="rounded-2xl border border-slate-700 bg-slate-900/40 p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Agent-Based Analysis</p>
+            <p className="text-sm text-cyan-300">
+              {questionType?.toLowerCase()} question • Agents deriving independent estimates
+            </p>
+          </div>
+          <span className="px-3 py-1 text-xs bg-cyan-500/20 text-cyan-300 rounded-full">
+            No Monte Carlo
+          </span>
+        </div>
+
+        <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4">
+          <div className="flex items-center gap-3 mb-3">
+            <span className="text-2xl">🧠</span>
+            <div>
+              <p className="text-white font-medium">Expert Consensus Mode</p>
+              <p className="text-sm text-slate-400">Agents analyze independently without scenario comparison</p>
+            </div>
+          </div>
+          <div className="text-xs text-slate-500 space-y-1">
+            <p>• Each expert derives their own probability estimate</p>
+            <p>• Estimates are aggregated via weighted consensus</p>
+            <p>• Historical base rates inform individual judgments</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+  
   // Convert Map to array if needed
   const scenarioList: ScenarioProgress[] = scenarios instanceof Map 
     ? Array.from(scenarios.entries()).map(([id, s]) => ({ ...s, name: s.name || id }))

@@ -306,6 +306,8 @@ export interface AppState {
   engineBTrend: 'increasing' | 'decreasing' | 'stable' | null
   engineBConfidence: number | null
   engineBRecommendation: string | null
+  // Question type classification (for UI routing)
+  question_type: 'COMPARATIVE' | 'DIAGNOSTIC' | 'FORECAST' | 'HYBRID' | null
 }
 
 export const ALL_STAGES: WorkflowStage[] = [

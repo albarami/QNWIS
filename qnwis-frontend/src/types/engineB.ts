@@ -100,6 +100,7 @@ export interface VerdictData {
   trend: 'increasing' | 'stable' | 'decreasing'
   topDriver: string | null      // null until Engine B provides, e.g., "Training pipeline (38%)"
   recommendation: string | null // null until Engine B provides
+  questionType?: string         // COMPARATIVE, DIAGNOSTIC, FORECAST, HYBRID
 }
 
 export interface DebateSummary {

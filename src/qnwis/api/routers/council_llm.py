@@ -225,6 +225,33 @@ async def council_stream_llm(
 
     request_id = uuid4().hex
 
+    # HEALTH CHECK: Verify Engine B (Monte Carlo) is running before proceeding
+    # This prevents silent failures where scenarios return 0% (Run 22 catastrophic failure)
+    import httpx
+    engine_b_url = os.getenv("ENGINE_B_URL", "http://localhost:8001")
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            health_resp = await client.get(f"{engine_b_url}/health")
+            if health_resp.status_code != 200:
+                logger.error(f"❌ Engine B health check failed: {health_resp.status_code}")
+                raise HTTPException(
+                    status_code=503,
+                    detail="Engine B (Monte Carlo simulation service) is not responding. Please start it with: python -m uvicorn src.nsic.engine_b.api:app --port 8001"
+                )
+            logger.info("✅ Engine B health check passed")
+    except httpx.ConnectError:
+        logger.error("❌ Engine B is not running on port 8001")
+        raise HTTPException(
+            status_code=503,
+            detail="Engine B (Monte Carlo simulation service) is not running. Start it with: python -m uvicorn src.nsic.engine_b.api:app --port 8001"
+        )
+    except httpx.TimeoutException:
+        logger.error("❌ Engine B health check timed out")
+        raise HTTPException(
+            status_code=503,
+            detail="Engine B (Monte Carlo simulation service) timed out. Check if port 8001 is accessible."
+        )
+
     try:
         # Use provider from request, or fall back to environment variable
         provider = req.provider or os.getenv("QNWIS_LLM_PROVIDER", "anthropic")

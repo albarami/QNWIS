@@ -43,6 +43,7 @@ export function createInitialState(): AppState {
     engineBTrend: null,
     engineBConfidence: null,
     engineBRecommendation: null,
+    question_type: null,
   }
 }
 

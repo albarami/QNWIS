@@ -5,6 +5,7 @@ interface SensitivityChartProps {
   drivers: SensitivityDriver[] | null  // null until Engine B provides data
   title?: string
   showInsight?: boolean
+  questionType?: string  // COMPARATIVE, DIAGNOSTIC, FORECAST, HYBRID
 }
 
 // Single bar in the tornado chart
@@ -56,9 +57,36 @@ export const SensitivityChart: React.FC<SensitivityChartProps> = ({
   drivers,
   title = "What Drives Success?",
   showInsight = true,
+  questionType,
 }) => {
+  // For DIAGNOSTIC/FORECAST/HYBRID questions, Monte Carlo was skipped
+  const isNonComparative = questionType && ['DIAGNOSTIC', 'FORECAST', 'HYBRID'].includes(questionType)
+  
   // Show waiting state until Engine B provides real data - NO FAKE DATA
   if (!drivers || drivers.length === 0) {
+    // For non-comparative questions, show a different message (no Monte Carlo)
+    if (isNonComparative) {
+      return (
+        <div className="rounded-xl bg-slate-900/50 border border-slate-700 p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-2xl">📊</span>
+            <div>
+              <h3 className="font-semibold text-white">{title}</h3>
+              <p className="text-sm text-slate-500">Agent-Based Analysis</p>
+            </div>
+          </div>
+          <div className="flex items-center justify-center py-8">
+            <div className="text-center">
+              <p className="text-slate-400 text-sm">This is a {questionType?.toLowerCase()} question</p>
+              <p className="text-slate-500 text-xs mt-1">Agents are deriving probability estimates independently</p>
+              <p className="text-cyan-400 text-xs mt-2">Monte Carlo scenarios not applicable</p>
+            </div>
+          </div>
+        </div>
+      )
+    }
+    
+    // For COMPARATIVE questions, show the loading spinner
     return (
       <div className="rounded-xl bg-slate-900/50 border border-slate-700 p-6">
         <div className="flex items-center gap-3 mb-4">

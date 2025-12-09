@@ -58,18 +58,24 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
     agent_reports_map = {}
 
     # Extract agent analyses from new workflow state structure
+    logger.info("🔬 Building agent_reports_map for debate context...")
     for agent_name in ["financial", "market", "operations", "research"]:
         analysis_key = f"{agent_name}_analysis"
-        if analysis_key in state and state[analysis_key]:
+        analysis_value = state.get(analysis_key)
+        if analysis_value:
+            narrative = str(analysis_value)
+            logger.info(f"   ✅ {agent_name}: {len(narrative)} chars from state['{analysis_key}']")
             # Create mock AgentReport-like object for orchestrator
             agent_reports_map[agent_name] = type('AgentReport', (object,), {
-                'narrative': str(state[analysis_key]),
+                'narrative': narrative,
                 'agent': agent_name,
                 'findings': [],
                 'confidence': 0.7,
                 'warnings': [],
                 'metadata': {}
             })()
+        else:
+            logger.warning(f"   ❌ {agent_name}: NOT FOUND in state['{analysis_key}']")
     
     # S-TIER FIX: Also extract from agent_reports list (contains ALL scenario analyses)
     # This ensures debaters can see research agent output from ALL scenarios
@@ -688,29 +694,58 @@ Reference these computed values in your arguments.
         
         # CRITICAL FIX (Run 13): Pass ACTUAL scenario results to debate
         # Without this, agents fabricate scenario percentages
-        scenario_results = state.get("scenario_results", [])
+        # FIX: Use `or []` to handle None explicitly (state.get returns None if key exists with None value)
+        scenario_results = state.get("scenario_results") or []
         if scenario_results:
             logger.info(f"📊 Passing {len(scenario_results)} scenario results to debate for citation validation")
         else:
-            logger.warning("⚠️ No scenario_results available - agents may fabricate statistics")
+            # For DIAGNOSTIC/FORECAST questions, this is expected and NOT a problem
+            question_type = state.get("question_type", "COMPARATIVE")
+            if question_type in ("DIAGNOSTIC", "FORECAST", "HYBRID"):
+                logger.info(f"ℹ️ No scenario_results for {question_type} question - agents will derive estimates")
+            else:
+                logger.warning("⚠️ No scenario_results available - agents may fabricate statistics")
         
-        # S-TIER FIX (Run 20): Fetch case studies BEFORE debate so agents can reference them
-        # Previously, case studies were only fetched in synthesis (too late for debate)
+        # OPTIMIZATION: Use pre-fetched case studies from parallel_research_node
+        # This saves ~60-90 seconds vs fetching at debate start
         case_studies_context = ""
         try:
             from ..case_studies import extract_case_studies, format_case_studies_for_synthesis
             query = state.get("query", "")
-            logger.info("📚 Fetching case studies for debate context...")
-            case_studies = await extract_case_studies(query, max_cases=4)
+            
+            # Check if case studies were already fetched early (parallel optimization)
+            cached_case_studies = state.get("case_studies_cache")
+            if cached_case_studies and state.get("case_studies_fetched_early"):
+                logger.info("📚 Using PRE-FETCHED case studies (parallel optimization - saved ~60-90s)")
+                case_studies = cached_case_studies
+            else:
+                # Fallback: fetch now if not cached (shouldn't happen in normal flow)
+                logger.info("📚 Fetching case studies for debate context (not pre-cached)...")
+                case_studies = await extract_case_studies(query, max_cases=4)
+                state["case_studies_cache"] = case_studies
+            
             if case_studies:
                 case_studies_context = format_case_studies_for_synthesis(case_studies)
-                logger.info(f"  ✅ Fetched {len(case_studies)} case studies for debate")
-                # Store in state for synthesis to reuse (avoid duplicate API calls)
-                state["case_studies_cache"] = case_studies
+                logger.info(f"  ✅ {len(case_studies)} case studies ready for debate")
             else:
-                logger.warning("  ⚠️ No case studies found for debate context")
+                logger.warning("  ⚠️ No case studies available for debate context")
         except Exception as e:
-            logger.warning(f"  ⚠️ Case study fetch failed: {e}")
+            logger.warning(f"  ⚠️ Case study processing failed: {e}")
+        
+        # Log what we're passing to the debate
+        # PHASE 3: Get question_type from state (set by classifier)
+        question_type = state.get("question_type", "COMPARATIVE")
+        
+        logger.info(f"🚀 PASSING TO DEBATE:")
+        logger.info(f"   - question_type: {question_type}")  # PHASE 3: Log question type
+        logger.info(f"   - agent_reports_map: {len(agent_reports_map)} agents")
+        for name, report in agent_reports_map.items():
+            narr_len = len(getattr(report, 'narrative', '')) if report else 0
+            logger.info(f"      → {name}: {narr_len} chars")
+        logger.info(f"   - case_studies_context: {len(case_studies_context)} chars")
+        logger.info(f"   - cross_scenario_context: {len(cross_scenario_context)} chars")
+        logger.info(f"   - extracted_facts: {len(state.get('extracted_facts') or [])} facts")
+        logger.info(f"   - scenario_results: {len(scenario_results)} scenarios (empty for DIAGNOSTIC/FORECAST)")
         
         debate_results = await orchestrator.conduct_legendary_debate(
             question=state.get("query", ""),
@@ -722,7 +757,8 @@ Reference these computed values in your arguments.
             debate_depth=debate_depth,  # Pass user-selected depth
             cross_scenario_context=cross_scenario_context,  # FIXED: Pass cross-scenario data
             scenario_results=scenario_results,  # CRITICAL: Pass actual scenario numbers
-            case_studies_context=case_studies_context  # S-TIER: Pass case studies to debate
+            case_studies_context=case_studies_context,  # S-TIER: Pass case studies to debate
+            question_type=question_type  # PHASE 3: Pass question type for conditional context
         )
         logger.info(f"✅ Legendary debate SUCCEEDED: {debate_results['total_turns']} turns")
 

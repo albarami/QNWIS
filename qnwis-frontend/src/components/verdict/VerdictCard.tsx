@@ -12,6 +12,7 @@ interface VerdictCardProps {
   isLoading?: boolean
   isAnalyzing?: boolean
   analysisProgress?: number
+  questionType?: string  // COMPARATIVE, DIAGNOSTIC, FORECAST, HYBRID
 }
 
 // Robustness dots component
@@ -94,32 +95,39 @@ const VerdictSkeleton: React.FC = () => (
   </div>
 )
 
-// Analyzing state
-const AnalyzingState: React.FC<{ progress: number }> = ({ progress }) => (
-  <div className="text-center py-8">
-    <div className="inline-flex items-center gap-3 mb-4">
-      <span className="text-4xl animate-bounce">🔮</span>
-      <span className="text-xl font-semibold text-white">Analyzing Your Question</span>
-    </div>
-    <div className="max-w-md mx-auto">
-      <div className="h-3 bg-slate-700 rounded-full overflow-hidden">
-        <div
-          className="h-full bg-gradient-to-r from-cyan-500 to-purple-500 rounded-full transition-all duration-500"
-          style={{ width: `${progress}%` }}
-        />
+// Analyzing state - adapts message based on question type
+const AnalyzingState: React.FC<{ progress: number; questionType?: string }> = ({ progress, questionType }) => {
+  const isNonComparative = questionType && ['DIAGNOSTIC', 'FORECAST', 'HYBRID'].includes(questionType)
+  
+  return (
+    <div className="text-center py-8">
+      <div className="inline-flex items-center gap-3 mb-4">
+        <span className="text-4xl animate-bounce">{isNonComparative ? '🧠' : '🔮'}</span>
+        <span className="text-xl font-semibold text-white">Analyzing Your Question</span>
       </div>
-      <p className="text-sm text-slate-400 mt-2">
-        Running Monte Carlo simulations across 6 scenarios...
-      </p>
+      <div className="max-w-md mx-auto">
+        <div className="h-3 bg-slate-700 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-cyan-500 to-purple-500 rounded-full transition-all duration-500"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+        <p className="text-sm text-slate-400 mt-2">
+          {isNonComparative 
+            ? 'Expert agents deriving independent probability estimates...'
+            : 'Running Monte Carlo simulations across 6 scenarios...'}
+        </p>
+      </div>
     </div>
-  </div>
-)
+  )
+}
 
 export const VerdictCard: React.FC<VerdictCardProps> = ({
   verdict,
   isLoading = false,
   isAnalyzing = false,
   analysisProgress = 0,
+  questionType,
 }) => {
   if (isLoading) {
     return (
@@ -132,7 +140,7 @@ export const VerdictCard: React.FC<VerdictCardProps> = ({
   if (isAnalyzing || !verdict) {
     return (
       <div className="rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700 p-8">
-        <AnalyzingState progress={analysisProgress} />
+        <AnalyzingState progress={analysisProgress} questionType={questionType} />
       </div>
     )
   }

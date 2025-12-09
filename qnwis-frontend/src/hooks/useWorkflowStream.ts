@@ -120,6 +120,11 @@ function reduceEvent(state: AppState, event: WorkflowEvent): AppState {
   if (event.stage === 'classify') {
     const payload = event.payload as any
     next.classification = payload
+    // Extract question_type from classify event
+    if (payload?.question_type) {
+      next.question_type = payload.question_type
+      console.log('📋 Question type from classify:', payload.question_type)
+    }
     if (event.status === 'complete') {
       next.completedStages.add('classify')
       if (event.latency_ms) {
@@ -250,6 +255,11 @@ function reduceEvent(state: AppState, event: WorkflowEvent): AppState {
   if (event.stage === 'scenario_gen') {
     const payload = event.payload as any
     next.scenarios = payload?.scenarios ?? []
+    // Extract question_type from scenario_gen event (set by classifier)
+    if (payload?.question_type) {
+      next.question_type = payload.question_type
+      console.log('📋 Question type:', payload.question_type)
+    }
     console.log('📋 SCENARIO_GEN received:', next.scenarios.length, 'scenarios', payload)
     
     if (next.scenarios.length > 0) {

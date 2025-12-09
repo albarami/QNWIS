@@ -338,6 +338,9 @@ class ScenarioAwareSynthesis:
         - Works for any number of options (1, 2, 3+, or open-ended)
         - Simply finds best and worst scenarios
         - Does not assume specific option names or keywords
+        
+        FIX RUN 38: Validates Monte Carlo output for realism.
+        Rates >85% or <15% uniformly indicate model miscalibration.
         """
         if not scenarios:
             return {
@@ -345,7 +348,9 @@ class ScenarioAwareSynthesis:
                 'best_rate': 50.0,
                 'worst_option': 'Unknown',
                 'worst_rate': 50.0,
-                'gap': 0.0
+                'gap': 0.0,
+                'model_reliable': False,
+                'reliability_reason': 'No scenarios provided'
             }
         
         # Process all scenarios (filter out stress tests for primary analysis)
@@ -371,7 +376,9 @@ class ScenarioAwareSynthesis:
                 'best_rate': 50.0,
                 'worst_option': 'Unknown',
                 'worst_rate': 50.0,
-                'gap': 0.0
+                'gap': 0.0,
+                'model_reliable': False,
+                'reliability_reason': 'No valid scenarios for analysis'
             }
         
         # Find best and worst
@@ -380,10 +387,63 @@ class ScenarioAwareSynthesis:
         worst = sorted_scenarios[-1]
         gap = best['rate'] - worst['rate']
         
+        # ═══════════════════════════════════════════════════════════════════════════
+        # FIX RUN 38: VALIDATE MONTE CARLO OUTPUT FOR REALISM
+        # Unrealistic rates indicate model miscalibration - DO NOT TRUST
+        # ═══════════════════════════════════════════════════════════════════════════
+        
+        model_reliable = True
+        reliability_reason = 'Monte Carlo output appears realistic'
+        
+        # Check 1: All rates too high (>85%) - suggests overfitting or bad assumptions
+        rates = [s['rate'] for s in analysis_set]
+        if all(r > 85 for r in rates):
+            model_reliable = False
+            reliability_reason = f'ALL rates >85% ({min(rates):.1f}%-{max(rates):.1f}%): Model miscalibrated'
+            logger.error(f"❌ MONTE CARLO UNRELIABLE: {reliability_reason}")
+            # Use conservative defaults instead
+            best['rate'] = 55.0
+            worst['rate'] = 45.0
+            gap = 10.0
+            logger.warning(f"   Using conservative defaults: 55% / 45% (gap 10pp)")
+        
+        # Check 2: All rates too low (<20%) - suggests overly pessimistic model
+        elif all(r < 20 for r in rates):
+            model_reliable = False
+            reliability_reason = f'ALL rates <20% ({min(rates):.1f}%-{max(rates):.1f}%): Model overly pessimistic'
+            logger.error(f"❌ MONTE CARLO UNRELIABLE: {reliability_reason}")
+            best['rate'] = 45.0
+            worst['rate'] = 35.0
+            gap = 10.0
+            logger.warning(f"   Using conservative defaults: 45% / 35% (gap 10pp)")
+        
+        # Check 3: All rates nearly identical (<5pp spread) - model not differentiating
+        elif gap < 5.0 and len(analysis_set) >= 4:
+            # Small gap with many scenarios suggests model isn't capturing variance
+            if all(r > 80 for r in rates):
+                model_reliable = False
+                reliability_reason = f'Insufficient differentiation ({gap:.1f}pp) at high rates: Model not capturing risk'
+                logger.error(f"❌ MONTE CARLO UNRELIABLE: {reliability_reason}")
+                best['rate'] = 60.0
+                worst['rate'] = 50.0
+                gap = 10.0
+                logger.warning(f"   Using conservative defaults: 60% / 50% (gap 10pp)")
+        
+        # Check 4: Extreme rates (>95% or <5%) are always suspect
+        if best['rate'] > 95:
+            logger.warning(f"⚠️ EXTREME RATE: {best['rate']:.1f}% capped to 85%")
+            best['rate'] = 85.0
+            gap = best['rate'] - worst['rate']
+        if worst['rate'] < 5:
+            logger.warning(f"⚠️ EXTREME RATE: {worst['rate']:.1f}% raised to 15%")
+            worst['rate'] = 15.0
+            gap = best['rate'] - worst['rate']
+        
         logger.info(f"📊 SCENARIO GROUND TRUTH (question-type agnostic):")
         logger.info(f"   Best: {best['name'][:40]} at {best['rate']:.1f}%")
         logger.info(f"   Worst: {worst['name'][:40]} at {worst['rate']:.1f}%")
         logger.info(f"   Gap: {gap:.1f}pp")
+        logger.info(f"   Model reliable: {model_reliable}")
         logger.info(f"   Total scenarios analyzed: {len(analysis_set)}")
         
         return {
@@ -392,7 +452,9 @@ class ScenarioAwareSynthesis:
             'worst_option': worst['name'],
             'worst_rate': worst['rate'],
             'gap': gap,
-            'all_scenarios': sorted_scenarios
+            'all_scenarios': sorted_scenarios,
+            'model_reliable': model_reliable,
+            'reliability_reason': reliability_reason
         }
     
     def _find_best_scenario(self, scenarios: List[Dict[str, Any]]) -> Dict[str, Any]:
