@@ -496,11 +496,15 @@ async def feasibility_gate_node(state: IntelligenceState) -> IntelligenceState:
     Check if query target is arithmetically feasible using EXTRACTED DATA.
     
     This runs AFTER extraction so it uses real LMIS data, not hardcoded assumptions.
+    
+    FIX RUN 58: For FORECAST/DIAGNOSTIC/HYBRID questions, SKIP probability estimation.
+    Only check for ARITHMETIC impossibility. Let the debate determine probability.
     """
     logger.info("🔢 FEASIBILITY GATE: Starting with EXTRACTED data...")
     
     query = state.get("query", "")
     extracted_facts = state.get("extracted_facts", [])
+    question_type = state.get("question_type", "COMPARATIVE")  # FIX RUN 58: Get question type
     
     # Handle None case - TypedDict setdefault may return None
     reasoning_chain = state.get("reasoning_chain") or []
@@ -513,6 +517,7 @@ async def feasibility_gate_node(state: IntelligenceState) -> IntelligenceState:
     
     logger.info(f"🔢 FEASIBILITY GATE: Checking with {len(extracted_facts)} extracted facts")
     logger.info(f"🔢 Query: {query[:100]}...")
+    logger.info(f"🔢 Question type: {question_type}")
     
     # Emit SSE event
     emit_fn = state.get("emit_event_fn")
@@ -520,21 +525,57 @@ async def feasibility_gate_node(state: IntelligenceState) -> IntelligenceState:
         await emit_fn("feasibility_check", "running", {"query": query, "facts_count": len(extracted_facts)})
     
     try:
-        # First, do a quick data-driven feasibility check
+        # First, do a quick data-driven feasibility check (arithmetic only)
         data_feasibility = await check_feasibility_with_data(query, extracted_facts)
         state["feasibility_analysis"] = data_feasibility
         
-        # Format extracted data for the LLM prompt
-        extracted_data_section = format_extracted_data_for_prompt(extracted_facts)
-        
-        llm = get_llm_client()
-        
-        # Build prompt with REAL extracted data
-        prompt_with_data = FEASIBILITY_GATE_PROMPT.format(
-            extracted_data_section=extracted_data_section
-        )
-        
-        prompt = f"""
+        # FIX RUN 58: For FORECAST/DIAGNOSTIC/HYBRID questions, SKIP LLM probability estimation
+        # Only check arithmetic impossibility (population constraints, etc.)
+        # The debate will determine the probability
+        if question_type in ("FORECAST", "DIAGNOSTIC", "HYBRID"):
+            logger.info(f"📋 FIX RUN 58: {question_type} question - skipping LLM probability estimation")
+            logger.info(f"   Debate will determine probability. Only checking arithmetic constraints.")
+            
+            # Use data-driven check ONLY (no LLM speculation about probability)
+            ratio = data_feasibility.get("feasibility_ratio", 1.0)
+            constraints = data_feasibility.get("constraints", [])
+            
+            if ratio < 0.2 and constraints:
+                # TRUE arithmetic impossibility - e.g., need 1M workers but only 50K exist
+                verdict = "INFEASIBLE"
+                explanation = constraints[0].get("message", "Arithmetic constraints not met")
+                state["target_infeasible"] = True
+                state["infeasibility_reason"] = explanation
+            elif ratio < 0.6 and constraints:
+                # Arithmetic constraints exist but may be achievable
+                verdict = "AMBITIOUS"
+                explanation = f"Target faces structural constraints. Expert debate will assess probability."
+            else:
+                # No arithmetic impossibility detected
+                verdict = "FEASIBLE"
+                explanation = "No arithmetic impossibility detected. Expert debate will assess probability."
+            
+            feasibility = {
+                "verdict": verdict,
+                "explanation": explanation,
+                "data_driven_ratio": ratio,
+                "data_used": data_feasibility.get("data_used", {}),
+                "question_type": question_type,
+                "note": "Probability estimate deferred to expert debate for this question type"
+            }
+        else:
+            # COMPARATIVE questions: Run full LLM feasibility check
+            # Format extracted data for the LLM prompt
+            extracted_data_section = format_extracted_data_for_prompt(extracted_facts)
+            
+            llm = get_llm_client()
+            
+            # Build prompt with REAL extracted data
+            prompt_with_data = FEASIBILITY_GATE_PROMPT.format(
+                extracted_data_section=extracted_data_section
+            )
+            
+            prompt = f"""
 {prompt_with_data}
 
 {CONSTRAINT_PATTERNS}
@@ -547,28 +588,28 @@ If the data shows specific numbers, use those numbers in your arithmetic check.
 
 Analyze the feasibility of this query. Output ONLY valid JSON.
 """
-        
-        response = await llm.generate(
-            prompt=prompt,
-            temperature=0.1,  # Low temperature for arithmetic precision
-            max_tokens=2000
-        )
-        
-        # Parse JSON response
-        feasibility = _parse_feasibility_response(response)
-        
-        # Merge with data-driven check
-        if data_feasibility.get("feasibility_ratio", 1.0) < 0.5:
-            # Data check found issues - ensure LLM verdict reflects this
-            feasibility["data_driven_ratio"] = data_feasibility["feasibility_ratio"]
-            feasibility["data_used"] = data_feasibility.get("data_used", {})
             
-            if data_feasibility["feasibility_ratio"] < 0.2 and feasibility.get("verdict") != "INFEASIBLE":
-                logger.warning("Data check shows infeasible but LLM disagreed - using data verdict")
-                feasibility["verdict"] = "INFEASIBLE"
-                feasibility["explanation"] = (
-                    f"Data analysis: {data_feasibility.get('constraints', [{}])[0].get('message', 'Insufficient capacity')}"
-                )
+            response = await llm.generate(
+                prompt=prompt,
+                temperature=0.1,  # Low temperature for arithmetic precision
+                max_tokens=2000
+            )
+            
+            # Parse JSON response
+            feasibility = _parse_feasibility_response(response)
+            
+            # Merge with data-driven check
+            if data_feasibility.get("feasibility_ratio", 1.0) < 0.5:
+                # Data check found issues - ensure LLM verdict reflects this
+                feasibility["data_driven_ratio"] = data_feasibility["feasibility_ratio"]
+                feasibility["data_used"] = data_feasibility.get("data_used", {})
+                
+                if data_feasibility["feasibility_ratio"] < 0.2 and feasibility.get("verdict") != "INFEASIBLE":
+                    logger.warning("Data check shows infeasible but LLM disagreed - using data verdict")
+                    feasibility["verdict"] = "INFEASIBLE"
+                    feasibility["explanation"] = (
+                        f"Data analysis: {data_feasibility.get('constraints', [{}])[0].get('message', 'Insufficient capacity')}"
+                    )
         
         # Store in state
         state["feasibility_check"] = feasibility

@@ -1,6 +1,6 @@
 # Readiness Gate Review (RG-1)
 
-- Generated: 2025-12-10T03:56:04.005189
+- Generated: 2025-12-10T04:05:24.256569
 - Overall outcome: FAIL
 - Evidence index: `src/qnwis/docs/audit/ARTIFACT_INDEX.json`
 - Badge: `src/qnwis/docs/audit/badges/rg1_pass.svg`
