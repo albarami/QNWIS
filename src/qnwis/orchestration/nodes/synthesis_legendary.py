@@ -3315,11 +3315,19 @@ CRITICAL INSTRUCTIONS:
         if ' - ' in worst_opt:
             display_loser = worst_opt.split(' - ')[-1]
         
-        # 5. Determine Verdict Action (Statistical Logic - Domain Agnostic)
-        verdict_action = "APPROVE"
-        if calibrated_conf < 40: verdict_action = "HOLD" 
-        elif gap < 5 and calibrated_conf < 60: verdict_action = "PIVOT"  # Tied & Low Confidence
-        elif gap >= 5: verdict_action = "ACCELERATE"  # Clear Winner
+        # 5. FIX RUN 58: Use CENTRALIZED verdict determination for consistency
+        # This ensures Brief badge and Summary Card show the SAME verdict
+        verdict_result = determine_verdict(calibrated_conf / 100.0, 'COMPARATIVE')
+        verdict_action = verdict_result['short_verdict']  # GO, CONDITIONAL GO, RECONSIDER, NO GO
+        
+        # Map to display-friendly names for Brief
+        verdict_display_map = {
+            'GO': 'APPROVE',
+            'CONDITIONAL GO': 'CONDITIONAL',
+            'RECONSIDER': 'RECONSIDER',
+            'NO GO': 'REJECT'
+        }
+        verdict_action = verdict_display_map.get(verdict_action, verdict_action)
         
         # 6. Robustly Get Budget (Regex matches any currency/amount in query)
         import re

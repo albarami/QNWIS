@@ -111,14 +111,26 @@ const FormatContent: React.FC<{ content: string; sectionId: string }> = ({ conte
     // Verdict highlight
     if (trimmed.startsWith('**VERDICT:')) {
       const verdictWord = trimmed.match(/VERDICT:\s*([A-Z]+)/)?.[1] || ''
+      // FIX RUN 58: Unified verdict colors matching centralized determine_verdict()
       const verdictColors: Record<string, string> = {
+        // New unified verdicts
         'APPROVE': 'from-green-500 to-emerald-600',
+        'CONDITIONAL': 'from-amber-500 to-yellow-600',
+        'RECONSIDER': 'from-orange-500 to-amber-600',
+        'REJECT': 'from-red-500 to-red-700',
+        // FORECAST/DIAGNOSTIC verdicts (from ground_truth.determine_verdict)
+        'LIKELY': 'from-green-500 to-emerald-600',       // LIKELY ACHIEVABLE
+        'UNCERTAIN': 'from-amber-500 to-yellow-600',     // UNCERTAIN - EXECUTION DEPENDENT
+        'CHALLENGING': 'from-orange-500 to-amber-600',   // CHALLENGING - REFORMS NEEDED
+        'UNLIKELY': 'from-red-500 to-red-700',           // UNLIKELY WITHOUT MAJOR CHANGES
+        // Legacy verdicts (for backwards compatibility)
         'ACCELERATE': 'from-green-500 to-emerald-600',
         'INCREASE': 'from-green-500 to-emerald-600',
         'HOLD': 'from-amber-500 to-yellow-600',
         'PIVOT': 'from-amber-500 to-orange-600',
         'DECREASE': 'from-orange-500 to-red-600',
-        'REJECT': 'from-red-500 to-red-700',
+        'GO': 'from-green-500 to-emerald-600',
+        'NO': 'from-red-500 to-red-700',
       }
       const gradientClass = verdictColors[verdictWord] || 'from-cyan-500 to-blue-600'
       
