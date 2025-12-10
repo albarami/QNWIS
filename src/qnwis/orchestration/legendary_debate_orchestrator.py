@@ -2063,9 +2063,12 @@ Be DIRECT. No meta-analysis."""
                             
                             agent = agents_map[agent_name]
                             if hasattr(agent, 'state_final_position'):
+                                # FIX RUN 57: Pass question_type to agent method
                                 final = await agent.state_final_position(
                                     debate_history=self.conversation_history,
-                                    confidence_level=True
+                                    confidence_level=True,
+                                    question_type=getattr(self, 'question_type', 'COMPARATIVE'),
+                                    original_question=self.question
                                 )
                             else:
                                 final = "Refocused on core policy question."
@@ -2366,10 +2369,43 @@ Return as JSON array of 5 scenarios."""
         """
         Phase 3: Explore edge cases.
         OPTIMIZED - Only relevant agents analyze each scenario.
+        FIX RUN 57: Now handles FORECAST/DIAGNOSTIC/HYBRID questions differently.
         """
         # FIXED: Use standard phase name for diagnostic detection
         self.current_phase = "edge_case"
-        await self._emit_phase("edge_case", "Exploring edge case scenarios")
+        
+        # FIX RUN 57: Add moderator intervention for non-COMPARATIVE questions
+        question_type = getattr(self, 'question_type', 'COMPARATIVE')
+        if question_type in ("FORECAST", "DIAGNOSTIC", "HYBRID"):
+            await self._emit_phase("edge_case", "Stress-testing probability estimate")
+            
+            await self._emit_turn(
+                "Moderator",
+                "edge_case_instruction",
+                f"""
+═══════════════════════════════════════════════════════════════════════════════
+⚠️ EDGE CASE ANALYSIS ({question_type} QUESTION)
+═══════════════════════════════════════════════════════════════════════════════
+
+REMINDER: This is a {question_type} question. There is NO Option A vs Option B.
+You are stress-testing the SINGLE probability estimate.
+
+For each edge case scenario:
+1. How would it affect your probability estimate?
+2. Would probability go UP or DOWN? By how much?
+3. What early warning signs should trigger reassessment?
+
+🚫 FORBIDDEN:
+- Do NOT create Option A/Option B/Option C frameworks
+- Do NOT say "Option A would be affected by..." or "Option B risk..."
+- Do NOT recommend choosing between non-existent options
+
+Analyze the edge cases NOW.
+═══════════════════════════════════════════════════════════════════════════════
+"""
+            )
+        else:
+            await self._emit_phase("edge_case", "Exploring edge case scenarios")
         
         for edge_case in edge_cases:
             if not self._can_emit_turn():
@@ -2407,9 +2443,12 @@ Return as JSON array of 5 scenarios."""
                 agent = agents_map[agent_name]
                 
                 if hasattr(agent, 'analyze_edge_case'):
+                    # FIX RUN 57: Pass question_type to agent method
                     analysis = await agent.analyze_edge_case(
                         edge_case,
-                        self.conversation_history
+                        self.conversation_history,
+                        question_type=getattr(self, 'question_type', 'COMPARATIVE'),
+                        original_question=self.question
                     )
                 else:
                     # Deterministic agent - provide data-driven perspective
@@ -2493,10 +2532,50 @@ Return as JSON array of 5 scenarios."""
         OPTIMIZED - Only 2 agents assess each risk (not all 4).
         
         CRITICAL FIX: Risks must be about the SPECIFIC QUESTION, not generic GCC risks.
+        FIX RUN 57: Now handles FORECAST/DIAGNOSTIC/HYBRID questions differently.
         """
         # FIXED: Use standard phase name for diagnostic detection
         self.current_phase = "risk"
-        await self._emit_phase("risk", "Identifying risks for specific options")
+        
+        # FIX RUN 57: Emit appropriate phase message based on question_type
+        question_type = getattr(self, 'question_type', 'COMPARATIVE')
+        if question_type in ("FORECAST", "DIAGNOSTIC", "HYBRID"):
+            await self._emit_phase("risk", "Identifying risks to probability estimate")
+            
+            # FIX RUN 57: Add moderator intervention to reinforce NO OPTIONS
+            await self._emit_turn(
+                "Moderator",
+                "risk_phase_instruction",
+                f"""
+═══════════════════════════════════════════════════════════════════════════════
+⚠️ RISK ANALYSIS INSTRUCTIONS ({question_type} QUESTION)
+═══════════════════════════════════════════════════════════════════════════════
+
+REMINDER: This is a {question_type} question. There is NO Option A vs Option B.
+You are analyzing risks to the SINGLE probability estimate you provided.
+
+Your risk analysis must:
+1. Identify risks that could LOWER the probability of success
+2. Identify factors that could RAISE the probability of success  
+3. Assess likelihood and impact of each risk
+4. Suggest contingencies and early warning indicators
+
+🚫 FORBIDDEN:
+- Do NOT create Option A/Option B/Option C frameworks
+- Do NOT say "If we choose Option A..." or "Option B risk is..."
+- Do NOT frame risks as "comparing alternatives"
+
+✅ CORRECT FORMAT:
+- "The primary risk to achieving this outcome is..."
+- "This could lower the probability from X% to Y%..."
+- "Early warning indicators include..."
+
+Analyze the risks NOW.
+═══════════════════════════════════════════════════════════════════════════════
+"""
+            )
+        else:
+            await self._emit_phase("risk", "Identifying risks for specific options")
         
         risks_identified = []
         
@@ -2507,7 +2586,23 @@ Return as JSON array of 5 scenarios."""
         # Build question-specific context for risk analysis
         # CRITICAL: Apply content filter to avoid Azure "jailbreak" false positives
         safe_question = self._rephrase_for_content_filter(self.question[:500])
-        query_context = f"""
+        
+        # FIX RUN 57: Different context based on question_type
+        if question_type in ("FORECAST", "DIAGNOSTIC", "HYBRID"):
+            query_context = f"""
+QUESTION (SINGLE OUTCOME - NOT A vs B):
+{safe_question}
+
+This is a {question_type} question. You are analyzing risks to a SINGLE probability estimate.
+Do NOT create Option A/B/C frameworks. Analyze risks to the ONE outcome being assessed.
+
+Focus on:
+1. What could prevent success?
+2. What assumptions might be wrong?
+3. What external factors could change the probability?
+"""
+        else:
+            query_context = f"""
 The decision being analyzed:
 {safe_question}
 
@@ -2522,11 +2617,12 @@ identifying implementation challenges and resource requirements.
                 break
             
             try:
-                # Pass question context to risk analysis
+                # FIX RUN 57: Pass question_type to agent method
                 risk_response = await agent.identify_catastrophic_risks(
                     conversation_history=self.conversation_history,
                     mode="question_specific",
-                    query_context=query_context
+                    query_context=query_context,
+                    question_type=getattr(self, 'question_type', 'COMPARATIVE')
                 )
                 
                 await self._emit_turn(
@@ -2711,11 +2807,13 @@ What are 2-3 practical considerations to keep in mind?"""
                     context += f"\n\n{validation.get('correction_prompt', '')}"
                     logger.warning(f"🔄 RETRY {retries}/{MAX_RETRIES} for {agent_name} - previous: {validation.get('error_type', 'unknown')}")
                 
-                # Get agent's final position
+                # FIX RUN 57: Pass question_type to agent method
                 final_pos = await agent.state_final_position(
                     debate_history=self.conversation_history,
                     confidence_level=True,
-                    scenario_context=context
+                    scenario_context=context,
+                    question_type=getattr(self, 'question_type', 'COMPARATIVE'),
+                    original_question=self.question
                 )
                 
                 # Validate against actual scenario numbers

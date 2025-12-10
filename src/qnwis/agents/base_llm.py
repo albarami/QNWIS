@@ -733,11 +733,43 @@ Your contribution (WITH DATA CITATIONS, focused on the minister's decision):"""
     async def analyze_edge_case(
         self, 
         scenario: Dict,
-        conversation_history: List[Dict]
+        conversation_history: List[Dict],
+        question_type: str = "COMPARATIVE",  # FIX RUN 57: Added question_type parameter
+        original_question: str = ""  # FIX RUN 57: Added original_question for context
     ) -> str:
-        """Analyze edge case scenario from domain perspective."""
+        """Analyze edge case scenario from domain perspective.
         
-        prompt = f"""You are {self.agent_name}.
+        FIX RUN 57: Now handles FORECAST/DIAGNOSTIC/HYBRID questions differently.
+        For non-COMPARATIVE questions, does NOT ask about option recommendations.
+        """
+        
+        # FIX RUN 57: Use different prompt based on question_type
+        if question_type in ("FORECAST", "DIAGNOSTIC", "HYBRID"):
+            # NON-COMPARATIVE: Single outcome analysis - assess impact on probability
+            prompt = f"""You are {self.agent_name}.
+
+Question being analyzed: {original_question[:300] if original_question else 'Policy analysis'}
+
+Edge Case Scenario:
+- Description: {scenario.get('description', 'Unknown')}
+- Severity: {scenario.get('severity', 'Unknown')}
+- Probability of edge case occurring: {scenario.get('probability_pct', 'Unknown')}%
+
+This is a {question_type} question (NOT Option A vs B).
+
+Analyze how this edge case would affect the SINGLE probability of success:
+1. How would this scenario impact the probability estimate you provided earlier?
+2. Would your probability estimate increase or decrease? By how much?
+3. What contingency measures could mitigate this risk?
+4. What early warning indicators should trigger a reassessment?
+
+IMPORTANT: Do NOT introduce Option A/Option B/Option C frameworks.
+This is about ONE outcome probability, not comparing alternatives.
+
+Be specific with numbers and probability adjustments."""
+        else:
+            # COMPARATIVE: Original prompt (may reference option recommendations)
+            prompt = f"""You are {self.agent_name}.
 
 Edge Case Scenario:
 - Description: {scenario.get('description', 'Unknown')}
@@ -758,13 +790,17 @@ Be specific with numbers and timelines."""
         self,
         conversation_history: List[Dict],
         mode: str = "pessimistic",
-        query_context: str = ""
+        query_context: str = "",
+        question_type: str = "COMPARATIVE"  # FIX RUN 57: Added question_type parameter
     ) -> str:
         """
         Identify risks specific to the decision being debated.
         
         Note: Prompts use soft language to avoid Azure content filter false positives.
         Avoids: "CRITICAL INSTRUCTION", "DO NOT", "Focus ONLY", uppercase blocks.
+        
+        FIX RUN 57: Now handles FORECAST/DIAGNOSTIC/HYBRID questions differently.
+        For non-COMPARATIVE questions, does NOT ask about Option A/B evaluation.
         """
         
         debate_summary = self._summarize_recent_debate(conversation_history)
@@ -783,9 +819,33 @@ Be specific with numbers and timelines."""
         # Use query_context if provided, otherwise use extracted query
         context_to_use = query_context if query_context else original_query
         
-        # CONTENT FILTER SAFE: Uses soft, conversational language
-        # Avoids uppercase commands, "DO NOT", "CRITICAL", etc.
-        prompt = f"""You are {self.agent_name}, a policy analyst providing strategic risk assessment.
+        # FIX RUN 57: Use different prompt based on question_type
+        if question_type in ("FORECAST", "DIAGNOSTIC", "HYBRID"):
+            # NON-COMPARATIVE: Single outcome analysis - NO Option A/B framing
+            prompt = f"""You are {self.agent_name}, a policy analyst providing strategic risk assessment.
+
+Question being analyzed:
+{context_to_use}
+
+Previous discussion summary:
+{debate_summary}
+
+This is a {question_type} question analyzing a SINGLE OUTCOME (not A vs B comparison).
+
+Assess the risks to achieving the stated goal:
+1. What could prevent success? (Top 3 barriers with likelihood estimates)
+2. What assumptions are we making that might be wrong?
+3. What external factors could change the probability of success?
+4. What is a realistic downside scenario if things go wrong?
+
+IMPORTANT: This is NOT an Option A vs Option B question. 
+Analyze the SINGLE probability of success/failure, not multiple options.
+Do NOT create Option A/Option B/Option C frameworks.
+
+Provide your risk assessment with specific probabilities and timelines."""
+        else:
+            # COMPARATIVE: Original prompt with option evaluation
+            prompt = f"""You are {self.agent_name}, a policy analyst providing strategic risk assessment.
 
 The decision being analyzed:
 {context_to_use}
@@ -838,9 +898,15 @@ Please provide an objective and balanced assessment."""
         self,
         debate_history: List[Dict],
         confidence_level: bool = True,
-        scenario_context: str = ""
+        scenario_context: str = "",
+        question_type: str = "COMPARATIVE",  # FIX RUN 57: Added question_type parameter
+        original_question: str = ""  # FIX RUN 57: Added original_question for context
     ) -> str:
-        """State final position after debate - MUST be decisive and scenario-grounded."""
+        """State final position after debate - MUST be decisive and scenario-grounded.
+        
+        FIX RUN 57: Now handles FORECAST/DIAGNOSTIC/HYBRID questions differently.
+        For non-COMPARATIVE questions, produces SINGLE probability estimate.
+        """
         history_text = self._format_history(debate_history[-10:])
         
         # S-TIER FIX: Use rich persona name if available (e.g., "Dr. Ahmed" not "MicroEconomist")
@@ -853,7 +919,56 @@ Please provide an objective and balanced assessment."""
             if name_match:
                 agent_identity = name_match.group(1)
         
-        prompt = f"""You are {agent_identity}.
+        # FIX RUN 57: Use different prompt based on question_type
+        if question_type in ("FORECAST", "DIAGNOSTIC", "HYBRID"):
+            # NON-COMPARATIVE: Single probability estimate
+            prompt = f"""You are {agent_identity}.
+
+The debate is concluding. The minister needs a CLEAR assessment.
+
+Question: {original_question[:400] if original_question else 'Policy analysis'}
+
+Recent conversation:
+{history_text}
+
+{scenario_context}
+
+## YOUR FINAL ASSESSMENT (SINGLE PROBABILITY)
+
+This is a {question_type} question. There is NO Option A vs Option B.
+You are providing ONE probability estimate for the stated outcome.
+
+State your FINAL position:
+
+### PROBABILITY ESTIMATE
+**Central Estimate:** [X]%
+**Range:** [Lower]% - [Upper]%
+**Confidence in your estimate:** [High/Medium/Low]
+
+### KEY REASONING
+- What are the 2-3 most important factors driving your estimate?
+- What would need to change for your estimate to be significantly higher?
+- What would need to change for your estimate to be significantly lower?
+
+### RISKS TO ACHIEVING THE OUTCOME
+1. [Top risk] - [Likelihood and impact]
+2. [Second risk] - [Likelihood and impact]
+3. [Third risk] - [Likelihood and impact]
+
+### WHERE YOU DISAGREE with other agents
+- "I disagree with [Agent]'s estimate of X% because..."
+- Name specific agents and explain the disagreement
+
+⚠️ CRITICAL:
+- Do NOT introduce Option A/Option B/Option C frameworks
+- Do NOT recommend "choosing between options" - there are no options
+- Provide ONE probability estimate, not a comparison
+- Be calibrated: structural reforms rarely succeed >60%, express genuine uncertainty
+
+✅ BE DECISIVE: State your single best estimate with a clear range."""
+        else:
+            # COMPARATIVE: Original prompt with Option A/B comparison
+            prompt = f"""You are {agent_identity}.
 
 The debate is concluding. The minister needs a CLEAR recommendation.
 
