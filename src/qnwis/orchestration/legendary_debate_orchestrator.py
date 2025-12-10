@@ -880,42 +880,44 @@ Do NOT continue with methodology discussions. ANSWER THE QUESTION with specifics
             context_parts.append("")
             context_parts.append(f"""QUESTION TYPE: {question_type}
 
-You are analyzing a {question_type.lower()} question. This is NOT an A vs B comparison.
+You are analyzing a {question_type.lower()} question. This is a SINGLE-OUTCOME forecast.
+There is NO Option A vs Option B. You are estimating ONE probability.
 
-CRITICAL RULES:
+🚫 FORBIDDEN FORMAT (IMMEDIATE DISQUALIFICATION):
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✗ Do NOT cite any pre-computed success rates or scenario percentages
-✗ Do NOT reference "scenario analysis shows X%" or "Monte Carlo indicates Y%"
-✗ Do NOT assume this is an Option A vs Option B comparison
+✗ "Option A (strategy X) — 41% success rate, Option B (strategy Y) — 54%"
+✗ "Scenario A vs Scenario B comparison"
+✗ "Monte Carlo analysis shows X% vs Y%"
+✗ Any A/B or dual-option framing
 
-✓ DO identify root causes with evidence from the data
-✓ DO derive YOUR OWN probability estimate based on reasoning
-✓ DO express genuine uncertainty (structural problems rarely have >60% success)
-✓ DO calibrate: if you estimate >70%, you must justify exceptional circumstances
+If you use Option A/B format for a {question_type} question, your response will be REJECTED.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-OUTPUT FORMAT (REQUIRED FOR EXTRACTION):
-Your response MUST include these sections with EXACT headers:
-
-### ROOT CAUSES (ranked)
-1. [Most important cause]: [Evidence from data]
-2. [Second cause]: [Evidence from data]
-3. [Third cause]: [Evidence from data]
+✅ REQUIRED FORMAT - SINGLE PROBABILITY ESTIMATE:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ### PROBABILITY ESTIMATE
 **Central Estimate:** [X]%
 **Range:** [Lower]% - [Upper]%
 **Confidence:** [High/Medium/Low]
 
+### KEY FACTORS (ranked by impact)
+1. [Most important factor]: [Evidence]
+2. [Second factor]: [Evidence]
+3. [Third factor]: [Evidence]
+
 ### REASONING
-[Your detailed justification for the probability estimate]
-[What would need to change for a higher/lower estimate?]
+[Your detailed justification for the SINGLE probability estimate]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 CALIBRATION GUIDANCE:
-• Structural economic reforms: typically 30-55% probability of success
+• Structural economic reforms: typically 30-55% probability
 • "Reversal by 2030" for entrenched problems: typically 25-50%
 • If estimating >65%, explain exceptional favorable factors
 • If estimating <25%, explain why situation is particularly difficult
+
+REMEMBER: ONE probability. NOT Option A vs Option B.
 """)
             context_parts.append("")
             logger.warning(f"⚠️ {question_type} question - agents will derive their own probability estimates")
@@ -1562,11 +1564,21 @@ CALIBRATION GUIDANCE:
             # AGGRESSIVE: Agents are ASSIGNED to advocate for specific positions
             # This creates REAL debate, not polite agreement
             
+            # FIX RUN 56: Check question_type FIRST - FORECAST/DIAGNOSTIC/HYBRID should NEVER use Option A/B framing
+            question_type = getattr(self, 'question_type', 'COMPARATIVE')
+            
             # Detect if this is a comparative question (Option A vs Option B)
             query_lower = self.question.lower()
             has_options = any(word in query_lower for word in ["or", "versus", "vs", "either", "between"])
             
-            if has_options:
+            # FIX RUN 56: Only use Option A/B framing for COMPARATIVE questions with actual options
+            # FORECAST/DIAGNOSTIC/HYBRID questions should NEVER have Option A/B framing
+            use_option_ab_framing = (question_type == "COMPARATIVE" and has_options)
+            
+            if question_type in ("FORECAST", "DIAGNOSTIC", "HYBRID"):
+                logger.info(f"📋 FIX RUN 56: {question_type} question - using single-estimate personalities (no Option A/B)")
+            
+            if use_option_ab_framing:
                 # COMPARATIVE QUESTION: Lock agents to specific positions
                 agent_personalities = {
                     "MicroEconomist": {

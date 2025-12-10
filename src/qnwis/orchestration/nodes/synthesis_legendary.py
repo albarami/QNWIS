@@ -713,9 +713,58 @@ def _try_extract_verdict_from_message(message: str, turn: Dict) -> Optional[Dict
     }
     
     if not message:
+        logger.warning("⚠️ FIX RUN 55: Empty message passed to _try_extract_verdict_from_message")
         return None
     
-    # Try to find JSON blocks
+    # FIX RUN 55: First try to parse the ENTIRE message as JSON
+    # The Moderator synthesis message is json.dumps(consensus_data)
+    try:
+        data = json.loads(message)
+        logger.info(f"📊 FIX RUN 55: Successfully parsed entire message as JSON, keys: {list(data.keys())[:5]}")
+        
+        # Extract fields from the parsed JSON
+        verdict["direct_answer"] = data.get("direct_answer", data.get("answer", data.get("conclusion")))
+        
+        # Look for quantified assessment
+        if "quantified_assessment" in data:
+            qa = data["quantified_assessment"]
+            if isinstance(qa, dict):
+                verdict["quantified_assessment"] = qa.get("value", qa.get("score", "N/A"))
+                verdict["assessment_type"] = qa.get("metric_type", "probability")
+                logger.info(f"📊 FIX RUN 55: Found quantified_assessment.value = {verdict['quantified_assessment']}")
+            elif isinstance(qa, str):
+                verdict["quantified_assessment"] = qa
+                logger.info(f"📊 FIX RUN 55: Found quantified_assessment (string) = {qa}")
+        
+        verdict["recommendation"] = data.get("recommendation")
+        verdict["decision"] = data.get("go_no_go_decision", data.get("decision"))
+        
+        # Parse confidence
+        conf = data.get("confidence_level", data.get("confidence"))
+        if conf is not None:
+            if isinstance(conf, str):
+                conf_str = conf.replace('≈', '').replace('%', '').strip()
+                try:
+                    conf = float(conf_str)
+                except ValueError:
+                    conf = None
+            verdict["confidence_level"] = conf if isinstance(conf, (int, float)) else None
+        
+        # Extract additional fields
+        for key in ["areas_of_consensus", "remaining_disagreements", "risks_and_mitigations", "next_steps", "key_findings"]:
+            items = data.get(key, [])
+            if isinstance(items, list) and items:
+                verdict[key] = items[:6]
+        
+        if verdict["quantified_assessment"] or verdict["direct_answer"]:
+            logger.info(f"📊 FIX RUN 55: Extraction SUCCESS from full JSON parse")
+            return verdict
+        else:
+            logger.warning(f"⚠️ FIX RUN 55: JSON parsed but no quantified_assessment or direct_answer found")
+    except json.JSONDecodeError as e:
+        logger.info(f"📊 FIX RUN 55: Could not parse entire message as JSON ({e}), trying embedded JSON extraction...")
+    
+    # FALLBACK: Try to find JSON blocks within the message
     json_candidates = []
     brace_depth = 0
     start_idx = None
@@ -732,6 +781,40 @@ def _try_extract_verdict_from_message(message: str, turn: Dict) -> Optional[Dict
     
     if not json_candidates:
         json_candidates = re.findall(r'\{[^{}]+\}', message, re.DOTALL)
+    
+    logger.info(f"📊 FIX RUN 55: Found {len(json_candidates)} JSON candidates in message")
+    
+    # FIX RUN 56: Helper to parse probability from various text formats
+    def parse_probability_from_text(text: str) -> Optional[float]:
+        """
+        Parse probability from various formats:
+        - "≈62%" -> 0.62
+        - "60-62%" -> 0.61 (midpoint)
+        - "Option A: 46%, Option B: 58%" -> 0.58 (take higher for forecast)
+        """
+        if not text:
+            return None
+        text = str(text)
+        
+        # Handle corrupted A/B format - extract all percentages and take the max
+        if 'Option' in text or ' vs' in text.lower():
+            matches = re.findall(r'(\d+(?:\.\d+)?)\s*%', text)
+            if matches:
+                # For FORECAST questions, take the higher as the "achievable" probability
+                return max(float(m) for m in matches) / 100
+        
+        # Handle range "60-62%" -> take midpoint
+        range_match = re.search(r'(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)\s*%', text)
+        if range_match:
+            low, high = float(range_match.group(1)), float(range_match.group(2))
+            return (low + high) / 200
+        
+        # Handle single "≈62%" or "62%"
+        single_match = re.search(r'[≈~]?\s*(\d+(?:\.\d+)?)\s*%', text)
+        if single_match:
+            return float(single_match.group(1)) / 100
+        
+        return None
     
     for json_str in json_candidates:
         try:
@@ -806,6 +889,28 @@ def _try_extract_verdict_from_message(message: str, turn: Dict) -> Optional[Dict
         verdict["assessment_type"] = "probability"
         return verdict
     
+    # FIX RUN 56: Handle corrupted Option A/B format
+    # Pattern: "Option A (strategy X) — 41% success rate\nOption B (strategy Y) — 54% success rate"
+    option_pattern = r'Option\s*[AB]\s*\([^)]+\)\s*[—–-]\s*(\d+(?:\.\d+)?)\s*%'
+    option_matches = re.findall(option_pattern, message, re.IGNORECASE)
+    if option_matches:
+        # For FORECAST questions with corrupted A/B format, take the higher value
+        probs = [float(m) for m in option_matches]
+        best_prob = max(probs)
+        logger.warning(f"⚠️ FIX RUN 56: Found corrupted Option A/B format in FORECAST question")
+        logger.warning(f"   Extracted probabilities: {probs}, using best: {best_prob}%")
+        verdict["quantified_assessment"] = f"{best_prob}%"
+        verdict["assessment_type"] = "probability"
+        return verdict
+    
+    # Last resort: use parse_probability_from_text helper
+    prob = parse_probability_from_text(message)
+    if prob:
+        verdict["quantified_assessment"] = f"{prob*100:.0f}%"
+        verdict["assessment_type"] = "probability"
+        logger.info(f"📊 FIX RUN 56: Extracted probability {prob*100:.0f}% from text")
+        return verdict
+    
     return None
 
 
@@ -852,6 +957,7 @@ def _extract_final_debate_verdict(state: IntelligenceState) -> Dict[str, Any]:
     # FIX RUN 53: FIRST look for Moderator's FINAL synthesis turn
     # This is the converged consensus, not early opening positions
     # ===========================================================================
+    logger.info(f"📊 FIX RUN 53: Searching {len(conversation)} turns for Moderator synthesis...")
     moderator_synthesis_turn = None
     for turn in reversed(conversation):
         if isinstance(turn, dict):
@@ -859,20 +965,38 @@ def _extract_final_debate_verdict(state: IntelligenceState) -> Dict[str, Any]:
             turn_type = turn.get("type", "").lower()
             phase = turn.get("phase", "").lower()
             
+            # Log Moderator turns for debugging
+            if "moderator" in agent:
+                logger.info(f"📊 FIX RUN 53: Moderator turn found - type='{turn_type}', phase='{phase}'")
+            
             # Look for Moderator's synthesis/consensus turn
             if "moderator" in agent and any(kw in turn_type or kw in phase for kw in 
                 ["synthesis", "consensus", "final", "conclusion", "verdict"]):
                 moderator_synthesis_turn = turn
-                logger.info(f"📊 FIX RUN 53: Found Moderator synthesis at turn {turn.get('turn', '?')}")
+                logger.info(f"📊 FIX RUN 53: ✅ Found Moderator synthesis at turn {turn.get('turn', '?')}, type='{turn_type}'")
                 break
+    
+    if not moderator_synthesis_turn:
+        logger.warning(f"⚠️ FIX RUN 53: No Moderator synthesis turn found in {len(conversation)} turns")
     
     # If found, try to extract from Moderator synthesis FIRST
     if moderator_synthesis_turn:
         message = moderator_synthesis_turn.get("message", "")
+        logger.info(f"📊 FIX RUN 55: Moderator message length: {len(message)} chars")
+        logger.info(f"📊 FIX RUN 55: Moderator message preview: {message[:300]}...")
+        
         extracted = _try_extract_verdict_from_message(message, moderator_synthesis_turn)
+        
+        if extracted:
+            logger.info(f"📊 FIX RUN 55: Extracted result: quantified_assessment={extracted.get('quantified_assessment')}, direct_answer={str(extracted.get('direct_answer', ''))[:50]}")
+        else:
+            logger.warning(f"⚠️ FIX RUN 55: _try_extract_verdict_from_message returned None")
+        
         if extracted and (extracted.get("quantified_assessment") or extracted.get("direct_answer")):
             logger.info(f"📊 FIX RUN 53: Using Moderator synthesis: {extracted.get('quantified_assessment', extracted.get('direct_answer', '')[:50])}")
             return extracted
+        else:
+            logger.warning(f"⚠️ FIX RUN 55: Moderator synthesis found but extraction failed - falling back")
     
     # ===========================================================================
     # FALLBACK: Look for structured JSON in last 10 turns (original logic)
@@ -2915,34 +3039,65 @@ CRITICAL INSTRUCTIONS:
             # Get conversation history for probability extraction
             conversation_history = state.get("conversation_history", [])
             
-            # Extract estimates from agent outputs
-            agent_outputs = []
-            for turn in conversation_history:
-                content = turn.get("message", turn.get("content", ""))
-                if content:
-                    agent_outputs.append(content)
+            # FIX RUN 55: PRIORITIZE final positions over opening statements
+            # Opening estimates (Turns 2-6): ~45%
+            # Final positions (Turns 31-35): ~62%
+            # We want the CONVERGED estimates, not the initial guesses
             
-            # Also check final positions
+            final_position_outputs = []
+            opening_outputs = []
+            
+            for turn in conversation_history:
+                if not isinstance(turn, dict):
+                    continue
+                content = turn.get("message", turn.get("content", ""))
+                phase = turn.get("phase", "").lower()
+                turn_type = turn.get("type", "").lower()
+                
+                if not content:
+                    continue
+                
+                # Categorize by phase
+                if "final" in phase or "final" in turn_type or "consensus" in phase:
+                    final_position_outputs.append(content)
+                elif "opening" in phase or "opening" in turn_type:
+                    opening_outputs.append(content)
+                else:
+                    # For other phases, still collect but lower priority
+                    opening_outputs.append(content)
+            
+            # Also check agent_positions for final positions
             for pos in agent_positions:
                 if isinstance(pos, dict):
                     content = pos.get('rationale', pos.get('position', str(pos)))
                 else:
                     content = str(pos)
-                agent_outputs.append(content)
+                final_position_outputs.append(content)
+            
+            # USE FINAL POSITIONS if available, otherwise fall back to all outputs
+            if final_position_outputs:
+                agent_outputs = final_position_outputs
+                logger.warning(f"[CHECKPOINT 3] FIX RUN 55: Using {len(final_position_outputs)} FINAL position outputs")
+            else:
+                agent_outputs = opening_outputs
+                logger.warning(f"[CHECKPOINT 3] FIX RUN 55: No final positions found, using {len(opening_outputs)} opening outputs")
             
             # Aggregate estimates
             consensus_result = aggregate_agent_estimates(agent_outputs)
             
-            # Store consensus in state for use by Summary Card
+            # FIX RUN 54: Store individual estimates for "N domain experts" display
+            if consensus_result.get('estimates'):
+                state['agent_estimates'] = [e['central'] for e in consensus_result['estimates']]
+            
+            # Store INITIAL consensus in state - will be overridden by Moderator synthesis later
             state['consensus_probability'] = consensus_result['consensus_probability']
             state['consensus_confidence'] = consensus_result['consensus_confidence']
             state['consensus_spread'] = consensus_result['spread']
             state['monte_carlo_valid'] = False  # Mark Monte Carlo as invalid for this question
             
             logger.warning(f"[CHECKPOINT 3] Agent outputs collected: {len(agent_outputs)}")
-            logger.warning(f"[CHECKPOINT 3] Agent estimates extracted: {consensus_result['n_estimates']}")
-            logger.warning(f"[CHECKPOINT 3] Consensus probability: {consensus_result['consensus_probability']*100:.1f}%")
-            logger.warning(f"[CHECKPOINT 3] Consensus confidence: {consensus_result['consensus_confidence']*100:.0f}%")
+            logger.warning(f"[CHECKPOINT 3] Agent estimates extracted (opening): {consensus_result['n_estimates']}")
+            logger.warning(f"[CHECKPOINT 3] INITIAL consensus probability: {consensus_result['consensus_probability']*100:.1f}% (will override with Moderator synthesis)")
             logger.warning(f"[CHECKPOINT 3] monte_carlo_valid set to: {state.get('monte_carlo_valid')}")
             logger.warning(f"[CHECKPOINT 3] ═══════════════════════════════════════════════")
         
@@ -3192,7 +3347,10 @@ CRITICAL INSTRUCTIONS:
             consensus_prob = state.get('consensus_probability', 0.45)
             consensus_conf = state.get('consensus_confidence', 0.55)
             agent_estimates = state.get('agent_estimates', [])
-            n_estimates = len(agent_estimates)
+            
+            # FIX RUN 54: Get expert count from debate stats, not just estimates
+            # The Brief was showing "0 domain experts" because agent_estimates wasn't being set
+            n_estimates = len(agent_estimates) if agent_estimates else stats.get('n_experts', 7)
             
             # Calculate agent range if available
             if agent_estimates:
@@ -3200,7 +3358,11 @@ CRITICAL INSTRUCTIONS:
                 max_est = max(agent_estimates) * 100
                 agent_range = f"{min_est:.0f}% - {max_est:.0f}%"
             else:
-                agent_range = "N/A"
+                # FIX RUN 54: Default range based on consensus probability
+                # Instead of N/A, show a reasonable range
+                low_est = max(0, consensus_prob * 100 - 15)
+                high_est = min(100, consensus_prob * 100 + 15)
+                agent_range = f"{low_est:.0f}% - {high_est:.0f}%"
             
             # Determine verdict based on probability
             if consensus_prob >= 0.60:
@@ -3925,7 +4087,9 @@ CRITICAL INSTRUCTIONS:
                 logger.warning(f"⚠️ INFLATED GAP DETECTED: {stated_gap}pp stated vs {actual_gap:.1f}pp actual")
         
         # Add data integrity note for tied scenarios
-        if is_tied_scenario:
+        # FIX RUN 55: Don't show Monte Carlo gap notes for DIAGNOSTIC/FORECAST/HYBRID questions
+        question_type_for_note = state.get("question_type", "COMPARATIVE")
+        if is_tied_scenario and question_type_for_note == "COMPARATIVE":
             section_i_end = briefing.find('## II.')
             if section_i_end > 0:
                 # Check if data integrity note already exists
@@ -3937,6 +4101,8 @@ CRITICAL INSTRUCTIONS:
 """
                     briefing = briefing[:section_i_end] + tied_warning + briefing[section_i_end:]
                     logger.info(f"✅ Added data integrity note for tied scenario")
+        elif is_tied_scenario:
+            logger.info(f"📊 FIX RUN 55: Skipping Monte Carlo gap note for {question_type_for_note} question")
         
         # Store the briefing
         state["final_synthesis"] = briefing

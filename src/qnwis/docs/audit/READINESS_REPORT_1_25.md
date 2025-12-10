@@ -1,8 +1,8 @@
 # Readiness Report: Steps 1-33
 
-**Generated:** 2025-12-06T03:30:58.470201
+**Generated:** 2025-12-09T17:59:55.872634
 **Overall Status:** FAIL
-**Execution Time:** 600 ms
+**Execution Time:** 621 ms
 
 ## Summary
 
@@ -360,7 +360,7 @@
 - `docs/IMPLEMENTATION_ROADMAP.md`
 
 ### no_placeholders [FAIL]
-- **Duration:** 578 ms
+- **Duration:** 598 ms
 - **Severity:** ERROR
 ```json
 {
@@ -580,19 +580,19 @@
     },
     {
       "file": "src/qnwis/orchestration/nodes/scenario_generator.py",
-      "line": 532,
+      "line": 568,
       "pattern": "^\\s*pass\\s*$",
       "snippet": "pass"
     },
     {
       "file": "src/qnwis/orchestration/nodes/scenario_generator.py",
-      "line": 546,
+      "line": 582,
       "pattern": "^\\s*pass\\s*$",
       "snippet": "pass"
     },
     {
       "file": "src/qnwis/orchestration/nodes/scenario_generator.py",
-      "line": 558,
+      "line": 594,
       "pattern": "^\\s*pass\\s*$",
       "snippet": "pass"
     },
@@ -604,7 +604,7 @@
     },
     {
       "file": "src/qnwis/orchestration/nodes/synthesis_legendary.py",
-      "line": 2529,
+      "line": 4135,
       "pattern": "^\\s*pass\\s*$",
       "snippet": "pass"
     },
