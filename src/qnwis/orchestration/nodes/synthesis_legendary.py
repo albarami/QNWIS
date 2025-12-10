@@ -36,7 +36,8 @@ from ..ground_truth import (
     validate_no_fabrication,
     format_ground_truth_for_prompt,
     GroundTruth,
-    QuestionType
+    QuestionType,
+    determine_verdict  # FIX RUN 57: Centralized verdict determination
 )
 from ..diagnostic_pipeline import (
     should_use_diagnostic_pipeline,
@@ -3364,13 +3365,10 @@ CRITICAL INSTRUCTIONS:
                 high_est = min(100, consensus_prob * 100 + 15)
                 agent_range = f"{low_est:.0f}% - {high_est:.0f}%"
             
-            # Determine verdict based on probability
-            if consensus_prob >= 0.60:
-                verdict_action = "PROCEED_WITH_MONITORING"
-            elif consensus_prob >= 0.40:
-                verdict_action = "PROCEED_WITH_CAUTION"
-            else:
-                verdict_action = "RECONSIDER_APPROACH"
+            # FIX RUN 57: Use centralized verdict determination for consistency
+            verdict_result = determine_verdict(consensus_prob, question_type_for_summary)
+            verdict_action = verdict_result['verdict']
+            verdict_recommendation = verdict_result['recommendation']
             
             programmatic_head = f"""## I. STRATEGIC VERDICT
 
@@ -3390,7 +3388,7 @@ CRITICAL INSTRUCTIONS:
 **BOTTOM LINE FOR DECISION-MAKERS:**
 • **Assessment:** {consensus_prob*100:.0f}% probability of achieving stated objectives
 • **Confidence:** {"Moderate" if consensus_conf < 0.65 else "High"} - based on expert agreement
-• **Recommendation:** {"Proceed with monitoring and contingency planning" if consensus_prob >= 0.50 else "Consider alternative approaches or timeline adjustments"}
+• **Recommendation:** {verdict_recommendation}
 """
             logger.info(f"📊 Using DIAGNOSTIC programmatic summary: {consensus_prob*100:.0f}% (not Monte Carlo)")
         
@@ -3712,24 +3710,18 @@ CRITICAL INSTRUCTIONS:
             # Very clear gap - can use scenario rate directly
             derived_confidence = ground_truth_rate
         
-        # FIX 3: Determine verdict based on derived confidence (not inflated)
-        if derived_confidence >= 60:
-            aligned_verdict = 'PROCEED_WITH_CAUTION' if is_tied else 'APPROVE'
-            aligned_decision = 'CONDITIONAL GO' if is_tied else 'GO'
-        elif derived_confidence >= 50:
-            aligned_verdict = 'PROCEED_WITH_CAUTION'
-            aligned_decision = 'CONDITIONAL GO'
-        elif derived_confidence >= 40:
-            aligned_verdict = 'RECONSIDER'
-            aligned_decision = 'RECONSIDER'
-        else:
-            aligned_verdict = 'REJECT'
-            aligned_decision = 'NO GO'
+        # FIX RUN 57: Use centralized verdict determination for consistency
+        question_type_for_verdict = state.get('question_type', 'COMPARATIVE')
+        verdict_result = determine_verdict(derived_confidence / 100.0, question_type_for_verdict)
+        aligned_verdict = verdict_result['verdict']
+        aligned_decision = verdict_result['short_verdict']
         
         # For tied scenarios, always use CONDITIONAL GO (not clear winner)
         if is_tied and aligned_decision == 'GO':
             aligned_decision = 'CONDITIONAL GO'
-            aligned_verdict = 'PROCEED_WITH_CAUTION'
+            # Get marginal verdict for tied scenarios
+            verdict_result = determine_verdict(0.45, question_type_for_verdict)  # Use threshold for tied
+            aligned_verdict = verdict_result['verdict']
         
         logger.info(f"📊 SUMMARY-BRIEF ALIGNMENT (Run 15 fix):")
         logger.info(f"   Ground truth rate: {ground_truth_rate:.1f}%")

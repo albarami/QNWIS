@@ -67,6 +67,9 @@ class GroundTruth:
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
+        # Get consistent verdict
+        verdict = determine_verdict(self.probability, self.question_type.value)
+        
         return {
             'probability': self.probability,
             'probability_percent': round(self.probability * 100, 1),
@@ -85,7 +88,99 @@ class GroundTruth:
             'recommendation': self.recommendation,
             'decision': self.decision,
             'is_close_call': self.is_close_call,
+            # FIX RUN 57: Consistent verdict from centralized function
+            'verdict': verdict['verdict'],
+            'verdict_color': verdict['color'],
+            'verdict_recommendation': verdict['recommendation'],
         }
+
+
+@dataclass
+class VerdictResult:
+    """Consistent verdict determination result."""
+    verdict: str           # e.g., "LIKELY ACHIEVABLE", "UNCERTAIN - EXECUTION DEPENDENT"
+    color: str             # green, yellow, orange, red
+    recommendation: str    # Action recommendation
+    short_verdict: str     # GO, CONDITIONAL GO, RECONSIDER, NO GO
+
+
+def determine_verdict(probability: float, question_type: str) -> Dict[str, str]:
+    """
+    CENTRALIZED verdict determination - SINGLE SOURCE OF TRUTH.
+    
+    FIX RUN 57: This function ensures consistent verdicts across all outputs.
+    Both Summary Card and Brief MUST use this function.
+    
+    Args:
+        probability: Success probability (0.0 to 1.0)
+        question_type: COMPARATIVE, DIAGNOSTIC, FORECAST, or HYBRID
+        
+    Returns:
+        Dict with verdict, color, recommendation, and short_verdict
+    """
+    question_type_upper = question_type.upper() if isinstance(question_type, str) else "COMPARATIVE"
+    
+    if question_type_upper in ('FORECAST', 'DIAGNOSTIC', 'HYBRID'):
+        # FORECAST/DIAGNOSTIC: Use probability-based verdicts
+        # These are SINGLE OUTCOME questions (not A vs B)
+        if probability >= 0.60:
+            return {
+                'verdict': 'LIKELY ACHIEVABLE',
+                'color': 'green',
+                'recommendation': 'Proceed with current approach and standard monitoring',
+                'short_verdict': 'GO'
+            }
+        elif probability >= 0.45:
+            return {
+                'verdict': 'UNCERTAIN - EXECUTION DEPENDENT',
+                'color': 'yellow',
+                'recommendation': 'Proceed with enhanced monitoring and contingency plans',
+                'short_verdict': 'CONDITIONAL GO'
+            }
+        elif probability >= 0.30:
+            return {
+                'verdict': 'CHALLENGING - REFORMS NEEDED',
+                'color': 'orange',
+                'recommendation': 'Consider timeline adjustments or accelerated reform measures',
+                'short_verdict': 'RECONSIDER'
+            }
+        else:
+            return {
+                'verdict': 'UNLIKELY WITHOUT MAJOR CHANGES',
+                'color': 'red',
+                'recommendation': 'Fundamental reassessment of approach required',
+                'short_verdict': 'NO GO'
+            }
+    else:
+        # COMPARATIVE: Use gap-based verdicts (A vs B questions)
+        if probability >= 0.65:
+            return {
+                'verdict': 'CLEAR ADVANTAGE',
+                'color': 'green',
+                'recommendation': 'Proceed with recommended option',
+                'short_verdict': 'GO'
+            }
+        elif probability >= 0.50:
+            return {
+                'verdict': 'MODERATE ADVANTAGE',
+                'color': 'yellow',
+                'recommendation': 'Proceed with monitoring of key risk factors',
+                'short_verdict': 'CONDITIONAL GO'
+            }
+        elif probability >= 0.40:
+            return {
+                'verdict': 'MARGINAL DIFFERENCE',
+                'color': 'orange',
+                'recommendation': 'Consider secondary factors before deciding',
+                'short_verdict': 'RECONSIDER'
+            }
+        else:
+            return {
+                'verdict': 'INSUFFICIENT EVIDENCE',
+                'color': 'red',
+                'recommendation': 'Gather more data before proceeding',
+                'short_verdict': 'NO GO'
+            }
 
 
 def extract_ground_truth(state: Dict[str, Any]) -> GroundTruth:

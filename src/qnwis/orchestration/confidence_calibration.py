@@ -18,6 +18,8 @@ import re
 from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass
 
+from .ground_truth import determine_verdict  # FIX RUN 57: Centralized verdict
+
 logger = logging.getLogger(__name__)
 
 
@@ -362,23 +364,14 @@ def align_summary_and_brief(
     # Use calibrated confidence
     calibrated_prob = calibration.recommended_confidence
     
-    # Determine aligned verdict based on calibrated confidence
-    if calibrated_prob >= 60:
-        aligned_verdict = 'PROCEED_WITH_CAUTION' if calibration.is_close_call else 'APPROVE'
-    elif calibrated_prob >= 50:
-        aligned_verdict = 'PROCEED_WITH_CAUTION'
-    elif calibrated_prob >= 40:
-        aligned_verdict = 'RECONSIDER'
-    else:
-        aligned_verdict = 'REJECT'
+    # FIX RUN 57: Use centralized verdict determination for consistency
+    verdict_result = determine_verdict(calibrated_prob / 100.0, 'COMPARATIVE')
+    aligned_verdict = verdict_result['verdict']
+    aligned_decision = verdict_result['short_verdict']
     
-    # Determine aligned decision
-    if calibrated_prob >= 55:
-        aligned_decision = 'CONDITIONAL GO' if calibration.is_close_call else 'GO'
-    elif calibrated_prob >= 45:
+    # Override for close calls
+    if calibration.is_close_call and aligned_decision == 'GO':
         aligned_decision = 'CONDITIONAL GO'
-    else:
-        aligned_decision = 'RECONSIDER'
     
     # Update card
     aligned_card['verdict'] = aligned_verdict
