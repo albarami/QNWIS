@@ -29,10 +29,6 @@ from ..middleware.rate_limit import limiter
 
 logger = logging.getLogger(__name__)
 
-# DIAGNOSTIC LOGGING - Verify correct import source
-import inspect
-logger.info(f"🔍 run_workflow_stream source file: {inspect.getfile(run_workflow_stream)}")
-logger.info(f"🔍 run_workflow_stream module: {run_workflow_stream.__module__}")
 router = APIRouter(tags=["council-llm"])
 STREAM_TIMEOUT_SECONDS = 7200  # 2 hours - allows full E2E runs
 
@@ -183,17 +179,6 @@ def _serialize_sse(event: StreamEventResponse) -> str:
     return f"data: {event.model_dump_json(exclude_none=True)}\n\n"
 
 
-@router.options("/council/stream")
-async def council_stream_options():
-    """Handle CORS preflight for council stream endpoint."""
-    from fastapi.responses import Response
-    return Response(status_code=200, headers={
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "*",
-    })
-
-
 @router.post(
     "/council/stream",
     responses={
@@ -205,6 +190,7 @@ async def council_stream_options():
 )
 @limiter.limit("10/hour")
 async def council_stream_llm(
+    request: Request,
     req: CouncilRequest = FastAPIBody(...),
 ) -> StreamingResponse:
     """
@@ -224,33 +210,6 @@ async def council_stream_llm(
     """
 
     request_id = uuid4().hex
-
-    # HEALTH CHECK: Verify Engine B (Monte Carlo) is running before proceeding
-    # This prevents silent failures where scenarios return 0% (Run 22 catastrophic failure)
-    import httpx
-    engine_b_url = os.getenv("ENGINE_B_URL", "http://localhost:8001")
-    # try:
-    #     async with httpx.AsyncClient(timeout=5.0) as client:
-    #         health_resp = await client.get(f"{engine_b_url}/health")
-    #         if health_resp.status_code != 200:
-    #             logger.error(f"❌ Engine B health check failed: {health_resp.status_code}")
-    #             raise HTTPException(
-    #                 status_code=503,
-    #                 detail="Engine B (Monte Carlo simulation service) is not responding. Please start it with: python -m uvicorn src.nsic.engine_b.api:app --port 8001"
-    #             )
-    #         logger.info("✅ Engine B health check passed")
-    # except httpx.ConnectError:
-    #     logger.error("❌ Engine B is not running on port 8001")
-    #     raise HTTPException(
-    #         status_code=503,
-    #         detail="Engine B (Monte Carlo simulation service) is not running. Start it with: python -m uvicorn src.nsic.engine_b.api:app --port 8001"
-    #     )
-    # except httpx.TimeoutException:
-    #     logger.error("❌ Engine B health check timed out")
-    #     raise HTTPException(
-    #         status_code=503,
-    #         detail="Engine B (Monte Carlo simulation service) timed out. Check if port 8001 is accessible."
-    #     )
 
     try:
         # Use provider from request, or fall back to environment variable

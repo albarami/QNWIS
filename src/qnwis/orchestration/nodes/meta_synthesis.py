@@ -13,8 +13,8 @@ import logging
 from typing import List, Dict, Any
 from datetime import datetime
 
-from src.qnwis.llm.client import LLMClient
-from src.qnwis.llm.config import get_llm_config
+from ...llm.client import LLMClient
+from ...llm.config import get_llm_config
 
 logger = logging.getLogger(__name__)
 

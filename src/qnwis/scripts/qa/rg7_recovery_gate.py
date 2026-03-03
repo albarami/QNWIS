@@ -73,18 +73,18 @@ def _write_badge(path: Path, label: str, status: str, color: str) -> str:
 def run_gate() -> int:
     _ensure_repo_root()
 
-    from src.qnwis.dr.crypto import EnvelopeEncryptor, KMSStub
-    from src.qnwis.dr.models import (
+    from ...dr.crypto import EnvelopeEncryptor, KMSStub
+    from ...dr.models import (
         BackupSpec,
         EncryptionAlgorithm,
         RetentionRule,
         StorageBackend,
         StorageTarget,
     )
-    from src.qnwis.dr.restore import RestoreEngine
-    from src.qnwis.dr.storage import create_storage_driver
-    from src.qnwis.dr.verify import SnapshotVerifier
-    from src.qnwis.utils.clock import ManualClock
+    from ...dr.restore import RestoreEngine
+    from ...dr.storage import create_storage_driver
+    from ...dr.verify import SnapshotVerifier
+    from ...utils.clock import ManualClock
 
     out_dir = Path("docs/audit/rg7")
     badge_targets = [
@@ -115,8 +115,8 @@ def run_gate() -> int:
         for module_name in dr_modules:
             importlib.import_module(module_name)
 
-        from src.qnwis.api.routers import backups
-        from src.qnwis.cli import qnwis_dr
+        from ...api.routers import backups
+        from ...cli import qnwis_dr
 
         # Verify CLI commands exist
         cli_commands = ["plan", "backup", "verify", "restore", "list", "keys"]
@@ -186,7 +186,7 @@ def run_gate() -> int:
 
             # BACKUP: Create snapshot
             # Manually collect files for backup
-            from src.qnwis.dr.models import Manifest, ManifestEntry
+            from ...dr.models import Manifest, ManifestEntry
 
             snapshot_id = str(uuid.uuid4())
             created_at = clock.iso()

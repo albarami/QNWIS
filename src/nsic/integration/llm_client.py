@@ -10,8 +10,8 @@ from typing import List, Dict, Any, Optional, AsyncIterator
 from dataclasses import dataclass
 
 # Import the REAL QNWIS LLM client
-from src.qnwis.llm.client import LLMClient, get_client
-from src.qnwis.llm.model_router import ModelRouter, TaskType, get_router
+from qnwis.llm.client import LLMClient, get_client
+from qnwis.llm.model_router import ModelRouter, TaskType, get_router
 
 logger = logging.getLogger(__name__)
 

@@ -57,8 +57,7 @@ class Settings(BaseSettings):
     @field_validator("secret_key")
     @classmethod
     def _reject_default_secret_in_production(cls, v: str, info) -> str:
-        import os
-        env = os.getenv("QNWIS_ENV", "production").lower()
+        env = (info.data.get("environment") or "development").lower()
         if v == "change_this_secret_key_in_production" and env not in ("development", "test"):
             raise ValueError(
                 "SECRET_KEY must be set to a real value in production. "

@@ -863,7 +863,7 @@ class IntelligentExtractionOrchestrator:
         """Extract insights from Knowledge Graph with multi-hop reasoning."""
         facts = []
         try:
-            from src.qnwis.knowledge.graph_builder import QNWISKnowledgeGraph
+            from ..knowledge.graph_builder import QNWISKnowledgeGraph
             
             kg_path = Path("data/knowledge_graph.json")
             if not kg_path.exists():
@@ -954,7 +954,7 @@ class IntelligentExtractionOrchestrator:
         """Extract from RAG system (56 R&D reports) with comprehensive search."""
         facts = []
         try:
-            from src.qnwis.rag.retriever import DocumentStore
+            from ..rag.retriever import DocumentStore
             
             store = DocumentStore()
             seen_chunks = set()

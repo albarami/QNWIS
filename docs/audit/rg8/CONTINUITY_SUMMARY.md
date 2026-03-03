@@ -1,12 +1,12 @@
 # RG-8 Continuity Gate Summary
 
-**Status**: PASS
-**Checks**: 5/5 passed
-**Pass Rate**: 100.0%
+**Status**: FAIL
+**Checks**: 4/5 passed
+**Pass Rate**: 80.0%
 
 ## Checks
 
-- **✓ continuity_presence**: PASS
+- **✗ continuity_presence**: FAIL
 - **✓ continuity_plan_integrity**: PASS
 - **✓ continuity_failover_validity**: PASS
 - **✓ continuity_audit**: PASS

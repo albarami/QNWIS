@@ -111,8 +111,7 @@ async def lifespan(app: FastAPI):
             from ..rag.document_loader import load_source_documents
             from ..rag import initialize_fact_verifier
             
-            # Initialize verifier on GPU 6 (shared with embeddings)
-            verifier = GPUFactVerifier(gpu_id=6)
+            verifier = GPUFactVerifier(gpu_id=int(os.getenv("QNWIS_FACT_VERIFIER_GPU_ID", "0")))
             
             # Load documents from configured sources
             logger.info("Loading documents for fact verification...")
@@ -120,7 +119,8 @@ async def lifespan(app: FastAPI):
             logger.info(f"Loaded {len(documents):,} documents")
             
             # Index documents (this is expensive, ~30-60s for 70K docs)
-            logger.info(f"Indexing {len(documents):,} documents on GPU 6 (this may take 30-60s)...")
+            gpu_id = int(os.getenv("QNWIS_FACT_VERIFIER_GPU_ID", "0"))
+            logger.info(f"Indexing {len(documents):,} documents on GPU {gpu_id} (this may take 30-60s)...")
             verifier.index_documents(documents)
             
             # Store globally for access during queries
@@ -466,4 +466,3 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
 
 app = create_app()
-logger = logging.getLogger(__name__)

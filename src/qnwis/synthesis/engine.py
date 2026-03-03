@@ -7,8 +7,8 @@ Uses LLM to synthesize agent reports into coherent, ministerial-quality answers.
 import logging
 from typing import List, AsyncIterator
 
-from src.qnwis.agents.base import AgentReport
-from src.qnwis.llm.client import LLMClient
+from ..agents.base import AgentReport
+from ..llm.client import LLMClient
 
 logger = logging.getLogger(__name__)
 

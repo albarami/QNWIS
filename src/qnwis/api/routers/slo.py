@@ -9,12 +9,9 @@ from ...security.rbac import require_roles
 from ...slo.budget import WindowCounts, snapshot_budget
 from ...slo.loader import load_directory
 from ...utils.clock import Clock
+from ._shared import get_clock
 
 router = APIRouter(prefix="/slo", tags=["slo"])
-
-
-def get_clock(request: Request) -> Clock:
-    return getattr(request.app.state, "clock", Clock())
 
 
 @router.get("/", response_model=dict)

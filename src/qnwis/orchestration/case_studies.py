@@ -221,7 +221,7 @@ async def _fetch_perplexity_case_studies(
     cases = []
     
     try:
-        from src.qnwis.orchestration.perplexity_comprehensive import (
+        from .perplexity_comprehensive import (
             extract_perplexity_comprehensive
         )
         
@@ -291,7 +291,7 @@ async def _fetch_academic_case_studies(
     topics = _extract_topics(query)
     
     try:
-        from src.qnwis.orchestration.semantic_scholar_comprehensive import (
+        from .semantic_scholar_comprehensive import (
             extract_semantic_scholar_comprehensive
         )
         
@@ -341,7 +341,7 @@ async def _fetch_brave_case_studies(
     cases = []
     
     try:
-        from src.qnwis.orchestration.brave_comprehensive import (
+        from .brave_comprehensive import (
             extract_brave_comprehensive
         )
         

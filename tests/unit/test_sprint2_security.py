@@ -155,27 +155,24 @@ class TestSecretKeyValidation:
         )
 
     def test_default_secret_rejected_when_env_production(self):
-        """Verify the validator source code rejects default key in production."""
+        """Validator rejects default key when environment field is production."""
         settings_path = SRC_ROOT / "qnwis" / "config" / "settings.py"
         source = settings_path.read_text(encoding="utf-8")
-        assert "change_this_secret_key_in_production" in source, (
-            "Default secret value not found in settings.py"
-        )
-        assert 'env not in ("development", "test")' in source or \
-               "env not in ('development', 'test')" in source or \
-               'not in ("development", "test")' in source, (
+        assert "change_this_secret_key_in_production" in source
+        assert 'not in ("development", "test")' in source, (
             "Validator does not check environment for production rejection"
         )
-        assert "raise ValueError" in source, (
-            "Validator does not raise ValueError for default key"
-        )
+        assert "raise ValueError" in source
 
     def test_default_secret_allowed_in_development(self):
-        """Verify the validator allows default key in dev/test."""
+        """Validator allows default key when environment defaults to development."""
         settings_path = SRC_ROOT / "qnwis" / "config" / "settings.py"
         source = settings_path.read_text(encoding="utf-8")
-        assert "development" in source and "test" in source, (
-            "Validator does not allow default key in development/test"
+        assert 'default="development"' in source, (
+            "environment field should default to development"
+        )
+        assert "info.data" in source, (
+            "Validator should read environment from model data, not os.getenv"
         )
 
 

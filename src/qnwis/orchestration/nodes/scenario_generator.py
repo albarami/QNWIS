@@ -16,8 +16,8 @@ import os
 import re
 from typing import List, Dict, Any, Tuple, Literal
 
-from src.qnwis.llm.client import LLMClient
-from src.qnwis.llm.config import get_llm_config
+from ...llm.client import LLMClient
+from ...llm.config import get_llm_config
 from .scenario_baseline_requirements import format_baselines_for_prompt
 from .classifier import classify_question_type
 

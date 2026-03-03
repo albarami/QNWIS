@@ -30,7 +30,7 @@ from ..agents.base import AgentReport, DataClient
 from ..llm.client import LLMClient
 from ..classification.classifier import Classifier
 from .citation_injector import CitationInjector
-from src.qnwis.orchestration.prefetch_apis import get_complete_prefetch
+from .prefetch_apis import get_complete_prefetch
 
 logger = logging.getLogger(__name__)
 

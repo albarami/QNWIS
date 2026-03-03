@@ -585,7 +585,7 @@ class MasterDataExtractor:
         facts = []
         try:
             from pathlib import Path
-            from src.qnwis.knowledge.graph_builder import QNWISKnowledgeGraph
+            from ..knowledge.graph_builder import QNWISKnowledgeGraph
             
             kg_path = Path("data/knowledge_graph.json")
             if not kg_path.exists():
@@ -632,7 +632,7 @@ class MasterDataExtractor:
         """Extract from RAG - 56 R&D reports."""
         facts = []
         try:
-            from src.qnwis.rag.retriever import DocumentStore
+            from ..rag.retriever import DocumentStore
             
             store = DocumentStore()
             

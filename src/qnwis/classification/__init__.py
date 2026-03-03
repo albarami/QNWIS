@@ -1,5 +1,5 @@
 """Question classification for routing."""
 
-from src.qnwis.classification.classifier import Classifier
+from .classifier import Classifier
 
 __all__ = ["Classifier"]

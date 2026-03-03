@@ -24,12 +24,12 @@ from typing import Any, cast
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parents[4]))
 
-from src.qnwis.ops_console.app import create_ops_app  # noqa: E402
-from src.qnwis.ops_console.perf_metrics import (  # noqa: E402
+from ...ops_console.app import create_ops_app  # noqa: E402
+from ...ops_console.perf_metrics import (  # noqa: E402
     collect_ui_metrics,
     persist_ui_metrics,
 )
-from src.qnwis.utils.clock import ManualClock  # noqa: E402
+from ...utils.clock import ManualClock  # noqa: E402
 
 
 def _flatten_metrics(metrics: dict[str, Any]) -> dict[str, float]:

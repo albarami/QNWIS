@@ -12,7 +12,7 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any, Dict, List
 
-from src.qnwis.observability.metrics import record_query_execution
+from .metrics import record_query_execution
 
 
 @dataclass

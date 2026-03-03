@@ -14,7 +14,7 @@ from typing import List, Dict, Any, Optional, Tuple
 import numpy as np
 
 # Import the REAL QNWIS RAG system
-from src.qnwis.rag.retriever import (
+from qnwis.rag.retriever import (
     get_document_store,
     retrieve_external_context,
     format_rag_context_for_prompt,

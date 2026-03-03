@@ -8,7 +8,7 @@ from typing import Any, Dict, Optional
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 
-from src.qnwis.utils.logger import setup_logger
+from ..utils.logger import setup_logger
 
 logger = setup_logger(__name__)
 

@@ -44,7 +44,7 @@ async def calculate_node(state: IntelligenceState) -> IntelligenceState:
     Returns:
         Updated state with calculated_results
     """
-    from src.qnwis.engines.financial_engine import (
+    from ...engines.financial_engine import (
         CashFlowInput,
         FinancialEngine,
         FinancialModelInput,

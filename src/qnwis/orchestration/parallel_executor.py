@@ -17,7 +17,10 @@ import logging
 import os
 from typing import List, Dict, Any, Optional
 from datetime import datetime
-import torch
+try:
+    import torch
+except ImportError:
+    torch = None  # type: ignore[assignment]
 import httpx
 
 logger = logging.getLogger(__name__)
@@ -60,7 +63,7 @@ class ParallelDebateExecutor:
         self._semaphore = asyncio.Semaphore(self.max_concurrent)
         
         # Check GPU availability
-        self.gpu_available = torch.cuda.is_available()
+        self.gpu_available = torch is not None and torch.cuda.is_available()
         self.gpu_count = torch.cuda.device_count() if self.gpu_available else 0
         
         if self.gpu_available:

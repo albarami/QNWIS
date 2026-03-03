@@ -127,8 +127,8 @@ def _objective_rows(slos: Sequence[Any]) -> list[dict[str, Any]]:
 
 def run_gate() -> int:
     _ensure_repo_root()
-    from src.qnwis.alerts.engine import AlertEngine
-    from src.qnwis.alerts.rules import (
+    from ...alerts.engine import AlertEngine
+    from ...alerts.rules import (
         AlertRule,
         ScopeConfig,
         Severity,
@@ -136,11 +136,11 @@ def run_gate() -> int:
         TriggerType,
         WindowConfig,
     )
-    from src.qnwis.observability.metrics import compute_sli_snapshot, write_sli_snapshot_json
-    from src.qnwis.slo.budget import WindowCounts, snapshot_budget
-    from src.qnwis.slo.loader import load_directory
-    from src.qnwis.slo.models import SLIKind, SLOTarget
-    from src.qnwis.utils.clock import ManualClock
+    from ...observability.metrics import compute_sli_snapshot, write_sli_snapshot_json
+    from ...slo.budget import WindowCounts, snapshot_budget
+    from ...slo.loader import load_directory
+    from ...slo.models import SLIKind, SLOTarget
+    from ...utils.clock import ManualClock
 
     out_dir = Path("docs/audit/rg6")
     badge_dir = Path("docs/audit/badges")

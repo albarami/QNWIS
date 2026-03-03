@@ -20,9 +20,9 @@ project_root = Path(__file__).parent.parent.parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-from src.qnwis.agents.alert_center import AlertCenterAgent  # noqa: E402
-from src.qnwis.agents.base import DataClient  # noqa: E402
-from src.qnwis.alerts.registry import AlertRegistry  # noqa: E402
+from ..agents.alert_center import AlertCenterAgent  # noqa: E402
+from ..agents.base import DataClient  # noqa: E402
+from ..alerts.registry import AlertRegistry  # noqa: E402
 
 
 def parse_date(date_str: str) -> date:
@@ -232,7 +232,7 @@ def cmd_run(args):
 
         # Format output
         if args.export == 'json':
-            from src.qnwis.alerts.report import AlertReportRenderer
+            from ..alerts.report import AlertReportRenderer
             renderer = AlertReportRenderer()
             decisions = list(agent.engine.batch_evaluate(
                     registry.get_all_rules(enabled_only=True),
@@ -254,7 +254,7 @@ def cmd_run(args):
 
         # Generate audit artifacts
         if args.audit_dir:
-            from src.qnwis.alerts.report import AlertReportRenderer
+            from ..alerts.report import AlertReportRenderer
             renderer = AlertReportRenderer()
             decisions = list(agent.engine.batch_evaluate(
                     registry.get_all_rules(enabled_only=True),

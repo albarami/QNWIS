@@ -7,7 +7,7 @@ from __future__ import annotations
 import logging
 from typing import Callable, Tuple, TypeVar
 
-from src.qnwis.llm.config import get_llm_config
+from ..llm.config import get_llm_config
 
 logger = logging.getLogger(__name__)
 

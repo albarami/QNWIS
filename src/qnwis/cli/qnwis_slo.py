@@ -11,9 +11,9 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from src.qnwis.observability.metrics import write_sli_snapshot_json
-from src.qnwis.slo.budget import WindowCounts, snapshot_budget
-from src.qnwis.slo.loader import SLODefinition, load_directory, load_file
+from ..observability.metrics import write_sli_snapshot_json
+from ..slo.budget import WindowCounts, snapshot_budget
+from ..slo.loader import SLODefinition, load_directory, load_file
 
 
 def _read_sli_windows(path: str | Path) -> dict[str, dict[str, Any]]:

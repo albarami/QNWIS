@@ -22,6 +22,7 @@ from ...notify.models import Channel, IncidentState, Notification, Severity
 from ...notify.resolver import IncidentResolver
 from ...security import Principal, require_roles
 from ...utils.clock import Clock
+from ._shared import get_clock
 
 logger = logging.getLogger(__name__)
 
@@ -85,11 +86,6 @@ class IncidentStatsResponse(BaseModel):
     by_state: dict[str, int]
     by_severity: dict[str, int]
     by_rule: dict[str, int]
-
-
-def get_clock(request: Request) -> Clock:
-    """Get clock from app state."""
-    return getattr(request.app.state, "clock", Clock())
 
 
 def get_dispatcher(request: Request) -> NotificationDispatcher:

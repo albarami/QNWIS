@@ -233,9 +233,9 @@ class DualEngineOrchestrator:
         with self.timing.time_stage(Stage.ENGINE_A, scenario.id):
             try:
                 # Import the full QNWIS workflow with 12 agents
-                from src.qnwis.orchestration.graph_llm import LLMWorkflow
-                from src.qnwis.agents.base import DataClient
-                from src.qnwis.llm.client import LLMClient as QNWISLLMClient
+                from qnwis.orchestration.graph_llm import LLMWorkflow
+                from qnwis.agents.base import DataClient
+                from qnwis.llm.client import LLMClient as QNWISLLMClient
                 
                 # Build the question from scenario
                 question = f"""Scenario Analysis: {scenario.name}
@@ -778,9 +778,9 @@ Provide comprehensive analysis of this scenario's impacts on Qatar's economy and
         with self.timing.time_stage(Stage.ENGINE_A, scenario.id):
             try:
                 # Import the full QNWIS workflow with 12 agents
-                from src.qnwis.orchestration.graph_llm import LLMWorkflow
-                from src.qnwis.agents.base import DataClient
-                from src.qnwis.llm.client import LLMClient as QNWISLLMClient
+                from qnwis.orchestration.graph_llm import LLMWorkflow
+                from qnwis.agents.base import DataClient
+                from qnwis.llm.client import LLMClient as QNWISLLMClient
                 
                 # Build the question from scenario WITH quantitative context
                 question = f"""Scenario Analysis: {scenario.name}

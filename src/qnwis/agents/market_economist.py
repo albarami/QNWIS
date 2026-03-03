@@ -170,7 +170,7 @@ def extract_confidence_from_response(response: str) -> float:
     patterns = [
         r"Overall Confidence:\s*(\d+)%",
         r"Confidence:\s*(\d+)%",
-        r"confidence[""\s:]+(\d+)%",
+        r'confidence["\s:]+(\d+)%',
         r"Feasibility Probability:\s*(\d+)%",
     ]
 

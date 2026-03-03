@@ -16,9 +16,9 @@ project_root = Path(__file__).parent.parent.parent.parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-from src.qnwis.alerts.engine import AlertEngine
-from src.qnwis.alerts.report import AlertReportRenderer
-from src.qnwis.alerts.rules import (
+from ...alerts.engine import AlertEngine
+from ...alerts.report import AlertReportRenderer
+from ...alerts.rules import (
     AlertRule,
     ScopeConfig,
     Severity,
@@ -27,7 +27,7 @@ from src.qnwis.alerts.rules import (
     TriggerType,
     WindowConfig,
 )
-from src.qnwis.scripts.qa.determinism_scan import (
+from .determinism_scan import (
     DEFAULT_BANNED_PATTERNS,
     scan_for_banned_calls,
 )
@@ -127,7 +127,7 @@ class RG3OpsGate:
 
         try:
             # Test module imports
-            from src.qnwis.alerts import (
+            from ...alerts import (
                 AlertRegistry,
                 AlertRule,
             )
@@ -404,7 +404,7 @@ class RG3OpsGate:
             renderer = AlertReportRenderer()
 
             # Create sample decisions and rules
-            from src.qnwis.alerts.engine import AlertDecision
+            from ...alerts.engine import AlertDecision
 
             decisions = [
                 AlertDecision(

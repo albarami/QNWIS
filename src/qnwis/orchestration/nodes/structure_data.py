@@ -120,7 +120,7 @@ async def structure_data_node(state: IntelligenceState) -> IntelligenceState:
     Returns:
         Updated state with structured_inputs
     """
-    from src.qnwis.llm.client import LLMClient
+    from ...llm.client import LLMClient
 
     logger.info("📊 Structuring extracted data for calculations...")
 
