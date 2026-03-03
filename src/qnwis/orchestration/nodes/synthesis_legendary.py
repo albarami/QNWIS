@@ -562,7 +562,7 @@ def _extract_stats(state: IntelligenceState) -> Dict[str, Any]:
                 duration = f"{duration_secs/60:.1f} minutes"
             else:
                 duration = f"{duration_secs:.0f} seconds"
-        except:
+        except (ValueError, TypeError, AttributeError):
             duration = "~3 minutes"
     else:
         duration = "~3 minutes"
@@ -1246,10 +1246,16 @@ The following expert(s) recommended a different path:
 """
     
     for d in dissenters[:3]:  # Show max 3 dissenters
+        if not d or not isinstance(d, dict):
+            continue
+        agent = d.get('agent', 'Expert')
+        rec = d.get('recommendation', 'Alternative')
+        conf = d.get('confidence', 0.5)
+        rationale = d.get('rationale') or 'See detailed analysis'
         section += f"""
-### {d['agent']} — Recommended: {d['recommendation']} ({d['confidence']*100:.0f}% confidence)
+### {agent} — Recommended: {rec} ({conf*100:.0f}% confidence)
 
-**Rationale:** {d['rationale'][:200]}{'...' if len(d['rationale']) > 200 else ''}
+**Rationale:** {rationale[:200]}{'...' if len(rationale) > 200 else ''}
 
 """
     
@@ -1722,8 +1728,11 @@ def _build_legendary_prompt(
     # Format expert contributions
     expert_table = ""
     for exp in debate_highlights.get("expert_contributions", []):
-        insight = exp.get("key_insight", "Strategic analysis provided")[:60]
-        expert_table += f"│ {exp['name']:<15} │ {exp.get('turns', 0):>3} turns │ {insight}...\n"
+        if not exp or not isinstance(exp, dict):
+            continue
+        name = exp.get("name", "Expert")
+        insight = (exp.get("key_insight") or "Strategic analysis provided")[:60]
+        expert_table += f"│ {name:<15} │ {exp.get('turns', 0):>3} turns │ {insight}...\n"
     
     # Format scenario table with Engine B quantitative results
     # CRITICAL FIX: Check if scenarios have valid data or are all failed
@@ -1807,26 +1816,32 @@ ROBUSTNESS ANALYSIS: {robustness['ratio_str']} scenarios pass success threshold
     # Format consensus points WITH FULL QUOTES
     consensus_text = ""
     for i, cp in enumerate(debate_highlights.get("consensus_points", [])[:4], 1):
+        if not cp or not isinstance(cp, dict):
+            continue
         consensus_text += f"""
-CONSENSUS {i}: [Turn {cp['turn']}]
-Agent: {cp['agent']}
-DIRECT QUOTE: "{cp['statement'][:400]}"
+CONSENSUS {i}: [Turn {cp.get('turn', '?')}]
+Agent: {cp.get('agent', 'Expert')}
+DIRECT QUOTE: "{(cp.get('statement') or '')[:400]}"
 """
     
     # Format disagreements WITH FULL QUOTES
     disagreement_text = ""
     for i, d in enumerate(debate_highlights.get("disagreements", [])[:3], 1):
+        if not d or not isinstance(d, dict):
+            continue
         disagreement_text += f"""
-DISAGREEMENT {i}: [Turn {d['turn']}]
-Raised by: {d['agent']}
-DIRECT QUOTE: "{d['challenge'][:400]}"
+DISAGREEMENT {i}: [Turn {d.get('turn', '?')}]
+Raised by: {d.get('agent', 'Expert')}
+DIRECT QUOTE: "{(d.get('challenge') or '')[:400]}"
 """
     
     # Format edge cases (CRITICAL - these must surface in the report)
     edge_case_text = ""
     for i, ec in enumerate(edge_cases[:6], 1):
-        turn_info = f" [Turn {ec['turn']}]" if ec.get('turn') else ""
-        agent_info = f" - {ec['agent']}" if ec.get('agent') else ""
+        if not ec or not isinstance(ec, dict):
+            continue
+        turn_info = f" [Turn {ec.get('turn')}]" if ec.get('turn') else ""
+        agent_info = f" - {ec.get('agent')}" if ec.get('agent') else ""
         edge_case_text += f"""
 EDGE CASE {i}: {ec.get('name', 'Scenario')}{turn_info}{agent_info}
 Severity: {ec.get('severity', 'medium').upper()}
@@ -1836,20 +1851,24 @@ Analysis: "{ec.get('description', '')[:400]}"
     # Format risk assessments from debate (CRITICAL for Devil's Advocate content)
     debate_risks_text = ""
     for i, r in enumerate(debate_highlights.get("risk_assessments", [])[:5], 1):
+        if not r or not isinstance(r, dict):
+            continue
         debate_risks_text += f"""
-DEBATE RISK {i}: [Turn {r['turn']}, {r['agent']}]
-Severity: {r['severity'].upper()}
-Expert Quote: "{r['risk_statement'][:400]}..."
+DEBATE RISK {i}: [Turn {r.get('turn', '?')}, {r.get('agent', 'Expert')}]
+Severity: {(r.get('severity') or 'medium').upper()}
+Expert Quote: "{(r.get('risk_statement') or '')[:400]}..."
 """
     
     # Format risks from risk assessment
     risk_text = ""
     for i, r in enumerate(risks[:5], 1):
+        if not r or not isinstance(r, dict):
+            continue
         risk_text += f"""
-RISK {i}: {r['title']}
-Severity: {r['severity']}
-Details: {r['description'][:200]}
-Source: {r['source']}
+RISK {i}: {r.get('title', 'Risk identified')}
+Severity: {r.get('severity', 'MEDIUM')}
+Details: {(r.get('description') or '')[:200]}
+Source: {r.get('source', 'Analysis')}
 """
     
     # Format key facts
@@ -2826,7 +2845,9 @@ Do NOT proceed with policy analysis for this target. Instead:
                         option_name = phase_data.get("option", "Option")
                         financial_analysis_text += f"\n{option_name}:\n"
                         for p in phase_data.get("phases", []):
-                            financial_analysis_text += f"  • {p['years']}: {p['name']} - {p['investment']}\n"
+                            if not p or not isinstance(p, dict):
+                                continue
+                            financial_analysis_text += f"  • {p.get('years', 'TBD')}: {p.get('name', 'Phase')} - {p.get('investment', 'TBD')}\n"
                 
                 # Add sensitivity
                 if result.sensitivity:
@@ -3838,15 +3859,17 @@ CRITICAL INSTRUCTIONS:
         
         logger.info(f"📝 Brief confidence patterns replaced: {old_conf_int}% → {new_conf_int}%")
         
-        # FIX RUN 18: Also align the decision text with the verdict
-        # If scenario rate is 60%+, decision should be "GO" or "APPROVE"
-        # If scenario rate is 50-60%, decision should be "CONDITIONAL GO"
+        # FIX RUN 59: Use centralized verdict thresholds for consistency
+        # Must match determine_verdict() in ground_truth.py exactly
+        # Thresholds: >=60% GO, >=45% CONDITIONAL GO, >=30% RECONSIDER, <30% NO GO
         if derived_confidence >= 60:
             aligned_decision_text = "GO"
-        elif derived_confidence >= 50:
+        elif derived_confidence >= 45:  # FIX: Changed from 50 to 45 to match centralized function
             aligned_decision_text = "CONDITIONAL GO"
-        else:
+        elif derived_confidence >= 30:
             aligned_decision_text = "RECONSIDER"
+        else:
+            aligned_decision_text = "NO GO"
         
         logger.info(f"📝 Brief decision aligned: {aligned_decision_text} at {new_conf_int}%")
         
@@ -4289,16 +4312,24 @@ Error: {str(e)[:200]}
 
 # Synchronous wrapper for LangGraph
 def legendary_synthesis_node_sync(state: IntelligenceState) -> IntelligenceState:
-    """Synchronous wrapper for the legendary synthesis node."""
+    """Synchronous wrapper for the legendary synthesis node.
+
+    Handles both sync and async calling contexts correctly.
+    When called from an existing async loop (e.g. LangGraph), runs
+    the coroutine in a new thread to avoid blocking the event loop
+    and to avoid returning unprocessed state.
+    """
     import asyncio
-    
+    import concurrent.futures
+
     try:
         loop = asyncio.get_running_loop()
-        # Already in async context - shouldn't happen in LangGraph
-        logger.warning("legendary_synthesis called from async context")
-        return state
+        logger.info("legendary_synthesis called from async context — bridging via thread")
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+            future = pool.submit(asyncio.run, legendary_synthesis_node(state))
+            return future.result()
     except RuntimeError:
         pass
-    
+
     return asyncio.run(legendary_synthesis_node(state))
 

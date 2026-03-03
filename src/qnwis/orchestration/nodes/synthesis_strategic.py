@@ -84,7 +84,7 @@ def _extract_analytics_stats(state: IntelligenceState) -> Dict[str, Any]:
             try:
                 start_dt = datetime.fromisoformat(start_time)
                 duration = (datetime.now() - start_dt).total_seconds()
-            except:
+            except (ValueError, TypeError):
                 duration = 0
         elif isinstance(start_time, datetime):
             duration = (datetime.now() - start_time).total_seconds()

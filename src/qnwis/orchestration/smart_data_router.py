@@ -810,7 +810,7 @@ class IntelligentExtractionOrchestrator:
                                 "source_type": "authoritative",
                                 "confidence": 0.98,
                             })
-                    except:
+                    except Exception:
                         continue
             
             logger.info(f"World Bank: Extracted {len(facts)} facts")
@@ -981,7 +981,7 @@ class IntelligentExtractionOrchestrator:
                             "source_type": "research",
                             "confidence": max(0.5, result.get("score", 0.7)),
                         })
-                except:
+                except Exception:
                     continue
             
             logger.info(f"RAG: Extracted {len(facts)} research insights")

@@ -1,4 +1,4 @@
-﻿"""
+"""
 LangGraph workflow for LLM-powered multi-agent orchestration.
 
 Implements streaming workflow with nodes:
@@ -1320,7 +1320,7 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
                 elif not isinstance(narrative, str):
                     try:
                         narrative = str(narrative)
-                    except:
+                    except (TypeError, ValueError):
                         narrative = ""
                 
                 # Skip citation check if no narrative

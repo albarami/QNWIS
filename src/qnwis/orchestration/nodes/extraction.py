@@ -429,7 +429,7 @@ async def _extract_rag_additional(query: str) -> List[Dict[str, Any]]:
                         "confidence": result.get("score", 0.7),
                         "source_priority": 90
                     })
-            except:
+            except Exception:
                 continue
         
         logger.info(f"   RAG additional: {len(facts)} insights")

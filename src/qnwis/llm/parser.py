@@ -231,7 +231,7 @@ class LLMResponseParser:
                 e = text.rfind('}')
                 if s != -1 and e > s:
                     return self._repair_json(text[s:e+1])
-            except:
+            except (json.JSONDecodeError, ValueError):
                 pass
             return None
     

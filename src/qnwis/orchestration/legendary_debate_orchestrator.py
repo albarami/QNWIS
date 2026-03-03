@@ -90,11 +90,11 @@ def robust_json_parse(text: str, default: Any = None) -> Any:
         for key, value, _ in matches:
             try:
                 result[key] = json.loads(value)
-            except:
+            except (json.JSONDecodeError, ValueError):
                 result[key] = value.strip('"')
         if result:
             return result
-    except:
+    except Exception:
         pass
     
     return default

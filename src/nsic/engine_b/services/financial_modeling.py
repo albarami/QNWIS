@@ -404,7 +404,7 @@ class FinancialModelingService:
             if np.isnan(irr) or np.isinf(irr):
                 return None
             return float(irr)
-        except:
+        except Exception:
             # Fallback: simple iteration
             for r in np.linspace(0, 0.5, 100):
                 npv = sum(cf / ((1 + r) ** t) for t, cf in enumerate(cash_flows))

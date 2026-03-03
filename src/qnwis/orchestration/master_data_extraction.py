@@ -239,7 +239,7 @@ class MasterDataExtractor:
                             "source_priority": 98,
                             "confidence": 0.98,
                         })
-                except:
+                except Exception:
                     pass
                 
                 # Get Vision 2030 targets
@@ -255,7 +255,7 @@ class MasterDataExtractor:
                             "source_priority": 100,
                             "confidence": 1.0,
                         })
-                except:
+                except Exception:
                     pass
             
             logger.info(f"   PostgreSQL: {len(facts)} facts")
@@ -333,7 +333,7 @@ class MasterDataExtractor:
                                     "source_priority": 95,
                                     "confidence": 0.98,
                                 })
-                    except:
+                    except Exception:
                         continue
             
             await api.close()
@@ -454,7 +454,7 @@ class MasterDataExtractor:
                                     "source_priority": 93,
                                     "confidence": 0.90 if item.get("year", 0) <= 2024 else 0.75,
                                 })
-                    except:
+                    except Exception:
                         continue
             
             logger.info(f"   IMF: {len(facts)} facts")

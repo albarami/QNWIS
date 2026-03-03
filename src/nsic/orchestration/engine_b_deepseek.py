@@ -653,11 +653,11 @@ Provide:
                     result = self.verifier.verify(claim, text)
                     if result.score > 0.5:
                         verified += 1
-                except:
+                except Exception:
                     pass
             
             return verified
-        except:
+        except Exception:
             return 0
     
     async def run_all_scenarios(

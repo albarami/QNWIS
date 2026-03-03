@@ -182,7 +182,7 @@ class LLMClient:
         self.model = model or self.config.get_model(self.provider)
         configured_timeout = self.config.timeout_seconds
         effective_timeout = timeout_s if timeout_s is not None else configured_timeout
-        self.timeout_s = 7200  # 2 hours for full E2E runs
+        self.timeout_s = effective_timeout
         self.max_retries = self.config.max_retries
         
         # Initialize provider client

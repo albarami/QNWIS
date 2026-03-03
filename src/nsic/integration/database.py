@@ -355,7 +355,7 @@ class NSICDatabase:
             try:
                 cur.execute(f"SELECT COUNT(*) FROM {table}")
                 stats[table] = cur.fetchone()['count']
-            except:
+            except Exception:
                 stats[table] = 0
         
         return stats

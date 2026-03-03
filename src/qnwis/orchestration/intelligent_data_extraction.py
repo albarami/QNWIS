@@ -289,7 +289,7 @@ class IntelligentDataExtractor:
                             "confidence": 0.95,
                             "timestamp": datetime.now().isoformat()
                         })
-                except:
+                except Exception:
                     pass
             
             self.extraction_report["sources_queried"].append("PostgreSQL")
