@@ -38,7 +38,7 @@ from ._shared import get_clock
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/v1/continuity", tags=["continuity"])
+router = APIRouter(prefix="/continuity", tags=["continuity"])
 
 
 # ============================================================================

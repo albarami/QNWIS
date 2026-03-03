@@ -77,7 +77,7 @@ jobs:
         env:
           QNWIS_DB_URL: postgresql://qnwis:test_password@localhost:5432/qnwis_test
           QNWIS_REDIS_URL: redis://localhost:6379/0
-          QNWIS_ENV: test`n          QNWIS_BYPASS_AUTH: "true"
+          QNWIS_ENV: test
           QNWIS_BYPASS_AUTH: "true"
         run: |
           # Start server in background

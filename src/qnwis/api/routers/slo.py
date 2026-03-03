@@ -10,7 +10,7 @@ from ...slo.budget import WindowCounts, snapshot_budget
 from ...slo.loader import load_directory
 from ...utils.clock import Clock
 
-router = APIRouter(prefix="/api/v1/slo", tags=["slo"])
+router = APIRouter(prefix="/slo", tags=["slo"])
 
 
 def get_clock(request: Request) -> Clock:

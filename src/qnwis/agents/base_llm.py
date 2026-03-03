@@ -15,11 +15,11 @@ from abc import ABC, abstractmethod
 from typing import AsyncIterator, Dict, Optional, List, Any
 from datetime import datetime, timezone
 
-from qnwis.agents.base import DataClient, AgentReport, Insight, evidence_from
-from qnwis.llm.client import LLMClient
-from qnwis.llm.parser import LLMResponseParser, AgentFinding
-from qnwis.llm.exceptions import LLMError, LLMParseError
-from qnwis.agents.data_mastery import get_agent_data_prompt, AGENT_DATA_MASTERY_PROMPT
+from .base import DataClient, AgentReport, Insight, evidence_from
+from ..llm.client import LLMClient
+from ..llm.parser import LLMResponseParser, AgentFinding
+from ..llm.exceptions import LLMError, LLMParseError
+from .data_mastery import get_agent_data_prompt, AGENT_DATA_MASTERY_PROMPT
 
 logger = logging.getLogger(__name__)
 

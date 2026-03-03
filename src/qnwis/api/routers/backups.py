@@ -36,7 +36,7 @@ from ._shared import get_clock
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/v1/dr", tags=["dr"])
+router = APIRouter(prefix="/dr", tags=["dr"])
 
 
 # ============================================================================

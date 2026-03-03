@@ -179,6 +179,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(
         title="QNWIS Agent API",
         version=os.getenv("QNWIS_VERSION", "dev"),
+        docs_url=docs_url,
         redoc_url=redoc_url,
         openapi_url=openapi_url,
         lifespan=lifespan,

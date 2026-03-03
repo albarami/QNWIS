@@ -192,7 +192,7 @@ def _request_id_from_request(req: Request) -> str | None:
     return getattr(req.state, "request_id", None)
 
 
-@router.get("/v1/queries")
+@router.get("/queries")
 def list_queries() -> dict[str, Any]:
     """
     List all available deterministic query identifiers.
@@ -204,7 +204,7 @@ def list_queries() -> dict[str, Any]:
     return {"ids": reg.all_ids()}
 
 
-@router.get("/v1/queries/{query_id}")
+@router.get("/queries/{query_id}")
 def get_query(query_id: str) -> dict[str, Any]:
     """
     Retrieve the registered QuerySpec for a given identifier.
@@ -227,7 +227,7 @@ def get_query(query_id: str) -> dict[str, Any]:
     return {"query": spec.model_dump(exclude_none=True)}
 
 
-@router.post("/v1/queries/{query_id}/run", response_model=QueryRunResponse)
+@router.post("/queries/{query_id}/run", response_model=QueryRunResponse)
 def run_query(
     query_id: str,
     req: Request,
@@ -309,7 +309,7 @@ def run_query(
 
 
 @router.post(
-    "/v1/queries/{query_id}/stream",
+    "/queries/{query_id}/stream",
     response_class=StreamingResponse,
     summary="Stream deterministic query rows as JSON.",
 )
@@ -368,7 +368,7 @@ async def stream_query(
     return streaming_response
 
 
-@router.post("/v1/queries:batch", response_model=BatchQueryResponse)
+@router.post("/queries:batch", response_model=BatchQueryResponse)
 def run_query_batch(
     req: Request,
     response: Response,
@@ -432,7 +432,7 @@ def run_query_batch(
     return BatchQueryResponse(results=results)
 
 
-@router.post("/v1/queries/{query_id}/cache/invalidate")
+@router.post("/queries/{query_id}/cache/invalidate")
 def invalidate(
     query_id: str,
     _principal: Principal = Depends(require_roles("admin", "service")),

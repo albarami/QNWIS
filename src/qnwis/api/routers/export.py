@@ -137,7 +137,7 @@ def _sector_param(sector: str | None) -> str:
 
 
 @router.get(
-    "/v1/ui/export/csv",
+    "/ui/export/csv",
     responses={
         200: _CSV_RESPONSE_DOC,
         304: {"description": "Not modified when If-None-Match matches resource ETag."},
@@ -228,7 +228,7 @@ def export_csv(
 
 
 @router.get(
-    "/v1/ui/export/svg",
+    "/ui/export/svg",
     responses={
         200: _SVG_RESPONSE_DOC,
         304: {"description": "Not modified when If-None-Match matches resource ETag."},
@@ -283,7 +283,7 @@ def export_svg(
 
 
 @router.get(
-    "/v1/ui/export/png",
+    "/ui/export/png",
     responses={
         200: {
             "content": {"image/png": {}},

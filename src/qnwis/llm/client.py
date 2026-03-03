@@ -17,14 +17,14 @@ from typing import AsyncIterator, Optional, Dict, Any
 
 import httpx
 
-from src.qnwis.llm.config import LLMConfig, get_llm_config
-from src.qnwis.llm.model_router import get_router, ModelConfig
-from src.qnwis.llm.exceptions import (
+from .config import LLMConfig, get_llm_config
+from .model_router import get_router, ModelConfig
+from .exceptions import (
     LLMTimeoutError,
     LLMRateLimitError,
     LLMProviderError,
 )
-from src.qnwis.observability.metrics import record_llm_call
+from ..observability.metrics import record_llm_call
 
 logger = logging.getLogger(__name__)
 

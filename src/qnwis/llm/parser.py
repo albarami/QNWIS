@@ -11,7 +11,7 @@ import logging
 from typing import List, Set, Optional, Union
 from pydantic import BaseModel, Field, field_validator
 
-from src.qnwis.llm.exceptions import LLMParseError
+from .exceptions import LLMParseError
 
 logger = logging.getLogger(__name__)
 

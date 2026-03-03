@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from fastapi import FastAPI
 
-from src.qnwis.security.audit import RequestAuditMiddleware
-from src.qnwis.security.csrf import CSRFMiddleware
-from src.qnwis.security.headers import SecurityHeadersMiddleware
-from src.qnwis.security.https import StrictTransportMiddleware
-from src.qnwis.security.range_guard import RangeHeaderGuardMiddleware
+from ..security.audit import RequestAuditMiddleware
+from ..security.csrf import CSRFMiddleware
+from ..security.headers import SecurityHeadersMiddleware
+from ..security.https import StrictTransportMiddleware
+from ..security.range_guard import RangeHeaderGuardMiddleware
 
 
 def attach_security(app: FastAPI) -> FastAPI:

@@ -75,7 +75,7 @@ def _resp(request: Request, payload: bytes, media_type: str, etag: str) -> Respo
     return r
 
 
-@router.get("/v1/ui/dashboard/summary", response_class=Response)
+@router.get("/ui/dashboard/summary", response_class=Response)
 def dashboard_summary_html(
     request: Request,
     queries_dir: str | None = None,
@@ -105,7 +105,7 @@ def dashboard_summary_html(
     return _resp(request, payload, "text/html; charset=utf-8", etag)
 
 
-@router.get("/v1/ui/export/sector-employment.csv")
+@router.get("/ui/export/sector-employment.csv")
 def export_sector_employment_csv(
     request: Request,
     queries_dir: str | None = None,
@@ -131,7 +131,7 @@ def export_sector_employment_csv(
     return _resp(request, data, "text/csv; charset=utf-8", etag)
 
 
-@router.get("/v1/ui/export/top-sectors.csv")
+@router.get("/ui/export/top-sectors.csv")
 def export_top_sectors_csv(
     request: Request,
     queries_dir: str | None = None,
@@ -160,7 +160,7 @@ def export_top_sectors_csv(
     return _resp(request, data, "text/csv; charset=utf-8", etag)
 
 
-@router.get("/v1/ui/export/salary-yoy.png")
+@router.get("/ui/export/salary-yoy.png")
 def export_salary_yoy_png(
     request: Request,
     queries_dir: str | None = None,
@@ -186,7 +186,7 @@ def export_salary_yoy_png(
     return _resp(request, data, "image/png", etag)
 
 
-@router.get("/v1/ui/export/sector-employment.png")
+@router.get("/ui/export/sector-employment.png")
 def export_sector_employment_png(
     request: Request,
     queries_dir: str | None = None,

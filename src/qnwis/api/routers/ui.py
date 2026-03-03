@@ -133,7 +133,7 @@ def _resolve_year(api: DataAPI, key: str, year: int | None) -> int:
 
 
 @router.get(
-    "/v1/ui/cards/top-sectors",
+    "/ui/cards/top-sectors",
     response_model=UICardsResponse,
 )
 def ui_cards_top_sectors(
@@ -154,7 +154,7 @@ def ui_cards_top_sectors(
 
 
 @router.get(
-    "/v1/ui/cards/ewi",
+    "/ui/cards/ewi",
     response_model=UICardsResponse,
 )
 def ui_cards_ewi(
@@ -178,7 +178,7 @@ def ui_cards_ewi(
 
 
 @router.get(
-    "/v1/ui/charts/salary-yoy",
+    "/ui/charts/salary-yoy",
     response_model=SalaryYoYChartResponse,
 )
 def ui_chart_salary_yoy(
@@ -199,7 +199,7 @@ def ui_chart_salary_yoy(
 
 
 @router.get(
-    "/v1/ui/charts/sector-employment",
+    "/ui/charts/sector-employment",
     response_model=SectorEmploymentChartResponse,
 )
 def ui_chart_sector_employment(
@@ -224,7 +224,7 @@ def ui_chart_sector_employment(
 
 
 @router.get(
-    "/v1/ui/charts/employment-share",
+    "/ui/charts/employment-share",
     response_model=EmploymentShareGaugeResponse,
 )
 def ui_chart_employment_share(
