@@ -188,7 +188,7 @@ async def generate_plan(
         logger.error("Plan generation failed: %s", exc)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Plan generation failed: {exc!s}",
+            detail="Plan generation failed: invalid parameters",
         ) from exc
     except Exception as exc:
         logger.exception("Unexpected error in plan generation")

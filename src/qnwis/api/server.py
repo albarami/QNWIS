@@ -44,7 +44,7 @@ from ..perf.cache_warming import warm_queries
 from .middleware.rate_limit import limiter, rate_limit_exceeded_handler
 
 PUBLIC_EXACT = {"/", "/health", "/health/live", "/health/ready", "/metrics", "/openapi.json"}
-PUBLIC_PREFIXES = ("/docs", "/redoc", "/api/v1/council/stream")
+PUBLIC_PREFIXES = ("/docs", "/redoc")
 DEFAULT_WARM_QUERIES = tuple(
     qid.strip()
     for qid in os.getenv(
@@ -179,26 +179,35 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(
         title="QNWIS Agent API",
         version=os.getenv("QNWIS_VERSION", "dev"),
-        docs_url=docs_url,
         redoc_url=redoc_url,
         openapi_url=openapi_url,
         lifespan=lifespan,
     )
     app.state.settings = settings
-    app.state.auth_bypass = os.getenv("QNWIS_BYPASS_AUTH", "false").lower() == "true"
-    logger.info("Auth bypass enabled: %s", app.state.auth_bypass)
+    env = os.getenv("QNWIS_ENV", "production").lower()
+    if env in ("development", "test"):
+        app.state.auth_bypass = os.getenv("QNWIS_BYPASS_AUTH", "false").lower() == "true"
+    else:
+        app.state.auth_bypass = False
+    if app.state.auth_bypass:
+        logger.warning("Auth bypass ENABLED in %s environment", env)
     
     # Add slowapi rate limiter
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
     logger.info("Rate limiter initialized (100/hour default)")
 
+    cors_origins = [
+        o.strip()
+        for o in os.getenv("QNWIS_API_CORS_ORIGINS", "http://localhost:3000").split(",")
+        if o.strip()
+    ]
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],  # Allow all origins for development
+        allow_origins=cors_origins,
         allow_methods=["*"],
         allow_headers=["*"],
-        allow_credentials=False,  # Must be False when allow_origins=["*"]
+        allow_credentials=True,
     )
     attach_security(app)
     app.add_middleware(GZipMiddleware, minimum_size=GZIP_MIN_BYTES)

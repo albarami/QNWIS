@@ -227,7 +227,7 @@ async def create_backup(
         logger.error(f"DR backup {request_id} failed: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Backup failed: {str(e)}",
+            detail=f"Backup failed. Reference: {request_id}",
         ) from e
 
 
@@ -299,7 +299,7 @@ async def restore_snapshot(
         logger.error(f"DR restore {request_id} failed: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Restore failed: {str(e)}",
+            detail=f"Restore failed. Reference: {request_id}",
         ) from e
 
 
@@ -363,7 +363,7 @@ async def list_snapshots(
         logger.error(f"DR list {request_id} failed: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"List failed: {str(e)}",
+            detail=f"List failed. Reference: {request_id}",
         ) from e
 
 
@@ -431,7 +431,7 @@ async def verify_snapshot(
         logger.error(f"DR verify {request_id} failed: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Verification failed: {str(e)}",
+            detail=f"Verification failed. Reference: {request_id}",
         ) from e
 
 

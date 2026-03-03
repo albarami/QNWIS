@@ -158,7 +158,7 @@ async def send_notification(
         logger.error(f"Failed to send notification: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to send notification: {e}",
+            detail="Failed to send notification",
         ) from e
 
 
@@ -219,13 +219,13 @@ async def list_incidents(
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid filter value: {e}",
+            detail="Invalid filter value",
         ) from e
     except Exception as e:
         logger.error(f"Failed to list incidents: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to list incidents: {e}",
+            detail="Failed to list incidents",
         ) from e
 
 
@@ -243,7 +243,7 @@ async def get_incident_stats(
         logger.error(f"Failed to get incident stats: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get stats: {e}",
+            detail="Failed to get stats",
         ) from e
 
 

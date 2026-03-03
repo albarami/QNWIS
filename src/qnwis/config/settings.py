@@ -54,6 +54,18 @@ class Settings(BaseSettings):
         description="Secret key for encryption",
     )
 
+    @field_validator("secret_key")
+    @classmethod
+    def _reject_default_secret_in_production(cls, v: str, info) -> str:
+        import os
+        env = os.getenv("QNWIS_ENV", "production").lower()
+        if v == "change_this_secret_key_in_production" and env not in ("development", "test"):
+            raise ValueError(
+                "SECRET_KEY must be set to a real value in production. "
+                "Set the QNWIS_SECRET_KEY environment variable."
+            )
+        return v
+
     # Agent Configuration
     agent_timeout_seconds: int = Field(default=5, description="Agent timeout in seconds")
     stage_a_timeout_ms: int = Field(default=50, description="Stage A timeout in milliseconds")

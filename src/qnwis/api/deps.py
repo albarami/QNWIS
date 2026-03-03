@@ -28,6 +28,8 @@ def attach_security(app: FastAPI) -> FastAPI:
     app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(CSRFMiddleware)
     app.add_middleware(RangeHeaderGuardMiddleware)
-    #app.add_middleware(StrictTransportMiddleware) #REVERT
+    import os
+    if os.getenv("QNWIS_ENABLE_HSTS", "true").lower() == "true":
+        app.add_middleware(StrictTransportMiddleware)
     app.add_middleware(RequestAuditMiddleware)
     return app

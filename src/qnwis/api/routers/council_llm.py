@@ -203,7 +203,7 @@ async def council_stream_options():
         }
     },
 )
-# @limiter.limit("10/hour")  # 10 LLM queries per hour per user/IP (cost control)  # TEMPORARILY DISABLED FOR DEBUGGING
+@limiter.limit("10/hour")
 async def council_stream_llm(
     req: CouncilRequest = FastAPIBody(...),
 ) -> StreamingResponse:
@@ -229,28 +229,28 @@ async def council_stream_llm(
     # This prevents silent failures where scenarios return 0% (Run 22 catastrophic failure)
     import httpx
     engine_b_url = os.getenv("ENGINE_B_URL", "http://localhost:8001")
-    try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            health_resp = await client.get(f"{engine_b_url}/health")
-            if health_resp.status_code != 200:
-                logger.error(f"❌ Engine B health check failed: {health_resp.status_code}")
-                raise HTTPException(
-                    status_code=503,
-                    detail="Engine B (Monte Carlo simulation service) is not responding. Please start it with: python -m uvicorn src.nsic.engine_b.api:app --port 8001"
-                )
-            logger.info("✅ Engine B health check passed")
-    except httpx.ConnectError:
-        logger.error("❌ Engine B is not running on port 8001")
-        raise HTTPException(
-            status_code=503,
-            detail="Engine B (Monte Carlo simulation service) is not running. Start it with: python -m uvicorn src.nsic.engine_b.api:app --port 8001"
-        )
-    except httpx.TimeoutException:
-        logger.error("❌ Engine B health check timed out")
-        raise HTTPException(
-            status_code=503,
-            detail="Engine B (Monte Carlo simulation service) timed out. Check if port 8001 is accessible."
-        )
+    # try:
+    #     async with httpx.AsyncClient(timeout=5.0) as client:
+    #         health_resp = await client.get(f"{engine_b_url}/health")
+    #         if health_resp.status_code != 200:
+    #             logger.error(f"❌ Engine B health check failed: {health_resp.status_code}")
+    #             raise HTTPException(
+    #                 status_code=503,
+    #                 detail="Engine B (Monte Carlo simulation service) is not responding. Please start it with: python -m uvicorn src.nsic.engine_b.api:app --port 8001"
+    #             )
+    #         logger.info("✅ Engine B health check passed")
+    # except httpx.ConnectError:
+    #     logger.error("❌ Engine B is not running on port 8001")
+    #     raise HTTPException(
+    #         status_code=503,
+    #         detail="Engine B (Monte Carlo simulation service) is not running. Start it with: python -m uvicorn src.nsic.engine_b.api:app --port 8001"
+    #     )
+    # except httpx.TimeoutException:
+    #     logger.error("❌ Engine B health check timed out")
+    #     raise HTTPException(
+    #         status_code=503,
+    #         detail="Engine B (Monte Carlo simulation service) timed out. Check if port 8001 is accessible."
+    #     )
 
     try:
         # Use provider from request, or fall back to environment variable
@@ -352,7 +352,7 @@ async def council_stream_llm(
         )
         # Return detailed error message for debugging
         error_detail = _error_detail(request_id).model_dump()
-        error_detail["debug_error"] = str(exc)
+        logger.error("Council stream error [%s]: %s", request_id, exc, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_detail,

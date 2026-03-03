@@ -20,6 +20,7 @@ def get_clock(request: Request) -> Clock:
 @router.get("/", response_model=dict)
 async def list_slos(
     request: Request,
+    _principal: Principal = Depends(require_roles("admin", "analyst", "service")),
 ) -> dict:
     slos = load_directory("slo")
     items = [
@@ -38,6 +39,7 @@ async def list_slos(
 @router.get("/budget", response_model=dict)
 async def get_budgets(
     request: Request,
+    _principal: Principal = Depends(require_roles("admin", "analyst", "service")),
 ) -> dict:
     # Expect windows JSON at default path
     import json

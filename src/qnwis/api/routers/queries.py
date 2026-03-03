@@ -15,7 +15,7 @@ from contextlib import suppress
 from pathlib import Path
 from typing import Any, AsyncGenerator
 
-from fastapi import APIRouter, HTTPException, Query, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from fastapi.responses import StreamingResponse
 
 from ...data.deterministic.cache_access import execute_cached, invalidate_query
@@ -31,6 +31,8 @@ from ..models import (
     QueryRunRequest,
     QueryRunResponse,
 )
+from ...security import Principal
+from ...security.rbac import require_roles
 from ..streaming import add_timing_header, stream_json_array
 
 router = APIRouter(tags=["queries"])
@@ -273,8 +275,8 @@ def run_query(
     except TimeoutError as exc:
         log.warning("Query %s timed out: %s", query_id, exc)
         raise HTTPException(status_code=504, detail="Query execution timed out.") from None
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from None
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid query parameters") from None
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Query source data not found.") from None
     except Exception:
@@ -336,12 +338,12 @@ async def stream_query(
     except TimeoutError as exc:
         log.warning("Query %s timed out: %s", query_id, exc)
         raise HTTPException(status_code=504, detail="Query execution timed out.") from None
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from None
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid query parameters") from None
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Query source data not found.") from None
     except Exception:
-        log.exception("Unexpected failure executing query %s", query_id)
+        log.exception("Unexpected failure streaming query %s", query_id)
         raise HTTPException(status_code=500, detail="Query execution failed.") from None
 
     duration_ms = (time.perf_counter() - started) * 1000
@@ -431,7 +433,10 @@ def run_query_batch(
 
 
 @router.post("/v1/queries/{query_id}/cache/invalidate")
-def invalidate(query_id: str) -> dict[str, Any]:
+def invalidate(
+    query_id: str,
+    _principal: Principal = Depends(require_roles("admin", "service")),
+) -> dict[str, Any]:
     """
     Invalidate cached results for a specific query.
 
