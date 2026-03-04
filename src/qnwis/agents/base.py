@@ -104,40 +104,18 @@ class Insight:
 
 @dataclass
 class AgentReport:
-    """
-    Complete report from an agent execution.
+    """Report produced by an agent after analysis.
 
-    Attributes:
-        agent: Agent name/identifier
-        findings: List of insights discovered
-        insights: Alias for findings (backwards compatibility)
-        warnings: Agent-level warnings
-        narrative: Optional markdown/text narrative
-        derived_results: Optional deterministic QueryResults (e.g., derived metrics)
-        metadata: Arbitrary metadata blob for downstream renderers
+    Used by all agent subclasses to return structured results.
     """
 
-    agent: str
-    findings: list[Insight] | None = None
+    agent: str = ""
+    findings: list[Any] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
-    insights: list[Insight] | None = None
-    narrative: str | None = None
-    derived_results: list[Any] = field(default_factory=list)
+    insights: list[Any] = field(default_factory=list)
+    narrative: str = ""
+    derived_results: dict[str, Any] = field(default_factory=dict)
     metadata: dict[str, Any] = field(default_factory=dict)
-
-    def __post_init__(self) -> None:
-        base_insights: list[Insight]
-        if self.findings is not None:
-            base_insights = list(self.findings)
-        elif self.insights is not None:
-            base_insights = list(self.insights)
-        else:
-            base_insights = []
-
-        self.findings = base_insights
-        self.insights = base_insights
-        self.warnings = list(self.warnings)
-        self.metadata = dict(self.metadata)
 
 
 class DataClient:
@@ -392,7 +370,7 @@ def coerce_llm_response_text(response: Any) -> str:
             if isinstance(item, str):
                 parts.append(item)
             elif hasattr(item, "text"):
-                text_value = getattr(item, "text")
+                text_value = item.text
                 if text_value is not None:
                     parts.append(str(text_value))
             else:
@@ -401,7 +379,7 @@ def coerce_llm_response_text(response: Any) -> str:
             return "\n".join(parts)
 
     if hasattr(response, "text"):
-        text_value = getattr(response, "text")
+        text_value = response.text
         if text_value is not None:
             return str(text_value)
 

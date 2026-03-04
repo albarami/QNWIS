@@ -135,7 +135,7 @@ class Vision2030Tracker:
         on_track_count = sum(1 for p in all_progress if p and p["on_track"])
         total_count = len(all_progress)
         
-        output = f"## Vision 2030 Workforce Progress Dashboard\n\n"
+        output = "## Vision 2030 Workforce Progress Dashboard\n\n"
         output += f"**Overall Status:** {on_track_count}/{total_count} metrics on track\n\n"
         
         # Group by pillar
@@ -193,7 +193,7 @@ class Vision2030Tracker:
             
             elif metric == "knowledge_economy_jobs":
                 recommendations.append(
-                    f"Expand knowledge economy sectors to reach 60% target"
+                    "Expand knowledge economy sectors to reach 60% target"
                 )
             
             elif metric == "skills_alignment":

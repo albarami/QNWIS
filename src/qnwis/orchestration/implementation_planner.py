@@ -12,9 +12,9 @@ Domain-agnostic: Works for any strategic initiative type.
 """
 
 import logging
-from typing import Dict, List, Any, Optional
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
 
@@ -449,7 +449,7 @@ class ImplementationPlanner:
     
     def _generate_governance_structure(self, init_type: str, option_name: str) -> str:
         """Generate governance structure description."""
-        return f"""
+        return """
 **Governance Structure:**
 - Steering Committee: Cabinet-level oversight, quarterly meetings
 - Executive Board: Authority CEO + key ministry representatives

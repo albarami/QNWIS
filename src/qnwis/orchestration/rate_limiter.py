@@ -6,8 +6,8 @@ Prevents 429 errors by enforcing API rate limits.
 """
 
 import asyncio
-import time
 import logging
+import time
 from typing import Any, Callable
 
 logger = logging.getLogger(__name__)

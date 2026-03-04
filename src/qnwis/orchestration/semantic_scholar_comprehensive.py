@@ -14,10 +14,10 @@ Strategy:
 5. Rate limiting with 1-second delays
 """
 
-import logging
 import asyncio
+import logging
 import time
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +58,7 @@ async def extract_semantic_scholar_comprehensive(query: str) -> List[Dict[str, A
     
     try:
         # Import the synchronous client functions
-        from src.data.apis.semantic_scholar import search_papers, get_paper_recommendations
+        from src.data.apis.semantic_scholar import get_paper_recommendations, search_papers
         
         # Generate multiple query variations for broader coverage
         query_variations = _generate_query_variations(query)
@@ -92,7 +92,7 @@ async def extract_semantic_scholar_comprehensive(query: str) -> List[Dict[str, A
                 
                 # Stop early if we have enough papers
                 if len(all_papers) >= 100:
-                    logger.info(f"  Reached 100 papers, stopping query expansion")
+                    logger.info("  Reached 100 papers, stopping query expansion")
                     break
                 
             except Exception as e:
@@ -101,7 +101,7 @@ async def extract_semantic_scholar_comprehensive(query: str) -> List[Dict[str, A
         
         # Get recommendations for top-cited papers found (with rate limiting)
         if all_papers and len(all_papers) < 100:
-            logger.info(f"  Getting recommendations for top-cited papers...")
+            logger.info("  Getting recommendations for top-cited papers...")
             top_papers = sorted(
                 [p for p in all_papers if p.get("citation_count", 0) > 0],
                 key=lambda x: x.get("citation_count", 0),

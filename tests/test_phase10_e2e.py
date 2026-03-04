@@ -13,14 +13,13 @@ Tests:
 ALL BOXES MUST BE CHECKED FOR PHASE 10 TO PASS.
 """
 
-import pytest
 import asyncio
-import sys
 import os
+import sys
 import time
-import re
-from typing import Dict, Any, List
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
+
+import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -41,7 +40,6 @@ class TestPipelineE2E:
     @pytest.fixture
     def scenario_set(self):
         """Generate test scenarios using the new generator."""
-        import asyncio
         from src.nsic.scenarios import create_scenario_generator
         generator = create_scenario_generator()
         # Generate scenarios from a test question
@@ -143,7 +141,7 @@ class TestPipelineE2E:
     @pytest.mark.asyncio
     async def test_arbitrator_works(self, orchestrator):
         """Arbitrator must process engine outputs."""
-        from src.nsic.arbitration import EnsembleArbitrator, EngineOutput
+        from src.nsic.arbitration import EngineOutput, EnsembleArbitrator
         
         arbitrator = EnsembleArbitrator()
         
@@ -209,7 +207,6 @@ class TestFiveScenarioIntegration:
     @pytest.fixture
     def scenario_set(self):
         """Generate test scenarios using the new generator."""
-        import asyncio
         from src.nsic.scenarios import create_scenario_generator
         generator = create_scenario_generator()
         return asyncio.get_event_loop().run_until_complete(
@@ -236,7 +233,7 @@ class TestFiveScenarioIntegration:
             if result:
                 print(f"  ✅ Complete: confidence={result.confidence:.2f}")
             else:
-                print(f"  ⚠️ No result returned")
+                print("  ⚠️ No result returned")
         
         # Filter out None results
         valid_results = [r for r in results if r is not None]
@@ -246,7 +243,7 @@ class TestFiveScenarioIntegration:
         for r in valid_results:
             assert len(r.final_content) > 0, f"No content for {r.scenario_id}"
         
-        print(f"\n✅ All 5 scenarios executed successfully")
+        print("\n✅ All 5 scenarios executed successfully")
     
     @pytest.mark.asyncio
     async def test_five_scenarios_timing(self, orchestrator, scenarios):
@@ -339,8 +336,9 @@ class TestQualityTargets:
     
     def test_knowledge_graph_reasoning(self):
         """Knowledge graph must support causal reasoning."""
-        from src.nsic.knowledge import CausalGraph, CausalNode, CausalEdge
         import numpy as np
+
+        from src.nsic.knowledge import CausalEdge, CausalGraph, CausalNode
         
         graph = CausalGraph(gpu_device="cpu")
         
@@ -387,7 +385,6 @@ class TestValueEvaluation:
     
     def test_deepseek_chain_of_thought(self, orchestrator):
         """DeepSeek should provide chain-of-thought reasoning."""
-        from src.nsic.orchestration import DeepSeekClient
         
         client = orchestrator.engine_b.client
         
@@ -410,7 +407,7 @@ class TestValueEvaluation:
     
     def test_arbitrator_provides_reasoning(self):
         """Arbitrator must explain its decisions."""
-        from src.nsic.arbitration import EnsembleArbitrator, EngineOutput
+        from src.nsic.arbitration import EngineOutput, EnsembleArbitrator
         
         arbitrator = EnsembleArbitrator()
         
@@ -664,7 +661,7 @@ class TestChainOfThought:
         
         assert len(short_thinks) <= 3, f"<think> blocks too short in: {short_thinks}"
         
-        print(f"✅ <think> blocks contain reasoning")
+        print("✅ <think> blocks contain reasoning")
 
 
 # =============================================================================

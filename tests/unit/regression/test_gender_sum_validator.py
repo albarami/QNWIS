@@ -5,7 +5,6 @@ Ensures that the sum-to-one check correctly validates male + female = total,
 not male + female + total = 200.
 """
 
-import pytest
 from src.qnwis.verification.rules import check_sum_to_one
 
 

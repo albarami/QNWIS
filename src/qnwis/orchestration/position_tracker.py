@@ -11,9 +11,9 @@ DOMAIN-AGNOSTIC: Works for any question type.
 
 import logging
 import re
-from typing import Dict, List, Any, Optional
 from collections import defaultdict
 from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -261,7 +261,7 @@ Example: "After reviewing Dr. Hassan's analysis in Turn 34 showing that
                     explained = "✓ Explained" if c.get('explained') else "⚠️ Unexplained"
                     lines.append(f"  - Turn {c['from_turn']} ({c['from']}) → Turn {c['to_turn']} ({c['to']}) {explained}")
             else:
-                lines.append(f"- **Position Changes:** None (consistent throughout)")
+                lines.append("- **Position Changes:** None (consistent throughout)")
             
             lines.append("")
         

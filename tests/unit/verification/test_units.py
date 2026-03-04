@@ -5,17 +5,17 @@ Tests percent normalization (0.11 vs 11) and sum-to-one tolerance.
 """
 
 import pytest
-from src.qnwis.verification.units import (
-    normalize_percent_value,
-    is_percent_indicator,
-    validate_percent_range,
-    format_percent,
-)
+
 from src.qnwis.orchestration.verification import (
     _check_percent_bounds,
     _check_sum_to_one,
     _check_yoy,
-    VerificationIssue,
+)
+from src.qnwis.verification.units import (
+    format_percent,
+    is_percent_indicator,
+    normalize_percent_value,
+    validate_percent_range,
 )
 
 

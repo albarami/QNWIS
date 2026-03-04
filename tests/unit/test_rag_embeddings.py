@@ -4,8 +4,8 @@ Unit tests for sentence-transformers embeddings in RAG system.
 Tests the SentenceEmbedder class and its integration with DocumentStore.
 """
 
-import pytest
 import numpy as np
+import pytest
 
 
 def test_sentence_embedder_import():
@@ -156,7 +156,7 @@ def test_document_store_with_sentence_embeddings():
     """Test DocumentStore uses sentence embeddings when available."""
     try:
         from qnwis.rag.embeddings import SentenceEmbedder
-        from qnwis.rag.retriever import DocumentStore, Document
+        from qnwis.rag.retriever import Document, DocumentStore
         
         store = DocumentStore(
             embedding_model="all-MiniLM-L6-v2",
@@ -191,7 +191,7 @@ def test_document_store_with_sentence_embeddings():
 
 def test_document_store_fallback():
     """Test DocumentStore falls back to SimpleEmbedder gracefully."""
-    from qnwis.rag.retriever import DocumentStore, Document
+    from qnwis.rag.retriever import Document, DocumentStore
     
     # Test with fallback enabled (should always work)
     store = DocumentStore(use_simple_fallback=True)

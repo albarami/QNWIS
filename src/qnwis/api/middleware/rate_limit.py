@@ -15,8 +15,7 @@ from __future__ import annotations
 
 import logging
 import time
-from collections import defaultdict
-from typing import Callable, Optional
+from typing import Optional
 
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse

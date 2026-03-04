@@ -7,15 +7,11 @@ Tests that the generator produces:
 - Different scenarios for different questions
 """
 
+
 import pytest
-import asyncio
+
 from src.nsic.scenarios.generator import (
-    NSICScenarioGenerator,
-    ScenarioSet,
-    GeneratedScenario,
     create_scenario_generator,
-    DEEP_SCENARIO_TYPES,
-    BROAD_CATEGORIES,
 )
 
 

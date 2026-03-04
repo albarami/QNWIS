@@ -15,11 +15,11 @@ Evaluation Results Summary:
 - GPT-5.1: 126.52 (EXCLUDED - reliability issues, failed 2/16 tests)
 """
 
-import os
 import logging
-from enum import Enum
-from typing import Optional, Dict, Any
+import os
 from dataclasses import dataclass
+from enum import Enum
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 

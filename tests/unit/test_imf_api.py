@@ -1,7 +1,9 @@
 """Unit tests for IMF API Connector"""
 
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
+
 from src.data.apis.imf_api import IMFConnector
 
 

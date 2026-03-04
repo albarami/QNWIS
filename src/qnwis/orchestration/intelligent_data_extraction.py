@@ -30,7 +30,7 @@ import logging
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -359,7 +359,7 @@ class IntelligentDataExtractor:
                                 "confidence": 0.98,
                                 "timestamp": datetime.now().isoformat()
                             })
-                    except Exception as e:
+                    except Exception:
                         continue
             
             self.extraction_report["sources_queried"].append("World Bank API")
@@ -439,12 +439,12 @@ class IntelligentDataExtractor:
             query[:200],  # Original query
             f"Qatar {' '.join(concepts)}",
             f"GCC labor market {' '.join(concepts)}",
-            f"Gulf states employment policy",
-            f"Middle East economic diversification",
-            f"Qatar Vision 2030",
-            f"Qatarization nationalization policy",
-            f"LNG industry workforce",
-            f"Gulf labor market reform",
+            "Gulf states employment policy",
+            "Middle East economic diversification",
+            "Qatar Vision 2030",
+            "Qatarization nationalization policy",
+            "LNG industry workforce",
+            "Gulf labor market reform",
         ]
         
         # Multiple seed papers for recommendations
@@ -693,11 +693,11 @@ class IntelligentDataExtractor:
             f"Qatar {' '.join(concepts)} statistics 2024",
             f"GCC {' '.join(concepts)} data analysis",
             f"{' '.join(entities)} latest economic indicators",
-            f"Qatar labor market employment 2024 statistics",
-            f"Qatar GDP economic growth forecast",
-            f"Qatar Vision 2030 progress indicators",
-            f"Qatar LNG industry employment technical jobs",
-            f"Qatar Qatarization policy targets progress",
+            "Qatar labor market employment 2024 statistics",
+            "Qatar GDP economic growth forecast",
+            "Qatar Vision 2030 progress indicators",
+            "Qatar LNG industry employment technical jobs",
+            "Qatar Qatarization policy targets progress",
         ]
         
         for pq in queries[:5]:  # Top 5 queries
@@ -764,8 +764,8 @@ class IntelligentDataExtractor:
         
         queries = [
             f"Qatar {' '.join(concepts)} statistics 2024",
-            f"Qatar economic data indicators",
-            f"Qatar labor market employment statistics",
+            "Qatar economic data indicators",
+            "Qatar labor market employment statistics",
             f"GCC {' '.join(concepts)} comparison",
         ]
         

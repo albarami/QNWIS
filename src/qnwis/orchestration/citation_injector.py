@@ -7,9 +7,9 @@ we inject citations programmatically by matching numbers in the text to source d
 This is a pragmatic solution that accepts LLM limitations and works around them.
 """
 
-import re
 import logging
-from typing import Dict, Any, List, Tuple, Optional
+import re
+from typing import Any, Dict, List, Tuple
 
 logger = logging.getLogger(__name__)
 

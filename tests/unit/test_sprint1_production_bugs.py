@@ -9,8 +9,6 @@ Covers:
 """
 
 import ast
-import asyncio
-import os
 from pathlib import Path
 
 import pytest
@@ -30,10 +28,11 @@ class TestSyncWrapperBridge:
 
     def test_sync_wrapper_returns_state_from_sync_context(self):
         """Calling from a normal sync context must invoke the async node."""
+        import inspect
+
         from src.qnwis.orchestration.nodes.synthesis import (
             legendary_synthesis_node_sync,
         )
-        import inspect
 
         source = inspect.getsource(legendary_synthesis_node_sync)
         assert "return state" not in source.split("try:")[1].split("except RuntimeError")[0] or \
@@ -43,10 +42,11 @@ class TestSyncWrapperBridge:
 
     def test_sync_wrapper_has_thread_bridge_for_async_context(self):
         """The wrapper must use a thread-based bridge when called from async."""
+        import inspect
+
         from src.qnwis.orchestration.nodes.synthesis import (
             legendary_synthesis_node_sync,
         )
-        import inspect
 
         source = inspect.getsource(legendary_synthesis_node_sync)
         assert "ThreadPoolExecutor" in source or "run_coroutine_threadsafe" in source, (
@@ -55,10 +55,11 @@ class TestSyncWrapperBridge:
 
     def test_sync_wrapper_does_not_short_circuit_on_running_loop(self):
         """When get_running_loop() succeeds, wrapper must NOT just return state."""
+        import inspect
+
         from src.qnwis.orchestration.nodes.synthesis import (
             legendary_synthesis_node_sync,
         )
-        import inspect
 
         source = inspect.getsource(legendary_synthesis_node_sync)
         lines = source.split("\n")
@@ -88,7 +89,7 @@ class TestLLMClientTimeout:
 
         config = get_llm_config()
         assert config.timeout_seconds != 7200, (
-            f"Default timeout is still 7200s — config.py not fixed"
+            "Default timeout is still 7200s — config.py not fixed"
         )
         assert config.timeout_seconds <= 600, (
             f"Default timeout {config.timeout_seconds}s is unreasonably high "

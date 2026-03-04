@@ -11,7 +11,6 @@ import pytest
 async def test_stub_llm_health_check():
     """Test stub LLM client is healthy."""
     from src.qnwis.llm.client import LLMClient
-    from src.qnwis.llm.config import LLMConfig
     
     from src.qnwis.llm.config import get_llm_config; config = get_llm_config()
     client = LLMClient(config=config)
@@ -28,7 +27,6 @@ async def test_stub_llm_health_check():
 async def test_stub_provider_configuration():
     """Test stub provider is properly configured."""
     from src.qnwis.llm.client import LLMClient
-    from src.qnwis.llm.config import LLMConfig
     
     from src.qnwis.llm.config import get_llm_config; config = get_llm_config()
     client = LLMClient(config=config)

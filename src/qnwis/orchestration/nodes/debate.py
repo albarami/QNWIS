@@ -8,10 +8,9 @@ based on the agent reports generated earlier in the workflow.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from ..state import IntelligenceState
-
 
 POSITIVE_TOKENS = {"increase", "growth", "opportunity", "improve", "expansion"}
 NEGATIVE_TOKENS = {"risk", "decline", "decrease", "concern", "shortfall", "deficit"}

@@ -13,7 +13,7 @@ import logging
 import re
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -281,8 +281,8 @@ def _extract_diagnostic_ground_truth(state: Dict, question_type_str: str) -> Gro
     if feas_ratio < 0.5:
         feasibility_warning = f"Note: Feasibility ratio ({feas_ratio:.0%}) indicates structural challenges"
     
-    logger.info(f"📊 DIAGNOSTIC GROUND TRUTH:")
-    logger.info(f"   Source: debate_consensus (OVERRIDES feasibility)")
+    logger.info("📊 DIAGNOSTIC GROUND TRUTH:")
+    logger.info("   Source: debate_consensus (OVERRIDES feasibility)")
     logger.info(f"   Probability: {consensus_prob*100:.1f}%")
     logger.info(f"   Confidence: {consensus_conf*100:.0f}%")
     logger.info(f"   Agent estimates: {[f'{e*100:.0f}%' for e in agent_estimates]}")
@@ -368,8 +368,8 @@ def _extract_comparative_ground_truth(state: Dict) -> GroundTruth:
     
     is_close_call = debate_verdict.get('is_close_call', gap < 10)
     
-    logger.info(f"📊 COMPARATIVE GROUND TRUTH:")
-    logger.info(f"   Source: scenario_analysis")
+    logger.info("📊 COMPARATIVE GROUND TRUTH:")
+    logger.info("   Source: scenario_analysis")
     logger.info(f"   Best: {best_option} at {best_rate:.1f}%")
     logger.info(f"   Worst: {worst_option} at {worst_rate:.1f}%")
     logger.info(f"   Gap: {gap:.1f}pp")
@@ -441,7 +441,7 @@ def validate_no_fabrication(text: str, gt: GroundTruth) -> List[str]:
         for w in warnings:
             logger.warning(f"   {w}")
     else:
-        logger.info(f"✅ FABRICATION CHECK: All percentages validated")
+        logger.info("✅ FABRICATION CHECK: All percentages validated")
     
     return warnings
 

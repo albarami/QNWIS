@@ -8,6 +8,7 @@ real middleware stack, and real auth flow.
 from __future__ import annotations
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 import pytest

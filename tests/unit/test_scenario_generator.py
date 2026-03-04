@@ -4,9 +4,11 @@ Unit tests for Scenario Generator.
 Tests scenario generation with Claude Sonnet 4 for parallel analysis.
 """
 
-import pytest
 import json
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import patch
+
+import pytest
+
 from qnwis.orchestration.nodes.scenario_generator import ScenarioGenerator
 
 

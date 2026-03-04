@@ -3,10 +3,11 @@ MacroEconomist Agent - National-level strategic analysis
 Focuses on: GDP impact, employment, strategic security, systemic resilience
 """
 
-from typing import Dict, List, Any
-from .base_llm import LLMAgent
-from .base import DataClient
+from typing import Dict
+
 from ..llm.client import LLMClient
+from .base import DataClient
+from .base_llm import LLMAgent
 
 
 class MacroEconomist(LLMAgent):

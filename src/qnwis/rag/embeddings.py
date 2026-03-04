@@ -46,9 +46,10 @@ class SentenceEmbedder:
         logger.info(f"Loading sentence-transformers model: {model_name}")
         
         try:
-            from sentence_transformers import SentenceTransformer
-            import torch
             import os
+
+            import torch
+            from sentence_transformers import SentenceTransformer
             
             # Set HuggingFace token from environment for authentication
             hf_token = os.environ.get("HUGGINGFACE_TOKEN") or os.environ.get("HF_TOKEN")

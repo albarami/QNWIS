@@ -11,8 +11,8 @@ Domain-agnostic: Works for any strategic decision context.
 """
 
 import logging
-from typing import Dict, List, Any, Optional
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
 

@@ -5,14 +5,14 @@ Real-time fact verification using instructor-xl on GPU 6 (shared with embeddings
 Supports up to 500,000 documents with <5GB GPU memory footprint.
 """
 
+import asyncio
 import logging
 import re
-import asyncio
-from typing import List, Dict, Any, Optional
-from pathlib import Path
+from typing import Any, Dict, List
+
+import numpy as np
 import torch
 from sentence_transformers import SentenceTransformer
-import numpy as np
 
 logger = logging.getLogger(__name__)
 

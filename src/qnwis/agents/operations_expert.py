@@ -4,7 +4,7 @@ Operations Expert agent with senior execution persona.
 
 from __future__ import annotations
 
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
 from qnwis.agents.prompts.base import (
     ANTI_FABRICATION_RULES,
@@ -117,14 +117,15 @@ NOW PROVIDE YOUR ANALYSIS:
             )
         
         # Extract metadata (using similar logic to other agents)
+        from datetime import datetime
+
         from qnwis.agents.base import (
+            extract_assumptions,
             extract_citations_from_narrative,
             extract_data_gaps,
-            extract_assumptions,
             extract_usage_tokens,
-            resolve_response_model
+            resolve_response_model,
         )
-        from datetime import datetime
         
         citations = extract_citations_from_narrative(response, extracted_facts)
         data_gaps = extract_data_gaps(response)

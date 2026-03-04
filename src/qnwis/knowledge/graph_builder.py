@@ -11,14 +11,13 @@ Features:
 - Path finding for reasoning chains
 """
 
+import json
 import logging
 import re
-from enum import Enum
-from typing import Dict, List, Any, Optional, Set, Tuple
 from dataclasses import dataclass, field
+from enum import Enum
 from pathlib import Path
-import pickle
-import json
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import networkx as nx
 

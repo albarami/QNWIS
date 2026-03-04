@@ -10,16 +10,15 @@ PHASE 2 FIX: Skip A/B scenario generation for DIAGNOSTIC/FORECAST questions.
 These questions don't need fabricated Option A vs Option B scenarios.
 """
 
-import logging
 import json
-import os
+import logging
 import re
-from typing import List, Dict, Any, Tuple, Literal
+from typing import Any, Dict, List
 
 from ...llm.client import LLMClient
 from ...llm.config import get_llm_config
-from .scenario_baseline_requirements import format_baselines_for_prompt
 from .classifier import classify_question_type
+from .scenario_baseline_requirements import format_baselines_for_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -117,24 +116,24 @@ class ScenarioGenerator:
         
         question_type = classify_question_type(query)
         
-        logger.warning(f"[CHECKPOINT 2] ═══════════════════════════════════════════════")
+        logger.warning("[CHECKPOINT 2] ═══════════════════════════════════════════════")
         logger.warning(f"[CHECKPOINT 2] Question type from classify: {question_type}")
         logger.warning(f"[CHECKPOINT 2] Query: {query[:100]}...")
         
         if question_type in ("DIAGNOSTIC", "FORECAST", "HYBRID"):
             logger.warning(f"[CHECKPOINT 2] SKIPPING Monte Carlo for {question_type} question")
-            logger.warning(f"[CHECKPOINT 2] Returning EMPTY scenarios list")
-            logger.warning(f"[CHECKPOINT 2] ═══════════════════════════════════════════════")
+            logger.warning("[CHECKPOINT 2] Returning EMPTY scenarios list")
+            logger.warning("[CHECKPOINT 2] ═══════════════════════════════════════════════")
             
             # Return minimal structure - no fabricated scenarios
             # The workflow will still proceed but without Monte Carlo rates
             return []
         
-        logger.warning(f"[CHECKPOINT 2] PROCEEDING with A/B scenario generation (COMPARATIVE)")
-        logger.warning(f"[CHECKPOINT 2] ═══════════════════════════════════════════════")
+        logger.warning("[CHECKPOINT 2] PROCEEDING with A/B scenario generation (COMPARATIVE)")
+        logger.warning("[CHECKPOINT 2] ═══════════════════════════════════════════════")
         
         # For COMPARATIVE questions, proceed with normal A/B scenario generation
-        logger.info(f"✅ COMPARATIVE question - proceeding with A/B scenario generation")
+        logger.info("✅ COMPARATIVE question - proceeding with A/B scenario generation")
         
         REQUIRED_SCENARIO_COUNT = 6
         response = None
@@ -702,7 +701,7 @@ Generate the scenarios now:"""
         if warnings:
             logger.warning(f"⚠️ Stake specificity issues in {len(warnings)} scenarios")
         else:
-            logger.info(f"✅ All scenarios have specific stakes")
+            logger.info("✅ All scenarios have specific stakes")
         
         return warnings
 
@@ -808,5 +807,5 @@ Now generate 4-6 realistic scenarios that:
 
 OUTPUT: Valid JSON array with EXACTLY 4-6 scenarios. No explanations, no markdown."""
 
-        logger.info(f"🎓 Using dynamic PhD-level expert persona for query understanding")
+        logger.info("🎓 Using dynamic PhD-level expert persona for query understanding")
         return system_prompt

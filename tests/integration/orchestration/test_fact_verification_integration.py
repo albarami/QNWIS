@@ -4,11 +4,12 @@ Integration tests for fact verification in debate flow.
 Tests real-time verification during agent debates without blocking.
 """
 
-import pytest
 import asyncio
-from unittest.mock import AsyncMock, patch, MagicMock
-from qnwis.rag.gpu_verifier import GPUFactVerifier
+
+import pytest
+
 from qnwis.rag import get_fact_verifier, initialize_fact_verifier
+from qnwis.rag.gpu_verifier import GPUFactVerifier
 
 
 @pytest.mark.asyncio

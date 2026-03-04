@@ -17,8 +17,8 @@ The synthesis must recommend an OPTION, not a SCENARIO.
 
 import logging
 import re
-from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -292,7 +292,7 @@ class ScenarioAwareSynthesis:
         
         # If agent recommends something with lower rate than best, check gap
         if ground_truth['gap'] >= 10 and agent_rate < ground_truth['best_rate'] - 10:
-            logger.warning(f"⚠️ POSSIBLE MISALIGNMENT DETECTED:")
+            logger.warning("⚠️ POSSIBLE MISALIGNMENT DETECTED:")
             logger.warning(f"   Ground truth winner: {ground_truth['best_option']} at {ground_truth['best_rate']:.1f}%")
             logger.warning(f"   Agents recommend: {agent_recommendation} (matched rate: {agent_rate:.1f}%)")
             aligned = False  # Force reconciliation
@@ -301,7 +301,7 @@ class ScenarioAwareSynthesis:
         best_rate_raw = best_scenario.get('success_rate', best_scenario.get('success_probability', 0.5))
         best_rate_display = self._normalize_rate(best_rate_raw)
         
-        logger.info(f"📊 Scenario-Aware Synthesis:")
+        logger.info("📊 Scenario-Aware Synthesis:")
         logger.info(f"   Ground truth best scenario: {ground_truth['best_option']}")
         logger.info(f"   Mapped to OPTION: {scenario_recommendation}")
         logger.info(f"   Best scenario rate: {best_rate_display:.1f}%")
@@ -405,7 +405,7 @@ class ScenarioAwareSynthesis:
             best['rate'] = 55.0
             worst['rate'] = 45.0
             gap = 10.0
-            logger.warning(f"   Using conservative defaults: 55% / 45% (gap 10pp)")
+            logger.warning("   Using conservative defaults: 55% / 45% (gap 10pp)")
         
         # Check 2: All rates too low (<20%) - suggests overly pessimistic model
         elif all(r < 20 for r in rates):
@@ -415,7 +415,7 @@ class ScenarioAwareSynthesis:
             best['rate'] = 45.0
             worst['rate'] = 35.0
             gap = 10.0
-            logger.warning(f"   Using conservative defaults: 45% / 35% (gap 10pp)")
+            logger.warning("   Using conservative defaults: 45% / 35% (gap 10pp)")
         
         # Check 3: All rates nearly identical (<5pp spread) - model not differentiating
         elif gap < 5.0 and len(analysis_set) >= 4:
@@ -427,7 +427,7 @@ class ScenarioAwareSynthesis:
                 best['rate'] = 60.0
                 worst['rate'] = 50.0
                 gap = 10.0
-                logger.warning(f"   Using conservative defaults: 60% / 50% (gap 10pp)")
+                logger.warning("   Using conservative defaults: 60% / 50% (gap 10pp)")
         
         # Check 4: Extreme rates (>95% or <5%) are always suspect
         if best['rate'] > 95:
@@ -439,7 +439,7 @@ class ScenarioAwareSynthesis:
             worst['rate'] = 15.0
             gap = best['rate'] - worst['rate']
         
-        logger.info(f"📊 SCENARIO GROUND TRUTH (question-type agnostic):")
+        logger.info("📊 SCENARIO GROUND TRUTH (question-type agnostic):")
         logger.info(f"   Best: {best['name'][:40]} at {best['rate']:.1f}%")
         logger.info(f"   Worst: {worst['name'][:40]} at {worst['rate']:.1f}%")
         logger.info(f"   Gap: {gap:.1f}pp")
@@ -675,7 +675,7 @@ class ScenarioAwareSynthesis:
         
         gap = best_rate - agent_scenario_rate
         
-        logger.warning(f"⚠️ SCENARIO-AGENT CONFLICT:")
+        logger.warning("⚠️ SCENARIO-AGENT CONFLICT:")
         logger.warning(f"   Best scenario: {scenario_recommendation} at {best_rate:.1f}%")
         logger.warning(f"   Agent recommendation: {agent_recommendation} at {agent_scenario_rate:.1f}%")
         logger.warning(f"   Gap: {gap:.1f} percentage points")

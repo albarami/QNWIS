@@ -12,8 +12,8 @@ No hardcoded domain keywords - extracts options dynamically from question text.
 
 import logging
 import re
-from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass
+from typing import List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -378,7 +378,7 @@ Please restate your final position NOW.
 ═══════════════════════════════════════════════════════════════════════════════
 """
         
-        return f"Please restate your recommendation addressing the original question."
+        return "Please restate your recommendation addressing the original question."
 
 
 def create_question_lock_prompt(question: str) -> str:

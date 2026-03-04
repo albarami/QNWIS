@@ -6,40 +6,40 @@ This package now hosts:
 - LangGraph intelligence nodes powering the multi-agent intelligence system
 """
 
-from .error import error_handler
-from .format import format_report
-from .invoke import invoke_agent
-from .router import route_intent
-from .verify import verify_structure
+from .calculate import calculate_node, format_comparison_table, get_calculated_summary
 
 # LangGraph intelligence nodes (added progressively)
 from .classifier import classify_query_node
+from .critique import critique_node
+from .debate import debate_node
+from .error import error_handler
 from .extraction import data_extraction_node
 from .financial import financial_agent_node
+from .first_principles_reasoning import (
+    FIRST_PRINCIPLES_PROTOCOL,
+    arithmetic_validator_node,
+    enhance_agent_prompt_with_first_principles,
+    feasibility_gate_node,
+)
+from .format import format_report
+from .infeasible_analysis import infeasible_analysis_node
+from .invoke import invoke_agent
 from .market import market_agent_node
 from .operations import operations_agent_node
 from .research import research_agent_node
-from .debate import debate_node
-from .critique import critique_node
-from .verification import verification_node
-from .synthesis import synthesis_node
-from .synthesis_strategic import strategic_synthesis_node
-from .scenario_generator import ScenarioGenerator
+from .router import route_intent
 from .scenario_baseline_requirements import (
+    SCENARIO_BASELINE_REQUIREMENTS,
     analyze_query_requirements,
     enhance_facts_with_scenario_baselines,
     format_baselines_for_prompt,
-    SCENARIO_BASELINE_REQUIREMENTS,
 )
-from .first_principles_reasoning import (
-    feasibility_gate_node,
-    arithmetic_validator_node,
-    enhance_agent_prompt_with_first_principles,
-    FIRST_PRINCIPLES_PROTOCOL,
-)
-from .infeasible_analysis import infeasible_analysis_node
-from .structure_data import structure_data_node, convert_structured_to_model_input
-from .calculate import calculate_node, get_calculated_summary, format_comparison_table
+from .scenario_generator import ScenarioGenerator
+from .structure_data import convert_structured_to_model_input, structure_data_node
+from .synthesis import synthesis_node
+from .synthesis_strategic import strategic_synthesis_node
+from .verification import verification_node
+from .verify import verify_structure
 
 __all__ = [
     # Legacy nodes

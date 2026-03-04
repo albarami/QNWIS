@@ -3,7 +3,6 @@ Comprehensive API Catalog for Qatar Ministerial Committees
 Aligned with: Economic Committee, Workforce Planning Committee, NDS3 Committee
 """
 
-from typing import Dict, List, Any
 
 # Import the full catalog from data module
 # This file provides the structure - actual catalog is in separate module for maintainability

@@ -8,10 +8,9 @@ Synthesizes insights across multiple parallel scenario analyses to identify:
 - Final strategic guidance for leadership
 """
 
-import asyncio
 import logging
-from typing import List, Dict, Any
 from datetime import datetime
+from typing import Any, Dict, List
 
 from ...llm.client import LLMClient
 from ...llm.config import get_llm_config
@@ -55,8 +54,8 @@ async def meta_synthesis_node(scenario_results: List[Dict[str, Any]]) -> str:
         logger.warning(f"🔍 Meta-synthesis prompt size: {len(prompt)} chars")
         
         # Call LLM with hybrid routing (GPT-5 for meta-synthesis)
-        logger.info(f"Synthesizing insights with hybrid routing...")
-        logger.warning(f"🚀 Starting LLM call for meta-synthesis...")
+        logger.info("Synthesizing insights with hybrid routing...")
+        logger.warning("🚀 Starting LLM call for meta-synthesis...")
         
         synthesis = await llm_client.generate_with_routing(
             prompt=prompt,
@@ -144,7 +143,7 @@ def _extract_scenario_summaries(scenario_results: List[Dict[str, Any]]) -> List[
             logger.warning(f"Failed to extract summary from scenario result: {e}")
             # FIXED: Skip failed scenarios instead of adding "Unknown Scenario" placeholders
             # Adding 0% placeholders causes meta_synthesis to generate misleading "0/6 failed" content
-            logger.info(f"Skipping scenario due to extraction error - will not add Unknown Scenario placeholder")
+            logger.info("Skipping scenario due to extraction error - will not add Unknown Scenario placeholder")
     
     return summaries
 
@@ -328,7 +327,7 @@ def _format_scenarios(summaries: List[Dict[str, Any]]) -> str:
         
         # Add recommendation (truncated)
         rec = summary['recommendation'][:1000]  # Limit to 1000 chars
-        lines.append(f"\n**Recommendation:**")
+        lines.append("\n**Recommendation:**")
         lines.append(rec)
         
         if summary.get('warnings'):

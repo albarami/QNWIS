@@ -9,10 +9,10 @@ Fetches real case studies from:
 Domain-agnostic: automatically identifies relevant cases based on query topic.
 """
 
-import logging
 import asyncio
-from typing import List, Dict, Any, Optional
+import logging
 import re
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +50,7 @@ async def extract_case_studies(query: str, max_cases: int = 4) -> List[Dict[str,
     if apis_missing:
         logger.warning(f"⚠️ CASE STUDIES: Missing API keys: {', '.join(apis_missing)}")
         logger.warning(f"   Available APIs: {', '.join(apis_available) if apis_available else 'None'}")
-        logger.warning(f"   Set these environment variables to enable full case study extraction")
+        logger.warning("   Set these environment variables to enable full case study extraction")
     
     # Extract key topics from query for case study search
     case_study_queries = _generate_case_study_queries(query)
@@ -64,7 +64,7 @@ async def extract_case_studies(query: str, max_cases: int = 4) -> List[Dict[str,
             all_cases.extend(perplexity_cases)
             logger.info(f"  ✅ Perplexity: {len(perplexity_cases)} case studies")
         else:
-            logger.info(f"  ⏭️ Perplexity: Skipped (no API key)")
+            logger.info("  ⏭️ Perplexity: Skipped (no API key)")
         
         # 2. Semantic Scholar - Academic case studies (free API)
         academic_cases = await _fetch_academic_case_studies(query, case_study_queries)
@@ -77,7 +77,7 @@ async def extract_case_studies(query: str, max_cases: int = 4) -> List[Dict[str,
             all_cases.extend(news_cases)
             logger.info(f"  ✅ Brave: {len(news_cases)} recent cases")
         else:
-            logger.info(f"  ⏭️ Brave: Skipped (no API key)")
+            logger.info("  ⏭️ Brave: Skipped (no API key)")
         
     except Exception as e:
         logger.error(f"Case study extraction error: {e}")
@@ -221,9 +221,7 @@ async def _fetch_perplexity_case_studies(
     cases = []
     
     try:
-        from .perplexity_comprehensive import (
-            extract_perplexity_comprehensive
-        )
+        from .perplexity_comprehensive import extract_perplexity_comprehensive
         
         # Build case study specific query targeting AUTHORITATIVE SOURCES
         case_query = f"""Find 3-4 detailed CASE STUDIES with SPECIFIC DATA from authoritative sources about:
@@ -291,9 +289,7 @@ async def _fetch_academic_case_studies(
     topics = _extract_topics(query)
     
     try:
-        from .semantic_scholar_comprehensive import (
-            extract_semantic_scholar_comprehensive
-        )
+        from .semantic_scholar_comprehensive import extract_semantic_scholar_comprehensive
         
         # Multiple academic search queries for comprehensive coverage
         academic_queries = [
@@ -341,9 +337,7 @@ async def _fetch_brave_case_studies(
     cases = []
     
     try:
-        from .brave_comprehensive import (
-            extract_brave_comprehensive
-        )
+        from .brave_comprehensive import extract_brave_comprehensive
         
         # Search for recent implementations
         for sq in search_queries[:3]:

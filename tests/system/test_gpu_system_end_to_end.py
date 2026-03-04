@@ -4,12 +4,13 @@ System tests for complete Multi-GPU architecture.
 Tests end-to-end integration with real GPUs, Claude API, and full workflow.
 """
 
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
 import torch
-from unittest.mock import patch, AsyncMock, MagicMock
-from qnwis.config.gpu_config import load_gpu_config, get_gpu_config
+
+from qnwis.config.gpu_config import load_gpu_config
 from qnwis.orchestration.parallel_executor import ParallelDebateExecutor
-from qnwis.rag.gpu_verifier import GPUFactVerifier
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="Requires CUDA GPUs")

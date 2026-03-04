@@ -4,9 +4,8 @@ Integration tests for number verification from data.
 Tests that pipeline rejects fabricated metrics with clear warnings.
 """
 
-import pytest
-from src.qnwis.llm.parser import LLMResponseParser, AgentFinding
-from src.qnwis.data.deterministic.models import QueryResult, Row, Provenance
+from src.qnwis.data.deterministic.models import Provenance, QueryResult, Row
+from src.qnwis.llm.parser import AgentFinding, LLMResponseParser
 
 
 def test_reject_fabricated_metric():

@@ -1,12 +1,12 @@
 """API router registry for server autoload."""
 
 from . import (
+    admin,
     agents_pattern,
     agents_predictor,
     agents_scenario,
     agents_strategy,
     agents_time,
-    admin,
     backups,
     briefing,
     continuity,

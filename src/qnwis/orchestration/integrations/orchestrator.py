@@ -6,6 +6,7 @@ import os
 from datetime import datetime
 from typing import Any, Awaitable, Callable, Dict, List
 
+from .brave import fetch_brave_economic
 from .common import (
     CRITICAL_DATA_CHECKLISTS,
     TARGETED_SEARCH_STRATEGIES,
@@ -14,25 +15,38 @@ from .common import (
     SemanticScholarAPI,
     classify_query_for_extraction,
 )
-from .brave import fetch_brave_economic
 from .perplexity import (
-    fetch_perplexity_gcc, fetch_perplexity_policy, fetch_perplexity_energy,
-    fetch_perplexity_food_security, fetch_perplexity_smart, fetch_perplexity_targeted,
+    fetch_perplexity_energy,
+    fetch_perplexity_food_security,
+    fetch_perplexity_gcc,
+    fetch_perplexity_policy,
+    fetch_perplexity_smart,
+    fetch_perplexity_targeted,
+)
+from .qatar_opendata import (
+    fetch_adp_data,
+    fetch_escwa_trade,
+    fetch_gcc_stat,
+    fetch_ilo_benchmarks,
+    fetch_knowledge_graph_context,
+    fetch_lmis_comprehensive,
+    fetch_mol_data,
+    fetch_unctad_investment,
+    fetch_unwto_tourism,
 )
 from .semantic_scholar import (
-    fetch_semantic_scholar_labor, fetch_semantic_scholar_policy,
+    fetch_semantic_scholar_labor,
+    fetch_semantic_scholar_policy,
     fetch_semantic_scholar_smart,
 )
 from .world_bank import (
-    query_postgres_cache, write_facts_to_postgres,
-    fetch_world_bank, fetch_world_bank_dashboard,
-    fetch_imf_dashboard, fetch_comtrade_food, fetch_fred_benchmarks,
-    fetch_fao_food_security, fetch_iea_energy,
-)
-from .qatar_opendata import (
-    fetch_mol_data, fetch_gcc_stat, fetch_unctad_investment, fetch_ilo_benchmarks,
-    fetch_lmis_comprehensive, fetch_unwto_tourism, fetch_adp_data,
-    fetch_escwa_trade, fetch_knowledge_graph_context,
+    fetch_comtrade_food,
+    fetch_fao_food_security,
+    fetch_fred_benchmarks,
+    fetch_iea_energy,
+    fetch_imf_dashboard,
+    fetch_world_bank,
+    fetch_world_bank_dashboard,
 )
 
 logger = logging.getLogger(__name__)
@@ -83,8 +97,9 @@ class CompletePrefetchLayer:
 
         self._knowledge_graph = None
         try:
-            from ..knowledge.graph_builder import QNWISKnowledgeGraph
             from pathlib import Path
+
+            from ..knowledge.graph_builder import QNWISKnowledgeGraph
             kg_path = Path("data/knowledge_graph.json")
             if kg_path.exists():
                 self._knowledge_graph = QNWISKnowledgeGraph()

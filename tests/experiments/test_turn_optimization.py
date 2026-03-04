@@ -15,11 +15,10 @@ METRICS:
 - quality_score: Based on chain-of-thought depth and citation count
 """
 
-import pytest
 import asyncio
-import time
 from dataclasses import dataclass
-from typing import List, Dict, Any, Optional
+
+import pytest
 
 
 @dataclass
@@ -47,17 +46,14 @@ class TestTurnOptimization:
 
     def test_import_components(self):
         """Verify all required components import correctly."""
+        from src.nsic.agents.engine_b import (
+            ENGINE_B_AGENTS,
+        )
         from src.nsic.orchestration.dual_engine_orchestrator import (
             DualEngineOrchestrator,
-            create_dual_engine_orchestrator,
         )
         from src.nsic.orchestration.engine_b_deepseek import (
             EngineBDeepSeek,
-            create_engine_b,
-        )
-        from src.nsic.agents.engine_b import (
-            ENGINE_B_AGENTS,
-            get_agent_rotation,
         )
 
         assert DualEngineOrchestrator is not None
@@ -150,7 +146,7 @@ class TestTurnOptimization:
 
     def test_graceful_degradation_tracks_turns(self):
         """Verify error handler tracks completed turns for partial failures."""
-        from src.nsic.orchestration.error_handler import AnalysisState, create_error_handler
+        from src.nsic.orchestration.error_handler import create_error_handler
 
         handler = create_error_handler()
         state = handler.create_state()

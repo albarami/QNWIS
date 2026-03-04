@@ -9,11 +9,11 @@ Tests for:
 Gate: pytest tests/test_phase9_integration.py -v
 """
 
-import pytest
-import sys
 import os
+import sys
 import time
-import asyncio
+
+import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -34,7 +34,7 @@ class TestTimingLogger:
     
     def test_timing_context_manager(self):
         """Test timing via context manager."""
-        from src.nsic.orchestration.timing_logger import TimingLogger, Stage
+        from src.nsic.orchestration.timing_logger import Stage, TimingLogger
         
         timing = TimingLogger()
         
@@ -49,7 +49,7 @@ class TestTimingLogger:
     
     def test_timing_manual_start_end(self):
         """Test manual timing with start/end."""
-        from src.nsic.orchestration.timing_logger import TimingLogger, Stage
+        from src.nsic.orchestration.timing_logger import Stage, TimingLogger
         
         timing = TimingLogger()
         
@@ -62,7 +62,7 @@ class TestTimingLogger:
     
     def test_timing_multiple_stages(self):
         """Test timing multiple stages for same scenario."""
-        from src.nsic.orchestration.timing_logger import TimingLogger, Stage
+        from src.nsic.orchestration.timing_logger import Stage, TimingLogger
         
         timing = TimingLogger()
         
@@ -82,7 +82,7 @@ class TestTimingLogger:
     
     def test_timing_stage_summary(self):
         """Test stage summary aggregation."""
-        from src.nsic.orchestration.timing_logger import TimingLogger, Stage
+        from src.nsic.orchestration.timing_logger import Stage, TimingLogger
         
         timing = TimingLogger()
         
@@ -100,9 +100,7 @@ class TestTimingLogger:
     
     def test_global_timing_logger(self):
         """Test global timing logger functions."""
-        from src.nsic.orchestration.timing_logger import (
-            get_timing_logger, reset_timing_logger
-        )
+        from src.nsic.orchestration.timing_logger import get_timing_logger, reset_timing_logger
         
         reset_timing_logger()
         logger1 = get_timing_logger()
@@ -124,7 +122,8 @@ class TestDualEngineOrchestrator:
     def test_orchestrator_creation(self):
         """Test DualEngineOrchestrator can be created."""
         from src.nsic.orchestration.dual_engine_orchestrator import (
-            create_dual_engine_orchestrator, DualEngineOrchestrator
+            DualEngineOrchestrator,
+            create_dual_engine_orchestrator,
         )
         
         orchestrator = create_dual_engine_orchestrator()
@@ -133,27 +132,21 @@ class TestDualEngineOrchestrator:
     
     def test_orchestrator_has_engine_b(self):
         """Test orchestrator has Engine B."""
-        from src.nsic.orchestration.dual_engine_orchestrator import (
-            create_dual_engine_orchestrator
-        )
+        from src.nsic.orchestration.dual_engine_orchestrator import create_dual_engine_orchestrator
         
         orchestrator = create_dual_engine_orchestrator()
         assert orchestrator.engine_b is not None
     
     def test_orchestrator_has_timing(self):
         """Test orchestrator has TimingLogger."""
-        from src.nsic.orchestration.dual_engine_orchestrator import (
-            create_dual_engine_orchestrator
-        )
+        from src.nsic.orchestration.dual_engine_orchestrator import create_dual_engine_orchestrator
         
         orchestrator = create_dual_engine_orchestrator()
         assert orchestrator.timing is not None
     
     def test_orchestrator_health_check(self):
         """Test orchestrator health check."""
-        from src.nsic.orchestration.dual_engine_orchestrator import (
-            create_dual_engine_orchestrator
-        )
+        from src.nsic.orchestration.dual_engine_orchestrator import create_dual_engine_orchestrator
         
         orchestrator = create_dual_engine_orchestrator()
         health = orchestrator.health_check()
@@ -164,9 +157,7 @@ class TestDualEngineOrchestrator:
     
     def test_orchestrator_stats(self):
         """Test orchestrator stats structure."""
-        from src.nsic.orchestration.dual_engine_orchestrator import (
-            create_dual_engine_orchestrator
-        )
+        from src.nsic.orchestration.dual_engine_orchestrator import create_dual_engine_orchestrator
         
         orchestrator = create_dual_engine_orchestrator()
         stats = orchestrator.get_stats()
@@ -180,9 +171,7 @@ class TestDualEngineOrchestrator:
     
     def test_orchestrator_timing_summary(self):
         """Test orchestrator timing summary."""
-        from src.nsic.orchestration.dual_engine_orchestrator import (
-            create_dual_engine_orchestrator
-        )
+        from src.nsic.orchestration.dual_engine_orchestrator import create_dual_engine_orchestrator
         
         orchestrator = create_dual_engine_orchestrator()
         summary = orchestrator.get_timing_summary()
@@ -260,14 +249,8 @@ class TestModuleExports:
         """Test orchestration package exports."""
         from src.nsic.orchestration import (
             DualEngineOrchestrator,
-            DualEngineResult,
-            create_dual_engine_orchestrator,
-            TimingLogger,
             Stage,
-            TimingEntry,
-            ScenarioTimingReport,
-            get_timing_logger,
-            reset_timing_logger,
+            TimingLogger,
         )
         
         # All imports should succeed

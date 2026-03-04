@@ -5,8 +5,8 @@ Discovers correlations, detects anomalies, and validates data consistency.
 """
 
 from typing import Dict
-from ..base_llm import ZERO_FABRICATION_CITATION_RULES
 
+from ..base_llm import ZERO_FABRICATION_CITATION_RULES
 
 PATTERN_DETECTIVE_SYSTEM = """You are a data quality and pattern detection specialist for Qatar's workforce intelligence.
 
@@ -101,9 +101,9 @@ def build_pattern_detective_prompt(
         (system_prompt, user_prompt) tuple
     """
     from qnwis.agents.prompts.labour_economist import (
+        _format_context,
         _format_data_summary_with_sources,
         _format_data_tables,
-        _format_context
     )
 
     data_summary = _format_data_summary_with_sources(data)

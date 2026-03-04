@@ -6,8 +6,7 @@ wall-time improvements of ≥25% compared to serial execution.
 """
 
 import time
-from typing import Any, Dict
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 

@@ -1,7 +1,9 @@
 """Unit tests for FAO STAT API Connector"""
 
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
+
 from src.data.apis.fao_api import FAOAPI
 
 

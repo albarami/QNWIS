@@ -13,12 +13,11 @@ Perplexity Pro Search provides:
 This extractor uses PRO SEARCH for ministerial-grade data extraction.
 """
 
-import logging
 import asyncio
+import logging
 import os
 import re
-import json
-from typing import List, Dict, Any, Optional, AsyncIterator
+from typing import Any, Dict, List, Optional
 
 import aiohttp
 
@@ -353,8 +352,8 @@ def _generate_follow_up_questions(query: str) -> List[str]:
     
     # Default follow-ups
     questions.extend([
-        f"What are the latest 2024 statistics and developments for this topic?",
-        f"How does Qatar compare to other GCC countries on this topic?"
+        "What are the latest 2024 statistics and developments for this topic?",
+        "How does Qatar compare to other GCC countries on this topic?"
     ])
     
     return questions[:4]  # Max 4 follow-ups

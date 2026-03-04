@@ -25,8 +25,6 @@ import os
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from ..data.deterministic.models import QueryResult
-
 logger = logging.getLogger(__name__)
 
 
@@ -118,8 +116,8 @@ class ResearchSynthesizerAgent:
     def _init_default_rag_client(self) -> Optional[Any]:
         """Initialize default RAG client from pre-built store (1965 documents)."""
         try:
-            from pathlib import Path
             import json
+            from pathlib import Path
             
             # Find RAG store - check multiple possible locations
             possible_paths = [
@@ -196,8 +194,8 @@ class ResearchSynthesizerAgent:
     def _init_default_kg_client(self) -> Optional[Any]:
         """Initialize default Knowledge Graph client."""
         try:
-            from pathlib import Path
             import json
+            from pathlib import Path
             
             # Find KG store
             possible_paths = [
@@ -347,8 +345,9 @@ class ResearchSynthesizerAgent:
         RATE LIMIT: Semantic Scholar allows 1 request per second.
         We add a 1.1 second delay between calls to be safe.
         """
-        import httpx
         import time
+
+        import httpx
         
         findings = []
         
@@ -908,8 +907,9 @@ This synthesis will be used by other PhD-level debate agents. Be rigorous."""
         CRITICAL: This enables DOMAIN-AGNOSTIC research - the LLM understands
         what academic topics to search for, even if the query uses different terms.
         """
-        import httpx
         import json
+
+        import httpx
         
         endpoint = os.getenv("AZURE_OPENAI_ENDPOINT", "").rstrip("/")
         api_key = os.getenv("AZURE_OPENAI_API_KEY")
@@ -1025,7 +1025,7 @@ Return ONLY a JSON object:
             # Demographics
             "population", "migration", "expatriate", "national", "youth", "gender",
             # Skills
-            "skills", "training", "education", "qualification", "competency",
+            "skills", "training", "qualification", "competency",
             # Sustainability
             "sustainability", "environment", "carbon", "renewable", "green",
             # Infrastructure

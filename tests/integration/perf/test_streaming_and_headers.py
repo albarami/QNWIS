@@ -180,7 +180,7 @@ class TestStreamingPerformance:
         @app.get("/stream/large")
         def stream_large():
             # 10,000 items
-            items = [{"id": i, "data": f"x" * 100} for i in range(10000)]
+            items = [{"id": i, "data": "x" * 100} for i in range(10000)]
             return create_streaming_response(items, format="json", chunk_size=500)
 
         client = TestClient(app)

@@ -196,7 +196,7 @@ def try_extract_verdict_from_message(message: str, turn: Dict) -> Optional[Dict[
     if option_matches:
         probs = [float(m) for m in option_matches]
         best_prob = max(probs)
-        logger.warning(f"⚠️ FIX RUN 56: Found corrupted Option A/B format in FORECAST question")
+        logger.warning("⚠️ FIX RUN 56: Found corrupted Option A/B format in FORECAST question")
         logger.warning(f"   Extracted probabilities: {probs}, using best: {best_prob}%")
         verdict["quantified_assessment"] = f"{best_prob}%"
         verdict["assessment_type"] = "probability"

@@ -105,6 +105,7 @@ class HealthChecker:
         try:
             # Import here to avoid circular dependencies
             from sqlalchemy import text
+
             from ..data.deterministic.engine import get_engine
 
             engine = get_engine()

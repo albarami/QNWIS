@@ -7,7 +7,6 @@ import os
 from typing import Any, Dict, List
 
 import aiohttp
-import requests
 from dotenv import load_dotenv
 
 load_dotenv()

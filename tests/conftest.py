@@ -1,6 +1,5 @@
 """Shared pytest fixtures for all tests."""
 
-import os
 import pytest
 
 

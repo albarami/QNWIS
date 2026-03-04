@@ -6,15 +6,17 @@ Guarantees completion even under time pressure.
 """
 
 from __future__ import annotations
+
 import logging
-from typing import List, Dict, Any, Tuple
-from datetime import datetime
-from collections import Counter
-from sentence_transformers import SentenceTransformer
-import numpy as np
-from functools import lru_cache
 import time
+from collections import Counter
+from datetime import datetime
+from functools import lru_cache
+from typing import Any, Dict, List
+
+import numpy as np
 import torch
+from sentence_transformers import SentenceTransformer
 
 from ..state import IntelligenceState
 
@@ -49,7 +51,7 @@ def get_similarity_model():
                 memory_reserved = torch.cuda.memory_reserved(6) / 1e9
                 logger.info(f"✅ Embeddings loaded on GPU 6: {gpu_name}")
                 logger.info(f"   Memory: {memory_allocated:.2f}GB allocated, {memory_reserved:.2f}GB reserved")
-                logger.info(f"   Model: instructor-xl (1024-dim, high precision)")
+                logger.info("   Model: instructor-xl (1024-dim, high precision)")
             except Exception as e:
                 logger.warning(f"Could not get GPU info: {e}")
         else:
@@ -270,21 +272,21 @@ def _answer_specific_questions(query: str, agent_positions: Dict[str, Dict[str, 
             # Determine consensus answer
             if len(feasibility_votes["no"]) > len(feasibility_votes["yes"]):
                 answer = f"\n**Question: Is {subject} realistic?**\n"
-                answer += f"**Answer: NO** - Consensus indicates this target is unrealistic.\n"
+                answer += "**Answer: NO** - Consensus indicates this target is unrealistic.\n"
                 answer += f"**Agent Agreement:** {len(feasibility_votes['no'])} agents say no, "
                 answer += f"{len(feasibility_votes['conditional'])} say conditional, "
                 answer += f"{len(feasibility_votes['yes'])} say yes.\n"
                 answers.append(answer)
             elif len(feasibility_votes["yes"]) > len(feasibility_votes["no"]) + len(feasibility_votes["conditional"]):
                 answer = f"\n**Question: Is {subject} realistic?**\n"
-                answer += f"**Answer: YES** - Consensus supports feasibility.\n"
+                answer += "**Answer: YES** - Consensus supports feasibility.\n"
                 answer += f"**Agent Agreement:** {len(feasibility_votes['yes'])} agents say yes, "
                 answer += f"{len(feasibility_votes['conditional'])} say conditional, "
                 answer += f"{len(feasibility_votes['no'])} say no.\n"
                 answers.append(answer)
             else:
                 answer = f"\n**Question: Is {subject} realistic?**\n"
-                answer += f"**Answer: CONDITIONAL** - Feasibility depends on specific implementation details.\n"
+                answer += "**Answer: CONDITIONAL** - Feasibility depends on specific implementation details.\n"
                 answer += f"**Agent Split:** {len(feasibility_votes['yes'])} yes, "
                 answer += f"{len(feasibility_votes['conditional'])} conditional, "
                 answer += f"{len(feasibility_votes['no'])} no.\n"
@@ -513,7 +515,7 @@ def _generate_executive_summary(state: IntelligenceState) -> str:
     
     # Add consensus breakdown
     if consensus["supporting_agents"]:
-        summary += f"\n## Agent Consensus\n\n"
+        summary += "\n## Agent Consensus\n\n"
         summary += f"**Supporting the Recommendation ({len(consensus['supporting_agents'])} agents):**\n"
         for agent in consensus['supporting_agents']:
             summary += f"- {agent}\n"
@@ -611,7 +613,7 @@ which surpasses traditional consulting methodologies through:
         bar_length = min(count // 2, 30)
         methodology += f"- **{source_type}:** {count} facts {'█' * bar_length}\n"
     
-    methodology += f"""
+    methodology += """
 ## Agent Participation
 
 | Agent Role | Expertise Domain | Contribution |
@@ -725,8 +727,8 @@ def _generate_action_list(recommendations: List[str]) -> str:
         priority_tag = "🔴 CRITICAL" if i == 1 else ("🟡 HIGH" if i == 2 else "🟢 MEDIUM")
         action_list += f"### Action {i}: {priority_tag}\n\n"
         action_list += f"**Description:** {rec}\n\n"
-        action_list += f"**Expected Impact:** To be quantified based on implementation\n"
-        action_list += f"**Success Metrics:** Establish within 30 days of implementation\n\n"
+        action_list += "**Expected Impact:** To be quantified based on implementation\n"
+        action_list += "**Success Metrics:** Establish within 30 days of implementation\n\n"
     
     action_list += """
 ## Implementation Governance

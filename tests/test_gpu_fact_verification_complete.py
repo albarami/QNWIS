@@ -4,18 +4,16 @@ Comprehensive tests for GPU-accelerated fact verification system.
 Tests document loading, GPU indexing, verification, and workflow integration.
 """
 
-import pytest
 import asyncio
+
+import pytest
 import torch
-from typing import List, Dict, Any
 
-from src.qnwis.rag.gpu_verifier import GPUFactVerifier
-from src.qnwis.rag.document_loader import load_source_documents
-from src.qnwis.rag.document_sources import DOCUMENT_SOURCES, TOTAL_EXPECTED_DOCUMENTS
-from src.qnwis.rag import initialize_fact_verifier, get_fact_verifier
-from src.qnwis.orchestration.state import IntelligenceState
 from src.qnwis.orchestration.nodes.verification import verification_node
-
+from src.qnwis.orchestration.state import IntelligenceState
+from src.qnwis.rag import get_fact_verifier, initialize_fact_verifier
+from src.qnwis.rag.document_loader import load_source_documents
+from src.qnwis.rag.gpu_verifier import GPUFactVerifier
 
 # ============================================================================
 # TEST 1: Document Loading
@@ -51,7 +49,7 @@ def test_document_loading():
         assert doc['priority'] in ['low', 'medium', 'high', 'critical'], \
             f"Document {i} has invalid priority: {doc['priority']}"
     
-    print(f"✅ All documents have required fields")
+    print("✅ All documents have required fields")
     
     # Log source breakdown
     sources = {}
@@ -118,11 +116,11 @@ def test_gpu_indexing():
     assert memory_used < 10.0, \
         f"GPU memory usage too high: {memory_used:.2f}GB (limit: 10GB)"
     
-    print(f"✅ GPU memory usage within limits (<10GB)")
+    print("✅ GPU memory usage within limits (<10GB)")
     
     # Get stats
     stats = verifier.get_stats()
-    print(f"\nVerifier stats:")
+    print("\nVerifier stats:")
     print(f"  Documents: {stats['total_documents']:,}")
     print(f"  GPU: {stats['gpu_name']}")
     print(f"  Model: {stats['model']}")
@@ -308,7 +306,7 @@ async def test_confidence_scoring():
         assert 0.0 <= confidence <= 1.0, f"Confidence out of range: {confidence}"
     
     # Confidences should generally decrease
-    print(f"\n✅ Confidence scores in valid range [0.0, 1.0]")
+    print("\n✅ Confidence scores in valid range [0.0, 1.0]")
     print(f"Confidence pattern: {[f'{c:.3f}' for c in confidences]}")
     
     print(f"\n{'='*60}")
@@ -348,7 +346,7 @@ async def test_verification_performance():
     
     print(f"\nSingle verification: {single_time*1000:.1f}ms")
     assert single_time < 0.5, f"Single verification too slow: {single_time:.3f}s"
-    print(f"✅ Single verification < 500ms")
+    print("✅ Single verification < 500ms")
     
     # Test concurrent verifications
     claims = [
@@ -368,7 +366,7 @@ async def test_verification_performance():
     assert concurrent_time < 2.0, \
         f"Concurrent verification too slow: {concurrent_time:.3f}s"
     
-    print(f"✅ Concurrent verifications efficient")
+    print("✅ Concurrent verifications efficient")
     
     print(f"\n{'='*60}")
     print("TEST 6: PASSED ✅")
@@ -407,7 +405,7 @@ async def test_end_to_end_workflow_integration():
     global_verifier = get_fact_verifier()
     assert global_verifier is not None, "Global verifier not set"
     assert global_verifier.is_indexed, "Global verifier not indexed"
-    print(f"✅ Global verifier accessible")
+    print("✅ Global verifier accessible")
     
     # Create mock state with agent reports
     state: IntelligenceState = {
@@ -450,14 +448,14 @@ async def test_end_to_end_workflow_integration():
     assert 'verification' in result_state['nodes_executed'], "Node not executed"
     
     fact_check = result_state['fact_check_results']
-    print(f"\nFact check results:")
+    print("\nFact check results:")
     print(f"  Status: {fact_check['status']}")
     print(f"  Agent count: {fact_check['agent_count']}")
     
     # Should have GPU verification results
     if 'gpu_verification' in fact_check and fact_check['gpu_verification']:
         gpu_verify = fact_check['gpu_verification']
-        print(f"\nGPU verification:")
+        print("\nGPU verification:")
         print(f"  Total claims: {gpu_verify['total_claims']}")
         print(f"  Verified claims: {gpu_verify['verified_claims']}")
         print(f"  Verification rate: {gpu_verify['verification_rate']:.0%}")
@@ -467,7 +465,7 @@ async def test_end_to_end_workflow_integration():
         assert 0.0 <= gpu_verify['verification_rate'] <= 1.0, \
             f"Invalid verification rate: {gpu_verify['verification_rate']}"
         
-        print(f"✅ GPU verification integrated and working")
+        print("✅ GPU verification integrated and working")
     else:
         print("⚠️ GPU verification not available (expected in test environment)")
     
@@ -531,8 +529,8 @@ async def test_graceful_degradation_without_gpu():
     assert result_state['fact_check_results']['status'] in ['PASS', 'ATTENTION'], \
         f"Invalid status: {result_state['fact_check_results']['status']}"
     
-    print(f"✅ System works without GPU verification")
-    print(f"✅ Falls back to citation checks")
+    print("✅ System works without GPU verification")
+    print("✅ Falls back to citation checks")
     
     print(f"\n{'='*60}")
     print("TEST 8: PASSED ✅")

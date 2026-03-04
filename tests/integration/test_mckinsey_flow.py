@@ -12,9 +12,9 @@ ALL NUMBERS MUST COME FROM CALCULATIONS - NO LLM GENERATION.
 
 from __future__ import annotations
 
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
-from typing import Any, Dict, List
-from unittest.mock import AsyncMock, MagicMock, patch
 
 # Test fixtures for sample data
 SAMPLE_EXTRACTED_FACTS = [
@@ -506,9 +506,6 @@ class TestEndToEndFlow:
     @pytest.mark.asyncio
     async def test_full_pipeline_flow(self) -> None:
         """Test structure -> calculate -> template flow."""
-        from src.qnwis.orchestration.nodes.structure_data import (
-            convert_structured_to_model_input,
-        )
         from src.qnwis.orchestration.nodes.calculate import calculate_node
         from src.qnwis.templates.ministerial_briefing import MinisterialBriefingTemplate
 

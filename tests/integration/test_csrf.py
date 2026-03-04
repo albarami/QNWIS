@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from src.qnwis.api.endpoints_security_demo import router
 
 from src.qnwis.api.deps import attach_security
-from src.qnwis.api.endpoints_security_demo import router
 from src.qnwis.security.security_settings import (
     get_security_settings,
     override_security_settings,

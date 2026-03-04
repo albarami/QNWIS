@@ -54,15 +54,15 @@ if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
 from qnwis.scripts.qa.determinism_scan import (
+    CONTINUITY_SECURITY_PATTERNS,
+    DR_SECURITY_PATTERNS,
+    scan_for_banned_calls,
+)
+from qnwis.scripts.qa.determinism_scan import (
     DEFAULT_BANNED_PATTERNS as ALERT_DETERMINISM_PATTERNS,
 )  # noqa: E402
 from qnwis.scripts.qa.determinism_scan import (
     NETWORK_BANNED_PATTERNS as ALERT_NETWORK_PATTERNS,
-)
-from qnwis.scripts.qa.determinism_scan import (
-    CONTINUITY_SECURITY_PATTERNS,
-    DR_SECURITY_PATTERNS,
-    scan_for_banned_calls,
 )
 
 

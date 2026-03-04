@@ -4,8 +4,10 @@ Unit tests for document sources configuration.
 Validates that document source paths and counts are correctly specified.
 """
 
-import pytest
 from pathlib import Path
+
+import pytest
+
 from qnwis.rag.document_sources import DOCUMENT_SOURCES, TOTAL_EXPECTED_DOCUMENTS
 
 

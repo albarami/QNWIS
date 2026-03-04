@@ -585,6 +585,7 @@ class MasterDataExtractor:
         facts = []
         try:
             from pathlib import Path
+
             from ..knowledge.graph_builder import QNWISKnowledgeGraph
             
             kg_path = Path("data/knowledge_graph.json")

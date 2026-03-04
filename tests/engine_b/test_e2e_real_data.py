@@ -12,10 +12,9 @@ These tests confirm Engine B services are fully functional
 with production data sources.
 """
 
-import pytest
-import asyncio
 import logging
-from pathlib import Path
+
+import pytest
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -96,7 +95,7 @@ class TestMonteCarloRealData:
         Test Qatarization policy feasibility using REAL baseline data.
         Uses actual Qatarization rate from LMIS.
         """
-        from nsic.engine_b.services.monte_carlo import MonteCarloService, MonteCarloInput
+        from nsic.engine_b.services.monte_carlo import MonteCarloInput, MonteCarloService
         
         # Get REAL baseline data
         df = RealDataLoader.get_lmis_main_indicators()
@@ -138,7 +137,7 @@ class TestMonteCarloRealData:
         assert result.n_simulations == 10000
         assert result.mean_result > 0
         
-        logger.info(f"Qatarization Feasibility (Real Data):")
+        logger.info("Qatarization Feasibility (Real Data):")
         logger.info(f"  Success Rate: {result.success_rate:.1%}")
         logger.info(f"  Mean Outcome: {result.mean_result:.3f}")
         logger.info(f"  95% VaR: {result.var_95:.3f}")
@@ -157,7 +156,7 @@ class TestForecastingRealData:
         """
         Test GDP growth forecasting using REAL World Bank data.
         """
-        from nsic.engine_b.services.forecasting import ForecastingService, ForecastingInput
+        from nsic.engine_b.services.forecasting import ForecastingInput, ForecastingService
         
         # Get REAL GDP growth history from World Bank
         data = await RealDataLoader.get_world_bank_qatar_gdp_history()
@@ -192,7 +191,7 @@ class TestForecastingRealData:
         assert result.trend in ["increasing", "decreasing", "stable", "volatile"]
         assert result.mape >= 0
         
-        logger.info(f"GDP Growth Forecast (Real Data):")
+        logger.info("GDP Growth Forecast (Real Data):")
         logger.info(f"  Trend: {result.trend}")
         logger.info(f"  MAPE: {result.mape:.1f}%")
         logger.info(f"  5-Year Forecast: {[f.point_forecast for f in result.forecasts]}")
@@ -202,7 +201,7 @@ class TestForecastingRealData:
         """
         Forecast labor force participation using REAL World Bank data.
         """
-        from nsic.engine_b.services.forecasting import ForecastingService, ForecastingInput
+        from nsic.engine_b.services.forecasting import ForecastingInput, ForecastingService
         
         data = await RealDataLoader.get_world_bank_labor_participation()
         
@@ -241,7 +240,10 @@ class TestBenchmarkingRealData:
         Benchmark Qatar unemployment against REAL GCC peer data.
         """
         from nsic.engine_b.services.benchmarking import (
-            BenchmarkingService, BenchmarkingInput, BenchmarkMetric, PeerData
+            BenchmarkingInput,
+            BenchmarkingService,
+            BenchmarkMetric,
+            PeerData,
         )
         
         # Get REAL GCC unemployment data from World Bank
@@ -269,7 +271,7 @@ class TestBenchmarkingRealData:
         if qatar_value is None or len(peers) < 3:
             pytest.skip("Insufficient GCC data for benchmarking")
         
-        logger.info(f"Real GCC Unemployment Data:")
+        logger.info("Real GCC Unemployment Data:")
         logger.info(f"  Qatar: {qatar_value:.2f}%")
         for p in peers:
             logger.info(f"  {p.name}: {p.value:.2f}%")
@@ -293,7 +295,7 @@ class TestBenchmarkingRealData:
         assert mb.peer_mean > 0
         assert 1 <= mb.qatar_rank <= len(peers) + 1
         
-        logger.info(f"Benchmarking Result (Real Data):")
+        logger.info("Benchmarking Result (Real Data):")
         logger.info(f"  Qatar Rank: {mb.qatar_rank} of {len(peers)+1}")
         logger.info(f"  Peer Mean: {mb.peer_mean:.2f}%")
         logger.info(f"  Gap to Mean: {mb.gap_to_mean:+.2f}%")
@@ -311,7 +313,7 @@ class TestSensitivityRealData:
         """
         Sensitivity analysis using REAL Qatar policy parameters.
         """
-        from nsic.engine_b.services.sensitivity import SensitivityService, SensitivityInput
+        from nsic.engine_b.services.sensitivity import SensitivityInput, SensitivityService
         
         # Get real baseline data
         df = RealDataLoader.get_lmis_main_indicators()
@@ -346,7 +348,7 @@ class TestSensitivityRealData:
         assert len(result.parameter_impacts) == 4
         assert len(result.top_drivers) > 0
         
-        logger.info(f"Sensitivity Analysis (Real Parameters):")
+        logger.info("Sensitivity Analysis (Real Parameters):")
         logger.info(f"  Base Result: {result.base_result:.4f}")
         logger.info(f"  Top Drivers: {result.top_drivers}")
         for impact in result.parameter_impacts[:2]:
@@ -365,7 +367,7 @@ class TestCorrelationRealData:
         """
         Analyze correlation between REAL economic indicators.
         """
-        from nsic.engine_b.services.correlation import CorrelationService, CorrelationInput
+        from nsic.engine_b.services.correlation import CorrelationInput, CorrelationService
         from src.data.apis.world_bank_api import WorldBankAPI
         
         api = WorldBankAPI()
@@ -423,7 +425,7 @@ class TestCorrelationRealData:
         assert result.n_variables >= 2
         assert result.n_observations >= 5
         
-        logger.info(f"Correlation Results (Real Data):")
+        logger.info("Correlation Results (Real Data):")
         for pair in result.significant_pairs:
             logger.info(f"  {pair.variable_1} <-> {pair.variable_2}: r={pair.pearson_r:.3f}")
 
@@ -440,7 +442,9 @@ class TestThresholdsRealData:
         Threshold analysis for Qatarization using REAL targets.
         """
         from nsic.engine_b.services.thresholds import (
-            ThresholdService, ThresholdInput, ThresholdConstraint
+            ThresholdConstraint,
+            ThresholdInput,
+            ThresholdService,
         )
         
         # Real Qatar policy thresholds
@@ -476,7 +480,7 @@ class TestThresholdsRealData:
         assert len(result.thresholds) >= 1
         assert result.risk_level in ["safe", "warning", "critical"]
         
-        logger.info(f"Threshold Analysis (Real Policy Targets):")
+        logger.info("Threshold Analysis (Real Policy Targets):")
         logger.info(f"  Risk Level: {result.risk_level}")
         logger.info(f"  Safe Range: {result.safe_range}")
         for t in result.thresholds:
@@ -496,13 +500,16 @@ class TestFullIntegrationRealData:
         Run complete Engine B analysis pipeline with REAL data.
         This confirms the full system works end-to-end.
         """
-        from nsic.engine_b.services.monte_carlo import MonteCarloService, MonteCarloInput
-        from nsic.engine_b.services.forecasting import ForecastingService, ForecastingInput
-        from nsic.engine_b.services.sensitivity import SensitivityService, SensitivityInput
-        from nsic.engine_b.services.benchmarking import (
-            BenchmarkingService, BenchmarkingInput, BenchmarkMetric, PeerData
-        )
         from nsic.engine_b.integration.conflict_detector import ConflictDetector
+        from nsic.engine_b.services.benchmarking import (
+            BenchmarkingInput,
+            BenchmarkingService,
+            BenchmarkMetric,
+            PeerData,
+        )
+        from nsic.engine_b.services.forecasting import ForecastingInput, ForecastingService
+        from nsic.engine_b.services.monte_carlo import MonteCarloInput, MonteCarloService
+        from nsic.engine_b.services.sensitivity import SensitivityInput, SensitivityService
         
         logger.info("=" * 60)
         logger.info("FULL E2E INTEGRATION TEST WITH REAL DATA")

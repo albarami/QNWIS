@@ -9,13 +9,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-import asyncio
 import os
 
 import pytest
 
 from src.qnwis.llm.client import LLMClient
-from src.qnwis.llm.config import LLMConfig, get_llm_config
+from src.qnwis.llm.config import get_llm_config
 
 _HAS_AZURE_KEY = bool(os.getenv("AZURE_OPENAI_API_KEY"))
 _SKIP_REASON = "AZURE_OPENAI_API_KEY not set — cannot reach Azure OpenAI"

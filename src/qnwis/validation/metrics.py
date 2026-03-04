@@ -7,7 +7,6 @@ and computes pass/fail against acceptance envelopes.
 from __future__ import annotations
 
 import re
-import statistics
 from typing import Any, Dict, List, Tuple
 
 

@@ -12,10 +12,9 @@ Tests:
 - Statistics tracking
 """
 
-import pytest
 import time
-from typing import List, Tuple
-import numpy as np
+
+import pytest
 
 
 class TestVerificationDataclasses:

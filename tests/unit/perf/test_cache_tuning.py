@@ -5,7 +5,6 @@ Tests TTL heuristics, cache key generation, and caching decisions
 for different operation types and result sizes.
 """
 
-import pytest
 
 from qnwis.perf.cache_tuning import cache_key, should_cache, ttl_for
 

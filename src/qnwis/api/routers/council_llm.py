@@ -16,7 +16,8 @@ from datetime import datetime, timezone
 from typing import Any, AsyncIterator, Literal
 from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException, Request, status, Body as FastAPIBody
+from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import Body as FastAPIBody
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
@@ -24,8 +25,8 @@ from ...agents.base import AgentReport, DataClient
 from ...classification.classifier import Classifier
 from ...llm.client import LLMClient
 from ...orchestration.streaming import run_workflow_stream
-from ..models import StreamEventResponse
 from ..middleware.rate_limit import limiter
+from ..models import StreamEventResponse
 
 logger = logging.getLogger(__name__)
 
@@ -277,7 +278,7 @@ async def council_stream_llm(
                     message=f"Workflow exceeded {STREAM_TIMEOUT_SECONDS}s timeout window.",
                 )
                 yield _serialize_sse(timeout_event)
-            except Exception as exc:
+            except Exception:
                 logger.exception(
                     "council_stream_llm emitted internal error mid-stream (request_id=%s)",
                     request_id,

@@ -6,9 +6,9 @@ Target: 70,000+ documents from World Bank, GCC-STAT, MOL LMIS, IMF sources.
 """
 
 import logging
-from pathlib import Path
-from typing import List, Dict, Any
 import os
+from pathlib import Path
+from typing import Any, Dict, List
 
 from .document_sources import DOCUMENT_SOURCES
 
@@ -57,7 +57,7 @@ def load_source_documents() -> List[Dict[str, Any]]:
     # Log summary
     total = len(all_documents)
     logger.info(f"\n{'='*60}")
-    logger.info(f"Document Loading Summary:")
+    logger.info("Document Loading Summary:")
     logger.info(f"{'='*60}")
     for source, count in source_counts.items():
         logger.info(f"  {source:20} {count:>8,} documents")

@@ -9,26 +9,26 @@ import asyncio
 import logging
 import re
 import textwrap
-from typing import TypedDict, Annotated, Sequence, Optional, Dict, Any, AsyncIterator, List
-from datetime import datetime, timezone, date, timedelta
+from datetime import date, datetime, timedelta, timezone
+from typing import Any, Dict, List, Optional, TypedDict
 
-from langgraph.graph import StateGraph, END
+from langgraph.graph import END, StateGraph
 
-from ..agents.micro_economist import MicroEconomist
-from ..agents.macro_economist import MacroEconomist
-from ..agents.nationalization import NationalizationAgent
-from ..agents.skills import SkillsAgent
-from ..agents.pattern_detective_llm import PatternDetectiveLLMAgent
-from ..agents.pattern_detective import PatternDetectiveAgent
-from ..agents.pattern_miner import PatternMinerAgent
-from ..agents.national_strategy import NationalStrategyAgent
 from ..agents.alert_center import AlertCenterAgent
-from ..agents.time_machine import TimeMachineAgent
+from ..agents.base import AgentReport, DataClient
+from ..agents.macro_economist import MacroEconomist
+from ..agents.micro_economist import MicroEconomist
+from ..agents.national_strategy import NationalStrategyAgent
+from ..agents.nationalization import NationalizationAgent
+from ..agents.pattern_detective import PatternDetectiveAgent
+from ..agents.pattern_detective_llm import PatternDetectiveLLMAgent
+from ..agents.pattern_miner import PatternMinerAgent
 from ..agents.predictor import PredictorAgent
 from ..agents.scenario_agent import ScenarioAgent
-from ..agents.base import AgentReport, DataClient
-from ..llm.client import LLMClient
+from ..agents.skills import SkillsAgent
+from ..agents.time_machine import TimeMachineAgent
 from ..classification.classifier import Classifier
+from ..llm.client import LLMClient
 from .citation_injector import CitationInjector
 from .integrations import get_complete_prefetch
 
@@ -651,7 +651,7 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
         start_time = datetime.now(timezone.utc)
 
         try:
-            from .nodes.calculate import calculate_node, get_calculated_summary
+            from .nodes.calculate import calculate_node
 
             # Build state for calculation node
             calc_state = {
@@ -1026,8 +1026,9 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
             # Build a pseudo-QueryResult structure from extracted facts
             prefetch_data = {}
             if extracted_facts:
-                from qnwis.data.deterministic.models import QueryResult, Row, Provenance, Freshness
                 import datetime as dt_module  # Use alias to avoid shadowing module-level datetime
+
+                from qnwis.data.deterministic.models import Freshness, Provenance, QueryResult, Row
                 
                 # Group facts by source
                 facts_by_source = {}
@@ -1258,6 +1259,7 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
 
         try:
             import re
+
             from .verification import verify_report
 
             reports = state.get("agent_reports", [])

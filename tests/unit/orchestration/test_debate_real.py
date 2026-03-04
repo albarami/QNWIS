@@ -9,14 +9,12 @@ count_new_contradictions, and LegendaryDebateOrchestrator instantiation.
 from __future__ import annotations
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
-import asyncio
 import json
-from typing import Any
 
 import pytest
-
 
 # ── Import verification ──────────────────────────────────────────────────────
 
@@ -71,8 +69,8 @@ class TestLegendaryDebateOrchestratorInit:
     """Ensure the orchestrator can be constructed with real dependencies."""
 
     def _make_orchestrator(self, **overrides):
-        from src.qnwis.orchestration.debate import LegendaryDebateOrchestrator
         from src.qnwis.llm.client import LLMClient
+        from src.qnwis.orchestration.debate import LegendaryDebateOrchestrator
 
         llm = LLMClient()
         defaults = dict(

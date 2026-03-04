@@ -11,15 +11,14 @@ so agents reference actual computed numbers in their arguments.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import numpy as np
 
 from ...config.settings import DEBATE_CONFIGS
 from ..cross_scenario import (
-    generate_cross_scenario_table,
     extract_robustness_summary,
-    build_quantitative_context_for_agents,
+    generate_cross_scenario_table,
 )
 
 logger = logging.getLogger(__name__)

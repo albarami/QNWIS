@@ -6,7 +6,7 @@ Target: 70,000+ documents for comprehensive fact checking.
 """
 
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict
 
 # Document source configuration
 DOCUMENT_SOURCES: Dict[str, Dict[str, Any]] = {

@@ -10,11 +10,9 @@ Tests:
 - Output validation
 """
 
-import pytest
-import tempfile
-import os
 from pathlib import Path
-import yaml
+
+import pytest
 
 
 class TestScenarioDataclasses:
@@ -85,10 +83,10 @@ class TestScenarioDataclasses:
     def test_scenario_definition_creation(self):
         """ScenarioDefinition should store all scenario data."""
         from src.nsic.scenarios.loader import (
+            RetryConfig,
             ScenarioDefinition,
             ScenarioInput,
             ValidationRule,
-            RetryConfig,
         )
         
         scenario = ScenarioDefinition(
@@ -215,10 +213,9 @@ class TestScenarioValidator:
     def test_validate_valid_definition(self):
         """Should validate correct scenario definition."""
         from src.nsic.scenarios.loader import (
+            RetryConfig,
             ScenarioDefinition,
             ScenarioInput,
-            ValidationRule,
-            RetryConfig,
         )
         from src.nsic.scenarios.validator import ScenarioValidator
         
@@ -243,9 +240,8 @@ class TestScenarioValidator:
     def test_validate_missing_required_fields(self):
         """Should catch missing required fields."""
         from src.nsic.scenarios.loader import (
-            ScenarioDefinition,
-            ValidationRule,
             RetryConfig,
+            ScenarioDefinition,
         )
         from src.nsic.scenarios.validator import ScenarioValidator
         
@@ -271,9 +267,9 @@ class TestScenarioValidator:
     def test_validate_invalid_domain(self):
         """Should catch invalid domain."""
         from src.nsic.scenarios.loader import (
+            RetryConfig,
             ScenarioDefinition,
             ScenarioInput,
-            RetryConfig,
         )
         from src.nsic.scenarios.validator import ScenarioValidator
         
@@ -298,10 +294,10 @@ class TestScenarioValidator:
     def test_validate_output_against_rules(self):
         """Should validate output against rules."""
         from src.nsic.scenarios.loader import (
+            RetryConfig,
             ScenarioDefinition,
             ScenarioInput,
             ValidationRule,
-            RetryConfig,
         )
         from src.nsic.scenarios.validator import ScenarioValidator
         
@@ -339,9 +335,9 @@ class TestScenarioValidator:
     def test_validate_nested_structure(self):
         """Should validate nested expected structure."""
         from src.nsic.scenarios.loader import (
+            RetryConfig,
             ScenarioDefinition,
             ScenarioInput,
-            RetryConfig,
         )
         from src.nsic.scenarios.validator import ScenarioValidator
         
@@ -384,7 +380,7 @@ class TestValidationResult:
     
     def test_validation_result_creation(self):
         """ValidationResult should store validation state."""
-        from src.nsic.scenarios.validator import ValidationResult, ValidationError
+        from src.nsic.scenarios.validator import ValidationError, ValidationResult
         
         error = ValidationError(
             field="test_field",

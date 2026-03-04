@@ -10,8 +10,8 @@ import asyncio
 import logging
 from typing import Dict, List
 
-from ..state import IntelligenceState
 from ...rag import get_fact_verifier
+from ..state import IntelligenceState
 
 logger = logging.getLogger(__name__)
 

@@ -116,8 +116,8 @@ async def execute_agent_analysis(
         analyzer: Async analysis function
         success_message: Message to add to reasoning chain on success
     """
-    from datetime import datetime, timezone
     import logging
+    from datetime import datetime, timezone
     
     logger = logging.getLogger(__name__)
 

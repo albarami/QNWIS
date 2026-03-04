@@ -7,14 +7,14 @@ Provides 80-125 turn adaptive debate with real-time event streaming.
 
 from __future__ import annotations
 
-import asyncio
 import logging
 import os
-from typing import Any, Dict, List, Optional
 from pathlib import Path
+from typing import Any, Dict
 
 # CRITICAL: Load .env to ensure DATABASE_URL is available for deterministic agents
 from dotenv import load_dotenv
+
 load_dotenv(Path(__file__).parent.parent.parent.parent.parent / ".env")
 
 from ..state import IntelligenceState
@@ -36,8 +36,8 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
     """
 
     # Import here to avoid circular dependencies
-    from ..debate import LegendaryDebateOrchestrator
     from ...llm.client import LLMClient
+    from ..debate import LegendaryDebateOrchestrator
 
     reasoning_chain = state.setdefault("reasoning_chain", [])
     nodes_executed = state.setdefault("nodes_executed", [])
@@ -100,7 +100,7 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
                         })()
 
     # Detect contradictions using existing logic
-    from .debate import _extract_perspectives, _detect_contradictions
+    from .debate import _detect_contradictions, _extract_perspectives
     perspectives = _extract_perspectives(state)
     contradictions = _detect_contradictions(perspectives)
 
@@ -118,12 +118,12 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
 
     # Import LLM agents - THESE ARE REQUIRED for legendary debates
     try:
-        from ...agents.micro_economist import MicroEconomist
-        from ...agents.macro_economist import MacroEconomist
-        from ...agents.nationalization import NationalizationAgent
-        from ...agents.skills import SkillsAgent
-        from ...agents.pattern_detective_llm import PatternDetectiveLLMAgent
         from ...agents.base import DataClient
+        from ...agents.macro_economist import MacroEconomist
+        from ...agents.micro_economist import MicroEconomist
+        from ...agents.nationalization import NationalizationAgent
+        from ...agents.pattern_detective_llm import PatternDetectiveLLMAgent
+        from ...agents.skills import SkillsAgent
 
         data_client = DataClient()
         logger.info("✅ DataClient initialized for debate agents")
@@ -173,13 +173,13 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
         # === DETERMINISTIC AGENTS ===
         # These provide data-backed analysis without LLM calls
         try:
-            from ...agents.time_machine import TimeMachineAgent
+            from ...agents.alert_center import AlertCenterAgent
+            from ...agents.national_strategy import NationalStrategyAgent
+            from ...agents.pattern_detective import PatternDetectiveAgent
+            from ...agents.pattern_miner import PatternMinerAgent
             from ...agents.predictor import PredictorAgent
             from ...agents.scenario_agent import ScenarioAgent
-            from ...agents.pattern_miner import PatternMinerAgent
-            from ...agents.national_strategy import NationalStrategyAgent
-            from ...agents.alert_center import AlertCenterAgent
-            from ...agents.pattern_detective import PatternDetectiveAgent
+            from ...agents.time_machine import TimeMachineAgent
             
             # Initialize deterministic agents
             try:
@@ -220,8 +220,9 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
             
             try:
                 # FIXED: Load default alert rules for AlertCenter
-                from ...alerts.registry import AlertRegistry
                 from pathlib import Path
+
+                from ...alerts.registry import AlertRegistry
                 alert_registry = AlertRegistry()
                 default_rules_path = Path(__file__).parent.parent.parent / "alerts" / "default_rules.yaml"
                 if default_rules_path.exists():
@@ -247,9 +248,10 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
                 # Initialize RAG client wrapper using PRE-BUILT RAG store
                 rag_client = None
                 try:
-                    from ...rag.retriever import DocumentStore
-                    from pathlib import Path
                     import json
+                    from pathlib import Path
+
+                    from ...rag.retriever import DocumentStore
                     
                     # Create RAG wrapper that uses the existing rag_store.json (1965 documents including R&D papers)
                     class RAGClientWrapper:
@@ -279,7 +281,7 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
                                             self.docs_loaded += 1
                                         
                                         logger.info(f"📚 RAG: Loaded {self.docs_loaded} documents from pre-built store")
-                                        logger.info(f"   Including 55+ R&D research reports, World Bank, ILO, Qatar MOL data")
+                                        logger.info("   Including 55+ R&D research reports, World Bank, ILO, Qatar MOL data")
                                 except Exception as e:
                                     logger.warning(f"⚠️ RAG: Could not load pre-built store: {e}")
                             else:
@@ -313,8 +315,13 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
                 # Initialize Knowledge Graph client wrapper
                 kg_client = None
                 try:
-                    from ...knowledge.graph_builder import QNWISKnowledgeGraph, EntityType, RelationType
                     from pathlib import Path
+
+                    from ...knowledge.graph_builder import (
+                        EntityType,
+                        QNWISKnowledgeGraph,
+                        RelationType,
+                    )
                     
                     # Create KG wrapper that matches ResearchSynthesizerAgent interface
                     class KGClientWrapper:
@@ -480,26 +487,26 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
                         # DOMAIN AGNOSTIC qualitative fallback (same pattern as exception handler)
                         fallback_narratives = {
                             "Predictor": (
-                                f"**Forecasting Assessment (Qualitative)**\n\n"
-                                f"Predictive modeling requires sufficient historical baseline. "
-                                f"Based on general economic principles, key forecast drivers include: "
-                                f"(1) policy commitment signals, (2) market sentiment indicators, and "
-                                f"(3) capacity utilization rates. Recommend scenario-based planning "
-                                f"until more data becomes available."
+                                "**Forecasting Assessment (Qualitative)**\n\n"
+                                "Predictive modeling requires sufficient historical baseline. "
+                                "Based on general economic principles, key forecast drivers include: "
+                                "(1) policy commitment signals, (2) market sentiment indicators, and "
+                                "(3) capacity utilization rates. Recommend scenario-based planning "
+                                "until more data becomes available."
                             ),
                             "PatternMiner": (
-                                f"**Pattern Analysis (Qualitative)**\n\n"
-                                f"Statistical pattern detection requires minimum data thresholds. "
-                                f"Qualitative patterns to monitor include: (1) leading indicator movements, "
-                                f"(2) stakeholder behavior changes, and (3) policy response cycles. "
-                                f"Cross-reference with available qualitative assessments."
+                                "**Pattern Analysis (Qualitative)**\n\n"
+                                "Statistical pattern detection requires minimum data thresholds. "
+                                "Qualitative patterns to monitor include: (1) leading indicator movements, "
+                                "(2) stakeholder behavior changes, and (3) policy response cycles. "
+                                "Cross-reference with available qualitative assessments."
                             ),
                             "AlertCenter": (
-                                f"**Risk Monitoring Assessment (Qualitative)**\n\n"
-                                f"Automated threshold monitoring awaits data availability. "
-                                f"Key risk indicators to track manually: (1) budget variance signals, "
-                                f"(2) timeline deviation early warnings, and (3) stakeholder resistance patterns. "
-                                f"Recommend establishing manual monitoring protocols."
+                                "**Risk Monitoring Assessment (Qualitative)**\n\n"
+                                "Automated threshold monitoring awaits data availability. "
+                                "Key risk indicators to track manually: (1) budget variance signals, "
+                                "(2) timeline deviation early warnings, and (3) stakeholder resistance patterns. "
+                                "Recommend establishing manual monitoring protocols."
                             ),
                         }
                         
@@ -517,7 +524,7 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
                             'agent': agent_key,
                             'findings': [],
                             'confidence': 0.3,
-                            'warnings': [f"Data limited: qualitative assessment provided"],
+                            'warnings': ["Data limited: qualitative assessment provided"],
                             'metadata': {'source': 'deterministic_agent', 'method': method_name, 'data_available': False, 'fallback': True}
                         })()
                         continue
@@ -567,34 +574,34 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
                 # Generate agent-specific qualitative fallback (domain-agnostic)
                 fallback_narratives = {
                     "TimeMachine": (
-                        f"**Historical Trend Analysis (Qualitative)**\n\n"
-                        f"While quantitative time-series data is limited for this analysis, "
-                        f"historical patterns typically suggest that policy outcomes depend on: "
-                        f"(1) implementation consistency, (2) economic cycle timing, and "
-                        f"(3) external market conditions. Recommend supplementing with "
-                        f"available case studies from similar policy implementations."
+                        "**Historical Trend Analysis (Qualitative)**\n\n"
+                        "While quantitative time-series data is limited for this analysis, "
+                        "historical patterns typically suggest that policy outcomes depend on: "
+                        "(1) implementation consistency, (2) economic cycle timing, and "
+                        "(3) external market conditions. Recommend supplementing with "
+                        "available case studies from similar policy implementations."
                     ),
                     "Predictor": (
-                        f"**Forecasting Assessment (Qualitative)**\n\n"
-                        f"Predictive modeling requires sufficient historical baseline. "
-                        f"Based on general economic principles, key forecast drivers include: "
-                        f"(1) policy commitment signals, (2) market sentiment indicators, and "
-                        f"(3) capacity utilization rates. Recommend scenario-based planning "
-                        f"until more data becomes available."
+                        "**Forecasting Assessment (Qualitative)**\n\n"
+                        "Predictive modeling requires sufficient historical baseline. "
+                        "Based on general economic principles, key forecast drivers include: "
+                        "(1) policy commitment signals, (2) market sentiment indicators, and "
+                        "(3) capacity utilization rates. Recommend scenario-based planning "
+                        "until more data becomes available."
                     ),
                     "PatternMiner": (
-                        f"**Pattern Analysis (Qualitative)**\n\n"
-                        f"Statistical pattern detection requires minimum data thresholds. "
-                        f"Qualitative patterns to monitor include: (1) leading indicator movements, "
-                        f"(2) stakeholder behavior changes, and (3) policy response cycles. "
-                        f"Cross-reference with available qualitative assessments."
+                        "**Pattern Analysis (Qualitative)**\n\n"
+                        "Statistical pattern detection requires minimum data thresholds. "
+                        "Qualitative patterns to monitor include: (1) leading indicator movements, "
+                        "(2) stakeholder behavior changes, and (3) policy response cycles. "
+                        "Cross-reference with available qualitative assessments."
                     ),
                     "AlertCenter": (
-                        f"**Risk Monitoring Assessment (Qualitative)**\n\n"
-                        f"Automated threshold monitoring awaits data availability. "
-                        f"Key risk indicators to track manually: (1) budget variance signals, "
-                        f"(2) timeline deviation early warnings, and (3) stakeholder resistance patterns. "
-                        f"Recommend establishing manual monitoring protocols."
+                        "**Risk Monitoring Assessment (Qualitative)**\n\n"
+                        "Automated threshold monitoring awaits data availability. "
+                        "Key risk indicators to track manually: (1) budget variance signals, "
+                        "(2) timeline deviation early warnings, and (3) stakeholder resistance patterns. "
+                        "Recommend establishing manual monitoring protocols."
                     ),
                 }
                 
@@ -682,7 +689,7 @@ Your arguments MUST reference these scenario comparisons and computed metrics.
 
 Reference these computed values in your arguments.
 """)
-        logger.info(f"📊 Engine B aggregate passed to debate")
+        logger.info("📊 Engine B aggregate passed to debate")
     
     # Combine all context
     if context_parts:
@@ -736,7 +743,7 @@ Reference these computed values in your arguments.
         # PHASE 3: Get question_type from state (set by classifier)
         question_type = state.get("question_type", "COMPARATIVE")
         
-        logger.info(f"🚀 PASSING TO DEBATE:")
+        logger.info("🚀 PASSING TO DEBATE:")
         logger.info(f"   - question_type: {question_type}")  # PHASE 3: Log question type
         logger.info(f"   - agent_reports_map: {len(agent_reports_map)} agents")
         for name, report in agent_reports_map.items():

@@ -318,7 +318,7 @@ def validate_output_consistency(state: Dict[str, Any], question_type: str) -> Di
         spread = max(all_probs) - min(all_probs)
 
         if spread > 0.15:
-            logger.error(f"❌ CONSISTENCY VALIDATION FAILED:")
+            logger.error("❌ CONSISTENCY VALIDATION FAILED:")
             logger.error(f"   Summary Card: {summary_prob*100:.0f}% " if summary_prob else "   Summary Card: N/A")
             logger.error(f"   Brief: {brief_prob*100:.0f}%" if brief_prob else "   Brief: N/A")
             logger.error(f"   Consensus: {consensus_prob*100:.0f}%" if consensus_prob else "   Consensus: N/A")

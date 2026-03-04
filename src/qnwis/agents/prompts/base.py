@@ -9,8 +9,7 @@ Includes:
 
 from __future__ import annotations
 
-from typing import Iterable, Mapping, Any, Dict, List, Optional
-
+from typing import Any, Dict, Iterable, List, Mapping
 
 # =============================================================================
 # ENGINE B QUANTITATIVE VALIDATION AWARENESS

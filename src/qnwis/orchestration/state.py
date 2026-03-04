@@ -7,7 +7,6 @@ Uses Annotated types with reducers to prevent concurrent update errors.
 
 from __future__ import annotations
 
-import operator
 from typing import Annotated, Any, Callable, Dict, List, Optional, TypedDict
 
 

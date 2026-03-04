@@ -6,7 +6,6 @@ import re
 from datetime import date
 from uuid import UUID
 
-
 _SAFE_RE = re.compile(r"^[\w\-\.\s,@#:/\(\)\[\]]{1,500}$")
 
 

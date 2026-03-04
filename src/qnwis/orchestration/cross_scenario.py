@@ -7,7 +7,7 @@ computed numbers in their debate.
 """
 
 import logging
-from typing import Dict, List, Any, Optional
+from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
 

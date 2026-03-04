@@ -20,7 +20,7 @@ import logging
 import time
 from collections import deque
 from dataclasses import dataclass, field
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 

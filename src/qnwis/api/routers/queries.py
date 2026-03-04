@@ -22,6 +22,8 @@ from ...data.deterministic.cache_access import execute_cached, invalidate_query
 from ...data.deterministic.models import QuerySpec
 from ...data.deterministic.normalize import normalize_params, normalize_rows
 from ...data.deterministic.registry import QueryRegistry
+from ...security import Principal
+from ...security.rbac import require_roles
 from ...ui.pagination import paginate
 from ..models import (
     BatchQueryRequest,
@@ -31,8 +33,6 @@ from ..models import (
     QueryRunRequest,
     QueryRunResponse,
 )
-from ...security import Principal
-from ...security.rbac import require_roles
 from ..streaming import add_timing_header, stream_json_array
 
 router = APIRouter(tags=["queries"])

@@ -16,13 +16,13 @@ Engine B awareness prompts (shared across all agents):
 
 from .base import (
     ANTI_FABRICATION_RULES,
-    ENGINE_B_VALIDATION_AWARENESS,
-    ENGINE_B_OUTPUT_GUIDE,
     ENGINE_A_PRIME_PROMPT_TEMPLATE,
-    format_extracted_facts,
-    format_engine_b_results,
-    format_conflicts,
+    ENGINE_B_OUTPUT_GUIDE,
+    ENGINE_B_VALIDATION_AWARENESS,
     build_engine_a_prime_prompt,
+    format_conflicts,
+    format_engine_b_results,
+    format_extracted_facts,
 )
 
 __all__ = [

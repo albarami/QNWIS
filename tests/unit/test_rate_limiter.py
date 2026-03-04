@@ -4,10 +4,12 @@ Unit tests for rate limiter.
 Tests the rate limiting functionality to ensure Claude API 429 errors are prevented.
 """
 
-import pytest
 import asyncio
 import time
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
+
+import pytest
+
 from qnwis.orchestration.rate_limiter import RateLimitedExecutor, get_rate_limiter
 
 

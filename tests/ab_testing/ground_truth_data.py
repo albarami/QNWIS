@@ -8,9 +8,8 @@ These values are used as the "gold standard" to validate system accuracy.
 All values include source citations and dates for verification.
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, Any, List, Optional
-from datetime import date
+from dataclasses import dataclass
+from typing import Dict, List, Optional
 
 
 @dataclass

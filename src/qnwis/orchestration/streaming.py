@@ -14,7 +14,6 @@ from datetime import datetime, timezone
 from typing import Any, AsyncIterator, Dict, Optional
 
 from .feature_flags import use_langgraph_workflow
-from .workflow import run_intelligence_query
 
 logger = logging.getLogger(__name__)
 logger.info("📦 streaming.py MODULE LOADED!")
@@ -456,8 +455,8 @@ async def run_workflow_stream(
         logger.info("Using NEW modular LangGraph workflow (workflow.py) with LIVE streaming")
 
         # Import workflow components
-        from .workflow import create_intelligence_graph
         from .state import IntelligenceState
+        from .workflow import create_intelligence_graph
 
         # Create event queue for real-time debate turn streaming
         event_queue = asyncio.Queue()

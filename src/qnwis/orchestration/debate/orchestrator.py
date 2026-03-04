@@ -1,21 +1,17 @@
 """Orchestrates multi-turn agent debates for the QNWIS council."""
 
-import json
 import logging
-import re
 from collections import defaultdict
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional
 
 from ...llm.client import LLMClient
-from ._convergence import detect_debate_convergence
+from ..question_locker import QuestionLocker
 from ..smart_moderator import SmartModerator
 from ..turn_validator import TurnValidator
-from ..question_locker import QuestionLocker, create_question_lock_prompt, create_phase_reminder
-
 from .phase_manager import PhaseManagerMixin
-from .verdict import VerdictMixin
 from .statistics import StatisticsMixin
+from .verdict import VerdictMixin
 
 logger = logging.getLogger(__name__)
 

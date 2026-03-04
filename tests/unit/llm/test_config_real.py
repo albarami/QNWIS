@@ -13,7 +13,7 @@ import os
 
 import pytest
 
-from src.qnwis.llm.config import LLMConfig, get_llm_config
+from src.qnwis.llm.config import get_llm_config
 
 _HAS_AZURE_KEY = bool(os.getenv("AZURE_OPENAI_API_KEY"))
 _SKIP_REASON = "AZURE_OPENAI_API_KEY not set — infrastructure unavailable"

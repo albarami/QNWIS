@@ -1,7 +1,9 @@
 """Unit tests for World Bank Indicators API Connector"""
 
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
+
 from src.data.apis.world_bank_api import WorldBankAPI
 
 

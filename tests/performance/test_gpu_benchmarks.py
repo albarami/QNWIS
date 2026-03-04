@@ -4,13 +4,15 @@ Performance benchmarks for Multi-GPU architecture.
 Validates that performance targets are met on real 8 A100 GPU hardware.
 """
 
+import asyncio
+import time
+from unittest.mock import MagicMock
+
 import pytest
 import torch
-import time
-import asyncio
-from unittest.mock import AsyncMock, MagicMock
-from qnwis.orchestration.parallel_executor import ParallelDebateExecutor
+
 from qnwis.config.gpu_config import load_gpu_config
+from qnwis.orchestration.parallel_executor import ParallelDebateExecutor
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="Requires CUDA for GPU benchmarks")
@@ -109,7 +111,7 @@ def test_benchmark_gpu_utilization():
     print(f"{'='*60}")
     print(f"Total GPUs: {utilization['total_gpus']}")
     print(f"Scenario GPUs: {utilization['scenario_gpus']}")
-    print(f"\nGPU Details:")
+    print("\nGPU Details:")
     
     for gpu in utilization['gpus']:
         print(f"  GPU {gpu['id']}: {gpu['name']}")

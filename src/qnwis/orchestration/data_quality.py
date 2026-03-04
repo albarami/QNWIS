@@ -5,7 +5,8 @@ This module provides functions to calculate data quality scores and identify
 missing critical data points based on extracted facts and requirements.
 """
 
-from typing import Any, Dict, List, Set
+from typing import Any, Dict, List
+
 
 def calculate_data_quality(facts: List[Dict[str, Any]], required_data: List[str]) -> float:
     """

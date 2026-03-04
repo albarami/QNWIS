@@ -11,11 +11,10 @@ Strategy:
 4. Domain-agnostic query generation
 """
 
-import logging
 import asyncio
+import logging
 import os
-import re
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
 import aiohttp
 
@@ -139,58 +138,58 @@ def _generate_search_queries(main_query: str) -> List[str]:
     # Add domain-specific search queries
     if any(term in query_lower for term in ["labor", "employment", "job", "work", "unemployment"]):
         queries.extend([
-            f"Qatar labor market statistics 2024",
-            f"Qatarization employment policy progress",
-            f"Qatar workforce skills demand",
+            "Qatar labor market statistics 2024",
+            "Qatarization employment policy progress",
+            "Qatar workforce skills demand",
         ])
     
     if any(term in query_lower for term in ["gdp", "economy", "economic", "growth"]):
         queries.extend([
-            f"Qatar GDP economic growth 2024",
-            f"Qatar economic diversification progress",
-            f"Qatar non-oil economy statistics",
+            "Qatar GDP economic growth 2024",
+            "Qatar economic diversification progress",
+            "Qatar non-oil economy statistics",
         ])
     
     if any(term in query_lower for term in ["oil", "gas", "lng", "energy"]):
         queries.extend([
-            f"Qatar LNG production export 2024",
-            f"North Field expansion QatarEnergy",
-            f"Qatar energy sector investment",
+            "Qatar LNG production export 2024",
+            "North Field expansion QatarEnergy",
+            "Qatar energy sector investment",
         ])
     
     if any(term in query_lower for term in ["tourism", "visitor", "hotel"]):
         queries.extend([
-            f"Qatar tourism statistics 2024",
-            f"Qatar World Cup tourism legacy",
-            f"Qatar hotel occupancy visitors",
+            "Qatar tourism statistics 2024",
+            "Qatar World Cup tourism legacy",
+            "Qatar hotel occupancy visitors",
         ])
     
     if any(term in query_lower for term in ["education", "university", "stem"]):
         queries.extend([
-            f"Qatar education system statistics",
-            f"Qatar university enrollment graduation",
-            f"Education City Qatar STEM",
+            "Qatar education system statistics",
+            "Qatar university enrollment graduation",
+            "Education City Qatar STEM",
         ])
     
     if any(term in query_lower for term in ["trade", "export", "import"]):
         queries.extend([
-            f"Qatar trade balance exports imports 2024",
-            f"Qatar trading partners statistics",
-            f"Qatar non-oil exports diversification",
+            "Qatar trade balance exports imports 2024",
+            "Qatar trading partners statistics",
+            "Qatar non-oil exports diversification",
         ])
     
     if any(term in query_lower for term in ["health", "hospital", "medical"]):
         queries.extend([
-            f"Qatar healthcare system statistics",
-            f"Qatar hospitals medical facilities",
-            f"Qatar health expenditure per capita",
+            "Qatar healthcare system statistics",
+            "Qatar hospitals medical facilities",
+            "Qatar health expenditure per capita",
         ])
     
     if any(term in query_lower for term in ["skill", "training", "workforce"]):
         queries.extend([
-            f"Qatar skills gap analysis training",
-            f"Qatar workforce development programs",
-            f"Qatar technical training institutes",
+            "Qatar skills gap analysis training",
+            "Qatar workforce development programs",
+            "Qatar technical training institutes",
         ])
     
     # Always add Qatar-specific query

@@ -13,77 +13,44 @@ import asyncio
 import logging
 import random
 import time
-from typing import AsyncIterator, Optional, Dict, Any
+from pathlib import Path
+from typing import Any, AsyncIterator, Dict, Optional
 
 import httpx
+import yaml
 
-from .config import LLMConfig, get_llm_config
-from .model_router import get_router, ModelConfig
-from .exceptions import (
-    LLMTimeoutError,
-    LLMRateLimitError,
-    LLMProviderError,
-)
 from ..observability.metrics import record_llm_call
+from .config import LLMConfig, get_llm_config
+from .exceptions import (
+    LLMProviderError,
+    LLMRateLimitError,
+    LLMTimeoutError,
+)
+from .model_router import get_router
 
 logger = logging.getLogger(__name__)
 
 
 # =============================================================================
 # AZURE CONTENT FILTER PROTECTION
-# Prevents false positive "jailbreak" detections in policy analysis
+# Loaded from config/azure_content_filter.yml at startup.
 # =============================================================================
 
-CONTENT_FILTER_REPLACEMENTS = {
-    # Role-playing triggers
-    "devil's advocate": "alternative perspective",
-    "Devil's Advocate": "Alternative Perspective",
-    "DEVIL'S ADVOCATE": "ALTERNATIVE PERSPECTIVE",
-    "play the role": "provide analysis as",
-    "act as": "analyze as",
-    "pretend to be": "analyze from perspective of",
-    # Disaster/risk language
-    "catastrophic failure": "significant challenge",
-    "catastrophic risk": "major concern", 
-    "catastrophic": "significant",
-    "nightmare scenario": "difficult scenario",
-    "worst-case": "downside",
-    "worst case": "downside",
-    "doomsday": "pessimistic",
-    "apocalyptic": "severe",
-    # Adversarial framing
-    "attack the": "examine the",
-    "attack this": "examine this",
-    "attack argument": "examine argument",
-    "exploit weakness": "address gap",
-    "exploit vulnerabilities": "identify gaps",
-    "exploit": "leverage",
-    "manipulate": "influence",
-    "hack": "analyze",
-    "break": "examine",
-    # Command patterns that look like jailbreaks
-    "ignore previous": "also consider",
-    "ignore all": "additionally",
-    "disregard instructions": "supplement with",
-    "disregard": "also consider",
-    "override": "supplement",
-    "bypass": "work around",
-    "circumvent": "address",
-    # Policy/security triggers
-    "undermine": "challenge",
-    "subvert": "question",
-    "destabilize": "affect",
-    "overthrow": "change",
-    "destroy": "significantly impact",
-    "eliminate": "reduce",
-    "annihilate": "remove",
-    # Instruction injection patterns
-    "new instructions": "additional considerations",
-    "forget everything": "additionally",
-    "start fresh": "also consider",
-    "system prompt": "context",
-    "jailbreak": "analyze",
-}
+_CONTENT_FILTER_YML = Path(__file__).resolve().parent.parent / "config" / "azure_content_filter.yml"
+
+
+def _load_content_filter_replacements() -> dict[str, str]:
+    try:
+        with open(_CONTENT_FILTER_YML, encoding="utf-8") as fh:
+            data = yaml.safe_load(fh)
+        if isinstance(data, dict):
+            return {str(k): str(v) for k, v in data.items()}
+    except Exception:
+        logger.warning("Failed to load %s; using empty replacements", _CONTENT_FILTER_YML)
+    return {}
+
+
+CONTENT_FILTER_REPLACEMENTS: dict[str, str] = _load_content_filter_replacements()
 
 
 def sanitize_for_azure(text: str) -> str:
@@ -681,7 +648,7 @@ This analysis examines strategic development pathways for economic diversificati
             
             return response
             
-        except Exception as e:
+        except Exception:
             # Record failed call with minimal data
             latency_ms = (time.time() - start_time) * 1000
             record_llm_call(

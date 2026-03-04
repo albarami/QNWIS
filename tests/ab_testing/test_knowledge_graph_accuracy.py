@@ -7,13 +7,13 @@ to ensure accurate information extraction across all domains.
 Run with: pytest tests/ab_testing/test_knowledge_graph_accuracy.py -v --tb=short
 """
 
-import pytest
-import os
-import sys
-from pathlib import Path
-from typing import Dict, Any, List, Optional
-from datetime import datetime
 import json
+import sys
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+import pytest
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -156,7 +156,7 @@ class TestKnowledgeGraph:
             passed=has_nodes
         )
         
-        assert has_nodes, f"Knowledge graph has no nodes"
+        assert has_nodes, "Knowledge graph has no nodes"
         
     def test_graph_has_edges(self):
         """Test knowledge graph has edges."""
@@ -623,7 +623,7 @@ class TestEmbeddingQuality:
                 test_name="semantic_similarity",
                 component="embeddings",
                 metric="similarity_ordering",
-                expected=f"related > unrelated",
+                expected="related > unrelated",
                 actual=f"{sim_related:.3f} vs {sim_unrelated:.3f}",
                 passed=semantic_correct
             )

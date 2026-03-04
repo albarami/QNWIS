@@ -5,8 +5,9 @@ Tests JSON extraction, number validation, and malformed input rejection.
 """
 
 import pytest
-from src.qnwis.llm.parser import LLMResponseParser, AgentFinding, LLMParseError
-from src.qnwis.data.deterministic.models import QueryResult, Row, Provenance
+
+from src.qnwis.data.deterministic.models import Provenance, QueryResult, Row
+from src.qnwis.llm.parser import AgentFinding, LLMParseError, LLMResponseParser
 
 
 def test_parse_clean_json():

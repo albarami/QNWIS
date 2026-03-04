@@ -6,12 +6,13 @@ and provide insights on skills pipeline and workforce composition.
 """
 
 from __future__ import annotations
+
 from typing import Dict
 
+from ..llm.client import LLMClient
 from .base import DataClient
 from .base_llm import LLMAgent
 from .prompts.skills import build_skills_prompt
-from ..llm.client import LLMClient
 
 SKILLS_QUERY = "syn_employment_share_by_gender_latest"
 

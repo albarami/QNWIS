@@ -7,24 +7,21 @@ to ensure the cached/stored data is accurate.
 Run with: pytest tests/ab_testing/test_postgres_accuracy.py -v --tb=short
 """
 
-import pytest
+import json
 import os
 import sys
-from pathlib import Path
-from typing import Dict, Any, List, Optional
 from datetime import datetime
-import json
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+import pytest
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from tests.ab_testing.ground_truth_data import (
-    QATAR_GROUND_TRUTH,
-    GCC_BENCHMARK_DATA,
-    GroundTruthValue,
     get_ground_truth,
 )
-
 
 # ============================================================================
 # TEST RESULTS TRACKING

@@ -4,15 +4,16 @@ Unit tests for Meta-Synthesis Node.
 Tests cross-scenario synthesis to identify robust recommendations and uncertainties.
 """
 
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
+
 from qnwis.orchestration.nodes.meta_synthesis import (
-    meta_synthesis_node,
+    _emergency_synthesis,
     _extract_scenario_summaries,
-    _build_synthesis_prompt,
     _format_scenarios,
     _validate_synthesis,
-    _emergency_synthesis
+    meta_synthesis_node,
 )
 
 

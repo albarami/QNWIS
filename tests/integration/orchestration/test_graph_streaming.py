@@ -4,12 +4,13 @@ Integration tests for LangGraph streaming orchestration.
 Tests that workflow emits events in correct order with parallel agents.
 """
 
-import pytest
 from unittest.mock import MagicMock
-from src.qnwis.orchestration.streaming import run_workflow_stream, WorkflowEvent
-from src.qnwis.llm.client import LLMClient
-from src.qnwis.llm.config import LLMConfig
+
+import pytest
+
 from src.qnwis.agents.base import DataClient
+from src.qnwis.llm.client import LLMClient
+from src.qnwis.orchestration.streaming import run_workflow_stream
 
 
 @pytest.fixture

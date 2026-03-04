@@ -5,8 +5,7 @@ Ensures that percent values are not double-multiplied and follow
 the QNWIS contract: upstream datasets store values already in percent units.
 """
 
-import pytest
-from src.qnwis.utils.percent import normalize_percent, format_percent
+from src.qnwis.utils.percent import format_percent, normalize_percent
 
 
 def test_percent_normalization_no_double_multiply():

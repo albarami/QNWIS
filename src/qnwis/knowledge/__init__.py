@@ -1,8 +1,8 @@
 """Knowledge graph module for QNWIS."""
 
 from .graph_builder import (
-    QNWISKnowledgeGraph,
     EntityType,
+    QNWISKnowledgeGraph,
     RelationType,
     build_graph_from_documents,
 )

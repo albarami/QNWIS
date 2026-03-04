@@ -17,61 +17,60 @@ import logging
 import os
 import re
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Optional
 
-from ...state import IntelligenceState
 from ....llm.client import LLMClient
-from ...scenario_aware_synthesis import ScenarioAwareSynthesis
 from ...confidence_calibration import (
     ConfidenceCalibrator,
     generate_honest_uncertainty_section,
 )
 from ...ground_truth import (
+    determine_verdict,
     extract_ground_truth,
     validate_no_fabrication,
-    determine_verdict,
 )
-
+from ...scenario_aware_synthesis import ScenarioAwareSynthesis
+from ...state import IntelligenceState
+from .extractors import (
+    extract_agent_final_positions,
+    extract_debate_highlights,
+    extract_stats,
+)
+from .formatters import (
+    add_data_integrity_note,
+    apply_hedge_removal,
+    apply_section_override,
+    build_programmatic_head_comparative,
+    build_programmatic_head_diagnostic,
+    correct_body_rates,
+    correct_deflated_rates,
+    enforce_calibrated_confidence,
+    fix_confidence_mentions,
+    fix_rate_ranges,
+    inject_consensus_header,
+)
 from .ground_truth import (
-    calculate_calibrated_confidence,
-    classify_question_type,
-    cap_unrealistic_rates,
     aggregate_agent_estimates,
+    calculate_calibrated_confidence,
+    cap_unrealistic_rates,
+    classify_question_type,
     validate_output_consistency,
 )
-from .extractors import (
-    extract_stats,
-    extract_debate_highlights,
-    extract_agent_final_positions,
-)
-from .verdict import extract_final_debate_verdict
+from .prompts import build_legendary_prompt
 from .sections import (
-    extract_scenario_summaries,
     calculate_robustness_ratio,
     extract_edge_cases,
     extract_risks,
-)
-from .prompts import build_legendary_prompt
-from .formatters import (
-    build_programmatic_head_diagnostic,
-    build_programmatic_head_comparative,
-    apply_section_override,
-    correct_body_rates,
-    fix_rate_ranges,
-    correct_deflated_rates,
-    apply_hedge_removal,
-    fix_confidence_mentions,
-    enforce_calibrated_confidence,
-    inject_consensus_header,
-    add_data_integrity_note,
+    extract_scenario_summaries,
 )
 from .services import (
     fetch_case_studies,
     run_financial_modeling,
-    run_stakeholder_analysis,
-    run_risk_register,
     run_implementation_plan,
+    run_risk_register,
+    run_stakeholder_analysis,
 )
+from .verdict import extract_final_debate_verdict
 
 logger = logging.getLogger(__name__)
 

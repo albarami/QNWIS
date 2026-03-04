@@ -11,7 +11,6 @@ import pytest
 async def test_llm_client_list_models_with_stub():
     """Test LLM client list_models returns info with stub provider."""
     from src.qnwis.llm.client import LLMClient
-    from src.qnwis.llm.config import LLMConfig
     
     from src.qnwis.llm.config import get_llm_config; config = get_llm_config()
     client = LLMClient(config=config)

@@ -7,6 +7,8 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Dict, List
 
+from qnwis.agents.prompts.base import ANTI_FABRICATION_RULES, format_extracted_facts
+
 from .base import (
     AgentReport,
     DataClient,
@@ -19,7 +21,6 @@ from .base import (
     extract_usage_tokens,
     resolve_response_model,
 )
-from qnwis.agents.prompts.base import ANTI_FABRICATION_RULES, format_extracted_facts
 
 LABOUR_ECONOMIST_PERSONA = """
 ═══════════════════════════════════════════════════

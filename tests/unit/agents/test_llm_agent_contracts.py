@@ -5,13 +5,14 @@ Tests that each agent runs _fetch_data() and emits streamed tokens
 then AgentReport with citations + confidence.
 """
 
+from unittest.mock import MagicMock
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock
+
+from src.qnwis.agents.base import AgentReport, DataClient
 from src.qnwis.agents.base_llm import LLMAgent
-from src.qnwis.agents.base import DataClient, AgentReport
+from src.qnwis.data.deterministic.models import Provenance, QueryResult, Row
 from src.qnwis.llm.client import LLMClient
-from src.qnwis.llm.config import LLMConfig
-from src.qnwis.data.deterministic.models import QueryResult, Row, Provenance
 
 
 class TestLLMAgentImplementation(LLMAgent):

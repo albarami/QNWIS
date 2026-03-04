@@ -4,9 +4,9 @@ Unit tests for NSIC Error Handler - Graceful Degradation Module
 Tests all failure scenarios and recovery strategies.
 """
 
-import pytest
 import asyncio
-from datetime import datetime
+
+import pytest
 
 
 class TestErrorHandler:
@@ -15,11 +15,9 @@ class TestErrorHandler:
     def test_import_error_handler(self):
         """Test that error handler imports correctly."""
         from src.nsic.orchestration.error_handler import (
-            NSICErrorHandler,
             AnalysisState,
             FailureType,
-            DegradationStrategy,
-            create_error_handler,
+            NSICErrorHandler,
         )
         assert NSICErrorHandler is not None
         assert AnalysisState is not None
@@ -66,8 +64,8 @@ class TestErrorHandler:
     def test_strategies_defined_for_all_failures(self):
         """Test that every failure type has a strategy."""
         from src.nsic.orchestration.error_handler import (
-            NSICErrorHandler,
             FailureType,
+            NSICErrorHandler,
         )
 
         handler = NSICErrorHandler()
@@ -293,7 +291,6 @@ class TestErrorHandler:
 
 if __name__ == "__main__":
     # Run tests directly
-    import sys
 
     test = TestErrorHandler()
 

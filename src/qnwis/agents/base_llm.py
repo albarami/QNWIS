@@ -12,14 +12,14 @@ DOMAIN AGNOSTIC: Agents can analyze ANY domain:
 import json
 import logging
 from abc import ABC, abstractmethod
-from typing import AsyncIterator, Dict, Optional, List, Any
 from datetime import datetime, timezone
+from typing import AsyncIterator, Dict, List, Optional
 
-from .base import DataClient, AgentReport, Insight, evidence_from
 from ..llm.client import LLMClient
-from ..llm.parser import LLMResponseParser, AgentFinding
 from ..llm.exceptions import LLMError, LLMParseError
-from .data_mastery import get_agent_data_prompt, AGENT_DATA_MASTERY_PROMPT
+from ..llm.parser import AgentFinding, LLMResponseParser
+from .base import AgentReport, DataClient, Insight, evidence_from
+from .data_mastery import get_agent_data_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -268,7 +268,7 @@ The minister needs a decision, not methodology discussion."""
                      citations=[],
                      data_quality_notes=f"JSON parse failed - showing raw output. Error: {exc}"
                 )
-                yield {"type": "warning", "content": f"JSON parse failed - showing raw output"}
+                yield {"type": "warning", "content": "JSON parse failed - showing raw output"}
 
             allowed_numbers = self.parser.extract_numbers_from_query_results(data)
             is_valid, violations = self.parser.validate_numbers(finding, allowed_numbers, tolerance=0.02)

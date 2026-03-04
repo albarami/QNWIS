@@ -10,7 +10,8 @@ Hybrid Model Routing (2025-11-27):
 """
 
 import logging
-from typing import Any, Optional, Dict
+from typing import Any, Dict, Optional
+
 from .rate_limiter import get_rate_limiter
 
 logger = logging.getLogger(__name__)

@@ -7,7 +7,6 @@ and /metrics endpoint integration.
 
 import pytest
 from fastapi.testclient import TestClient
-from prometheus_client import REGISTRY
 
 from qnwis.perf.metrics import (
     AGENT_LATENCY,

@@ -4,14 +4,14 @@ Unit tests for Document Loader.
 Tests document loading from configured sources.
 """
 
-import pytest
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+
+import pytest
+
 from qnwis.rag.document_loader import (
-    load_source_documents,
-    _load_from_filesystem,
     _create_placeholder_documents,
-    _get_file_date
+    _get_file_date,
+    load_source_documents,
 )
 
 

@@ -5,7 +5,7 @@ Financial Economist agent with Dr. Mohammed persona.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
 from qnwis.agents.base import (
     coerce_llm_response_text,
@@ -18,7 +18,6 @@ from qnwis.agents.base import (
 from qnwis.agents.prompts.base import ANTI_FABRICATION_RULES, format_extracted_facts
 
 # Import AgentReport from typing to avoid circular dependency
-from typing import Any
 AgentReport = dict[str, Any]
 
 FINANCIAL_ECONOMIST_PERSONA = """

@@ -8,11 +8,15 @@ if TYPE_CHECKING:
     from src.data.apis.world_bank import UDCGlobalDataIntegrator  # type: ignore[import-not-found]
 else:
     try:
-        from src.data.apis.world_bank import UDCGlobalDataIntegrator  # type: ignore[import-not-found]
+        from src.data.apis.world_bank import (
+            UDCGlobalDataIntegrator,  # type: ignore[import-not-found]
+        )
     except ImportError:
         try:
             # Fallback import path
-            from data.apis.world_bank import UDCGlobalDataIntegrator  # type: ignore[import-not-found]
+            from data.apis.world_bank import (
+                UDCGlobalDataIntegrator,  # type: ignore[import-not-found]
+            )
         except ImportError:
             UDCGlobalDataIntegrator = None  # type: ignore[misc,assignment]
 

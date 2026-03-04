@@ -13,11 +13,9 @@ Covers:
 """
 
 import ast
-import os
 import re
 from pathlib import Path
 
-import pytest
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -139,7 +137,7 @@ class TestNoExceptionLeakage:
                                 f"{py_file.relative_to(SRC_ROOT)}:{i}"
                             )
         assert not failures, (
-            f"Exception details leaked in 500 responses at:\n"
+            "Exception details leaked in 500 responses at:\n"
             + "\n".join(failures)
         )
 

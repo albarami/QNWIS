@@ -166,7 +166,7 @@ class PredictorAgent:
             f"syn_{key}_by_sector",
             f"syn_{key}_latest",
             f"{key}_trends_monthly",
-            f"attrition_rate_monthly",  # Common alias for retention metrics
+            "attrition_rate_monthly",  # Common alias for retention metrics
         ]
         for candidate in candidates:
             canonical = candidate.lower()

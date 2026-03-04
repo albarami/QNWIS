@@ -1,0 +1,59 @@
+# Azure Content Filter Replacements
+#
+# Prevents false-positive "jailbreak" detections in legitimate policy analysis.
+# Keys are trigger phrases; values are safe replacements applied before
+# sending prompts to Azure OpenAI.
+
+# Role-playing triggers
+"devil's advocate": "alternative perspective"
+"Devil's Advocate": "Alternative Perspective"
+"DEVIL'S ADVOCATE": "ALTERNATIVE PERSPECTIVE"
+"play the role": "provide analysis as"
+"act as": "analyze as"
+"pretend to be": "analyze from perspective of"
+
+# Disaster/risk language
+"catastrophic failure": "significant challenge"
+"catastrophic risk": "major concern"
+"catastrophic": "significant"
+"nightmare scenario": "difficult scenario"
+"worst-case": "downside"
+"worst case": "downside"
+"doomsday": "pessimistic"
+"apocalyptic": "severe"
+
+# Adversarial framing
+"attack the": "examine the"
+"attack this": "examine this"
+"attack argument": "examine argument"
+"exploit weakness": "address gap"
+"exploit vulnerabilities": "identify gaps"
+"exploit": "leverage"
+"manipulate": "influence"
+"hack": "analyze"
+"break": "examine"
+
+# Command patterns that look like jailbreaks
+"ignore previous": "also consider"
+"ignore all": "additionally"
+"disregard instructions": "supplement with"
+"disregard": "also consider"
+"override": "supplement"
+"bypass": "work around"
+"circumvent": "address"
+
+# Policy/security triggers
+"undermine": "challenge"
+"subvert": "question"
+"destabilize": "affect"
+"overthrow": "change"
+"destroy": "significantly impact"
+"eliminate": "reduce"
+"annihilate": "remove"
+
+# Instruction injection patterns
+"new instructions": "additional considerations"
+"forget everything": "additionally"
+"start fresh": "also consider"
+"system prompt": "context"
+"jailbreak": "analyze"

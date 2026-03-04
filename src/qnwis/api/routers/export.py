@@ -7,6 +7,7 @@ No network, SQL, or LLM dependencies. Deterministic and Windows-friendly.
 
 from __future__ import annotations
 
+import csv
 import os
 from hashlib import sha256
 from io import StringIO
@@ -207,14 +208,14 @@ def export_csv(
                 "total_percent": g["total"],
             }
         ]
-    # render CSV
+    # render CSV using csv.writer for proper quoting/escaping
     if not rows:
         rows = [{}]
-    headers = list(rows[0].keys())
+    fieldnames = list(rows[0].keys())
     buf = StringIO()
-    buf.write(",".join(headers) + "\n")
-    for r in rows:
-        buf.write(",".join(str(r.get(h, "")) for h in headers) + "\n")
+    writer = csv.DictWriter(buf, fieldnames=fieldnames, extrasaction="ignore")
+    writer.writeheader()
+    writer.writerows(rows)
     payload = buf.getvalue().encode("utf-8")
     etag_value = f"\"{_etag(payload)}\""
     if _match_etag(request, etag_value):

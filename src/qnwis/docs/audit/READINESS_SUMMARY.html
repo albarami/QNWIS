@@ -1,23 +1,23 @@
 <pre># Readiness Report: Steps 1-33
 
-**Generated:** 2026-03-04T07:05:17.295776
+**Generated:** 2026-03-04T07:32:25.882933
 **Overall Status:** FAIL
-**Execution Time:** 590 ms
+**Execution Time:** 20105 ms
 
 ## Summary
 
-- **Total Gates:** 2
-- **Passed:** 1
+- **Total Gates:** 3
+- **Passed:** 2
 - **Failed:** 1
 
 ## Previously failing gates now PASS
 
-- None
+- no_placeholders
 
 ## Gate Results
 
 ### step_completeness [PASS]
-- **Duration:** 19 ms
+- **Duration:** 16 ms
 - **Severity:** ERROR
 ```json
 {
@@ -359,8 +359,8 @@
 **Evidence:**
 - `docs/IMPLEMENTATION_ROADMAP.md`
 
-### no_placeholders [FAIL]
-- **Duration:** 570 ms
+### no_placeholders [PASS]
+- **Duration:** 567 ms
 - **Severity:** ERROR
 ```json
 {
@@ -373,262 +373,103 @@
     &quot;^\\s*NotImplemented\\b.*$&quot;,
     &quot;^\\s*raise\\s+NotImplementedError\\b.*$&quot;
   ],
-  &quot;violations&quot;: [
-    {
-      &quot;file&quot;: &quot;src/qnwis/agents/base_llm.py&quot;,
-      &quot;line&quot;: 360,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/agents/base_llm.py&quot;,
-      &quot;line&quot;: 380,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/classification/classifier.py&quot;,
-      &quot;line&quot;: 73,
-      &quot;pattern&quot;: &quot;^\\s*(?:#\\s*)?TODO\\b.*$&quot;,
-      &quot;snippet&quot;: &quot;# TODO: Implement smart classification after system is proven&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/cli/qnwis_continuity.py&quot;,
-      &quot;line&quot;: 37,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/cli/qnwis_dr.py&quot;,
-      &quot;line&quot;: 436,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/continuity/executor.py&quot;,
-      &quot;line&quot;: 148,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/continuity/executor.py&quot;,
-      &quot;line&quot;: 165,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/continuity/executor.py&quot;,
-      &quot;line&quot;: 182,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/continuity/executor.py&quot;,
-      &quot;line&quot;: 199,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/continuity/executor.py&quot;,
-      &quot;line&quot;: 212,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/continuity/executor.py&quot;,
-      &quot;line&quot;: 229,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/data/connectors/qatar_opendata_api.py&quot;,
-      &quot;line&quot;: 192,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/dr/storage.py&quot;,
-      &quot;line&quot;: 47,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/dr/storage.py&quot;,
-      &quot;line&quot;: 63,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/dr/storage.py&quot;,
-      &quot;line&quot;: 76,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/dr/storage.py&quot;,
-      &quot;line&quot;: 89,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/dr/storage.py&quot;,
-      &quot;line&quot;: 102,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/llm/client.py&quot;,
-      &quot;line&quot;: 375,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/llm/exceptions.py&quot;,
-      &quot;line&quot;: 8,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/llm/exceptions.py&quot;,
-      &quot;line&quot;: 13,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/llm/exceptions.py&quot;,
-      &quot;line&quot;: 18,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/llm/exceptions.py&quot;,
-      &quot;line&quot;: 23,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/llm/exceptions.py&quot;,
-      &quot;line&quot;: 28,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/llm/exceptions.py&quot;,
-      &quot;line&quot;: 33,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/llm/parser.py&quot;,
-      &quot;line&quot;: 235,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/orchestration/debate/json_parser.py&quot;,
-      &quot;line&quot;: 38,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/orchestration/debate/json_parser.py&quot;,
-      &quot;line&quot;: 66,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/orchestration/debate/json_parser.py&quot;,
-      &quot;line&quot;: 80,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/orchestration/graph_llm.py&quot;,
-      &quot;line&quot;: 1392,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/orchestration/integrations/common.py&quot;,
-      &quot;line&quot;: 253,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/orchestration/integrations/orchestrator.py&quot;,
-      &quot;line&quot;: 93,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/orchestration/intelligent_data_extraction.py&quot;,
-      &quot;line&quot;: 293,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/orchestration/master_data_extraction.py&quot;,
-      &quot;line&quot;: 243,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/orchestration/master_data_extraction.py&quot;,
-      &quot;line&quot;: 259,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/orchestration/nodes/_helpers.py&quot;,
-      &quot;line&quot;: 190,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/orchestration/nodes/_helpers.py&quot;,
-      &quot;line&quot;: 203,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/orchestration/nodes/scenario_generator.py&quot;,
-      &quot;line&quot;: 568,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/orchestration/nodes/scenario_generator.py&quot;,
-      &quot;line&quot;: 582,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/orchestration/nodes/scenario_generator.py&quot;,
-      &quot;line&quot;: 594,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/orchestration/nodes/structure_data.py&quot;,
-      &quot;line&quot;: 279,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/orchestration/nodes/synthesis/node.py&quot;,
-      &quot;line&quot;: 204,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    },
-    {
-      &quot;file&quot;: &quot;src/qnwis/orchestration/smart_data_router.py&quot;,
-      &quot;line&quot;: 579,
-      &quot;pattern&quot;: &quot;^\\s*pass\\s*$&quot;,
-      &quot;snippet&quot;: &quot;pass&quot;
-    }
-  ]
+  &quot;violations&quot;: []
 }
 ```
 **Evidence:**
 - `src/qnwis/scripts/qa/grep_rules.yml`
+
+### linters_and_types [FAIL]
+- **Duration:** 19522 ms
+- **Severity:** ERROR
+```json
+{
+  &quot;ruff&quot;: {
+    &quot;issues&quot;: 350,
+    &quot;fixable&quot;: 101,
+    &quot;rules&quot;: {
+      &quot;F821&quot;: 5,
+      &quot;C901&quot;: 148,
+      &quot;B905&quot;: 26,
+      &quot;B008&quot;: 59,
+      &quot;B904&quot;: 9,
+      &quot;B007&quot;: 20,
+      &quot;F841&quot;: 50,
+      &quot;B023&quot;: 12,
+      &quot;E712&quot;: 6,
+      &quot;B025&quot;: 1,
+      &quot;I001&quot;: 4,
+      &quot;E702&quot;: 4,
+      &quot;F401&quot;: 4,
+      &quot;B017&quot;: 2
+    },
+    &quot;files&quot;: [
+      &quot;D:\\lmis_int\\src\\qnwis\\agents\\alert_center.py&quot;,
+      &quot;D:\\lmis_int\\src\\qnwis\\agents\\base.py&quot;,
+      &quot;D:\\lmis_int\\src\\qnwis\\agents\\base_llm.py&quot;,
+      &quot;D:\\lmis_int\\src\\qnwis\\agents\\graphs\\common.py&quot;,
+      &quot;D:\\lmis_int\\src\\qnwis\\agents\\national_strategy.py&quot;,
+      &quot;D:\\lmis_int\\src\\qnwis\\agents\\pattern_detective.py&quot;,
+      &quot;D:\\lmis_int\\src\\qnwis\\agents\\pattern_miner.py&quot;,
+      &quot;D:\\lmis_int\\src\\qnwis\\agents\\prompts\\base.py&quot;,
+      &quot;D:\\lmis_int\\src\\qnwis\\agents\\research_synthesizer.py&quot;,
+      &quot;D:\\lmis_int\\src\\qnwis\\agents\\scenario_agent.py&quot;
+    ],
+    &quot;stdout_tail&quot;: &quot; \&quot;code\&quot;: \&quot;F841\&quot;,\n    \&quot;end_location\&quot;: {\n      \&quot;column\&quot;: 13,\n      \&quot;row\&quot;: 134\n    },\n    \&quot;filename\&quot;: \&quot;D:\\\\lmis_int\\\\tests\\\\unit\\\\test_parallel_executor.py\&quot;,\n    \&quot;fix\&quot;: {\n      \&quot;applicability\&quot;: \&quot;unsafe\&quot;,\n      \&quot;edits\&quot;: [\n        {\n          \&quot;content\&quot;: \&quot;\&quot;,\n          \&quot;end_location\&quot;: {\n            \&quot;column\&quot;: 16,\n            \&quot;row\&quot;: 134\n          },\n          \&quot;location\&quot;: {\n            \&quot;column\&quot;: 5,\n            \&quot;row\&quot;: 134\n          }\n        }\n      ],\n      \&quot;message\&quot;: \&quot;Remove assignment to unused variable `executor`\&quot;\n    },\n    \&quot;location\&quot;: {\n      \&quot;column\&quot;: 5,\n      \&quot;row\&quot;: 134\n    },\n    \&quot;message\&quot;: \&quot;Local variable `executor` is assigned to but never used\&quot;,\n    \&quot;noqa_row\&quot;: 134,\n    \&quot;url\&quot;: \&quot;https://docs.astral.sh/ruff/rules/unused-variable\&quot;\n  },\n  {\n    \&quot;cell\&quot;: null,\n    \&quot;code\&quot;: \&quot;F841\&quot;,\n    \&quot;end_location\&quot;: {\n      \&quot;column\&quot;: 12,\n      \&quot;row\&quot;: 213\n    },\n    \&quot;filename\&quot;: \&quot;D:\\\\lmis_int\\\\tests\\\\unit\\\\test_parallel_executor.py\&quot;,\n    \&quot;fix\&quot;: {\n      \&quot;applicability\&quot;: \&quot;unsafe\&quot;,\n      \&quot;edits\&quot;: [\n        {\n          \&quot;content\&quot;: \&quot;\&quot;,\n          \&quot;end_location\&quot;: {\n            \&quot;column\&quot;: 15,\n            \&quot;row\&quot;: 213\n          },\n          \&quot;location\&quot;: {\n            \&quot;column\&quot;: 5,\n            \&quot;row\&quot;: 213\n          }\n        }\n      ],\n      \&quot;message\&quot;: \&quot;Remove assignment to unused variable `results`\&quot;\n    },\n    \&quot;location\&quot;: {\n      \&quot;column\&quot;: 5,\n      \&quot;row\&quot;: 213\n    },\n    \&quot;message\&quot;: \&quot;Local variable `results` is assigned to but never used\&quot;,\n    \&quot;noqa_row\&quot;: 213,\n    \&quot;url\&quot;: \&quot;https://docs.astral.sh/ruff/rules/unused-variable\&quot;\n  },\n  {\n    \&quot;cell\&quot;: null,\n    \&quot;code\&quot;: \&quot;F401\&quot;,\n    \&quot;end_location\&quot;: {\n      \&quot;column\&quot;: 58,\n      \&quot;row\&quot;: 158\n    },\n    \&quot;filename\&quot;: \&quot;D:\\\\lmis_int\\\\tests\\\\unit\\\\test_rag_embeddings.py\&quot;,\n    \&quot;fix\&quot;: null,\n    \&quot;location\&quot;: {\n      \&quot;column\&quot;: 42,\n      \&quot;row\&quot;: 158\n    },\n    \&quot;message\&quot;: \&quot;`qnwis.rag.embeddings.SentenceEmbedder` imported but unused; consider using `importlib.util.find_spec` to test for availability\&quot;,\n    \&quot;noqa_row\&quot;: 158,\n    \&quot;url\&quot;: \&quot;https://docs.astral.sh/ruff/rules/unused-import\&quot;\n  }\n]&quot;,
+    &quot;stderr_tail&quot;: &quot;&quot;,
+    &quot;exit_code&quot;: 1
+  },
+  &quot;flake8&quot;: {
+    &quot;issues&quot;: 7984,
+    &quot;fixable&quot;: 0,
+    &quot;rules&quot;: {
+      &quot;F821&quot;: 5,
+      &quot;W293&quot;: 7146,
+      &quot;W291&quot;: 242,
+      &quot;E501&quot;: 376,
+      &quot;E203&quot;: 11,
+      &quot;E261&quot;: 3,
+      &quot;W391&quot;: 96,
+      &quot;E302&quot;: 10,
+      &quot;F841&quot;: 21,
+      &quot;E128&quot;: 17,
+      &quot;E131&quot;: 18,
+      &quot;E303&quot;: 5,
+      &quot;E127&quot;: 13,
+      &quot;E306&quot;: 1,
+      &quot;F824&quot;: 2,
+      &quot;E712&quot;: 6,
+      &quot;E305&quot;: 1,
+      &quot;E702&quot;: 4,
+      &quot;F401&quot;: 4,
+      &quot;E129&quot;: 1,
+      &quot;E122&quot;: 2
+    },
+    &quot;files&quot;: [
+      &quot;src/qnwis/agents/alert_center.py&quot;,
+      &quot;src/qnwis/alerts\\real_time_alerts.py&quot;,
+      &quot;src/qnwis/api/routers\\admin.py&quot;,
+      &quot;src/qnwis/api/routers\\council_llm.py&quot;,
+      &quot;src/qnwis\\agents\\alert_center.py&quot;,
+      &quot;src/qnwis\\agents\\base.py&quot;,
+      &quot;src/qnwis\\agents\\base_llm.py&quot;,
+      &quot;src/qnwis\\agents\\data_mastery.py&quot;,
+      &quot;src/qnwis\\agents\\financial_economist.py&quot;,
+      &quot;src/qnwis\\agents\\labour_economist.py&quot;
+    ],
+    &quot;stdout_tail&quot;: &quot;lidation_pipeline.py:232:1: W293 blank line contains whitespace\ntests\\validation\\test_validation_pipeline.py:239:1: W293 blank line contains whitespace\ntests\\validation\\test_validation_pipeline.py:248:1: W293 blank line contains whitespace\ntests\\validation\\test_validation_pipeline.py:250:1: W293 blank line contains whitespace\ntests\\validation\\test_validation_pipeline.py:254:1: W293 blank line contains whitespace\ntests\\validation\\test_validation_pipeline.py:263:1: W293 blank line contains whitespace\ntests\\validation\\test_validation_pipeline.py:267:1: W293 blank line contains whitespace\ntests\\validation\\test_validation_pipeline.py:275:1: W293 blank line contains whitespace\ntests\\validation\\test_validation_pipeline.py:280:1: W293 blank line contains whitespace\ntests\\validation\\test_validation_pipeline.py:284:1: W293 blank line contains whitespace\ntests\\validation\\test_validation_pipeline.py:290:1: W293 blank line contains whitespace\ntests\\validation\\test_validation_pipeline.py:295:1: W293 blank line contains whitespace\ntests\\validation\\test_validation_pipeline.py:302:1: W293 blank line contains whitespace\ntests\\validation\\test_validation_pipeline.py:311:1: W293 blank line contains whitespace\ntests\\validation\\test_validation_pipeline.py:313:1: W293 blank line contains whitespace\ntests\\validation\\test_validation_pipeline.py:318:1: W293 blank line contains whitespace\ntests\\validation\\test_validation_pipeline.py:326:1: W293 blank line contains whitespace\ntests\\validation\\test_validation_pipeline.py:329:1: W293 blank line contains whitespace\ntests\\validation\\test_validation_pipeline.py:332:1: W293 blank line contains whitespace\ntests\\validation\\test_validation_pipeline.py:335:1: W293 blank line contains whitespace\ntests\\validation\\test_validation_pipeline.py:340:1: W293 blank line contains whitespace\ntests\\validation\\test_validation_pipeline.py:345:1: W293 blank line contains whitespace\ntests\\validation\\test_validation_pipeline.py:349:1: W293 blank line contains whitespace\n&quot;,
+    &quot;stderr_tail&quot;: &quot;&quot;,
+    &quot;exit_code&quot;: 1
+  },
+  &quot;mypy&quot;: {
+    &quot;issues&quot;: 0,
+    &quot;fixable&quot;: 0,
+    &quot;rules&quot;: {},
+    &quot;files&quot;: [],
+    &quot;stdout_tail&quot;: &quot;src\\qnwis\\alerts\\real_time_alerts.py:69: error: Function is missing a return type annotation  [no-untyped-def]\nsrc\\qnwis\\alerts\\real_time_alerts.py:69: note: Use \&quot;-&gt; None\&quot; if function does not return a value\nsrc\\qnwis\\alerts\\real_time_alerts.py:91: error: Dict entry 0 has incompatible type \&quot;str\&quot;: \&quot;float | None\&quot;; expected \&quot;str\&quot;: \&quot;float\&quot;  [dict-item]\nsrc\\qnwis\\alerts\\real_time_alerts.py:92: error: Dict entry 1 has incompatible type \&quot;str\&quot;: \&quot;float | None\&quot;; expected \&quot;str\&quot;: \&quot;float\&quot;  [dict-item]\nsrc\\qnwis\\alerts\\real_time_alerts.py:210: error: Call to untyped function \&quot;RealTimeAlertSystem\&quot; in typed context  [no-untyped-call]\nsrc\\qnwis\\alerts\\real_time_alerts.py:221: error: Function is missing a return type annotation  [no-untyped-def]\nsrc\\qnwis\\alerts\\engine.py:185: error: Unsupported operand types for &gt; (\&quot;float\&quot; and \&quot;None\&quot;)  [operator]\nsrc\\qnwis\\alerts\\engine.py:185: note: Left operand is of type \&quot;float | None\&quot;\nsrc\\qnwis\\alerts\\engine.py:187: error: Unsupported operand types for &gt;= (\&quot;float\&quot; and \&quot;None\&quot;)  [operator]\nsrc\\qnwis\\alerts\\engine.py:187: note: Left operand is of type \&quot;float | None\&quot;\nsrc\\qnwis\\alerts\\engine.py:189: error: Unsupported operand types for &lt; (\&quot;float\&quot; and \&quot;None\&quot;)  [operator]\nsrc\\qnwis\\alerts\\engine.py:189: note: Left operand is of type \&quot;float | None\&quot;\nsrc\\qnwis\\alerts\\engine.py:191: error: Unsupported operand types for &lt;= (\&quot;float\&quot; and \&quot;None\&quot;)  [operator]\nsrc\\qnwis\\alerts\\engine.py:191: note: Left operand is of type \&quot;float | None\&quot;\nsrc\\qnwis\\agents\\alert_center.py:85: error: Name \&quot;Any\&quot; is not defined  [name-defined]\nsrc\\qnwis\\agents\\alert_center.py:85: note: Did you forget to import it from \&quot;typing\&quot;? (Suggestion: \&quot;from typing import Any\&quot;)\nsrc\\qnwis\\agents\\scenario_agent.py:571: error: Argument 1 to \&quot;sum\&quot; has incompatible type \&quot;list[Any | None]\&quot;; expected \&quot;Iterable[bool]\&quot;  [arg-type]\nFound 11 errors in 4 files (checked 24 source files)\n&quot;,
+    &quot;stderr_tail&quot;: &quot;&quot;,
+    &quot;exit_code&quot;: 1
+  }
+}
+```
 </pre>

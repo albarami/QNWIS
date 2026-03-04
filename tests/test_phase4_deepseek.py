@@ -10,9 +10,8 @@ Tests:
 - Statistics tracking
 """
 
+
 import pytest
-import asyncio
-from typing import Dict, Any
 
 
 class TestDataclasses:
@@ -295,7 +294,6 @@ class TestFactoryFunction:
         """Factory should accept config overrides."""
         from src.nsic.orchestration.deepseek_client import (
             create_deepseek_client,
-            InferenceMode,
         )
         
         client = create_deepseek_client(

@@ -1,8 +1,7 @@
 """Test Qatar Open Data API integration."""
 
-import pytest
-from qnwis.data.deterministic.registry import QueryRegistry
 from qnwis.data.deterministic.cache_access import execute_cached
+from qnwis.data.deterministic.registry import QueryRegistry
 
 
 def test_qatar_api_employees_query():

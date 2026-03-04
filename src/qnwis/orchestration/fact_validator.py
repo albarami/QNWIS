@@ -9,9 +9,9 @@ Domain-agnostic: Works with any extracted fact structure.
 
 import logging
 import re
-from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass
 from difflib import SequenceMatcher
+from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 

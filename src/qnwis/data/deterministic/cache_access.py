@@ -13,6 +13,8 @@ from collections.abc import Mapping, MutableMapping
 from pathlib import Path
 from typing import Any
 
+from qnwis.perf.cache_tuning import should_cache, ttl_for
+
 from ..cache.backends import CacheBackend, get_cache_backend
 from ..catalog.registry import DatasetCatalog
 from ..freshness.verifier import verify_freshness
@@ -20,7 +22,6 @@ from .access import execute as execute_uncached
 from .models import QueryResult, QuerySpec
 from .registry import QueryRegistry
 from .schema import QueryDefinition
-from qnwis.perf.cache_tuning import should_cache, ttl_for
 
 logger = logging.getLogger(__name__)
 

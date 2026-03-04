@@ -6,6 +6,7 @@ GPU-accelerated semantic search for real-time fact checking.
 
 import logging
 from typing import Optional
+
 from .gpu_verifier import GPUFactVerifier
 
 logger = logging.getLogger(__name__)

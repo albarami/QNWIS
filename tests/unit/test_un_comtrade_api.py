@@ -1,7 +1,9 @@
 """Unit tests for UN Comtrade API Connector"""
 
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
+
 from src.data.apis.un_comtrade_api import UNComtradeConnector
 
 

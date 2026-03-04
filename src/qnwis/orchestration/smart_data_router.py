@@ -14,10 +14,10 @@ import asyncio
 import logging
 import os
 import re
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
-from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -414,14 +414,14 @@ class SmartDataRouter:
                 f"{countries[0]} GDP economic growth 2024",
                 f"{countries[0]} economic diversification progress",
                 f"{countries[0]} fiscal budget revenue expenditure",
-                f"GCC economic indicators comparison",
+                "GCC economic indicators comparison",
             ])
         elif primary_domain == "energy":
             queries.extend([
                 f"{countries[0]} LNG oil gas production export",
                 f"{countries[0]} energy sector employment",
-                f"North Field expansion Qatar gas",
-                f"Qatar petroleum industry statistics",
+                "North Field expansion Qatar gas",
+                "Qatar petroleum industry statistics",
             ])
         
         # Concept-specific queries

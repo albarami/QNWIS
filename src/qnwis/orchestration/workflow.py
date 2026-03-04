@@ -6,37 +6,37 @@ Implements multi-GPU parallel scenario analysis with backward compatibility.
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from datetime import datetime
 from typing import Literal
 
 from langgraph.graph import END, StateGraph
 
+from .cross_scenario import generate_cross_scenario_table
 from .nodes import (
+    arithmetic_validator_node,
     classify_query_node,
     critique_node,
     data_extraction_node,
+    feasibility_gate_node,
     financial_agent_node,
     market_agent_node,
     operations_agent_node,
     research_agent_node,
     verification_node,
-    feasibility_gate_node,
-    arithmetic_validator_node,
 )
-from .nodes.parallel_research import parallel_research_node
-from .nodes.infeasible_analysis import infeasible_analysis_node
-from .cross_scenario import generate_cross_scenario_table
+
 # Import legendary debate node instead of simplified debate
 from .nodes.debate_legendary import legendary_debate_node
-# Import legendary synthesis for consultant-killing output
-from .nodes.synthesis import legendary_synthesis_node_sync as legendary_synthesis_node
-from .nodes.synthesis_strategic import strategic_synthesis_node
+from .nodes.infeasible_analysis import infeasible_analysis_node
+from .nodes.parallel_research import parallel_research_node
+
 # Import parallel scenario analysis components
 from .nodes.scenario_generator import ScenarioGenerator
+
+# Import legendary synthesis for consultant-killing output
+from .nodes.synthesis import legendary_synthesis_node_sync as legendary_synthesis_node
 from .parallel_executor import ParallelDebateExecutor
-from .nodes.meta_synthesis import meta_synthesis_node
 from .state import IntelligenceState
 
 logger = logging.getLogger(__name__)
@@ -112,19 +112,19 @@ async def scenario_generation_node(state: IntelligenceState) -> IntelligenceStat
     
     # EXPLICIT PRINT FOR DEBUGGING (bypasses log level issues)
     print(f"\n{'='*70}")
-    print(f"[CHECKPOINT 2A] SCENARIO GENERATION NODE - MONTE CARLO GATE")
+    print("[CHECKPOINT 2A] SCENARIO GENERATION NODE - MONTE CARLO GATE")
     print(f"{'='*70}")
     print(f"[CHECKPOINT 2A] question_type from state: {question_type}")
     print(f"[CHECKPOINT 2A] All state keys: {list(state.keys())[:10]}...")
     print(f"{'='*70}\n")
     
-    logger.warning(f"[CHECKPOINT 2A] ═══════════════════════════════════════════════")
+    logger.warning("[CHECKPOINT 2A] ═══════════════════════════════════════════════")
     logger.warning(f"[CHECKPOINT 2A] question_type from state: {question_type}")
     
     if question_type in ('DIAGNOSTIC', 'FORECAST', 'HYBRID'):
         logger.warning(f"[CHECKPOINT 2A] SKIPPING scenario generation for {question_type} question")
-        logger.warning(f"[CHECKPOINT 2A] Monte Carlo will NOT run - agents will derive estimates")
-        logger.warning(f"[CHECKPOINT 2A] ═══════════════════════════════════════════════")
+        logger.warning("[CHECKPOINT 2A] Monte Carlo will NOT run - agents will derive estimates")
+        logger.warning("[CHECKPOINT 2A] ═══════════════════════════════════════════════")
         
         # Set empty scenarios and skip flag
         state['scenarios'] = None
@@ -135,8 +135,8 @@ async def scenario_generation_node(state: IntelligenceState) -> IntelligenceStat
         )
         return state
     
-    logger.warning(f"[CHECKPOINT 2A] COMPARATIVE question - proceeding with scenarios")
-    logger.warning(f"[CHECKPOINT 2A] ═══════════════════════════════════════════════")
+    logger.warning("[CHECKPOINT 2A] COMPARATIVE question - proceeding with scenarios")
+    logger.warning("[CHECKPOINT 2A] ═══════════════════════════════════════════════")
     
     # Check if parallel scenarios are enabled - ALWAYS default to True for complex queries
     enable_parallel = state.get('enable_parallel_scenarios')
@@ -606,14 +606,14 @@ async def meta_synthesis_wrapper(state: IntelligenceState) -> IntelligenceState:
     # ═══════════════════════════════════════════════════════════════════════════
     
     logger.info(f"📊 Routing to legendary_synthesis_node (scenarios_valid={scenarios_valid})")
-    logger.info(f"   This ensures Brief reflects debate verdict, not independent LLM generation")
+    logger.info("   This ensures Brief reflects debate verdict, not independent LLM generation")
     
     try:
         # FIX: Import and call async version directly (not sync wrapper that returns early)
         from .nodes.synthesis import legendary_synthesis_node
         state = await legendary_synthesis_node(state)
         state['reasoning_chain'].append(f"✅ Used legendary_synthesis (scenarios_valid={scenarios_valid}, debate verdict enforced)")
-        logger.info(f"✅ Legendary synthesis complete with debate enforcement")
+        logger.info("✅ Legendary synthesis complete with debate enforcement")
         return state
     except Exception as leg_err:
         logger.error(f"Legendary synthesis failed: {leg_err}, falling back to debate_synthesis")

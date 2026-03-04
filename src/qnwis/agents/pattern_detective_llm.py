@@ -6,12 +6,13 @@ and identify patterns in Qatar's workforce data.
 """
 
 from __future__ import annotations
+
 from typing import Dict
 
+from ..llm.client import LLMClient
 from .base import DataClient
 from .base_llm import LLMAgent
 from .prompts.pattern_detective import build_pattern_detective_prompt
-from ..llm.client import LLMClient
 
 EMPLOYMENT_QUERY = "syn_employment_share_by_gender_latest"
 

@@ -1,7 +1,9 @@
 """Unit tests for IEA Energy API Connector"""
 
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
+
 from src.data.apis.iea_api import IEAAPI
 
 

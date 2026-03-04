@@ -7,7 +7,7 @@ with streaming, retries, and structured output parsing.
 
 from .client import LLMClient
 from .config import LLMConfig, get_llm_config
-from .parser import LLMResponseParser, AgentFinding
+from .parser import AgentFinding, LLMResponseParser
 
 __all__ = [
     "LLMClient",

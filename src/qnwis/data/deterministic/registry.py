@@ -6,8 +6,8 @@ from pathlib import Path
 
 import yaml  # type: ignore[import-untyped]
 
-from .schema import QueryDefinition
 from .models import QuerySpec
+from .schema import QueryDefinition
 
 PROJECT_ROOT = Path(__file__).resolve().parents[4]
 

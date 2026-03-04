@@ -1,41 +1,18 @@
 """
 Typed structures shared across orchestration components.
 
-Includes both agent report structures (Citation, AgentReport) and
-coordination layer types (PrefetchSpec, AgentCallSpec, ExecutionTrace).
+Includes coordination layer types (PrefetchSpec, AgentCallSpec, ExecutionTrace)
+and re-exports the canonical AgentReport from schemas.
 """
 
 from __future__ import annotations
 
-from datetime import datetime
-from typing import Any, List, NotRequired, Optional, TypedDict
+from typing import Any, List, NotRequired, TypedDict
 
+from .schemas import AgentCitation as Citation  # noqa: F401 — re-export
+from .schemas import AgentReport  # noqa: F401 — re-export
 
-class Citation(TypedDict):
-    """Single citation reference within an agent narrative."""
-
-    claim: str
-    metric: str
-    value: str
-    source: str
-    confidence: float
-    extraction_reference: str  # e.g. "[Per extraction: '...' from ...]"
-
-
-class AgentReport(TypedDict):
-    """Structured agent analysis output sent downstream for verification."""
-
-    agent_name: str
-    narrative: str
-    confidence: float
-    citations: List[Citation]
-    facts_used: List[str]
-    assumptions: List[str]
-    data_gaps: List[str]
-    timestamp: str
-    model: str
-    tokens_in: int
-    tokens_out: int
+__all__ = ["Citation", "AgentReport", "PrefetchSpec", "AgentCallSpec", "ExecutionTrace"]
 
 
 class PrefetchSpec(TypedDict):

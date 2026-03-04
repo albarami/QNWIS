@@ -6,9 +6,9 @@ import time
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.testclient import TestClient
+from src.qnwis.api.endpoints_security_demo import router
 
 from src.qnwis.api.deps import attach_security
-from src.qnwis.api.endpoints_security_demo import router
 from src.qnwis.security.rate_limiter import rate_limit
 
 

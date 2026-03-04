@@ -12,7 +12,7 @@ This ensures the debate stays focused on helping the minister make a decision.
 
 import logging
 import re
-from typing import Dict, List, Set, Optional
+from typing import Dict, List, Optional, Set
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +62,7 @@ class SmartModerator:
             'into', 'upon', 'about', 'between', 'during', 'before', 'after',
             'above', 'below', 'under', 'over', 'through', 'than', 'more', 'most',
             'some', 'any', 'each', 'every', 'both', 'either', 'neither', 'whether',
-            'while', 'during', 'consider', 'considering', 'regarding', 'offers',
+            'while', 'consider', 'considering', 'regarding', 'offers',
             'highest', 'lowest', 'best', 'worst', 'strategic', 'path', 'long-term'
         }
         

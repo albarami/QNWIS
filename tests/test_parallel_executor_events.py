@@ -4,9 +4,11 @@ Tests for parallel executor event emissions.
 Verifies that the parallel executor properly emits events during scenario execution.
 """
 
-import pytest
 import asyncio
 from unittest.mock import AsyncMock, Mock
+
+import pytest
+
 from src.qnwis.orchestration.parallel_executor import ParallelDebateExecutor
 
 

@@ -4,8 +4,6 @@ Arabic language utilities for QNWIS (M1).
 Provides Arabic text detection, formatting, and RTL support.
 """
 
-import re
-from typing import Tuple
 
 # Arabic Unicode ranges
 ARABIC_RANGES = [

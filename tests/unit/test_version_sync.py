@@ -1,8 +1,9 @@
 from __future__ import annotations
-import tomllib
-from pathlib import Path
+
 import importlib.util
+import tomllib
 import types
+from pathlib import Path
 
 
 def load_module(path: Path) -> types.ModuleType:

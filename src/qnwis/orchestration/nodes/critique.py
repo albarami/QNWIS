@@ -11,10 +11,10 @@ import json
 import logging
 import os
 from datetime import datetime, timezone
-from typing import Dict, List, Any, Optional
+from typing import Any, Dict, List
 
-from ..state import IntelligenceState
 from ...llm.client import LLMClient
+from ..state import IntelligenceState
 
 logger = logging.getLogger(__name__)
 

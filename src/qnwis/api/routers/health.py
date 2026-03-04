@@ -8,7 +8,6 @@ with subsystem health checks and proper 200/503 status codes.
 from __future__ import annotations
 
 import logging
-import os
 from datetime import datetime, timezone
 from typing import Any
 
@@ -104,8 +103,9 @@ async def readiness() -> JSONResponse:
 
     # Check 3: Database (optional, skip if not configured)
     try:
-        from ...data.deterministic.engine import get_engine
         from sqlalchemy import text
+
+        from ...data.deterministic.engine import get_engine
 
         with get_engine().connect() as conn:
             conn.execute(text("SELECT 1"))

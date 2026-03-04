@@ -6,16 +6,17 @@ based on task type (GPT-4o for fast/deterministic, GPT-5 for reasoning).
 """
 
 import os
-import pytest
 from unittest.mock import patch
 
+import pytest
+
 from src.qnwis.llm.model_router import (
+    ModelConfig,
     ModelRouter,
     TaskType,
-    ModelConfig,
+    get_model_for_task,
     get_router,
     reset_router,
-    get_model_for_task,
 )
 
 

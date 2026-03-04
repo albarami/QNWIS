@@ -2,6 +2,7 @@
 Orchestration schemas for QNWIS workflow.
 
 Defines typed inputs, outputs, and state for the LangGraph workflow.
+Includes the canonical AgentReport model used across agents and orchestration.
 """
 
 from __future__ import annotations
@@ -191,6 +192,61 @@ class Citation(BaseModel):
     locator: str
     fields: list[str]
     timestamp: str | None = None
+
+
+class AgentCitation(BaseModel):
+    """Single citation reference within an agent narrative."""
+
+    claim: str = ""
+    metric: str = ""
+    value: str = ""
+    source: str = ""
+    confidence: float = 0.5
+    extraction_reference: str = ""
+
+
+class AgentReport(BaseModel):
+    """
+    Canonical agent report consolidating TypedDict (orchestration) and dataclass (agents) versions.
+
+    Covers both the orchestration-layer fields (narrative, citations, model/token tracking)
+    and the agent-layer fields (findings/insights, derived_results, metadata).
+
+    Attributes:
+        agent_name: Agent name/identifier (maps to 'agent' in agent-layer usage)
+        narrative: Markdown/text narrative from the agent
+        confidence: Confidence score (0.0-1.0)
+        citations: Structured citation references from narrative
+        facts_used: List of facts referenced
+        assumptions: List of assumptions made
+        data_gaps: List of identified data gaps
+        timestamp: ISO timestamp of report generation
+        model: LLM model used
+        tokens_in: Input tokens consumed
+        tokens_out: Output tokens generated
+        findings: List of structured insights (agent-layer)
+        warnings: Agent-level warnings
+        derived_results: Optional deterministic QueryResults
+        metadata: Arbitrary metadata blob for downstream renderers
+    """
+
+    agent_name: str = Field(default="", description="Agent name/identifier")
+    narrative: str = Field(default="", description="Markdown/text narrative")
+    confidence: float = Field(default=0.0, ge=0.0, le=1.0)
+    citations: list[AgentCitation] = Field(default_factory=list)
+    facts_used: list[str] = Field(default_factory=list)
+    assumptions: list[str] = Field(default_factory=list)
+    data_gaps: list[str] = Field(default_factory=list)
+    timestamp: str = Field(default="")
+    model: str = Field(default="")
+    tokens_in: int = Field(default=0, ge=0)
+    tokens_out: int = Field(default=0, ge=0)
+    findings: list[Any] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    derived_results: list[Any] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+    model_config = {"arbitrary_types_allowed": True, "populate_by_name": True}
 
 
 class Freshness(BaseModel):

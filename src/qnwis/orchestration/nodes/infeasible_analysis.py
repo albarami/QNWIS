@@ -11,10 +11,10 @@ actionable intelligence to ministers.
 
 import json
 import logging
-from typing import Dict, Any
+from typing import Dict
 
-from ..state import IntelligenceState
 from ...llm.client import LLMClient
+from ..state import IntelligenceState
 
 logger = logging.getLogger(__name__)
 
@@ -187,7 +187,7 @@ which validates targets against extracted LMIS data before proceeding with analy
         state["infeasible_analysis_complete"] = True
         
         reasoning_chain.append(
-            f"📊 INFEASIBLE ANALYSIS: Provided alternative recommendations for constrained target"
+            "📊 INFEASIBLE ANALYSIS: Provided alternative recommendations for constrained target"
         )
         
         logger.info("✅ Infeasible analysis complete - provided actionable alternatives")

@@ -176,7 +176,6 @@ def parse_scenario(source: str | dict[str, Any], format: Literal["yaml", "json",
             # FIX ROOT CAUSE: Quote string values that contain colons
             # YAML interprets "key: value with: colon" as nested mapping
             # Fix by quoting values that have colons after the first one
-            import re
             lines = []
             for line in cleaned_source.split('\n'):
                 # Skip list items, comments, and empty lines

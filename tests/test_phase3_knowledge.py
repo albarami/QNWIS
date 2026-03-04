@@ -12,9 +12,9 @@ Tests:
 - Similar node search with GPU acceleration
 """
 
-import pytest
+
 import numpy as np
-from typing import List
+import pytest
 
 
 class TestCausalDataclasses:
@@ -237,7 +237,7 @@ class TestCausalGraph:
     
     def test_add_edge(self):
         """Graph should accept edges between existing nodes."""
-        from src.nsic.knowledge.causal_graph import CausalGraph, CausalNode, CausalEdge
+        from src.nsic.knowledge.causal_graph import CausalEdge, CausalGraph, CausalNode
         
         graph = CausalGraph(gpu_device="cpu")
         
@@ -268,7 +268,7 @@ class TestCausalGraph:
     
     def test_find_causal_chains_simple(self):
         """Should find direct causal chain."""
-        from src.nsic.knowledge.causal_graph import CausalGraph, CausalNode, CausalEdge
+        from src.nsic.knowledge.causal_graph import CausalEdge, CausalGraph, CausalNode
         
         graph = CausalGraph(gpu_device="cpu")
         
@@ -302,7 +302,7 @@ class TestCausalGraph:
     
     def test_find_blocking_factors(self):
         """Should identify blocking factors."""
-        from src.nsic.knowledge.causal_graph import CausalGraph, CausalNode, CausalEdge
+        from src.nsic.knowledge.causal_graph import CausalEdge, CausalGraph, CausalNode
         
         graph = CausalGraph(gpu_device="cpu")
         
@@ -353,7 +353,7 @@ class TestCausalGraph:
     
     def test_cross_domain_reasoning(self):
         """Should find paths crossing domains."""
-        from src.nsic.knowledge.causal_graph import CausalGraph, CausalNode, CausalEdge
+        from src.nsic.knowledge.causal_graph import CausalEdge, CausalGraph, CausalNode
         
         graph = CausalGraph(gpu_device="cpu")
         
@@ -372,7 +372,7 @@ class TestCausalGraph:
     
     def test_get_subgraph(self):
         """Should extract subgraph around a center node."""
-        from src.nsic.knowledge.causal_graph import CausalGraph, CausalNode, CausalEdge
+        from src.nsic.knowledge.causal_graph import CausalEdge, CausalGraph, CausalNode
         
         graph = CausalGraph(gpu_device="cpu")
         
@@ -414,7 +414,7 @@ class TestEdgeCases:
     
     def test_edge_with_missing_nodes(self):
         """Adding edge with missing nodes should log warning."""
-        from src.nsic.knowledge.causal_graph import CausalGraph, CausalEdge
+        from src.nsic.knowledge.causal_graph import CausalEdge, CausalGraph
         
         graph = CausalGraph(gpu_device="cpu")
         

@@ -20,10 +20,10 @@ They reason FORWARD (query → policy options) instead of BACKWARD
 import json
 import logging
 import re
-from typing import Dict, Any, Optional, Tuple
+from typing import Any, Dict, Optional
 
-from ..state import IntelligenceState
 from ...llm.client import LLMClient
+from ..state import IntelligenceState
 
 logger = logging.getLogger(__name__)
 
@@ -534,7 +534,7 @@ async def feasibility_gate_node(state: IntelligenceState) -> IntelligenceState:
         # The debate will determine the probability
         if question_type in ("FORECAST", "DIAGNOSTIC", "HYBRID"):
             logger.info(f"📋 FIX RUN 58: {question_type} question - skipping LLM probability estimation")
-            logger.info(f"   Debate will determine probability. Only checking arithmetic constraints.")
+            logger.info("   Debate will determine probability. Only checking arithmetic constraints.")
             
             # Use data-driven check ONLY (no LLM speculation about probability)
             ratio = data_feasibility.get("feasibility_ratio", 1.0)
@@ -549,7 +549,7 @@ async def feasibility_gate_node(state: IntelligenceState) -> IntelligenceState:
             elif ratio < 0.6 and constraints:
                 # Arithmetic constraints exist but may be achievable
                 verdict = "AMBITIOUS"
-                explanation = f"Target faces structural constraints. Expert debate will assess probability."
+                explanation = "Target faces structural constraints. Expert debate will assess probability."
             else:
                 # No arithmetic impossibility detected
                 verdict = "FEASIBLE"
@@ -654,7 +654,7 @@ Analyze the feasibility of this query. Output ONLY valid JSON.
         
         else:
             logger.info(f"✅ FEASIBLE: {explanation}")
-            reasoning_chain.append(f"✅ FEASIBILITY GATE: Target passes arithmetic check.")
+            reasoning_chain.append("✅ FEASIBILITY GATE: Target passes arithmetic check.")
             
             if emit_fn:
                 await emit_fn("feasibility_check", "complete", {"verdict": verdict})

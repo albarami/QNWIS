@@ -10,12 +10,12 @@ All calculations happen here, in pure Python.
 
 from .financial_engine import (
     CashFlowInput,
+    FinancialEngine,
     FinancialModelInput,
     FinancialModelOutput,
     SensitivityScenario,
-    FinancialEngine,
-    calculate_simple_npv,
     calculate_simple_irr,
+    calculate_simple_npv,
 )
 
 __all__ = [

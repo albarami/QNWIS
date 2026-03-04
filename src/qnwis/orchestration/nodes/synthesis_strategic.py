@@ -12,11 +12,12 @@ This is NOT a summary. This is Strategic Intelligence that changes how leaders t
 """
 
 from __future__ import annotations
+
 import logging
 import re
-from typing import List, Dict, Any, Optional, Tuple
-from datetime import datetime
 from collections import Counter
+from datetime import datetime
+from typing import Any, Dict, List
 
 from ..state import IntelligenceState
 
@@ -584,7 +585,7 @@ def _build_expert_deliberation(
     # Panel composition
     agent_names = stats.get("agent_names", [])
     
-    section = f"""
+    section = """
 ## IV. EXPERT DELIBERATION SYNTHESIS
 
 This section showcases the intellectual depth of the multi-agent debate.

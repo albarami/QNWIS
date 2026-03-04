@@ -1,7 +1,7 @@
 from src.qnwis.orchestration.quality_metrics import (
+    calculate_agent_consensus,
     calculate_analysis_confidence,
     calculate_data_completeness,
-    calculate_agent_consensus,
     format_confidence_report,
 )
 

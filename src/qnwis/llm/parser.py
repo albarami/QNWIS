@@ -6,9 +6,10 @@ and validates numbers against source data.
 """
 
 import json
-import re
 import logging
-from typing import List, Set, Optional, Union
+import re
+from typing import List, Optional, Set, Union
+
 from pydantic import BaseModel, Field, field_validator
 
 from .exceptions import LLMParseError

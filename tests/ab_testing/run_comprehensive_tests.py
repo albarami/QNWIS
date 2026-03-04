@@ -22,15 +22,13 @@ Expected Duration: 30-60 minutes for full test suite
 """
 
 import argparse
-import asyncio
 import json
 import os
-import sys
-from pathlib import Path
-from datetime import datetime
-from typing import Dict, Any, List
 import subprocess
-
+import sys
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict
 
 # Add project root to path
 PROJECT_ROOT = Path(__file__).parent.parent.parent
@@ -184,9 +182,8 @@ class ComprehensiveTestRunner:
         
         try:
             from tests.ab_testing.ground_truth_data import (
-                QATAR_GROUND_TRUTH,
                 get_all_domains,
-                get_indicators_for_domain
+                get_indicators_for_domain,
             )
             
             coverage = {}
@@ -269,14 +266,12 @@ class ComprehensiveTestRunner:
             
         # ADP API
         try:
-            from src.data.apis.arab_dev_portal import ArabDevPortalClient
             api_status["arab_dev_portal"] = "available"
         except Exception as e:
             api_status["arab_dev_portal"] = f"error: {str(e)[:50]}"
             
         # ESCWA API
         try:
-            from src.data.apis.escwa_etdp import ESCWATradeAPI
             api_status["escwa_trade"] = "available"
         except Exception as e:
             api_status["escwa_trade"] = f"error: {str(e)[:50]}"

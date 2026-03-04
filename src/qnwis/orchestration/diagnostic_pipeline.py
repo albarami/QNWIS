@@ -14,7 +14,7 @@ probability estimates based on verified data.
 import logging
 import statistics
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -196,7 +196,7 @@ def calculate_consensus(estimates: List[AgentEstimate]) -> ConsensusResult:
     elif low_conf_count > len(estimates) / 2:
         confidence = max(confidence - 0.10, 0.35)
     
-    logger.info(f"📊 CONSENSUS CALCULATION:")
+    logger.info("📊 CONSENSUS CALCULATION:")
     logger.info(f"   Agent probabilities: {[f'{p*100:.0f}%' for p in probabilities]}")
     logger.info(f"   Spread: {spread*100:.1f}pp")
     logger.info(f"   Disagreement: {disagreement}")
@@ -296,7 +296,7 @@ def apply_diagnostic_consensus(state: Dict[str, Any]) -> Dict[str, Any]:
         'disagreement_level': consensus.disagreement_level,
     })
     
-    logger.info(f"✅ DIAGNOSTIC CONSENSUS APPLIED:")
+    logger.info("✅ DIAGNOSTIC CONSENSUS APPLIED:")
     logger.info(f"   Probability: {consensus.probability*100:.1f}%")
     logger.info(f"   Confidence: {consensus.confidence*100:.0f}%")
     logger.info(f"   Based on {consensus.n_agents} agent estimates")

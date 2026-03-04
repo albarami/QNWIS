@@ -8,11 +8,13 @@ import os
 import uuid
 from collections.abc import Callable
 from contextlib import asynccontextmanager
-from typing import Any
 
 # Load environment variables from .env file
 from pathlib import Path
+from typing import Any
+
 from dotenv import load_dotenv
+
 # Find .env in project root (3 levels up from this file)
 _env_path = Path(__file__).resolve().parents[3] / ".env"
 load_dotenv(_env_path)
@@ -36,12 +38,12 @@ from ..observability import (
     record_rate_limit_event,
     record_request,
 )
+from ..perf.cache_warming import warm_queries
 from ..security import AuthProvider, Principal, RateLimiter
 from ..utils.clock import Clock
-from .routers import ROUTERS
 from .deps import attach_security
-from ..perf.cache_warming import warm_queries
 from .middleware.rate_limit import limiter, rate_limit_exceeded_handler
+from .routers import ROUTERS
 
 PUBLIC_EXACT = {"/", "/health", "/health/live", "/health/ready", "/metrics", "/openapi.json"}
 PUBLIC_PREFIXES = ("/docs", "/redoc")
@@ -107,9 +109,9 @@ async def lifespan(app: FastAPI):
             logger.info("Initializing GPU-accelerated fact verification system...")
             logger.info("="*60)
             
-            from ..rag.gpu_verifier import GPUFactVerifier
-            from ..rag.document_loader import load_source_documents
             from ..rag import initialize_fact_verifier
+            from ..rag.document_loader import load_source_documents
+            from ..rag.gpu_verifier import GPUFactVerifier
             
             verifier = GPUFactVerifier(gpu_id=int(os.getenv("QNWIS_FACT_VERIFIER_GPU_ID", "0")))
             
@@ -350,6 +352,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         - Document indexing status
         """
         import torch
+
         from ..rag import get_fact_verifier
         
         # Get basic health

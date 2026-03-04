@@ -5,8 +5,8 @@ Analyzes employment trends, gender distribution, and YoY growth.
 """
 
 from typing import Dict
-from ..base_llm import ZERO_FABRICATION_CITATION_RULES
 
+from ..base_llm import ZERO_FABRICATION_CITATION_RULES
 
 LABOUR_ECONOMIST_SYSTEM = """You are **Dr. Fatima**, PhD in Labor Economics from Oxford (2012), former Senior Economist at ILO Regional Office for Arab States (2013-2018), currently Lead Consultant for GCC Workforce Development.
 

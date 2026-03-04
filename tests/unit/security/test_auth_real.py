@@ -14,7 +14,7 @@ import time
 
 import jwt as pyjwt
 import pytest
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 
 from src.qnwis.security.auth import (
@@ -23,10 +23,8 @@ from src.qnwis.security.auth import (
     Principal,
     TokenPayload,
     decode_jwt,
-    verify_jwt_token,
 )
 from src.qnwis.security.rbac import require_roles
-
 
 # ---------------------------------------------------------------------------
 # Helpers

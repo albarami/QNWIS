@@ -7,14 +7,14 @@ Uses intelligent routing to maximize data coverage.
 
 from __future__ import annotations
 
+import json
 import logging
 import os
-import json
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List
 
-from ..state import IntelligenceState
+from ..DATA_SOURCE_REGISTRY import DATA_SOURCES, get_sources_for_query
 from ..integrations import get_complete_prefetch
-from ..DATA_SOURCE_REGISTRY import DATA_SOURCES, QUERY_ROUTING, get_sources_for_query
+from ..state import IntelligenceState
 from .scenario_baseline_requirements import enhance_facts_with_scenario_baselines
 
 logger = logging.getLogger(__name__)
@@ -309,7 +309,7 @@ async def _extract_missing_sources(
         if not any(source_name.lower() in s.lower() for s in already_queried):
             missing_sources.append(source_id)
     
-    logger.info(f"   🔍 Checking for missing sources to extract comprehensively...")
+    logger.info("   🔍 Checking for missing sources to extract comprehensively...")
     
     # ALWAYS try comprehensive extraction from key sources
     # These extractors are designed to get MAXIMUM data
@@ -317,32 +317,32 @@ async def _extract_missing_sources(
     
     # Semantic Scholar - 214 MILLION papers
     if "SEMANTIC_SCHOLAR" in missing_sources or "semantic" not in str(already_queried).lower():
-        logger.info(f"   📚 Adding: Semantic Scholar comprehensive extraction")
+        logger.info("   📚 Adding: Semantic Scholar comprehensive extraction")
         tasks.append(_extract_semantic_scholar_additional(query))
     
     # Perplexity AI - Real-time web intelligence
     if "PERPLEXITY" in missing_sources or "perplexity" not in str(already_queried).lower():
-        logger.info(f"   🤖 Adding: Perplexity AI comprehensive extraction")
+        logger.info("   🤖 Adding: Perplexity AI comprehensive extraction")
         tasks.append(_extract_perplexity_additional(query))
     
     # Brave Search - Real-time web search
     if "BRAVE" in missing_sources or "brave" not in str(already_queried).lower():
-        logger.info(f"   🦁 Adding: Brave Search comprehensive extraction")
+        logger.info("   🦁 Adding: Brave Search comprehensive extraction")
         tasks.append(_extract_brave_additional(query))
     
     # RAG System - 56 R&D reports
     if "RAG_SYSTEM" in missing_sources or "rag" not in str(already_queried).lower():
-        logger.info(f"   📄 Adding: RAG system additional extraction")
+        logger.info("   📄 Adding: RAG system additional extraction")
         tasks.append(_extract_rag_additional(query))
     
     # Knowledge Graph - Entity relationships
     if "KNOWLEDGE_GRAPH" in missing_sources or "knowledge" not in str(already_queried).lower():
-        logger.info(f"   🕸️ Adding: Knowledge Graph additional extraction")
+        logger.info("   🕸️ Adding: Knowledge Graph additional extraction")
         tasks.append(_extract_knowledge_graph_additional(query))
     
     # LMIS - Ministry of Labour Qatar (OFFICIAL DATA)
     if "LMIS" in missing_sources or "lmis" not in str(already_queried).lower():
-        logger.info(f"   🏛️ Adding: LMIS (Ministry of Labour) official data extraction")
+        logger.info("   🏛️ Adding: LMIS (Ministry of Labour) official data extraction")
         tasks.append(_extract_lmis_data(query))
     
     if tasks:
@@ -454,6 +454,7 @@ async def _extract_knowledge_graph_additional(query: str) -> List[Dict[str, Any]
     
     try:
         from pathlib import Path
+
         from ...knowledge.graph_builder import QNWISKnowledgeGraph
         
         kg_path = Path("data/knowledge_graph.json")

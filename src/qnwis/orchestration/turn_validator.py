@@ -12,7 +12,7 @@ This is an optional quality gate that can log issues or force retries.
 
 import logging
 import re
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 

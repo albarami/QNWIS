@@ -10,7 +10,6 @@ from __future__ import annotations
 import hashlib
 from typing import Dict, Optional
 
-
 # Operation stability profiles (seconds)
 # Stable data → longer TTL; volatile data → shorter TTL
 OPERATION_PROFILES: Dict[str, int] = {

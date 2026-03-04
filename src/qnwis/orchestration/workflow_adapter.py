@@ -13,8 +13,8 @@ from pathlib import Path
 from typing import Any, AsyncIterator, Dict, Optional
 
 from ..agents.base import DataClient
-from ..rag.retriever import retrieve_external_context
 from ..data.deterministic.cache_access import COUNTERS as CACHE_COUNTERS
+from ..rag.retriever import retrieve_external_context
 from .classifier import QueryClassifier
 from .council import default_agents
 

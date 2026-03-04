@@ -4,13 +4,14 @@ Unit tests for GPU-accelerated embeddings.
 Tests the instructor-xl model on GPU 6 for high-precision semantic similarity.
 """
 
+from unittest.mock import patch
+
 import pytest
 import torch
-import numpy as np
-from unittest.mock import patch, MagicMock
+
 from qnwis.orchestration.nodes.synthesis_ministerial import (
+    calculate_similarity,
     get_similarity_model,
-    calculate_similarity
 )
 
 

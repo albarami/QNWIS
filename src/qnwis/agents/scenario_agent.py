@@ -105,7 +105,8 @@ class ScenarioAgent:
             QueryResult with baseline forecast
         """
         from datetime import date, datetime
-        from qnwis.data.deterministic.models import QueryResult, Row, Provenance, Freshness
+
+        from qnwis.data.deterministic.models import Freshness, Provenance, QueryResult, Row
         
         # Construct deterministic query ID for baseline forecast
         sector_slug = (sector or "all").lower().replace(" ", "_")
@@ -119,7 +120,7 @@ class ScenarioAgent:
                 len(result.rows),
             )
             return result
-        except Exception as exc:
+        except Exception:
             # Generate synthetic baseline when query doesn't exist
             logger.warning(
                 "Baseline query '%s' not found, generating synthetic baseline for scenario analysis",

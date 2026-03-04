@@ -4,7 +4,6 @@ Unit tests for verification helpers.
 Tests the pure verification logic extracted for Phase 1 Fix 1.1.
 """
 
-import pytest
 
 from src.qnwis.orchestration.verification_helpers import verify_agent_reports
 

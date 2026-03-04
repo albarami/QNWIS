@@ -4,10 +4,12 @@ Unit tests for Parallel Debate Executor.
 Tests parallel execution of debates across GPUs 0-5 with real GPU distribution.
 """
 
-import pytest
 import asyncio
+from unittest.mock import MagicMock
+
+import pytest
 import torch
-from unittest.mock import AsyncMock, MagicMock, patch
+
 from qnwis.orchestration.parallel_executor import ParallelDebateExecutor
 
 

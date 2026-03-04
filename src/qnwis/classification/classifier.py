@@ -1,8 +1,7 @@
 """Simple question classifier for routing."""
 
 import logging
-import re
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 

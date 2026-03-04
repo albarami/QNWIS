@@ -15,8 +15,8 @@ No hardcoded domain keywords - analyzes scenario rates dynamically.
 
 import logging
 import re
-from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass
+from typing import Any, Dict, List
 
 from .ground_truth import determine_verdict  # FIX RUN 57: Centralized verdict
 
@@ -91,7 +91,7 @@ class ConfidenceCalibrator:
         actual_gap = best_rate - second_rate
         is_close_call = actual_gap < self.CLOSE_CALL_THRESHOLD
         
-        logger.info(f"📊 Confidence Calibration:")
+        logger.info("📊 Confidence Calibration:")
         logger.info(f"   Best option: {best_name} at {best_rate:.1f}%")
         logger.info(f"   Alternative: {second_name} at {second_rate:.1f}%")
         logger.info(f"   Actual gap: {actual_gap:.1f}pp")
@@ -132,10 +132,10 @@ higher than the alternative ({second_name} at {second_rate:.1f}%).
         # Step 6: Check for inflation
         adjustment_made = False
         if agent_confidence > recommended_confidence + 10:
-            logger.warning(f"⚠️ CONFIDENCE INFLATION DETECTED:")
+            logger.warning("⚠️ CONFIDENCE INFLATION DETECTED:")
             logger.warning(f"   Agents claimed: {agent_confidence:.0f}%")
             logger.warning(f"   Scenario-based: {recommended_confidence:.1f}%")
-            logger.warning(f"   Adjusting to scenario-based confidence")
+            logger.warning("   Adjusting to scenario-based confidence")
             adjustment_made = True
         
         return CalibratedConfidence(
@@ -378,7 +378,7 @@ def align_summary_and_brief(
     aligned_card['successRate'] = round(calibrated_prob)
     aligned_card['confidence'] = round(calibrated_prob)
     
-    logger.info(f"📊 Summary-Brief Alignment:")
+    logger.info("📊 Summary-Brief Alignment:")
     logger.info(f"   Original card: {summary_card.get('verdict')} at {summary_card.get('successRate')}%")
     logger.info(f"   Original brief: {brief_decision} at {brief_confidence}%")
     logger.info(f"   Aligned: {aligned_verdict}/{aligned_decision} at {calibrated_prob:.0f}%")

@@ -10,10 +10,9 @@ Time savings: ~60-90 seconds per analysis.
 
 import asyncio
 import logging
-from typing import Dict, Any
 
-from ..state import IntelligenceState
 from ..case_studies import extract_case_studies
+from ..state import IntelligenceState
 
 logger = logging.getLogger(__name__)
 

@@ -11,7 +11,7 @@ This is domain-agnostic and works for any policy question.
 
 import logging
 import re
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 

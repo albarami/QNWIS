@@ -6,6 +6,7 @@ Guards against epoch/timezone mistakes in audit timestamps.
 
 from datetime import datetime, timezone
 from time import sleep
+
 from src.qnwis.instrumentation.timing import Stopwatch
 
 

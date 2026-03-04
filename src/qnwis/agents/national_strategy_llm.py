@@ -6,12 +6,13 @@ workforce development, GCC competitiveness, and Vision 2030 alignment.
 """
 
 from __future__ import annotations
+
 from typing import Dict
 
+from ..llm.client import LLMClient
 from .base import DataClient
 from .base_llm import LLMAgent
 from .prompts.national_strategy import build_national_strategy_prompt
-from ..llm.client import LLMClient
 
 EMPLOYMENT_QUERY = "syn_employment_share_by_gender_latest"
 GCC_UNEMPLOYMENT_QUERY = "syn_unemployment_gcc_latest"

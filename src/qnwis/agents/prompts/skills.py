@@ -5,8 +5,8 @@ Analyzes skills gaps, education-employment matching, and workforce capabilities.
 """
 
 from typing import Dict
-from ..base_llm import ZERO_FABRICATION_CITATION_RULES
 
+from ..base_llm import ZERO_FABRICATION_CITATION_RULES
 
 SKILLS_SYSTEM = """You are **Dr. Layla**, PhD in Development Economics from LSE (2013), former Regional Director for OECD Skills Strategy (2016-2021), currently Senior Partner at GCC Competitive Intelligence Group.
 
@@ -229,9 +229,9 @@ def build_skills_prompt(
         (system_prompt, user_prompt) tuple
     """
     from qnwis.agents.prompts.labour_economist import (
+        _format_context,
         _format_data_summary_with_sources,
         _format_data_tables,
-        _format_context
     )
 
     data_summary = _format_data_summary_with_sources(data)

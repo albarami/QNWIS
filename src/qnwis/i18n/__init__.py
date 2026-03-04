@@ -10,8 +10,8 @@ Provides Arabic language support with:
 Ministry-grade Arabic localization for Qatar's Ministry of Labour.
 """
 
+from .arabic import detect_language, format_arabic_text, is_arabic
 from .translator import Translator, get_translator, translate
-from .arabic import is_arabic, detect_language, format_arabic_text
 
 __all__ = [
     "Translator",

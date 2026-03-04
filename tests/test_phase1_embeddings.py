@@ -7,13 +7,13 @@ ALL tests must pass before proceeding to Phase 2.
 Run with: pytest tests/test_phase1_embeddings.py -v
 """
 
-import pytest
+import shutil
 import sys
 import tempfile
-import shutil
-import hashlib
 from pathlib import Path
+
 import numpy as np
+import pytest
 
 # Add src to path
 src_path = Path(__file__).parent.parent / "src"
@@ -215,8 +215,8 @@ class TestPremiumEmbeddings:
         """Embedding service must be importable."""
         from nsic.rag.premium_embeddings import (
             PremiumEmbeddingService,
-            get_embedding_service,
             encode,
+            get_embedding_service,
         )
         assert PremiumEmbeddingService is not None
         assert get_embedding_service is not None

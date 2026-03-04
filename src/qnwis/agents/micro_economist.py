@@ -3,10 +3,11 @@ MicroEconomist Agent - Project-level cost-benefit analysis
 Focuses on: firm efficiency, market prices, opportunity costs, ROI
 """
 
-from typing import Dict, List, Any
-from .base_llm import LLMAgent
-from .base import DataClient
+from typing import Dict
+
 from ..llm.client import LLMClient
+from .base import DataClient
+from .base_llm import LLMAgent
 
 
 class MicroEconomist(LLMAgent):

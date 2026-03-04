@@ -4,9 +4,10 @@ Unit tests for GPU Fact Verifier.
 Tests GPU-accelerated fact verification on GPU 6 with real semantic search.
 """
 
+
 import pytest
 import torch
-from unittest.mock import patch, MagicMock
+
 from qnwis.rag.gpu_verifier import GPUFactVerifier
 
 

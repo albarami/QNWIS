@@ -12,9 +12,9 @@ PHASE 1 FIX: Added question_type classification to distinguish:
 
 from __future__ import annotations
 
-import re
 import logging
-from typing import Dict, List, Literal
+import re
+from typing import List, Literal
 
 from ..state import IntelligenceState
 
@@ -96,7 +96,7 @@ def classify_question_type(query: str) -> Literal["COMPARATIVE", "DIAGNOSTIC", "
     forecast_score = _count_matches(FORECAST_PATTERNS, query_lower)
     comparative_score = _count_matches(COMPARATIVE_PATTERNS, query_lower)
     
-    logger.info(f"📊 Question type classification scores:")
+    logger.info("📊 Question type classification scores:")
     logger.info(f"   DIAGNOSTIC: {diagnostic_score}")
     logger.info(f"   FORECAST: {forecast_score}")
     logger.info(f"   COMPARATIVE: {comparative_score}")
@@ -160,18 +160,18 @@ def classify_query_node(state: IntelligenceState) -> IntelligenceState:
     
     # EXPLICIT PRINT FOR DEBUGGING (bypasses log level issues)
     print(f"\n{'='*70}")
-    print(f"[CHECKPOINT 1] CLASSIFIER NODE - QUESTION TYPE")
+    print("[CHECKPOINT 1] CLASSIFIER NODE - QUESTION TYPE")
     print(f"{'='*70}")
     print(f"[CHECKPOINT 1] Question type: {question_type}")
     print(f"[CHECKPOINT 1] Query: {query_original[:100]}...")
     print(f"[CHECKPOINT 1] state['question_type'] = {state.get('question_type')}")
     print(f"{'='*70}\n")
     
-    logger.warning(f"[CHECKPOINT 1] ═══════════════════════════════════════════════")
+    logger.warning("[CHECKPOINT 1] ═══════════════════════════════════════════════")
     logger.warning(f"[CHECKPOINT 1] Question type classified: {question_type}")
     logger.warning(f"[CHECKPOINT 1] state['question_type'] = {state.get('question_type')}")
     logger.warning(f"[CHECKPOINT 1] Query: {query_original[:100]}...")
-    logger.warning(f"[CHECKPOINT 1] ═══════════════════════════════════════════════")
+    logger.warning("[CHECKPOINT 1] ═══════════════════════════════════════════════")
 
     # Critical: Urgent/emergency queries
     critical_patterns = [
@@ -242,7 +242,7 @@ def classify_query_node(state: IntelligenceState) -> IntelligenceState:
     # Log routing decision for DIAGNOSTIC/FORECAST questions
     if question_type in ("DIAGNOSTIC", "FORECAST", "HYBRID"):
         logger.warning(f"⚠️ {question_type} question detected - Monte Carlo A/B scenarios will be skipped")
-        logger.warning(f"   Agents will derive their own probability estimates")
+        logger.warning("   Agents will derive their own probability estimates")
 
     return state
 

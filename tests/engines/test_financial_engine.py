@@ -13,7 +13,6 @@ Tests cover:
 
 from __future__ import annotations
 
-import math
 from typing import List
 
 import pytest
@@ -22,12 +21,9 @@ from src.qnwis.engines.financial_engine import (
     CashFlowInput,
     FinancialEngine,
     FinancialModelInput,
-    FinancialModelOutput,
-    SensitivityScenario,
     calculate_simple_irr,
     calculate_simple_npv,
 )
-
 
 # ============================================================================
 # FIXTURES

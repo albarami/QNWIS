@@ -1,5 +1,4 @@
 """Qatar Open Data, LMIS, GCC-STAT, regional, and knowledge graph data fetchers."""
-import asyncio
 import logging
 from datetime import datetime
 from typing import Any, Dict, List

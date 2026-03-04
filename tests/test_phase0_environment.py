@@ -7,10 +7,11 @@ ALL tests must pass before proceeding to Phase 1.
 Run with: pytest tests/test_phase0_environment.py -v
 """
 
-import pytest
-import sys
 import platform
+import sys
 from pathlib import Path
+
+import pytest
 
 
 class TestPythonEnvironment:
@@ -76,8 +77,8 @@ class TestRequiredPackages:
         import diskcache
         assert diskcache is not None
         # Verify basic functionality
-        import tempfile
         import shutil
+        import tempfile
         tmpdir = tempfile.mkdtemp()
         try:
             cache = diskcache.Cache(tmpdir)
@@ -106,12 +107,10 @@ class TestRequiredPackages:
                 assert vllm is not None
             except ImportError:
                 # Fall back to transformers on Linux too
-                import transformers
                 from transformers import AutoModelForCausalLM
                 assert AutoModelForCausalLM is not None
         else:
             # On Windows, use HuggingFace Transformers
-            import transformers
             from transformers import AutoModelForCausalLM, AutoTokenizer
             assert AutoModelForCausalLM is not None
             assert AutoTokenizer is not None

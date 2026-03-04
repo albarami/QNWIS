@@ -8,9 +8,10 @@ Verifies:
 - Data validation rules work correctly
 """
 
-import pytest
 import sys
 from pathlib import Path
+
+import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
@@ -22,6 +23,7 @@ class TestWorldBankData:
     def db_engine(self):
         """Get database engine."""
         import os
+
         from sqlalchemy import create_engine
         
         db_url = os.getenv(

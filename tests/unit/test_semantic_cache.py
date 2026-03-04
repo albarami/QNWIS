@@ -4,10 +4,10 @@ Unit tests for NSIC Semantic Cache.
 Tests cache functionality, similarity matching, and eviction policies.
 """
 
-import pytest
 import asyncio
 from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, patch
+
+import pytest
 
 
 class TestSemanticCache:
@@ -16,9 +16,8 @@ class TestSemanticCache:
     def test_import_semantic_cache(self):
         """Test that semantic cache imports correctly."""
         from src.nsic.orchestration.semantic_cache import (
-            SemanticCache,
             CacheEntry,
-            CacheStats,
+            SemanticCache,
             create_semantic_cache,
         )
         assert SemanticCache is not None
@@ -296,7 +295,7 @@ class TestSemanticCache:
 
     def test_lru_eviction(self):
         """Test LRU eviction when cache is full."""
-        from src.nsic.orchestration.semantic_cache import SemanticCache, CacheEntry
+        from src.nsic.orchestration.semantic_cache import CacheEntry, SemanticCache
 
         cache = SemanticCache(max_entries=3)
 
@@ -331,7 +330,7 @@ class TestSemanticCache:
 
     def test_clean_expired(self):
         """Test cleaning of expired entries."""
-        from src.nsic.orchestration.semantic_cache import SemanticCache, CacheEntry
+        from src.nsic.orchestration.semantic_cache import CacheEntry, SemanticCache
 
         cache = SemanticCache()
 
@@ -394,7 +393,7 @@ class TestSemanticCache:
 
     def test_invalidate(self):
         """Test cache entry invalidation."""
-        from src.nsic.orchestration.semantic_cache import SemanticCache, CacheEntry
+        from src.nsic.orchestration.semantic_cache import CacheEntry, SemanticCache
 
         cache = SemanticCache()
 
@@ -424,7 +423,7 @@ class TestSemanticCache:
 
     def test_clear(self):
         """Test clearing all cache entries."""
-        from src.nsic.orchestration.semantic_cache import SemanticCache, CacheEntry
+        from src.nsic.orchestration.semantic_cache import CacheEntry, SemanticCache
 
         cache = SemanticCache()
 
@@ -452,7 +451,6 @@ class TestSemanticCache:
 
 
 if __name__ == "__main__":
-    import sys
 
     test = TestSemanticCache()
 

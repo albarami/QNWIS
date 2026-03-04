@@ -11,12 +11,11 @@ These tests evaluate QUALITY of generated scenarios, not just count:
 ALL TESTS MUST PASS FOR QUALITY VALIDATION.
 """
 
-import pytest
-import asyncio
-import sys
 import os
 import re
-from typing import List, Set
+import sys
+
+import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -152,7 +151,7 @@ class TestScenarioDiversity:
         assert len(unique_prompts) == 24, \
             f"Only {len(unique_prompts)} unique scenarios out of 24"
         
-        print(f"✅ All 24 broad scenarios are unique")
+        print("✅ All 24 broad scenarios are unique")
     
     @pytest.mark.asyncio
     async def test_broad_scenarios_are_diverse(self, generator):
@@ -205,7 +204,7 @@ class TestScenarioDiversity:
             count = categories.count(cat)
             assert count == 6, f"Category '{cat}' has {count} scenarios, expected 6"
         
-        print(f"✅ Each category has exactly 6 scenarios")
+        print("✅ Each category has exactly 6 scenarios")
 
 
 class TestDeepScenarios:
@@ -269,7 +268,7 @@ class TestDeepScenarios:
         assert len(missing_strategic) == 0, \
             f"Deep scenarios lacking strategic framing: {missing_strategic}"
         
-        print(f"✅ All deep scenarios have strategic framing")
+        print("✅ All deep scenarios have strategic framing")
 
 
 class TestScenarioRealism:
@@ -305,7 +304,7 @@ class TestScenarioRealism:
         
         assert len(unrealistic) == 0, f"Unrealistic economic parameters: {unrealistic}"
         
-        print(f"✅ All economic parameters are realistic")
+        print("✅ All economic parameters are realistic")
     
     @pytest.mark.asyncio
     async def test_no_impossible_qatarization(self, generator):
@@ -332,7 +331,7 @@ class TestScenarioRealism:
             print(f"⚠️ Found potentially impossible targets (may be intentional for analysis): {impossible}")
         
         # Pass test - discussing impossible scenarios != setting impossible goals
-        print(f"✅ Qatarization assumption check passed")
+        print("✅ Qatarization assumption check passed")
     
     @pytest.mark.asyncio
     async def test_no_unrealistic_gdp_growth(self, generator):
@@ -351,7 +350,7 @@ class TestScenarioRealism:
         
         assert len(unrealistic) == 0, f"Unrealistic GDP assumptions: {unrealistic}"
         
-        print(f"✅ All GDP growth assumptions are realistic")
+        print("✅ All GDP growth assumptions are realistic")
 
 
 class TestBaseCaseNeutral:
@@ -375,7 +374,7 @@ class TestBaseCaseNeutral:
         
         assert has_current, "Base case should reference current conditions"
         
-        print(f"✅ Base case references current conditions")
+        print("✅ Base case references current conditions")
     
     @pytest.mark.asyncio
     async def test_base_case_minimal_assumptions(self, generator):
@@ -393,7 +392,7 @@ class TestBaseCaseNeutral:
         assert len(heavy_found) == 0, \
             f"Base case has heavy assumption language: {heavy_found}"
         
-        print(f"✅ Base case is appropriately neutral")
+        print("✅ Base case is appropriately neutral")
 
 
 # =============================================================================
@@ -527,5 +526,5 @@ class TestScenarioComparison:
             assert prompts_with_term >= 4, \
                 f"{domain}: key term '{key_term}' only in {prompts_with_term}/6 prompts"
         
-        print(f"\n✅ All 3 question types produce correct, relevant scenarios")
+        print("\n✅ All 3 question types produce correct, relevant scenarios")
 

@@ -5,7 +5,7 @@ Uses LLM to synthesize agent reports into coherent, ministerial-quality answers.
 """
 
 import logging
-from typing import List, AsyncIterator
+from typing import AsyncIterator, List
 
 from ..agents.base import AgentReport
 from ..llm.client import LLMClient

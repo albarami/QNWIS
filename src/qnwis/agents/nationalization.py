@@ -6,12 +6,13 @@ and provide strategic insights on Qatar's competitive position.
 """
 
 from __future__ import annotations
+
 from typing import Dict
 
+from ..llm.client import LLMClient
 from .base import DataClient
 from .base_llm import LLMAgent
 from .prompts.nationalization import build_nationalization_prompt
-from ..llm.client import LLMClient
 
 UNEMPLOY_QUERY = "q_unemployment_rate_gcc_latest"
 

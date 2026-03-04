@@ -5,8 +5,8 @@ Analyzes Qatarization metrics and GCC benchmarking.
 """
 
 from typing import Dict
-from ..base_llm import ZERO_FABRICATION_CITATION_RULES
 
+from ..base_llm import ZERO_FABRICATION_CITATION_RULES
 
 NATIONALIZATION_SYSTEM = """You are **Dr. Mohammed**, PhD in Financial Economics from MIT Sloan (2010), former Chief Economist at Qatar Central Bank (2015-2020), currently Managing Partner at Gulf Economic Advisors.
 
@@ -224,9 +224,9 @@ def build_nationalization_prompt(
         (system_prompt, user_prompt) tuple
     """
     from qnwis.agents.prompts.labour_economist import (
+        _format_context,
         _format_data_summary_with_sources,
         _format_data_tables,
-        _format_context
     )
 
     data_summary = _format_data_summary_with_sources(data)

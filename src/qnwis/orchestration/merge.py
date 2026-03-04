@@ -32,11 +32,24 @@ SECTION_ORDER = [
     "Warnings",
 ]
 
-# PII patterns to mask: names, emails, and long numeric identifiers
+# PII patterns to mask: emails and long numeric identifiers.
+# Name-like patterns are handled separately to avoid masking place names,
+# organisation names, and other legitimate two-word capitalized phrases.
+_EMAIL_RE = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b")
+_LONG_NUMBER_RE = re.compile(r"\b\d{10,}\b")
+
+# Two consecutive capitalised words that *might* be a person's name.
+# Only matched when preceded by a personal-context keyword.
+_PERSON_NAME_RE = re.compile(
+    r"(?:(?:Mr|Mrs|Ms|Dr|Prof|Minister|Secretary|Director|Ambassador|Sheikh|CEO|CFO)"
+    r"\.?\s+)"
+    r"[A-Z][a-z]{1,15}(?:\s+[A-Z][a-z]{1,15}){1,3}"
+)
+
 PII_PATTERNS = [
-    re.compile(r"\b[A-Z][a-z]+ [A-Z][a-z]+\b"),
-    re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b"),
-    re.compile(r"\b\d{10,}\b"),
+    _EMAIL_RE,
+    _LONG_NUMBER_RE,
+    _PERSON_NAME_RE,
 ]
 
 

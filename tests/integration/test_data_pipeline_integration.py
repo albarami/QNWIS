@@ -5,9 +5,8 @@ Verifies that all data sources are properly integrated and accessible.
 Tests that agents know about and can utilize all available data.
 """
 
+
 import pytest
-import asyncio
-from typing import List, Dict
 
 
 class TestDataSourceIntegration:
@@ -142,6 +141,7 @@ class TestKnowledgeGraphIntegration:
     def test_knowledge_graph_can_load(self):
         """Verify knowledge graph can be loaded."""
         from pathlib import Path
+
         from src.qnwis.knowledge.graph_builder import QNWISKnowledgeGraph
         
         kg_path = Path("data/knowledge_graph.json")
@@ -203,16 +203,16 @@ class TestAPIConnectors:
     def test_all_api_connectors_exist(self):
         """Verify all API connectors exist."""
         from src.data.apis import (
-            world_bank_api,
-            gcc_stat,
             arab_dev_portal,
             escwa_etdp,
             fao_api,
+            gcc_stat,
+            iea_api,
             ilo_api,
+            semantic_scholar,
             unctad_api,
             unwto_api,
-            iea_api,
-            semantic_scholar,
+            world_bank_api,
         )
         
         # All modules should be importable
@@ -233,8 +233,9 @@ class TestDomainAgnosticCapability:
     
     def test_prefetch_triggers_for_all_domains(self):
         """Verify prefetch has triggers for all domains."""
-        from src.qnwis.orchestration.integrations import CompletePrefetchLayer
         import inspect
+
+        from src.qnwis.orchestration.integrations import CompletePrefetchLayer
         
         layer = CompletePrefetchLayer()
         fetch_method = layer.fetch_all_sources
