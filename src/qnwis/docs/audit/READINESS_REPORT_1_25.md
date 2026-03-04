@@ -1,8 +1,8 @@
 # Readiness Report: Steps 1-33
 
-**Generated:** 2026-03-04T07:45:52.592665
+**Generated:** 2026-03-04T09:03:47.931371
 **Overall Status:** FAIL
-**Execution Time:** 20134 ms
+**Execution Time:** 21205 ms
 
 ## Summary
 
@@ -360,7 +360,7 @@
 - `docs/IMPLEMENTATION_ROADMAP.md`
 
 ### no_placeholders [PASS]
-- **Duration:** 590 ms
+- **Duration:** 915 ms
 - **Severity:** ERROR
 ```json
 {
@@ -380,7 +380,7 @@
 - `src/qnwis/scripts/qa/grep_rules.yml`
 
 ### linters_and_types [FAIL]
-- **Duration:** 19528 ms
+- **Duration:** 20273 ms
 - **Severity:** ERROR
 ```json
 {

@@ -408,3 +408,48 @@ def add_data_integrity_note(
     briefing = briefing[:section_i_end] + note + briefing[section_i_end:]
     logger.info("✅ Added data integrity note for tied scenario")
     return briefing
+
+
+def inject_source_attributions(
+    briefing: str,
+    facts: list,
+) -> str:
+    """Inject source attributions into the synthesis for key data claims.
+
+    Scans for percentage values and monetary amounts in the briefing,
+    matches them against extracted facts, and appends source attribution
+    where the LLM failed to include citations.
+    """
+    if not facts:
+        return briefing
+
+    fact_lookup: dict[str, str] = {}
+    for f in facts:
+        if not isinstance(f, dict):
+            continue
+        val = f.get("value")
+        src = f.get("source", "")
+        if val is not None and src:
+            if isinstance(val, float):
+                fact_lookup[f"{val:.1f}"] = src
+                fact_lookup[f"{val:.2f}"] = src
+                if 0 < val < 100:
+                    fact_lookup[f"{val:.1f}%"] = src
+            elif isinstance(val, int):
+                fact_lookup[str(val)] = src
+
+    injected = 0
+    lines = briefing.split("\n")
+    for i, line in enumerate(lines):
+        if "[Source:" in line or "[FACT" in line:
+            continue
+        for val_str, src in fact_lookup.items():
+            if val_str in line and src not in line:
+                short_src = src.split("(")[0].strip()
+                lines[i] = line.rstrip() + f" [Source: {short_src}]"
+                injected += 1
+                break
+
+    if injected > 0:
+        logger.info(f"✅ Injected {injected} source attributions into synthesis")
+    return "\n".join(lines)

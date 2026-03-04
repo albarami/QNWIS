@@ -48,6 +48,7 @@ from .formatters import (
     fix_confidence_mentions,
     fix_rate_ranges,
     inject_consensus_header,
+    inject_source_attributions,
 )
 from .ground_truth import (
     aggregate_agent_estimates,
@@ -439,6 +440,7 @@ def _post_process(briefing, state, stats, debate_highlights, scenario_summaries,
         briefing, sgt.get('gap', 0), sgt.get('best_rate', 0),
         sgt.get('worst_rate', 0), state.get("question_type", "COMPARATIVE"),
     )
+    briefing = inject_source_attributions(briefing, state.get("extracted_facts", []))
     state["confidence_score"] = calibrated / 100
     return briefing, state
 

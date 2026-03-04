@@ -91,12 +91,18 @@ def _build_scenario_summary(
         sens_list = sensitivity.get("sensitivities", sensitivity.get("parameter_impacts", []))
         key_drivers = [d.get("variable", "") for d in sens_list[:3] if isinstance(d, dict)]
 
-    success_prob = 0
+    success_prob = 0.0
     if monte_carlo:
         success_prob = monte_carlo.get(
             "success_probability",
             monte_carlo.get("success_rate", monte_carlo.get("probability", 0))
         )
+
+    if success_prob == 0 and scenario.get("probability"):
+        success_prob = float(scenario["probability"]) * 100
+
+    if success_prob == 0 and result:
+        success_prob = float(result.get("probability", result.get("confidence", 0))) * 100
 
     engine_status = "not_run"
     if engine_b:
