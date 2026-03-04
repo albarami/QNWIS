@@ -201,7 +201,7 @@ def legendary_synthesis_node_sync(state: IntelligenceState) -> IntelligenceState
             future = pool.submit(asyncio.run, legendary_synthesis_node(state))
             return future.result()
     except RuntimeError:
-        pass
+        ...
 
     return asyncio.run(legendary_synthesis_node(state))
 

@@ -565,7 +565,7 @@ Generate the scenarios now:"""
                 logger.info(f"✅ Direct JSON parse successful: {len(scenarios)} scenarios")
                 return scenarios
         except json.JSONDecodeError:
-            pass
+            ...
         
         # Method 2: Remove markdown code blocks
         if "```" in content:
@@ -579,7 +579,7 @@ Generate the scenarios now:"""
                         logger.info(f"✅ Markdown extraction successful: {len(scenarios)} scenarios")
                         return scenarios
                 except json.JSONDecodeError:
-                    pass
+                    ...
         
         # Method 3: Find JSON array in response
         # Look for array pattern
@@ -591,7 +591,7 @@ Generate the scenarios now:"""
                     logger.info(f"✅ Regex extraction successful: {len(scenarios)} scenarios")
                     return scenarios
             except json.JSONDecodeError:
-                pass
+                ...
         
         # Method 4: Try fixing common JSON issues
         fixed_content = content

@@ -44,7 +44,7 @@ class StorageDriver(ABC):
         Raises:
             ValueError: If WORM mode and key exists
         """
-        pass
+        ...
 
     @abstractmethod
     def read(self, key: str) -> bytes:
@@ -60,7 +60,7 @@ class StorageDriver(ABC):
         Raises:
             FileNotFoundError: If key doesn't exist
         """
-        pass
+        ...
 
     @abstractmethod
     def exists(self, key: str) -> bool:
@@ -73,7 +73,7 @@ class StorageDriver(ABC):
         Returns:
             True if exists
         """
-        pass
+        ...
 
     @abstractmethod
     def delete(self, key: str) -> None:
@@ -86,7 +86,7 @@ class StorageDriver(ABC):
         Raises:
             ValueError: If WORM mode enabled
         """
-        pass
+        ...
 
     @abstractmethod
     def list_keys(self, prefix: str = "") -> list[str]:
@@ -99,7 +99,7 @@ class StorageDriver(ABC):
         Returns:
             List of matching keys
         """
-        pass
+        ...
 
     def _resolve_relative(self, relative: str | Path) -> Path:
         """Resolve a path relative to the storage base safely."""

@@ -433,7 +433,7 @@ def list_snapshots(
 @cli.group()
 def keys() -> None:
     """Key management commands."""
-    pass
+    ...
 
 
 @keys.command("init")

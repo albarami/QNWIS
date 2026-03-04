@@ -34,7 +34,7 @@ from qnwis.continuity.simulate import FailoverSimulator
 @click.group()
 def cli() -> None:
     """QNWIS Business Continuity & Failover Orchestration."""
-    pass
+    ...
 
 
 @cli.command()

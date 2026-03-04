@@ -1,8 +1,8 @@
 # Readiness Report: Steps 1-33
 
-**Generated:** 2026-03-04T00:08:55.615088
+**Generated:** 2026-03-04T07:05:17.295776
 **Overall Status:** FAIL
-**Execution Time:** 623 ms
+**Execution Time:** 590 ms
 
 ## Summary
 
@@ -17,7 +17,7 @@
 ## Gate Results
 
 ### step_completeness [PASS]
-- **Duration:** 18 ms
+- **Duration:** 19 ms
 - **Severity:** ERROR
 ```json
 {
@@ -360,7 +360,7 @@
 - `docs/IMPLEMENTATION_ROADMAP.md`
 
 ### no_placeholders [FAIL]
-- **Duration:** 604 ms
+- **Duration:** 570 ms
 - **Severity:** ERROR
 ```json
 {
@@ -525,32 +525,44 @@
       "snippet": "pass"
     },
     {
+      "file": "src/qnwis/orchestration/debate/json_parser.py",
+      "line": 38,
+      "pattern": "^\\s*pass\\s*$",
+      "snippet": "pass"
+    },
+    {
+      "file": "src/qnwis/orchestration/debate/json_parser.py",
+      "line": 66,
+      "pattern": "^\\s*pass\\s*$",
+      "snippet": "pass"
+    },
+    {
+      "file": "src/qnwis/orchestration/debate/json_parser.py",
+      "line": 80,
+      "pattern": "^\\s*pass\\s*$",
+      "snippet": "pass"
+    },
+    {
       "file": "src/qnwis/orchestration/graph_llm.py",
       "line": 1392,
       "pattern": "^\\s*pass\\s*$",
       "snippet": "pass"
     },
     {
+      "file": "src/qnwis/orchestration/integrations/common.py",
+      "line": 253,
+      "pattern": "^\\s*pass\\s*$",
+      "snippet": "pass"
+    },
+    {
+      "file": "src/qnwis/orchestration/integrations/orchestrator.py",
+      "line": 93,
+      "pattern": "^\\s*pass\\s*$",
+      "snippet": "pass"
+    },
+    {
       "file": "src/qnwis/orchestration/intelligent_data_extraction.py",
       "line": 293,
-      "pattern": "^\\s*pass\\s*$",
-      "snippet": "pass"
-    },
-    {
-      "file": "src/qnwis/orchestration/legendary_debate_orchestrator.py",
-      "line": 49,
-      "pattern": "^\\s*pass\\s*$",
-      "snippet": "pass"
-    },
-    {
-      "file": "src/qnwis/orchestration/legendary_debate_orchestrator.py",
-      "line": 82,
-      "pattern": "^\\s*pass\\s*$",
-      "snippet": "pass"
-    },
-    {
-      "file": "src/qnwis/orchestration/legendary_debate_orchestrator.py",
-      "line": 98,
       "pattern": "^\\s*pass\\s*$",
       "snippet": "pass"
     },
@@ -603,14 +615,8 @@
       "snippet": "pass"
     },
     {
-      "file": "src/qnwis/orchestration/nodes/synthesis_legendary.py",
-      "line": 4332,
-      "pattern": "^\\s*pass\\s*$",
-      "snippet": "pass"
-    },
-    {
-      "file": "src/qnwis/orchestration/prefetch_apis.py",
-      "line": 303,
+      "file": "src/qnwis/orchestration/nodes/synthesis/node.py",
+      "line": 204,
       "pattern": "^\\s*pass\\s*$",
       "snippet": "pass"
     },

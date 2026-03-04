@@ -286,17 +286,17 @@ def test_agent_finding_validates_confidence_bounds():
         )
 
 
-def test_agent_finding_validates_metric_types():
-    """Test AgentFinding validates metrics are numeric."""
-    from pydantic import ValidationError
-    with pytest.raises(ValidationError):
-        AgentFinding(
-            title="Test",
-            summary="Summary",
-            metrics={"bad_metric": "not a number"},  # Invalid
-            analysis="Analysis",
-            recommendations=[],
-            confidence=0.9,
-            citations=[],
-            data_quality_notes=""
-        )
+def test_agent_finding_accepts_string_metrics():
+    """Test AgentFinding accepts string values in metrics (ranges, comparatives)."""
+    finding = AgentFinding(
+        title="Test",
+        summary="Summary",
+        metrics={"range_metric": "10-15%", "numeric": 42.0},
+        analysis="Analysis",
+        recommendations=[],
+        confidence=0.9,
+        citations=[],
+        data_quality_notes=""
+    )
+    assert finding.metrics["range_metric"] == "10-15%"
+    assert finding.metrics["numeric"] == 42.0

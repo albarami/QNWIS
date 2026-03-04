@@ -145,7 +145,7 @@ class FailoverExecutor:
         # Simulate demote operation
         # In production: call infrastructure API to demote node
         # Simulated operation - no actual changes
-        pass
+        ...
 
     def _execute_promote(self, action: FailoverAction) -> None:
         """
@@ -162,7 +162,7 @@ class FailoverExecutor:
         # Simulate promote operation
         # In production: call infrastructure API to promote node
         # Simulated operation - no actual changes
-        pass
+        ...
 
     def _execute_dns_flip(self, action: FailoverAction) -> None:
         """
@@ -179,7 +179,7 @@ class FailoverExecutor:
         # Simulate DNS update
         # In production: call DNS API to update records
         # Simulated operation - no actual changes
-        pass
+        ...
 
     def _execute_notify(self, action: FailoverAction) -> None:
         """
@@ -196,7 +196,7 @@ class FailoverExecutor:
         # Simulate notification
         # In production: call notification service
         # Simulated operation - no actual changes
-        pass
+        ...
 
     def _execute_verify(self, action: FailoverAction) -> None:
         """
@@ -209,7 +209,7 @@ class FailoverExecutor:
         """
         # Verification is always performed, even in dry-run
         # Simulated verification - always passes in simulation
-        pass
+        ...
 
     def _execute_restart(self, action: FailoverAction) -> None:
         """
@@ -226,7 +226,7 @@ class FailoverExecutor:
         # Simulate service restart
         # In production: call service management API
         # Simulated operation - no actual changes
-        pass
+        ...
 
     def get_execution_log(self) -> list[dict[str, str]]:
         """

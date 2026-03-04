@@ -187,7 +187,7 @@ async def execute_agent_analysis(
             try:
                 await emit_fn(f"agent:{display_name}", "error", {"error": error_msg})
             except Exception:
-                pass
+                ...
         
     except Exception as exc:  # pragma: no cover - defensive
         error_msg = f"{agent_key} agent failed: {type(exc).__name__}"
@@ -200,5 +200,5 @@ async def execute_agent_analysis(
             try:
                 await emit_fn(f"agent:{display_name}", "error", {"error": error_msg})
             except Exception:
-                pass
+                ...
 

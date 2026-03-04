@@ -1389,7 +1389,7 @@ Use `agent.apply(scenario_spec)` with your scenario definition.
 
                         except (ValueError, AttributeError):
                             # Not a parseable number, skip
-                            pass
+                            ...
 
             verification_result = {
                 "status": "complete",

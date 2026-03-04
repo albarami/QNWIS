@@ -357,7 +357,7 @@ The minister needs a decision, not methodology discussion."""
         Returns:
             Dictionary of QueryResults
         """
-        pass
+        ...
     
     @abstractmethod
     def _build_prompt(
@@ -377,7 +377,7 @@ The minister needs a decision, not methodology discussion."""
         Returns:
             (system_prompt, user_prompt) tuple
         """
-        pass
+        ...
 
     # --- Legendary Debate Conversation Methods ---
 

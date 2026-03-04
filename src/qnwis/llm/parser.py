@@ -232,7 +232,7 @@ class LLMResponseParser:
                 if s != -1 and e > s:
                     return self._repair_json(text[s:e+1])
             except (json.JSONDecodeError, ValueError):
-                pass
+                ...
             return None
     
     def extract_numbers(self, text: str) -> List[float]:

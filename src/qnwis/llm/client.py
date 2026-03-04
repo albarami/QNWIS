@@ -372,7 +372,7 @@ class LLMClient:
                                 if isinstance(result, dict) and result.get('filtered'):
                                     logger.error(f"Content filter category triggered: {category}")
                     except Exception:
-                        pass
+                        ...
                 
                 logger.error(
                     "LLM provider error (provider=%s, model=%s): %s",

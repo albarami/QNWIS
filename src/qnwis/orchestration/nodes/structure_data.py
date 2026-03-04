@@ -276,7 +276,7 @@ def _parse_structured_response(response: str) -> Dict[str, Any]:
         try:
             return json.loads(json_match.group())
         except json.JSONDecodeError:
-            pass
+            ...
 
     # Try parsing the whole cleaned response
     try:

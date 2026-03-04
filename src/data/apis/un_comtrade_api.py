@@ -62,7 +62,7 @@ class UNComtradeConnector:
         """Enforce 100 req/hour rate limit - DISABLED to avoid blocking workflow"""
         # DISABLED: UN Comtrade requires auth, so we fail fast instead of rate limiting
         # This prevents 35+ second waits that block the entire workflow
-        pass
+        ...
     
     async def get_imports(
         self,

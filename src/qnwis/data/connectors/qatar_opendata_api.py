@@ -189,7 +189,7 @@ def run_qatar_api_query(spec: QuerySpec) -> QueryResult:
                 year = int(year_value)
                 max_year = year if (max_year is None or year > max_year) else max_year
             except (TypeError, ValueError):
-                pass
+                ...
     
     asof_date = f"{max_year}-12-31" if max_year else datetime.now().strftime("%Y-%m-%d")
     

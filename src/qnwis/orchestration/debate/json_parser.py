@@ -35,7 +35,7 @@ def robust_json_parse(text: str, default: Any = None) -> Any:
     try:
         return json.loads(cleaned)
     except json.JSONDecodeError:
-        pass
+        ...
 
     try:
         start_obj = cleaned.find('{')
@@ -63,7 +63,7 @@ def robust_json_parse(text: str, default: Any = None) -> Any:
 
         return json.loads(json_str)
     except json.JSONDecodeError:
-        pass
+        ...
 
     try:
         result = {}
@@ -77,7 +77,7 @@ def robust_json_parse(text: str, default: Any = None) -> Any:
         if result:
             return result
     except Exception:
-        pass
+        ...
 
     return default
 

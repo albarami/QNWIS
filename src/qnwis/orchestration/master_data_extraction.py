@@ -240,7 +240,7 @@ class MasterDataExtractor:
                             "confidence": 0.98,
                         })
                 except Exception:
-                    pass
+                    ...
                 
                 # Get Vision 2030 targets
                 try:
@@ -256,7 +256,7 @@ class MasterDataExtractor:
                             "confidence": 1.0,
                         })
                 except Exception:
-                    pass
+                    ...
             
             logger.info(f"   PostgreSQL: {len(facts)} facts")
             

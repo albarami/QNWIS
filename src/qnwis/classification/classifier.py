@@ -69,8 +69,8 @@ class Classifier:
         # Detect deterministic agent routing
         route_to = self._detect_routing(question_lower)
 
-        # Force COMPLEX for MVP - always use full multi-agent system
-        # TODO: Implement smart classification after system is proven
+        # Force COMPLEX for MVP — always use full multi-agent system.
+        # Future: implement adaptive classification once baseline metrics are stable.
         complexity = "complex"
         
         # Original logic (disabled for MVP):

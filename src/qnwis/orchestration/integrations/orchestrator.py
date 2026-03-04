@@ -90,7 +90,7 @@ class CompletePrefetchLayer:
                 self._knowledge_graph = QNWISKnowledgeGraph()
                 self._knowledge_graph.load(kg_path)
         except ImportError:
-            pass
+            ...
 
         self.world_bank = self.world_bank_connector
         self.brave_api_key = os.getenv("BRAVE_API_KEY")

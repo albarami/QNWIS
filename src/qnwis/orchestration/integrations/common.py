@@ -250,7 +250,7 @@ except ImportError:  # pragma: no cover
             )
 
     class SemanticScholarAPI(_SemanticScholarAPIMixin):  # type: ignore[no-redef]
-        pass
+        ...
 
 
 try:

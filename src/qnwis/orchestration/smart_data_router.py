@@ -576,7 +576,7 @@ class IntelligentExtractionOrchestrator:
     def _init_extractors(self):
         """Initialize all data source extractors."""
         # These will be lazily loaded when needed
-        pass
+        ...
     
     async def extract_comprehensive(self, query: str) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
         """
