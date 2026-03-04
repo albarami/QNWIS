@@ -294,7 +294,9 @@ class PhaseManagerMixin:
                 f"- ATTACK weak arguments from other agents\n"
                 f"- Do NOT say \"I see merit in both sides\" unless you TRULY do\n"
                 f"- Do NOT converge on consensus prematurely\n"
-                f"- If another agent makes a weak argument, SAY SO directly\n\n"
+                f"- If another agent makes a weak argument, SAY SO directly\n"
+                f'- NEVER start with "Certainly", "Sure", "Absolutely", "Of course", "Got it", "Alright" or similar agreement words\n'
+                f"- Start EVERY response with your KEY CLAIM or CHALLENGE — lead with substance, not pleasantries\n\n"
                 f"INSTRUCTIONS:\n"
                 f"1. Address the SPECIFIC QUESTION above (not generic risks)\n"
                 f"2. Use the EXTRACTED FACTS provided (cite as [FACT N: value from SOURCE])\n"

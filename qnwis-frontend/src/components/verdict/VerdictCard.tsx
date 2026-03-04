@@ -137,10 +137,27 @@ export const VerdictCard: React.FC<VerdictCardProps> = ({
     )
   }
 
-  if (isAnalyzing || !verdict) {
+  if (isAnalyzing) {
     return (
       <div className="rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700 p-8">
         <AnalyzingState progress={analysisProgress} questionType={questionType} />
+      </div>
+    )
+  }
+
+  if (!verdict) {
+    const isDone = analysisProgress >= 95
+    return (
+      <div className="rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700 p-8">
+        {isDone ? (
+          <div className="text-center py-6">
+            <span className="text-3xl">✅</span>
+            <p className="text-lg font-semibold text-white mt-2">Analysis Complete</p>
+            <p className="text-sm text-slate-400 mt-1">See the Brief tab for the full strategic intelligence report</p>
+          </div>
+        ) : (
+          <AnalyzingState progress={analysisProgress} questionType={questionType} />
+        )}
       </div>
     )
   }
