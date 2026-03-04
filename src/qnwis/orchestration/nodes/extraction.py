@@ -13,7 +13,7 @@ import json
 from typing import List, Dict, Any, Optional
 
 from ..state import IntelligenceState
-from ..prefetch_apis import get_complete_prefetch
+from ..integrations import get_complete_prefetch
 from ..DATA_SOURCE_REGISTRY import DATA_SOURCES, QUERY_ROUTING, get_sources_for_query
 from .scenario_baseline_requirements import enhance_facts_with_scenario_baselines
 

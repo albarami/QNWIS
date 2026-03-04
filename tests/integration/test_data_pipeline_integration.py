@@ -15,7 +15,7 @@ class TestDataSourceIntegration:
     
     def test_prefetch_layer_has_all_connectors(self):
         """Verify prefetch layer initializes all connectors."""
-        from src.qnwis.orchestration.prefetch_apis import CompletePrefetchLayer
+        from src.qnwis.orchestration.integrations import CompletePrefetchLayer
         
         layer = CompletePrefetchLayer()
         
@@ -44,7 +44,7 @@ class TestDataSourceIntegration:
     
     def test_prefetch_layer_has_fetch_methods(self):
         """Verify prefetch layer has all required fetch methods."""
-        from src.qnwis.orchestration.prefetch_apis import CompletePrefetchLayer
+        from src.qnwis.orchestration.integrations import CompletePrefetchLayer
         
         layer = CompletePrefetchLayer()
         
@@ -233,7 +233,7 @@ class TestDomainAgnosticCapability:
     
     def test_prefetch_triggers_for_all_domains(self):
         """Verify prefetch has triggers for all domains."""
-        from src.qnwis.orchestration.prefetch_apis import CompletePrefetchLayer
+        from src.qnwis.orchestration.integrations import CompletePrefetchLayer
         import inspect
         
         layer = CompletePrefetchLayer()

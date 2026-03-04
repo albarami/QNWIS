@@ -3,7 +3,7 @@ import pytest
 from src.qnwis.orchestration.agent_selector import classify_data_availability
 from src.qnwis.orchestration.data_quality import identify_missing_data
 from src.qnwis.orchestration.debate import detect_debate_convergence
-from src.qnwis.orchestration.prefetch_apis import (
+from src.qnwis.orchestration.integrations import (
     CompletePrefetchLayer,
     classify_query_for_extraction,
 )

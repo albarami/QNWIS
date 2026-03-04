@@ -1,5 +1,5 @@
 from src.qnwis.orchestration.data_quality import calculate_data_quality, identify_missing_data
-from src.qnwis.orchestration.prefetch_apis import classify_query_for_extraction
+from src.qnwis.orchestration.integrations import classify_query_for_extraction
 
 
 def test_classify_query_for_extraction_identifies_domains():

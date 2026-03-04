@@ -30,7 +30,7 @@ from ..agents.base import AgentReport, DataClient
 from ..llm.client import LLMClient
 from ..classification.classifier import Classifier
 from .citation_injector import CitationInjector
-from .prefetch_apis import get_complete_prefetch
+from .integrations import get_complete_prefetch
 
 logger = logging.getLogger(__name__)
 
@@ -1723,7 +1723,7 @@ OUTPUT FORMAT (JSON):
         logger.info(f"Starting legendary debate with {len(contradictions)} contradictions")
         
         # Import debate orchestrator
-        from .legendary_debate_orchestrator import LegendaryDebateOrchestrator
+        from .debate import LegendaryDebateOrchestrator
         
         # Create orchestrator with event callback and NSIC live logging callback
         orchestrator = LegendaryDebateOrchestrator(

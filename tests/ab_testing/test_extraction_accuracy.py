@@ -188,7 +188,7 @@ async def run_prefetch_for_query(query: str) -> Dict[str, Any]:
     
     try:
         # Try to use the actual prefetch layer
-        from src.qnwis.orchestration.prefetch_apis import PrefetchLayer
+        from src.qnwis.orchestration.integrations import CompletePrefetchLayer as PrefetchLayer
         
         prefetch = PrefetchLayer()
         results = await prefetch.prefetch_data(query)

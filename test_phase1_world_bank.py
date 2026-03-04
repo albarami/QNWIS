@@ -15,7 +15,7 @@ async def test_world_bank_integration():
     print("="*80)
     print()
     
-    from src.qnwis.orchestration.prefetch_apis import CompletePrefetchLayer
+    from src.qnwis.orchestration.integrations import CompletePrefetchLayer
     
     prefetch = CompletePrefetchLayer()
     

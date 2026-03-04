@@ -598,7 +598,7 @@ class TestDebateOrchestratorCalculatedResults:
 
     def test_format_calculated_summary_in_orchestrator(self) -> None:
         """Test that orchestrator formats calculated results for agent prompts."""
-        from src.qnwis.orchestration.legendary_debate_orchestrator import (
+        from src.qnwis.orchestration.debate import (
             LegendaryDebateOrchestrator,
         )
 

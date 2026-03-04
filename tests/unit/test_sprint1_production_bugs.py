@@ -30,7 +30,7 @@ class TestSyncWrapperBridge:
 
     def test_sync_wrapper_returns_state_from_sync_context(self):
         """Calling from a normal sync context must invoke the async node."""
-        from src.qnwis.orchestration.nodes.synthesis_legendary import (
+        from src.qnwis.orchestration.nodes.synthesis import (
             legendary_synthesis_node_sync,
         )
         import inspect
@@ -43,7 +43,7 @@ class TestSyncWrapperBridge:
 
     def test_sync_wrapper_has_thread_bridge_for_async_context(self):
         """The wrapper must use a thread-based bridge when called from async."""
-        from src.qnwis.orchestration.nodes.synthesis_legendary import (
+        from src.qnwis.orchestration.nodes.synthesis import (
             legendary_synthesis_node_sync,
         )
         import inspect
@@ -55,7 +55,7 @@ class TestSyncWrapperBridge:
 
     def test_sync_wrapper_does_not_short_circuit_on_running_loop(self):
         """When get_running_loop() succeeds, wrapper must NOT just return state."""
-        from src.qnwis.orchestration.nodes.synthesis_legendary import (
+        from src.qnwis.orchestration.nodes.synthesis import (
             legendary_synthesis_node_sync,
         )
         import inspect

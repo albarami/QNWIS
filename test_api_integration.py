@@ -15,7 +15,7 @@ async def test_api_triggers():
     print()
     
     # Import after path setup
-    from src.qnwis.orchestration.prefetch_apis import CompletePrefetchLayer
+    from src.qnwis.orchestration.integrations import CompletePrefetchLayer
     
     prefetch = CompletePrefetchLayer()
     

@@ -1,7 +1,7 @@
 """Test the complete prefetch with ALL APIs."""
 import asyncio
 
-from src.qnwis.orchestration.prefetch_apis import CompletePrefetchLayer
+from src.qnwis.orchestration.integrations import CompletePrefetchLayer
 
 
 def _safe_print(message: str) -> None:

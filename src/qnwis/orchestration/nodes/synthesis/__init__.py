@@ -1,19 +1,25 @@
 """
-Synthesis Node.
+Synthesis package.
 
-Produces the final ministerial-grade synthesis with an explicit confidence score.
+Contains:
+- ``synthesis_node``                 – Legacy basic synthesis (from original synthesis.py)
+- ``legendary_synthesis_node``       – Full McKinsey-grade strategic briefing (async)
+- ``legendary_synthesis_node_sync``  – Synchronous wrapper for LangGraph
 """
 
 from __future__ import annotations
 
 from typing import List
 
-from ..state import IntelligenceState
+from ...state import IntelligenceState
 
+# ── Re-export legendary synthesis public API ─────────────────────────────────
+from .node import legendary_synthesis_node, legendary_synthesis_node_sync
+
+# ── Legacy basic synthesis node (preserved from original synthesis.py) ────────
 
 def _gather_sections(state: IntelligenceState) -> List[str]:
     """Collect non-empty agent narratives."""
-
     sections: List[str] = []
     for label, field in [
         ("Financial", "financial_analysis"),
@@ -31,7 +37,6 @@ def _gather_sections(state: IntelligenceState) -> List[str]:
 
 def _compute_confidence(state: IntelligenceState) -> float:
     """Derive a confidence score based on data quality and verification results."""
-
     data_quality = state.get("data_quality_score") or 0.0
     fact_check = state.get("fact_check_results") or {}
     verification_pass = fact_check.get("status") == "PASS"
@@ -49,7 +54,6 @@ def synthesis_node(state: IntelligenceState) -> IntelligenceState:
 
     Combines all upstream analyses into a coherent executive summary.
     """
-
     reasoning_chain = state.setdefault("reasoning_chain", [])
     nodes_executed = state.setdefault("nodes_executed", [])
 
@@ -73,3 +77,9 @@ def synthesis_node(state: IntelligenceState) -> IntelligenceState:
 
     return state
 
+
+__all__ = [
+    "synthesis_node",
+    "legendary_synthesis_node",
+    "legendary_synthesis_node_sync",
+]

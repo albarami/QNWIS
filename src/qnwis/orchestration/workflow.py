@@ -31,7 +31,7 @@ from .cross_scenario import generate_cross_scenario_table
 # Import legendary debate node instead of simplified debate
 from .nodes.debate_legendary import legendary_debate_node
 # Import legendary synthesis for consultant-killing output
-from .nodes.synthesis_legendary import legendary_synthesis_node_sync as legendary_synthesis_node
+from .nodes.synthesis import legendary_synthesis_node_sync as legendary_synthesis_node
 from .nodes.synthesis_strategic import strategic_synthesis_node
 # Import parallel scenario analysis components
 from .nodes.scenario_generator import ScenarioGenerator
@@ -610,7 +610,7 @@ async def meta_synthesis_wrapper(state: IntelligenceState) -> IntelligenceState:
     
     try:
         # FIX: Import and call async version directly (not sync wrapper that returns early)
-        from .nodes.synthesis_legendary import legendary_synthesis_node
+        from .nodes.synthesis import legendary_synthesis_node
         state = await legendary_synthesis_node(state)
         state['reasoning_chain'].append(f"✅ Used legendary_synthesis (scenarios_valid={scenarios_valid}, debate verdict enforced)")
         logger.info(f"✅ Legendary synthesis complete with debate enforcement")

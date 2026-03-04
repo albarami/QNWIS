@@ -1,5 +1,5 @@
 import asyncio
-from qnwis.orchestration.prefetch_apis import get_complete_prefetch
+from qnwis.orchestration.integrations import get_complete_prefetch
 
 async def verify():
     print('=' * 80)

@@ -15,7 +15,7 @@ async def test_prefetch_data_access():
     print("🔍 TESTING PREFETCH ACCESS TO POSTGRESQL DATA")
     print("="*80)
     
-    from qnwis.orchestration.prefetch_apis import CompletePrefetchLayer
+    from qnwis.orchestration.integrations import CompletePrefetchLayer
     
     prefetch = CompletePrefetchLayer()
     

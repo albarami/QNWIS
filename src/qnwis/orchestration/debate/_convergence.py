@@ -15,8 +15,8 @@ from typing import Any, Dict, List, Optional
 
 import numpy as np
 
-from ..config.settings import DEBATE_CONFIGS
-from .cross_scenario import (
+from ...config.settings import DEBATE_CONFIGS
+from ..cross_scenario import (
     generate_cross_scenario_table,
     extract_robustness_summary,
     build_quantitative_context_for_agents,
@@ -85,7 +85,7 @@ def _build_debate_prompt(
 ) -> str:
     """
     Construct a deterministic prompt for the given turn.
-    
+
     ENHANCED: Includes cross-scenario quantitative context from Engine B
     so agents must reference actual computed numbers.
     """
@@ -94,13 +94,12 @@ def _build_debate_prompt(
         f"Turn {idx + 1}: {entry['content'][:400]}"
         for idx, entry in enumerate(debate_history[-4:])
     )
-    
-    # Get quantitative context from Engine B results
+
     quantitative_context = ""
     engine_b_results = state.get("engine_b_results", {})
     engine_b_aggregate = state.get("engine_b_aggregate", {})
     cross_scenario_table = state.get("cross_scenario_table", "")
-    
+
     if cross_scenario_table:
         quantitative_context = f"""
 ## QUANTITATIVE CONTEXT (from Engine B)
@@ -109,9 +108,8 @@ def _build_debate_prompt(
 **You MUST reference these numbers in your arguments.**
 """
     elif engine_b_results or engine_b_aggregate:
-        # Build context from aggregate results
         quantitative_context = build_quantitative_context_for_debate(engine_b_results or engine_b_aggregate)
-    
+
     return (
         "You are participating in a ministerial debate.\n\n"
         f"**Question:** {topic}\n\n"
@@ -128,21 +126,20 @@ def _build_debate_prompt(
 def build_quantitative_context_for_debate(engine_b_results: Dict[str, Any]) -> str:
     """
     Build quantitative context string for debate prompts.
-    
+
     Args:
         engine_b_results: Engine B results (either per-scenario or aggregate)
-    
+
     Returns:
         Formatted context string with cross-scenario data
     """
     if not engine_b_results:
         return ""
-    
+
     try:
-        # Try to build cross-scenario table
         cross_table = generate_cross_scenario_table(engine_b_results)
         robustness = extract_robustness_summary(engine_b_results)
-        
+
         context = f"""
 ## QUANTITATIVE CONTEXT (Engine B Computed Results)
 
@@ -163,45 +160,31 @@ def build_quantitative_context_for_debate(engine_b_results: Dict[str, Any]) -> s
 def detect_debate_convergence(debate_history: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
     Apply conservative convergence heuristics for ministerial-grade debates.
-    
-    CRITICAL: These heuristics should be VERY conservative to ensure
-    full debate depth is achieved. Only return "converged" when we're
-    truly seeing repetition, not just polite agreement.
-    
+
     Heuristics:
         1. Very high semantic similarity (>0.92) across last 8 turns
         2. No contradictions in last 5 turns AND past 80% of expected depth
         3. Every agent has spoken 5+ times AND past 75% of expected depth
     """
-    # Need substantial history before checking convergence
     if len(debate_history) < 20:
         return {"converged": False, "reason": "insufficient_turns"}
 
     recent_turns = debate_history[-8:]
 
-    # Heuristic 1: VERY high semantic similarity (agents repeating verbatim)
     similarity_result = _semantic_similarity(recent_turns)
-    if similarity_result is not None and similarity_result > 0.92:  # Increased from 0.85
+    if similarity_result is not None and similarity_result > 0.92:
         return {
             "converged": True,
             "reason": "high_repetition",
             "similarity_score": float(similarity_result),
         }
 
-    # Heuristic 2: No new contradictions - but only after substantial debate
-    # DISABLED for legendary debates - we want full depth
-    # recent_contradictions = count_new_contradictions(debate_history[-5:])
-    # if recent_contradictions == 0 and len(debate_history) > 100:  # Increased from 10
-    #     return {"converged": True, "reason": "no_new_contradictions"}
-
-    # Heuristic 3: All agents have spoken extensively
     agent_counts: dict[str, int] = {}
     for turn in debate_history:
         agent = turn.get("agent")
         if agent:
             agent_counts[agent] = agent_counts.get(agent, 0) + 1
 
-    # Only converge if all agents have spoken 5+ times AND we have 75+ turns
     if agent_counts and min(agent_counts.values()) >= 5 and len(debate_history) >= 75:
         return {
             "converged": True,
@@ -263,4 +246,3 @@ def count_new_contradictions(recent_turns: List[Dict[str, Any]]) -> int:
         if any(keyword in content for keyword in keywords):
             count += 1
     return count
-

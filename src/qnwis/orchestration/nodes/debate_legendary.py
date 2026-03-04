@@ -36,7 +36,7 @@ async def legendary_debate_node(state: IntelligenceState) -> IntelligenceState:
     """
 
     # Import here to avoid circular dependencies
-    from ..legendary_debate_orchestrator import LegendaryDebateOrchestrator
+    from ..debate import LegendaryDebateOrchestrator
     from ...llm.client import LLMClient
 
     reasoning_chain = state.setdefault("reasoning_chain", [])

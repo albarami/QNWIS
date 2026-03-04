@@ -3,7 +3,7 @@ Test all 12 external APIs are fully integrated
 """
 
 import asyncio
-from qnwis.orchestration.prefetch_apis import CompletePrefetchLayer
+from qnwis.orchestration.integrations import CompletePrefetchLayer
 
 async def test_all_apis():
     """Test different queries to trigger all 12 APIs"""
