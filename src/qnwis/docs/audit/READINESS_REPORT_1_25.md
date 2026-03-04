@@ -1,8 +1,8 @@
 # Readiness Report: Steps 1-33
 
-**Generated:** 2026-03-04T09:03:47.931371
+**Generated:** 2026-03-04T10:33:53.347865
 **Overall Status:** FAIL
-**Execution Time:** 21205 ms
+**Execution Time:** 19402 ms
 
 ## Summary
 
@@ -17,7 +17,7 @@
 ## Gate Results
 
 ### step_completeness [PASS]
-- **Duration:** 15 ms
+- **Duration:** 14 ms
 - **Severity:** ERROR
 ```json
 {
@@ -360,7 +360,7 @@
 - `docs/IMPLEMENTATION_ROADMAP.md`
 
 ### no_placeholders [PASS]
-- **Duration:** 915 ms
+- **Duration:** 569 ms
 - **Severity:** ERROR
 ```json
 {
@@ -380,16 +380,16 @@
 - `src/qnwis/scripts/qa/grep_rules.yml`
 
 ### linters_and_types [FAIL]
-- **Duration:** 20273 ms
+- **Duration:** 18818 ms
 - **Severity:** ERROR
 ```json
 {
   "ruff": {
-    "issues": 350,
+    "issues": 351,
     "fixable": 101,
     "rules": {
       "F821": 5,
-      "C901": 148,
+      "C901": 149,
       "B905": 26,
       "B008": 59,
       "B904": 9,

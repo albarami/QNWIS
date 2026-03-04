@@ -163,9 +163,15 @@ higher than the alternative ({second_name} at {second_rate:.1f}%).
             name = scenario.get('name', 'Unknown')
             text_lower = f"{name} {scenario.get('description', '')}".lower()
             
-            # Get success rate
+            # Get success rate (fall back to scenario probability if Engine B hasn't run)
             rate = scenario.get('success_rate', scenario.get('success_probability', 0))
-            if isinstance(rate, float) and rate <= 1:
+            if rate == 0:
+                raw_prob = scenario.get('probability', 0)
+                if isinstance(raw_prob, (int, float)) and 0 < raw_prob <= 1:
+                    rate = raw_prob * 100
+                elif isinstance(raw_prob, (int, float)) and raw_prob > 1:
+                    rate = raw_prob
+            if isinstance(rate, float) and 0 < rate <= 1:
                 rate = rate * 100
             
             # Skip stress tests for primary option comparison
