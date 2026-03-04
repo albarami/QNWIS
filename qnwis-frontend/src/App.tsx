@@ -88,6 +88,8 @@ function App() {
   const [question, setQuestion] = useState('What is the probability Qatar will reverse productivity stagnation by 2030?')
   const [debateDepth, setDebateDepth] = useState<DebateDepth>('legendary')
   const [activeTab, setActiveTab] = useState<string>('scenarios')
+  const [userSelectedTab, setUserSelectedTab] = useState(false)
+  const hasAutoSwitchedToDebate = React.useRef(false)
   const provider = 'azure' as const
 
   // Determine if analysis is in progress or complete (safe with null state)
@@ -510,16 +512,26 @@ function App() {
     { id: 'brief', label: 'Brief', icon: '📄' },
   ], [state, isDebateActive])
 
-  // Auto-switch to debate tab when debate starts
+  // Auto-switch to debate tab ONCE when debate starts (only if user hasn't manually picked a tab)
   React.useEffect(() => {
-    if (state && isDebateActive && state.debateTurns.length > 0 && activeTab !== 'debate') {
+    if (
+      state &&
+      isDebateActive &&
+      state.debateTurns.length > 0 &&
+      !hasAutoSwitchedToDebate.current &&
+      !userSelectedTab
+    ) {
+      hasAutoSwitchedToDebate.current = true
       setActiveTab('debate')
     }
-  }, [state, isDebateActive, activeTab])
+  }, [state, isDebateActive, userSelectedTab])
 
   // Handle form submission
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
+    hasAutoSwitchedToDebate.current = false
+    setUserSelectedTab(false)
+    setActiveTab('scenarios')
     try {
       await connect({ question, provider, debate_depth: debateDepth })
     } catch (error) {
@@ -659,7 +671,7 @@ function App() {
 
             {/* TAB NAVIGATION */}
             <section className="mb-6">
-              <TabNavigation tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
+              <TabNavigation tabs={tabs} activeTab={activeTab} onTabChange={(tab) => { setUserSelectedTab(true); setActiveTab(tab); }} />
             </section>
 
             {/* TAB CONTENT */}
