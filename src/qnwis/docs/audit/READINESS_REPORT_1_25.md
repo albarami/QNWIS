@@ -1,8 +1,8 @@
 # Readiness Report: Steps 1-33
 
-**Generated:** 2026-03-04T07:32:25.882933
+**Generated:** 2026-03-04T07:45:52.592665
 **Overall Status:** FAIL
-**Execution Time:** 20105 ms
+**Execution Time:** 20134 ms
 
 ## Summary
 
@@ -12,12 +12,12 @@
 
 ## Previously failing gates now PASS
 
-- no_placeholders
+- None
 
 ## Gate Results
 
 ### step_completeness [PASS]
-- **Duration:** 16 ms
+- **Duration:** 15 ms
 - **Severity:** ERROR
 ```json
 {
@@ -360,7 +360,7 @@
 - `docs/IMPLEMENTATION_ROADMAP.md`
 
 ### no_placeholders [PASS]
-- **Duration:** 567 ms
+- **Duration:** 590 ms
 - **Severity:** ERROR
 ```json
 {
@@ -380,7 +380,7 @@
 - `src/qnwis/scripts/qa/grep_rules.yml`
 
 ### linters_and_types [FAIL]
-- **Duration:** 19522 ms
+- **Duration:** 19528 ms
 - **Severity:** ERROR
 ```json
 {
@@ -420,12 +420,12 @@
     "exit_code": 1
   },
   "flake8": {
-    "issues": 7984,
+    "issues": 7968,
     "fixable": 0,
     "rules": {
       "F821": 5,
-      "W293": 7146,
-      "W291": 242,
+      "W293": 7131,
+      "W291": 241,
       "E501": 376,
       "E203": 11,
       "E261": 3,
@@ -466,7 +466,7 @@
     "fixable": 0,
     "rules": {},
     "files": [],
-    "stdout_tail": "src\\qnwis\\alerts\\real_time_alerts.py:69: error: Function is missing a return type annotation  [no-untyped-def]\nsrc\\qnwis\\alerts\\real_time_alerts.py:69: note: Use \"-> None\" if function does not return a value\nsrc\\qnwis\\alerts\\real_time_alerts.py:91: error: Dict entry 0 has incompatible type \"str\": \"float | None\"; expected \"str\": \"float\"  [dict-item]\nsrc\\qnwis\\alerts\\real_time_alerts.py:92: error: Dict entry 1 has incompatible type \"str\": \"float | None\"; expected \"str\": \"float\"  [dict-item]\nsrc\\qnwis\\alerts\\real_time_alerts.py:210: error: Call to untyped function \"RealTimeAlertSystem\" in typed context  [no-untyped-call]\nsrc\\qnwis\\alerts\\real_time_alerts.py:221: error: Function is missing a return type annotation  [no-untyped-def]\nsrc\\qnwis\\alerts\\engine.py:185: error: Unsupported operand types for > (\"float\" and \"None\")  [operator]\nsrc\\qnwis\\alerts\\engine.py:185: note: Left operand is of type \"float | None\"\nsrc\\qnwis\\alerts\\engine.py:187: error: Unsupported operand types for >= (\"float\" and \"None\")  [operator]\nsrc\\qnwis\\alerts\\engine.py:187: note: Left operand is of type \"float | None\"\nsrc\\qnwis\\alerts\\engine.py:189: error: Unsupported operand types for < (\"float\" and \"None\")  [operator]\nsrc\\qnwis\\alerts\\engine.py:189: note: Left operand is of type \"float | None\"\nsrc\\qnwis\\alerts\\engine.py:191: error: Unsupported operand types for <= (\"float\" and \"None\")  [operator]\nsrc\\qnwis\\alerts\\engine.py:191: note: Left operand is of type \"float | None\"\nsrc\\qnwis\\agents\\alert_center.py:85: error: Name \"Any\" is not defined  [name-defined]\nsrc\\qnwis\\agents\\alert_center.py:85: note: Did you forget to import it from \"typing\"? (Suggestion: \"from typing import Any\")\nsrc\\qnwis\\agents\\scenario_agent.py:571: error: Argument 1 to \"sum\" has incompatible type \"list[Any | None]\"; expected \"Iterable[bool]\"  [arg-type]\nFound 11 errors in 4 files (checked 24 source files)\n",
+    "stdout_tail": "time_alerts.py:92: error: Dict entry 1 has incompatible type \"str\": \"float | None\"; expected \"str\": \"float\"  [dict-item]\nsrc\\qnwis\\alerts\\real_time_alerts.py:210: error: Call to untyped function \"RealTimeAlertSystem\" in typed context  [no-untyped-call]\nsrc\\qnwis\\alerts\\real_time_alerts.py:221: error: Function is missing a return type annotation  [no-untyped-def]\nsrc\\qnwis\\alerts\\engine.py:185: error: Unsupported operand types for > (\"float\" and \"None\")  [operator]\nsrc\\qnwis\\alerts\\engine.py:185: note: Left operand is of type \"float | None\"\nsrc\\qnwis\\alerts\\engine.py:187: error: Unsupported operand types for >= (\"float\" and \"None\")  [operator]\nsrc\\qnwis\\alerts\\engine.py:187: note: Left operand is of type \"float | None\"\nsrc\\qnwis\\alerts\\engine.py:189: error: Unsupported operand types for < (\"float\" and \"None\")  [operator]\nsrc\\qnwis\\alerts\\engine.py:189: note: Left operand is of type \"float | None\"\nsrc\\qnwis\\alerts\\engine.py:191: error: Unsupported operand types for <= (\"float\" and \"None\")  [operator]\nsrc\\qnwis\\alerts\\engine.py:191: note: Left operand is of type \"float | None\"\nsrc\\qnwis\\agents\\alert_center.py:85: error: Name \"Any\" is not defined  [name-defined]\nsrc\\qnwis\\agents\\alert_center.py:85: note: Did you forget to import it from \"typing\"? (Suggestion: \"from typing import Any\")\nsrc\\qnwis\\agents\\alert_center.py:209: error: Argument \"derived_results\" to \"AgentReport\" has incompatible type \"list[Never]\"; expected \"dict[str, Any]\"  [arg-type]\nsrc\\qnwis\\agents\\alert_center.py:284: error: Argument \"derived_results\" to \"AgentReport\" has incompatible type \"list[Never]\"; expected \"dict[str, Any]\"  [arg-type]\nsrc\\qnwis\\agents\\alert_center.py:326: error: Argument \"derived_results\" to \"AgentReport\" has incompatible type \"list[QueryResult]\"; expected \"dict[str, Any]\"  [arg-type]\nsrc\\qnwis\\agents\\scenario_agent.py:571: error: Argument 1 to \"sum\" has incompatible type \"list[Any | None]\"; expected \"Iterable[bool]\"  [arg-type]\nFound 14 errors in 4 files (checked 24 source files)\n",
     "stderr_tail": "",
     "exit_code": 1
   }

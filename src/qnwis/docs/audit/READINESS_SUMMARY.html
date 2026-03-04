@@ -1,8 +1,8 @@
 <pre># Readiness Report: Steps 1-33
 
-**Generated:** 2026-03-04T07:32:25.882933
+**Generated:** 2026-03-04T07:45:52.592665
 **Overall Status:** FAIL
-**Execution Time:** 20105 ms
+**Execution Time:** 20134 ms
 
 ## Summary
 
@@ -12,12 +12,12 @@
 
 ## Previously failing gates now PASS
 
-- no_placeholders
+- None
 
 ## Gate Results
 
 ### step_completeness [PASS]
-- **Duration:** 16 ms
+- **Duration:** 15 ms
 - **Severity:** ERROR
 ```json
 {
@@ -360,7 +360,7 @@
 - `docs/IMPLEMENTATION_ROADMAP.md`
 
 ### no_placeholders [PASS]
-- **Duration:** 567 ms
+- **Duration:** 590 ms
 - **Severity:** ERROR
 ```json
 {
@@ -380,7 +380,7 @@
 - `src/qnwis/scripts/qa/grep_rules.yml`
 
 ### linters_and_types [FAIL]
-- **Duration:** 19522 ms
+- **Duration:** 19528 ms
 - **Severity:** ERROR
 ```json
 {
@@ -420,12 +420,12 @@
     &quot;exit_code&quot;: 1
   },
   &quot;flake8&quot;: {
-    &quot;issues&quot;: 7984,
+    &quot;issues&quot;: 7968,
     &quot;fixable&quot;: 0,
     &quot;rules&quot;: {
       &quot;F821&quot;: 5,
-      &quot;W293&quot;: 7146,
-      &quot;W291&quot;: 242,
+      &quot;W293&quot;: 7131,
+      &quot;W291&quot;: 241,
       &quot;E501&quot;: 376,
       &quot;E203&quot;: 11,
       &quot;E261&quot;: 3,
@@ -466,7 +466,7 @@
     &quot;fixable&quot;: 0,
     &quot;rules&quot;: {},
     &quot;files&quot;: [],
-    &quot;stdout_tail&quot;: &quot;src\\qnwis\\alerts\\real_time_alerts.py:69: error: Function is missing a return type annotation  [no-untyped-def]\nsrc\\qnwis\\alerts\\real_time_alerts.py:69: note: Use \&quot;-&gt; None\&quot; if function does not return a value\nsrc\\qnwis\\alerts\\real_time_alerts.py:91: error: Dict entry 0 has incompatible type \&quot;str\&quot;: \&quot;float | None\&quot;; expected \&quot;str\&quot;: \&quot;float\&quot;  [dict-item]\nsrc\\qnwis\\alerts\\real_time_alerts.py:92: error: Dict entry 1 has incompatible type \&quot;str\&quot;: \&quot;float | None\&quot;; expected \&quot;str\&quot;: \&quot;float\&quot;  [dict-item]\nsrc\\qnwis\\alerts\\real_time_alerts.py:210: error: Call to untyped function \&quot;RealTimeAlertSystem\&quot; in typed context  [no-untyped-call]\nsrc\\qnwis\\alerts\\real_time_alerts.py:221: error: Function is missing a return type annotation  [no-untyped-def]\nsrc\\qnwis\\alerts\\engine.py:185: error: Unsupported operand types for &gt; (\&quot;float\&quot; and \&quot;None\&quot;)  [operator]\nsrc\\qnwis\\alerts\\engine.py:185: note: Left operand is of type \&quot;float | None\&quot;\nsrc\\qnwis\\alerts\\engine.py:187: error: Unsupported operand types for &gt;= (\&quot;float\&quot; and \&quot;None\&quot;)  [operator]\nsrc\\qnwis\\alerts\\engine.py:187: note: Left operand is of type \&quot;float | None\&quot;\nsrc\\qnwis\\alerts\\engine.py:189: error: Unsupported operand types for &lt; (\&quot;float\&quot; and \&quot;None\&quot;)  [operator]\nsrc\\qnwis\\alerts\\engine.py:189: note: Left operand is of type \&quot;float | None\&quot;\nsrc\\qnwis\\alerts\\engine.py:191: error: Unsupported operand types for &lt;= (\&quot;float\&quot; and \&quot;None\&quot;)  [operator]\nsrc\\qnwis\\alerts\\engine.py:191: note: Left operand is of type \&quot;float | None\&quot;\nsrc\\qnwis\\agents\\alert_center.py:85: error: Name \&quot;Any\&quot; is not defined  [name-defined]\nsrc\\qnwis\\agents\\alert_center.py:85: note: Did you forget to import it from \&quot;typing\&quot;? (Suggestion: \&quot;from typing import Any\&quot;)\nsrc\\qnwis\\agents\\scenario_agent.py:571: error: Argument 1 to \&quot;sum\&quot; has incompatible type \&quot;list[Any | None]\&quot;; expected \&quot;Iterable[bool]\&quot;  [arg-type]\nFound 11 errors in 4 files (checked 24 source files)\n&quot;,
+    &quot;stdout_tail&quot;: &quot;time_alerts.py:92: error: Dict entry 1 has incompatible type \&quot;str\&quot;: \&quot;float | None\&quot;; expected \&quot;str\&quot;: \&quot;float\&quot;  [dict-item]\nsrc\\qnwis\\alerts\\real_time_alerts.py:210: error: Call to untyped function \&quot;RealTimeAlertSystem\&quot; in typed context  [no-untyped-call]\nsrc\\qnwis\\alerts\\real_time_alerts.py:221: error: Function is missing a return type annotation  [no-untyped-def]\nsrc\\qnwis\\alerts\\engine.py:185: error: Unsupported operand types for &gt; (\&quot;float\&quot; and \&quot;None\&quot;)  [operator]\nsrc\\qnwis\\alerts\\engine.py:185: note: Left operand is of type \&quot;float | None\&quot;\nsrc\\qnwis\\alerts\\engine.py:187: error: Unsupported operand types for &gt;= (\&quot;float\&quot; and \&quot;None\&quot;)  [operator]\nsrc\\qnwis\\alerts\\engine.py:187: note: Left operand is of type \&quot;float | None\&quot;\nsrc\\qnwis\\alerts\\engine.py:189: error: Unsupported operand types for &lt; (\&quot;float\&quot; and \&quot;None\&quot;)  [operator]\nsrc\\qnwis\\alerts\\engine.py:189: note: Left operand is of type \&quot;float | None\&quot;\nsrc\\qnwis\\alerts\\engine.py:191: error: Unsupported operand types for &lt;= (\&quot;float\&quot; and \&quot;None\&quot;)  [operator]\nsrc\\qnwis\\alerts\\engine.py:191: note: Left operand is of type \&quot;float | None\&quot;\nsrc\\qnwis\\agents\\alert_center.py:85: error: Name \&quot;Any\&quot; is not defined  [name-defined]\nsrc\\qnwis\\agents\\alert_center.py:85: note: Did you forget to import it from \&quot;typing\&quot;? (Suggestion: \&quot;from typing import Any\&quot;)\nsrc\\qnwis\\agents\\alert_center.py:209: error: Argument \&quot;derived_results\&quot; to \&quot;AgentReport\&quot; has incompatible type \&quot;list[Never]\&quot;; expected \&quot;dict[str, Any]\&quot;  [arg-type]\nsrc\\qnwis\\agents\\alert_center.py:284: error: Argument \&quot;derived_results\&quot; to \&quot;AgentReport\&quot; has incompatible type \&quot;list[Never]\&quot;; expected \&quot;dict[str, Any]\&quot;  [arg-type]\nsrc\\qnwis\\agents\\alert_center.py:326: error: Argument \&quot;derived_results\&quot; to \&quot;AgentReport\&quot; has incompatible type \&quot;list[QueryResult]\&quot;; expected \&quot;dict[str, Any]\&quot;  [arg-type]\nsrc\\qnwis\\agents\\scenario_agent.py:571: error: Argument 1 to \&quot;sum\&quot; has incompatible type \&quot;list[Any | None]\&quot;; expected \&quot;Iterable[bool]\&quot;  [arg-type]\nFound 14 errors in 4 files (checked 24 source files)\n&quot;,
     &quot;stderr_tail&quot;: &quot;&quot;,
     &quot;exit_code&quot;: 1
   }

@@ -338,12 +338,12 @@
         },
         "missing": {}
       },
-      "duration_ms": 16.00050926208496,
+      "duration_ms": 15.041112899780273,
       "severity": "ERROR",
       "evidence_paths": [
         "docs/IMPLEMENTATION_ROADMAP.md"
       ],
-      "timestamp": "2026-03-04T07:32:05.793802"
+      "timestamp": "2026-03-04T07:45:32.473854"
     },
     {
       "name": "no_placeholders",
@@ -360,12 +360,12 @@
         ],
         "violations": []
       },
-      "duration_ms": 566.6139125823975,
+      "duration_ms": 589.7438526153564,
       "severity": "ERROR",
       "evidence_paths": [
         "src/qnwis/scripts/qa/grep_rules.yml"
       ],
-      "timestamp": "2026-03-04T07:32:06.360416"
+      "timestamp": "2026-03-04T07:45:33.063598"
     },
     {
       "name": "linters_and_types",
@@ -407,12 +407,12 @@
           "exit_code": 1
         },
         "flake8": {
-          "issues": 7984,
+          "issues": 7968,
           "fixable": 0,
           "rules": {
             "F821": 5,
-            "W293": 7146,
-            "W291": 242,
+            "W293": 7131,
+            "W291": 241,
             "E501": 376,
             "E203": 11,
             "E261": 3,
@@ -453,20 +453,20 @@
           "fixable": 0,
           "rules": {},
           "files": [],
-          "stdout_tail": "src\\qnwis\\alerts\\real_time_alerts.py:69: error: Function is missing a return type annotation  [no-untyped-def]\nsrc\\qnwis\\alerts\\real_time_alerts.py:69: note: Use \"-> None\" if function does not return a value\nsrc\\qnwis\\alerts\\real_time_alerts.py:91: error: Dict entry 0 has incompatible type \"str\": \"float | None\"; expected \"str\": \"float\"  [dict-item]\nsrc\\qnwis\\alerts\\real_time_alerts.py:92: error: Dict entry 1 has incompatible type \"str\": \"float | None\"; expected \"str\": \"float\"  [dict-item]\nsrc\\qnwis\\alerts\\real_time_alerts.py:210: error: Call to untyped function \"RealTimeAlertSystem\" in typed context  [no-untyped-call]\nsrc\\qnwis\\alerts\\real_time_alerts.py:221: error: Function is missing a return type annotation  [no-untyped-def]\nsrc\\qnwis\\alerts\\engine.py:185: error: Unsupported operand types for > (\"float\" and \"None\")  [operator]\nsrc\\qnwis\\alerts\\engine.py:185: note: Left operand is of type \"float | None\"\nsrc\\qnwis\\alerts\\engine.py:187: error: Unsupported operand types for >= (\"float\" and \"None\")  [operator]\nsrc\\qnwis\\alerts\\engine.py:187: note: Left operand is of type \"float | None\"\nsrc\\qnwis\\alerts\\engine.py:189: error: Unsupported operand types for < (\"float\" and \"None\")  [operator]\nsrc\\qnwis\\alerts\\engine.py:189: note: Left operand is of type \"float | None\"\nsrc\\qnwis\\alerts\\engine.py:191: error: Unsupported operand types for <= (\"float\" and \"None\")  [operator]\nsrc\\qnwis\\alerts\\engine.py:191: note: Left operand is of type \"float | None\"\nsrc\\qnwis\\agents\\alert_center.py:85: error: Name \"Any\" is not defined  [name-defined]\nsrc\\qnwis\\agents\\alert_center.py:85: note: Did you forget to import it from \"typing\"? (Suggestion: \"from typing import Any\")\nsrc\\qnwis\\agents\\scenario_agent.py:571: error: Argument 1 to \"sum\" has incompatible type \"list[Any | None]\"; expected \"Iterable[bool]\"  [arg-type]\nFound 11 errors in 4 files (checked 24 source files)\n",
+          "stdout_tail": "time_alerts.py:92: error: Dict entry 1 has incompatible type \"str\": \"float | None\"; expected \"str\": \"float\"  [dict-item]\nsrc\\qnwis\\alerts\\real_time_alerts.py:210: error: Call to untyped function \"RealTimeAlertSystem\" in typed context  [no-untyped-call]\nsrc\\qnwis\\alerts\\real_time_alerts.py:221: error: Function is missing a return type annotation  [no-untyped-def]\nsrc\\qnwis\\alerts\\engine.py:185: error: Unsupported operand types for > (\"float\" and \"None\")  [operator]\nsrc\\qnwis\\alerts\\engine.py:185: note: Left operand is of type \"float | None\"\nsrc\\qnwis\\alerts\\engine.py:187: error: Unsupported operand types for >= (\"float\" and \"None\")  [operator]\nsrc\\qnwis\\alerts\\engine.py:187: note: Left operand is of type \"float | None\"\nsrc\\qnwis\\alerts\\engine.py:189: error: Unsupported operand types for < (\"float\" and \"None\")  [operator]\nsrc\\qnwis\\alerts\\engine.py:189: note: Left operand is of type \"float | None\"\nsrc\\qnwis\\alerts\\engine.py:191: error: Unsupported operand types for <= (\"float\" and \"None\")  [operator]\nsrc\\qnwis\\alerts\\engine.py:191: note: Left operand is of type \"float | None\"\nsrc\\qnwis\\agents\\alert_center.py:85: error: Name \"Any\" is not defined  [name-defined]\nsrc\\qnwis\\agents\\alert_center.py:85: note: Did you forget to import it from \"typing\"? (Suggestion: \"from typing import Any\")\nsrc\\qnwis\\agents\\alert_center.py:209: error: Argument \"derived_results\" to \"AgentReport\" has incompatible type \"list[Never]\"; expected \"dict[str, Any]\"  [arg-type]\nsrc\\qnwis\\agents\\alert_center.py:284: error: Argument \"derived_results\" to \"AgentReport\" has incompatible type \"list[Never]\"; expected \"dict[str, Any]\"  [arg-type]\nsrc\\qnwis\\agents\\alert_center.py:326: error: Argument \"derived_results\" to \"AgentReport\" has incompatible type \"list[QueryResult]\"; expected \"dict[str, Any]\"  [arg-type]\nsrc\\qnwis\\agents\\scenario_agent.py:571: error: Argument 1 to \"sum\" has incompatible type \"list[Any | None]\"; expected \"Iterable[bool]\"  [arg-type]\nFound 14 errors in 4 files (checked 24 source files)\n",
           "stderr_tail": "",
           "exit_code": 1
         }
       },
-      "duration_ms": 19521.517992019653,
+      "duration_ms": 19528.067588806152,
       "severity": "ERROR",
       "evidence_paths": [],
-      "timestamp": "2026-03-04T07:32:25.881934"
+      "timestamp": "2026-03-04T07:45:52.591665"
     }
   ],
   "overall_pass": false,
-  "execution_time_ms": 20105.131149291992,
-  "timestamp": "2026-03-04T07:32:25.882933",
+  "execution_time_ms": 20133.852005004883,
+  "timestamp": "2026-03-04T07:45:52.592665",
   "summary": {
     "total_gates": 3,
     "total": 3,
@@ -476,8 +476,8 @@
   "artifacts": {
     "coverage.xml": "a983cdf5fa5911a848b72fb3c0e1873dc544bc88697bf45abf0d4bbfd5223104",
     "junit.xml": "1936cb6760d2944a3e93d625ce6d9911b24758cee616d5db7eb8eb0f3abf7270",
-    "src/qnwis/docs/audit/READINESS_REPORT_1_25.md": "3b1c4393f29e43a1b7c43516fc86ccf127bfaef1f0faaba9f4ed24de8ab5a7fe",
-    "src/qnwis/docs/audit/READINESS_SUMMARY.html": "71fbe4195ae812da8d62e3dcfd42ee158179c44312344a1e6c016ad72e34c0da",
+    "src/qnwis/docs/audit/READINESS_REPORT_1_25.md": "d25e21ae6f5386164fc8b04eac17f7946c7cabad85b66ba1122316151698a835",
+    "src/qnwis/docs/audit/READINESS_SUMMARY.html": "342f9b989d4dea672367374775800537ea17aadc5eca1b9243d2e67522831a72",
     "src/qnwis/docs/audit/badges/rg1_pass.svg": "9995f7f48c4cb371d7db73a0cb755b09a43f686d6f82bb85a81eb9d7b1b857d8",
     "ops_notify_report.json": "eeeb7a4be860d00f103c927d235181ddb91dc12b888dfe0f08284ff29cf686ce",
     "OPS_NOTIFY_SUMMARY.md": "292aa2e89f94f28714ca7fed8a86fc45c48d896c936d714c36b877f7c918673f",
@@ -495,13 +495,11 @@
     "docs/audit/rg7/DR_SUMMARY.md": "9ae905e6286676f0d3902004400824e35fadc37d8b4ed7047cb6d65491af0ac2",
     "docs/audit/rg7/sample_manifest.json": "d04382655812b537b43247d53653cc47421b2b4d0c0910ae482ed4c70df9be84",
     "src/qnwis/docs/audit/badges/rg7_pass.svg": "4b179dc9aa67e5dc0a76eac73c7c4c285662ee8fd575b9a6babf5413bd0a14af",
-    "docs/audit/rg8/rg8_report.json": "a213943661303095e69cf53213f2cd8f4b9a65023029c11c2271eb75d7730ac3",
+    "docs/audit/rg8/rg8_report.json": "36b05fbac9cd482d122e2847cfe1a7b483becd53337764dd6330c9c5f725bda5",
     "docs/audit/rg8/CONTINUITY_SUMMARY.md": "7baf3f961363b2dc79c05a02976bdd6fb2ca905e3747fe6de069603d66e942b5",
-    "docs/audit/rg8/sample_plan.yaml": "f72b936376f3c258b285ec85eba36c29ff23bba396fba3695bd8177e67285e71",
+    "docs/audit/rg8/sample_plan.yaml": "f16418c8e77dce45c928811938937d4b92af66732b62397997f356fca2da303d",
     "src/qnwis/docs/audit/badges/rg8_pass.svg": "dd7d6c73ea33703864a5044faa10e6654ead7bedc00a14fe36774d78139926d6",
     "docs/audit/badges/rg8_pass.svg": "dd7d6c73ea33703864a5044faa10e6654ead7bedc00a14fe36774d78139926d6"
   },
-  "fixed_gates": [
-    "no_placeholders"
-  ]
+  "fixed_gates": []
 }

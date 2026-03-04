@@ -7,7 +7,7 @@ and re-exports the canonical AgentReport from schemas.
 
 from __future__ import annotations
 
-from typing import Any, List, NotRequired, TypedDict
+from typing import Any, NotRequired, TypedDict
 
 from .schemas import AgentCitation as Citation  # noqa: F401 — re-export
 from .schemas import AgentReport  # noqa: F401 — re-export

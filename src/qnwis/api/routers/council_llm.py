@@ -5,8 +5,6 @@ Provides streaming (SSE) and complete (JSON) endpoints for the multi-stage
 LLM council workflow: classify -> prefetch -> agents -> verify -> synthesize.
 """
 
-from __future__ import annotations
-
 import asyncio
 import logging
 import os

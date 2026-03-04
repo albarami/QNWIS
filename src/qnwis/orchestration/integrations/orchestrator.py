@@ -99,7 +99,7 @@ class CompletePrefetchLayer:
         try:
             from pathlib import Path
 
-            from ..knowledge.graph_builder import QNWISKnowledgeGraph
+            from ...knowledge.graph_builder import QNWISKnowledgeGraph
             kg_path = Path("data/knowledge_graph.json")
             if kg_path.exists():
                 self._knowledge_graph = QNWISKnowledgeGraph()
@@ -111,7 +111,7 @@ class CompletePrefetchLayer:
         self.brave_api_key = os.getenv("BRAVE_API_KEY")
         self.perplexity_api_key = os.getenv("PERPLEXITY_API_KEY")
 
-        from ..data.deterministic.engine import get_engine
+        from ...data.deterministic.engine import get_engine
         self.pg_engine = get_engine()
 
         for name, ok in [

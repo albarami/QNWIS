@@ -187,7 +187,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         lifespan=lifespan,
     )
     app.state.settings = settings
-    env = os.getenv("QNWIS_ENV", "production").lower()
+    env = settings.environment.lower()
     if env in ("development", "test"):
         app.state.auth_bypass = os.getenv("QNWIS_BYPASS_AUTH", "false").lower() == "true"
     else:
